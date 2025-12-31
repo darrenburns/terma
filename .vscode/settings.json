@@ -1,0 +1,11 @@
+{
+    "go.gopath": "",
+    "go.useLanguageServer": true,
+    "gopls": {
+        "build.env": {
+            "GO111MODULE": "on",
+            "GOFLAGS": "-mod=mod"
+        }
+    }
+}
+

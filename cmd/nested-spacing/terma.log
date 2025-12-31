@@ -1,0 +1,1280 @@
+[13:37:04.882] Logger initialized
+[13:37:04.884] Render complete in 0.758ms, 7 widgets registered
+[13:37:04.885] Render complete in 0.457ms, 7 widgets registered
+[13:37:04.885] Unhandled event: uv.WindowPixelSizeEvent {3136 1094}
+[13:37:05.926]   Hover changed: "" -> "text-1"
+[13:37:05.926]   Calling OnHover(true) on "text-1"
+[13:37:05.926] Render complete in 0.392ms, 7 widgets registered
+[13:37:06.509]   Hover changed: "text-1" -> ""
+[13:37:06.509]   Calling OnHover(false) on "text-1"
+[13:37:06.509] Render complete in 0.255ms, 7 widgets registered
+[13:37:06.809]   Hover changed: "" -> "text-1"
+[13:37:06.809]   Calling OnHover(true) on "text-1"
+[13:37:06.810] Render complete in 0.339ms, 7 widgets registered
+[13:37:07.030]   Hover changed: "text-1" -> ""
+[13:37:07.030]   Calling OnHover(false) on "text-1"
+[13:37:07.030] Render complete in 0.219ms, 7 widgets registered
+[13:37:07.055]   Hover changed: "" -> "inner-column"
+[13:37:07.055]   Calling OnHover(true) on "inner-column"
+[13:37:07.055] Render complete in 0.284ms, 7 widgets registered
+[13:37:07.080]   Hover changed: "inner-column" -> ""
+[13:37:07.080]   Calling OnHover(false) on "inner-column"
+[13:37:07.080] Render complete in 0.211ms, 7 widgets registered
+[13:37:07.247]   Hover changed: "" -> "text-1"
+[13:37:07.247]   Calling OnHover(true) on "text-1"
+[13:37:07.247] Render complete in 0.300ms, 7 widgets registered
+[13:37:07.288]   Hover changed: "text-1" -> ""
+[13:37:07.288]   Calling OnHover(false) on "text-1"
+[13:37:07.289] Render complete in 0.239ms, 7 widgets registered
+[13:37:07.355]   Hover changed: "" -> "text-1"
+[13:37:07.355]   Calling OnHover(true) on "text-1"
+[13:37:07.355] Render complete in 0.256ms, 7 widgets registered
+[13:37:07.413]   Hover changed: "text-1" -> ""
+[13:37:07.413]   Calling OnHover(false) on "text-1"
+[13:37:07.414] Render complete in 0.362ms, 7 widgets registered
+[13:37:07.530]   Hover changed: "" -> "text-1"
+[13:37:07.530]   Calling OnHover(true) on "text-1"
+[13:37:07.530] Render complete in 0.262ms, 7 widgets registered
+[13:37:07.597]   Hover changed: "text-1" -> ""
+[13:37:07.597]   Calling OnHover(false) on "text-1"
+[13:37:07.597] Render complete in 0.238ms, 7 widgets registered
+[13:37:07.630]   Hover changed: "" -> "inner-column"
+[13:37:07.630]   Calling OnHover(true) on "inner-column"
+[13:37:07.630] Render complete in 0.314ms, 7 widgets registered
+[13:37:07.655]   Hover changed: "inner-column" -> "text-2"
+[13:37:07.655]   Calling OnHover(false) on "inner-column"
+[13:37:07.655]   Calling OnHover(true) on "text-2"
+[13:37:07.655] Render complete in 0.295ms, 7 widgets registered
+[13:37:07.697]   Hover changed: "text-2" -> "inner-column"
+[13:37:07.697]   Calling OnHover(false) on "text-2"
+[13:37:07.697]   Calling OnHover(true) on "inner-column"
+[13:37:07.697] Render complete in 0.255ms, 7 widgets registered
+[13:37:07.730]   Hover changed: "inner-column" -> "text-3"
+[13:37:07.730]   Calling OnHover(false) on "inner-column"
+[13:37:07.730]   Calling OnHover(true) on "text-3"
+[13:37:07.730] Render complete in 0.259ms, 7 widgets registered
+[13:37:07.805]   Hover changed: "text-3" -> "inner-column"
+[13:37:07.805]   Calling OnHover(false) on "text-3"
+[13:37:07.805]   Calling OnHover(true) on "inner-column"
+[13:37:07.805] Render complete in 0.212ms, 7 widgets registered
+[13:37:07.880]   Hover changed: "inner-column" -> ""
+[13:37:07.880]   Calling OnHover(false) on "inner-column"
+[13:37:07.880] Render complete in 0.210ms, 7 widgets registered
+[13:37:08.013]   Hover changed: "" -> "inner-column"
+[13:37:08.013]   Calling OnHover(true) on "inner-column"
+[13:37:08.014] Render complete in 0.247ms, 7 widgets registered
+[13:37:08.047]   Hover changed: "inner-column" -> "text-3"
+[13:37:08.047]   Calling OnHover(false) on "inner-column"
+[13:37:08.047]   Calling OnHover(true) on "text-3"
+[13:37:08.047] Render complete in 0.257ms, 7 widgets registered
+[13:37:08.072]   Hover changed: "text-3" -> "inner-column"
+[13:37:08.072]   Calling OnHover(false) on "text-3"
+[13:37:08.072]   Calling OnHover(true) on "inner-column"
+[13:37:08.072] Render complete in 0.240ms, 7 widgets registered
+[13:37:08.088]   Hover changed: "inner-column" -> "text-2"
+[13:37:08.088]   Calling OnHover(false) on "inner-column"
+[13:37:08.088]   Calling OnHover(true) on "text-2"
+[13:37:08.089] Render complete in 0.250ms, 7 widgets registered
+[13:37:08.113]   Hover changed: "text-2" -> "inner-column"
+[13:37:08.113]   Calling OnHover(false) on "text-2"
+[13:37:08.113]   Calling OnHover(true) on "inner-column"
+[13:37:08.114] Render complete in 0.219ms, 7 widgets registered
+[13:37:08.180]   Hover changed: "inner-column" -> ""
+[13:37:08.180]   Calling OnHover(false) on "inner-column"
+[13:37:08.180] Render complete in 0.201ms, 7 widgets registered
+[13:37:08.247]   Hover changed: "" -> "text-1"
+[13:37:08.247]   Calling OnHover(true) on "text-1"
+[13:37:08.247] Render complete in 0.266ms, 7 widgets registered
+[13:37:08.622]   Hover changed: "text-1" -> ""
+[13:37:08.622]   Calling OnHover(false) on "text-1"
+[13:37:08.622] Render complete in 0.248ms, 7 widgets registered
+[13:37:08.647]   Hover changed: "" -> "inner-column"
+[13:37:08.647]   Calling OnHover(true) on "inner-column"
+[13:37:08.647] Render complete in 0.313ms, 7 widgets registered
+[13:37:08.680]   Hover changed: "inner-column" -> "text-2"
+[13:37:08.680]   Calling OnHover(false) on "inner-column"
+[13:37:08.680]   Calling OnHover(true) on "text-2"
+[13:37:08.680] Render complete in 0.259ms, 7 widgets registered
+[13:37:08.722]   Hover changed: "text-2" -> "inner-column"
+[13:37:08.722]   Calling OnHover(false) on "text-2"
+[13:37:08.722]   Calling OnHover(true) on "inner-column"
+[13:37:08.722] Render complete in 0.364ms, 7 widgets registered
+[13:37:08.780]   Hover changed: "inner-column" -> "text-3"
+[13:37:08.780]   Calling OnHover(false) on "inner-column"
+[13:37:08.780]   Calling OnHover(true) on "text-3"
+[13:37:08.780] Render complete in 0.290ms, 7 widgets registered
+[13:37:08.855]   Hover changed: "text-3" -> "inner-column"
+[13:37:08.855]   Calling OnHover(false) on "text-3"
+[13:37:08.855]   Calling OnHover(true) on "inner-column"
+[13:37:08.855] Render complete in 0.212ms, 7 widgets registered
+[13:37:08.905]   Hover changed: "inner-column" -> ""
+[13:37:08.905]   Calling OnHover(false) on "inner-column"
+[13:37:08.905] Render complete in 0.204ms, 7 widgets registered
+[13:37:08.938]   Hover changed: "" -> "text-4"
+[13:37:08.938]   Calling OnHover(true) on "text-4"
+[13:37:08.939] Render complete in 0.278ms, 7 widgets registered
+[13:37:09.180]   Hover changed: "text-4" -> ""
+[13:37:09.180]   Calling OnHover(false) on "text-4"
+[13:37:09.180] Render complete in 0.235ms, 7 widgets registered
+[13:37:09.197]   Hover changed: "" -> "inner-column"
+[13:37:09.197]   Calling OnHover(true) on "inner-column"
+[13:37:09.197] Render complete in 0.253ms, 7 widgets registered
+[13:37:09.213]   Hover changed: "inner-column" -> "text-3"
+[13:37:09.213]   Calling OnHover(false) on "inner-column"
+[13:37:09.213]   Calling OnHover(true) on "text-3"
+[13:37:09.214] Render complete in 0.248ms, 7 widgets registered
+[13:37:09.222]   Hover changed: "text-3" -> "inner-column"
+[13:37:09.222]   Calling OnHover(false) on "text-3"
+[13:37:09.222]   Calling OnHover(true) on "inner-column"
+[13:37:09.222] Render complete in 0.204ms, 7 widgets registered
+[13:37:09.238]   Hover changed: "inner-column" -> "text-2"
+[13:37:09.238]   Calling OnHover(false) on "inner-column"
+[13:37:09.238]   Calling OnHover(true) on "text-2"
+[13:37:09.239] Render complete in 0.256ms, 7 widgets registered
+[13:37:09.263]   Hover changed: "text-2" -> "inner-column"
+[13:37:09.263]   Calling OnHover(false) on "text-2"
+[13:37:09.263]   Calling OnHover(true) on "inner-column"
+[13:37:09.264] Render complete in 0.253ms, 7 widgets registered
+[13:37:09.297]   Hover changed: "inner-column" -> ""
+[13:37:09.297]   Calling OnHover(false) on "inner-column"
+[13:37:09.297] Render complete in 0.194ms, 7 widgets registered
+[13:37:09.322]   Hover changed: "" -> "text-1"
+[13:37:09.322]   Calling OnHover(true) on "text-1"
+[13:37:09.322] Render complete in 0.311ms, 7 widgets registered
+[13:37:09.613]   Hover changed: "text-1" -> ""
+[13:37:09.613]   Calling OnHover(false) on "text-1"
+[13:37:09.614] Render complete in 0.250ms, 7 widgets registered
+[13:37:09.638]   Hover changed: "" -> "inner-column"
+[13:37:09.638]   Calling OnHover(true) on "inner-column"
+[13:37:09.639] Render complete in 0.274ms, 7 widgets registered
+[13:37:09.663]   Hover changed: "inner-column" -> "text-2"
+[13:37:09.663]   Calling OnHover(false) on "inner-column"
+[13:37:09.663]   Calling OnHover(true) on "text-2"
+[13:37:09.664] Render complete in 0.262ms, 7 widgets registered
+[13:37:09.688]   Hover changed: "text-2" -> "inner-column"
+[13:37:09.688]   Calling OnHover(false) on "text-2"
+[13:37:09.688]   Calling OnHover(true) on "inner-column"
+[13:37:09.689] Render complete in 0.216ms, 7 widgets registered
+[13:37:09.788]   Hover changed: "inner-column" -> ""
+[13:37:09.788]   Calling OnHover(false) on "inner-column"
+[13:37:09.789] Render complete in 0.188ms, 7 widgets registered
+[13:37:11.322]   Hover changed: "" -> "text-4"
+[13:37:11.322]   Calling OnHover(true) on "text-4"
+[13:37:11.322] Render complete in 0.303ms, 7 widgets registered
+[13:37:11.422]   Hover changed: "text-4" -> ""
+[13:37:11.422]   Calling OnHover(false) on "text-4"
+[13:37:11.422] Render complete in 0.213ms, 7 widgets registered
+[13:37:11.447]   Hover changed: "" -> "inner-column"
+[13:37:11.447]   Calling OnHover(true) on "inner-column"
+[13:37:11.447] Render complete in 0.291ms, 7 widgets registered
+[13:37:11.488]   Hover changed: "inner-column" -> ""
+[13:37:11.488]   Calling OnHover(false) on "inner-column"
+[13:37:11.489] Render complete in 0.212ms, 7 widgets registered
+[13:37:11.713]   Hover changed: "" -> "text-4"
+[13:37:11.713]   Calling OnHover(true) on "text-4"
+[13:37:11.714] Render complete in 0.311ms, 7 widgets registered
+[13:37:11.780]   Hover changed: "text-4" -> ""
+[13:37:11.780]   Calling OnHover(false) on "text-4"
+[13:37:11.780] Render complete in 0.243ms, 7 widgets registered
+[13:37:11.797]   Hover changed: "" -> "inner-column"
+[13:37:11.797]   Calling OnHover(true) on "inner-column"
+[13:37:11.797] Render complete in 0.281ms, 7 widgets registered
+[13:37:11.838]   Hover changed: "inner-column" -> "text-2"
+[13:37:11.838]   Calling OnHover(false) on "inner-column"
+[13:37:11.838]   Calling OnHover(true) on "text-2"
+[13:37:11.839] Render complete in 0.289ms, 7 widgets registered
+[13:37:11.855]   Hover changed: "text-2" -> "inner-column"
+[13:37:11.855]   Calling OnHover(false) on "text-2"
+[13:37:11.855]   Calling OnHover(true) on "inner-column"
+[13:37:11.855] Render complete in 0.254ms, 7 widgets registered
+[13:37:11.872]   Hover changed: "inner-column" -> ""
+[13:37:11.872]   Calling OnHover(false) on "inner-column"
+[13:37:11.872] Render complete in 0.463ms, 7 widgets registered
+[13:37:12.155]   Hover changed: "" -> "text-1"
+[13:37:12.155]   Calling OnHover(true) on "text-1"
+[13:37:12.155] Render complete in 0.254ms, 7 widgets registered
+[13:37:12.472]   Hover changed: "text-1" -> ""
+[13:37:12.472]   Calling OnHover(false) on "text-1"
+[13:37:12.472] Render complete in 0.214ms, 7 widgets registered
+[13:37:12.517]   Hover changed: "" -> "inner-column"
+[13:37:12.517]   Calling OnHover(true) on "inner-column"
+[13:37:12.518] Render complete in 0.281ms, 7 widgets registered
+[13:37:12.538]   Hover changed: "inner-column" -> "text-2"
+[13:37:12.538]   Calling OnHover(false) on "inner-column"
+[13:37:12.538]   Calling OnHover(true) on "text-2"
+[13:37:12.539] Render complete in 0.262ms, 7 widgets registered
+[13:37:12.580]   Hover changed: "text-2" -> "inner-column"
+[13:37:12.580]   Calling OnHover(false) on "text-2"
+[13:37:12.580]   Calling OnHover(true) on "inner-column"
+[13:37:12.580] Render complete in 0.217ms, 7 widgets registered
+[13:37:12.613]   Hover changed: "inner-column" -> "text-3"
+[13:37:12.613]   Calling OnHover(false) on "inner-column"
+[13:37:12.613]   Calling OnHover(true) on "text-3"
+[13:37:12.614] Render complete in 0.534ms, 7 widgets registered
+[13:37:12.672]   Hover changed: "text-3" -> "inner-column"
+[13:37:12.672]   Calling OnHover(false) on "text-3"
+[13:37:12.672]   Calling OnHover(true) on "inner-column"
+[13:37:12.672] Render complete in 0.211ms, 7 widgets registered
+[13:37:12.705]   Hover changed: "inner-column" -> ""
+[13:37:12.705]   Calling OnHover(false) on "inner-column"
+[13:37:12.705] Render complete in 0.196ms, 7 widgets registered
+[13:37:12.747]   Hover changed: "" -> "text-4"
+[13:37:12.747]   Calling OnHover(true) on "text-4"
+[13:37:12.747] Render complete in 0.280ms, 7 widgets registered
+[13:37:12.855]   Hover changed: "text-4" -> ""
+[13:37:12.855]   Calling OnHover(false) on "text-4"
+[13:37:12.855] Render complete in 0.247ms, 7 widgets registered
+[13:37:12.872]   Hover changed: "" -> "inner-column"
+[13:37:12.872]   Calling OnHover(true) on "inner-column"
+[13:37:12.872] Render complete in 0.251ms, 7 widgets registered
+[13:37:12.897]   Hover changed: "inner-column" -> "text-3"
+[13:37:12.897]   Calling OnHover(false) on "inner-column"
+[13:37:12.897]   Calling OnHover(true) on "text-3"
+[13:37:12.897] Render complete in 0.291ms, 7 widgets registered
+[13:37:12.913]   Hover changed: "text-3" -> "inner-column"
+[13:37:12.913]   Calling OnHover(false) on "text-3"
+[13:37:12.913]   Calling OnHover(true) on "inner-column"
+[13:37:12.914] Render complete in 0.225ms, 7 widgets registered
+[13:37:12.922]   Hover changed: "inner-column" -> "text-2"
+[13:37:12.922]   Calling OnHover(false) on "inner-column"
+[13:37:12.922]   Calling OnHover(true) on "text-2"
+[13:37:12.922] Render complete in 0.263ms, 7 widgets registered
+[13:37:12.955]   Hover changed: "text-2" -> "inner-column"
+[13:37:12.955]   Calling OnHover(false) on "text-2"
+[13:37:12.955]   Calling OnHover(true) on "inner-column"
+[13:37:12.955] Render complete in 0.220ms, 7 widgets registered
+[13:37:12.980]   Hover changed: "inner-column" -> ""
+[13:37:12.980]   Calling OnHover(false) on "inner-column"
+[13:37:12.980] Render complete in 0.227ms, 7 widgets registered
+[13:37:13.013]   Hover changed: "" -> "text-1"
+[13:37:13.013]   Calling OnHover(true) on "text-1"
+[13:37:13.014] Render complete in 0.258ms, 7 widgets registered
+[13:37:13.566] MouseClickEvent at X=8 Y=4 Button=left
+[13:37:13.566]   Found widget: Key="text-1" Type=*main.HoverText
+[13:37:13.566]   Widget is Clickable, calling OnClick
+[13:37:13.566] Render complete in 0.221ms, 7 widgets registered
+[13:37:13.626] Unhandled event: uv.MouseReleaseEvent left
+[13:37:14.055]   Hover changed: "text-1" -> ""
+[13:37:14.055]   Calling OnHover(false) on "text-1"
+[13:37:14.055] Render complete in 0.307ms, 7 widgets registered
+[13:37:14.072]   Hover changed: "" -> "inner-column"
+[13:37:14.072]   Calling OnHover(true) on "inner-column"
+[13:37:14.072] Render complete in 0.204ms, 7 widgets registered
+[13:37:14.088]   Hover changed: "inner-column" -> "text-2"
+[13:37:14.088]   Calling OnHover(false) on "inner-column"
+[13:37:14.088]   Calling OnHover(true) on "text-2"
+[13:37:14.089] Render complete in 0.286ms, 7 widgets registered
+[13:37:14.105]   Hover changed: "text-2" -> "inner-column"
+[13:37:14.105]   Calling OnHover(false) on "text-2"
+[13:37:14.105]   Calling OnHover(true) on "inner-column"
+[13:37:14.105] Render complete in 0.231ms, 7 widgets registered
+[13:37:14.138]   Hover changed: "inner-column" -> ""
+[13:37:14.138]   Calling OnHover(false) on "inner-column"
+[13:37:14.139] Render complete in 0.272ms, 7 widgets registered
+[13:37:14.334]   Hover changed: "" -> "inner-column"
+[13:37:14.334]   Calling OnHover(true) on "inner-column"
+[13:37:14.335] Render complete in 0.585ms, 7 widgets registered
+[13:37:14.417]   Hover changed: "inner-column" -> ""
+[13:37:14.418]   Calling OnHover(false) on "inner-column"
+[13:37:14.418] Render complete in 0.573ms, 7 widgets registered
+[13:37:14.484]   Hover changed: "" -> "text-1"
+[13:37:14.484]   Calling OnHover(true) on "text-1"
+[13:37:14.484] Render complete in 0.227ms, 7 widgets registered
+[13:37:14.807] MouseClickEvent at X=10 Y=5 Button=left
+[13:37:14.807]   Found widget: Key="text-1" Type=*main.HoverText
+[13:37:14.807]   Widget is Clickable, calling OnClick
+[13:37:14.807] Render complete in 0.161ms, 7 widgets registered
+[13:37:14.879] Unhandled event: uv.MouseReleaseEvent left
+[13:37:14.992]   Hover changed: "text-1" -> ""
+[13:37:14.993]   Calling OnHover(false) on "text-1"
+[13:37:14.993] Render complete in 0.260ms, 7 widgets registered
+[13:37:15.026]   Hover changed: "" -> "inner-column"
+[13:37:15.026]   Calling OnHover(true) on "inner-column"
+[13:37:15.027] Render complete in 0.593ms, 7 widgets registered
+[13:37:15.059]   Hover changed: "inner-column" -> "text-2"
+[13:37:15.059]   Calling OnHover(false) on "inner-column"
+[13:37:15.059]   Calling OnHover(true) on "text-2"
+[13:37:15.059] Render complete in 0.255ms, 7 widgets registered
+[13:37:15.307] MouseClickEvent at X=11 Y=11 Button=left
+[13:37:15.307]   Found widget: Key="text-2" Type=*main.HoverText
+[13:37:15.307]   Widget is Clickable, calling OnClick
+[13:37:15.307] Render complete in 0.183ms, 7 widgets registered
+[13:37:15.381] Unhandled event: uv.MouseReleaseEvent left
+[13:37:15.485]   Hover changed: "text-2" -> "inner-column"
+[13:37:15.485]   Calling OnHover(false) on "text-2"
+[13:37:15.485]   Calling OnHover(true) on "inner-column"
+[13:37:15.485] Render complete in 0.557ms, 7 widgets registered
+[13:37:15.509]   Hover changed: "inner-column" -> "text-3"
+[13:37:15.509]   Calling OnHover(false) on "inner-column"
+[13:37:15.509]   Calling OnHover(true) on "text-3"
+[13:37:15.509] Render complete in 0.264ms, 7 widgets registered
+[13:37:15.618] MouseClickEvent at X=11 Y=18 Button=left
+[13:37:15.618]   Found widget: Key="text-3" Type=*main.HoverText
+[13:37:15.618]   Widget is Clickable, calling OnClick
+[13:37:15.618] Render complete in 0.168ms, 7 widgets registered
+[13:37:15.704] Unhandled event: uv.MouseReleaseEvent left
+[13:37:15.834]   Hover changed: "text-3" -> "inner-column"
+[13:37:15.834]   Calling OnHover(false) on "text-3"
+[13:37:15.834]   Calling OnHover(true) on "inner-column"
+[13:37:15.834] Render complete in 0.265ms, 7 widgets registered
+[13:37:15.859]   Hover changed: "inner-column" -> "text-2"
+[13:37:15.859]   Calling OnHover(false) on "inner-column"
+[13:37:15.859]   Calling OnHover(true) on "text-2"
+[13:37:15.860] Render complete in 0.418ms, 7 widgets registered
+[13:37:15.884]   Hover changed: "text-2" -> "inner-column"
+[13:37:15.884]   Calling OnHover(false) on "text-2"
+[13:37:15.884]   Calling OnHover(true) on "inner-column"
+[13:37:15.884] Render complete in 0.218ms, 7 widgets registered
+[13:37:15.893]   Hover changed: "inner-column" -> ""
+[13:37:15.893]   Calling OnHover(false) on "inner-column"
+[13:37:15.893] Render complete in 0.529ms, 7 widgets registered
+[13:37:15.918]   Hover changed: "" -> "text-1"
+[13:37:15.918]   Calling OnHover(true) on "text-1"
+[13:37:15.918] Render complete in 0.385ms, 7 widgets registered
+[13:37:16.284]   Hover changed: "text-1" -> ""
+[13:37:16.284]   Calling OnHover(false) on "text-1"
+[13:37:16.285] Render complete in 0.491ms, 7 widgets registered
+[13:37:16.343]   Hover changed: "" -> "inner-column"
+[13:37:16.343]   Calling OnHover(true) on "inner-column"
+[13:37:16.343] Render complete in 0.310ms, 7 widgets registered
+[13:37:16.384]   Hover changed: "inner-column" -> "text-2"
+[13:37:16.384]   Calling OnHover(false) on "inner-column"
+[13:37:16.384]   Calling OnHover(true) on "text-2"
+[13:37:16.385] Render complete in 0.427ms, 7 widgets registered
+[13:37:16.459]   Hover changed: "text-2" -> "inner-column"
+[13:37:16.459]   Calling OnHover(false) on "text-2"
+[13:37:16.459]   Calling OnHover(true) on "inner-column"
+[13:37:16.460] Render complete in 0.312ms, 7 widgets registered
+[13:37:16.537] MouseClickEvent at X=9 Y=14 Button=left
+[13:37:16.537]   Found widget: Key="inner-column" Type=terma.Column
+[13:37:16.538]   Widget is Clickable, calling OnClick
+[13:37:16.538] Render complete in 0.498ms, 7 widgets registered
+[13:37:16.651] Unhandled event: uv.MouseReleaseEvent left
+[13:37:16.759]   Hover changed: "inner-column" -> "text-3"
+[13:37:16.759]   Calling OnHover(false) on "inner-column"
+[13:37:16.759]   Calling OnHover(true) on "text-3"
+[13:37:16.760] Render complete in 0.608ms, 7 widgets registered
+[13:37:16.881] MouseClickEvent at X=10 Y=18 Button=left
+[13:37:16.881]   Found widget: Key="text-3" Type=*main.HoverText
+[13:37:16.882]   Widget is Clickable, calling OnClick
+[13:37:16.882] Render complete in 0.251ms, 7 widgets registered
+[13:37:16.997] Unhandled event: uv.MouseReleaseEvent left
+[13:37:17.151]   Hover changed: "text-3" -> "inner-column"
+[13:37:17.151]   Calling OnHover(false) on "text-3"
+[13:37:17.151]   Calling OnHover(true) on "inner-column"
+[13:37:17.151] Render complete in 0.517ms, 7 widgets registered
+[13:37:17.184]   Hover changed: "inner-column" -> "text-2"
+[13:37:17.184]   Calling OnHover(false) on "inner-column"
+[13:37:17.184]   Calling OnHover(true) on "text-2"
+[13:37:17.185] Render complete in 0.485ms, 7 widgets registered
+[13:37:17.303] MouseClickEvent at X=10 Y=12 Button=left
+[13:37:17.303]   Found widget: Key="text-2" Type=*main.HoverText
+[13:37:17.303]   Widget is Clickable, calling OnClick
+[13:37:17.303] Render complete in 0.295ms, 7 widgets registered
+[13:37:17.401] Unhandled event: uv.MouseReleaseEvent left
+[13:37:17.493]   Hover changed: "text-2" -> "inner-column"
+[13:37:17.493]   Calling OnHover(false) on "text-2"
+[13:37:17.493]   Calling OnHover(true) on "inner-column"
+[13:37:17.493] Render complete in 0.455ms, 7 widgets registered
+[13:37:17.526]   Hover changed: "inner-column" -> ""
+[13:37:17.526]   Calling OnHover(false) on "inner-column"
+[13:37:17.526] Render complete in 0.370ms, 7 widgets registered
+[13:37:17.542]   Hover changed: "" -> "text-1"
+[13:37:17.542]   Calling OnHover(true) on "text-1"
+[13:37:17.543] Render complete in 0.384ms, 7 widgets registered
+[13:37:17.634] MouseClickEvent at X=10 Y=5 Button=left
+[13:37:17.635]   Found widget: Key="text-1" Type=*main.HoverText
+[13:37:17.635]   Widget is Clickable, calling OnClick
+[13:37:17.635] Render complete in 0.271ms, 7 widgets registered
+[13:37:17.734] Unhandled event: uv.MouseReleaseEvent left
+[13:37:17.843]   Hover changed: "text-1" -> ""
+[13:37:17.843]   Calling OnHover(false) on "text-1"
+[13:37:17.843] Render complete in 0.537ms, 7 widgets registered
+[13:37:17.868]   Hover changed: "" -> "inner-column"
+[13:37:17.868]   Calling OnHover(true) on "inner-column"
+[13:37:17.868] Render complete in 0.215ms, 7 widgets registered
+[13:37:17.909]   Hover changed: "inner-column" -> "text-2"
+[13:37:17.909]   Calling OnHover(false) on "inner-column"
+[13:37:17.909]   Calling OnHover(true) on "text-2"
+[13:37:17.910] Render complete in 0.474ms, 7 widgets registered
+[13:37:17.968]   Hover changed: "text-2" -> "inner-column"
+[13:37:17.968]   Calling OnHover(false) on "text-2"
+[13:37:17.968]   Calling OnHover(true) on "inner-column"
+[13:37:17.968] Render complete in 0.314ms, 7 widgets registered
+[13:37:18.037] MouseClickEvent at X=11 Y=14 Button=left
+[13:37:18.037]   Found widget: Key="inner-column" Type=terma.Column
+[13:37:18.037]   Widget is Clickable, calling OnClick
+[13:37:18.038] Render complete in 0.254ms, 7 widgets registered
+[13:37:18.151] Unhandled event: uv.MouseReleaseEvent left
+[13:37:18.293]   Hover changed: "inner-column" -> "text-3"
+[13:37:18.293]   Calling OnHover(false) on "inner-column"
+[13:37:18.293]   Calling OnHover(true) on "text-3"
+[13:37:18.294] Render complete in 0.817ms, 7 widgets registered
+[13:37:18.359]   Hover changed: "text-3" -> "inner-column"
+[13:37:18.359]   Calling OnHover(false) on "text-3"
+[13:37:18.359]   Calling OnHover(true) on "inner-column"
+[13:37:18.360] Render complete in 0.466ms, 7 widgets registered
+[13:37:18.435] MouseClickEvent at X=11 Y=19 Button=left
+[13:37:18.435]   Found widget: Key="inner-column" Type=terma.Column
+[13:37:18.435]   Widget is Clickable, calling OnClick
+[13:37:18.435] Render complete in 0.270ms, 7 widgets registered
+[13:37:18.547] Unhandled event: uv.MouseReleaseEvent left
+[13:37:18.709]   Hover changed: "inner-column" -> ""
+[13:37:18.709]   Calling OnHover(false) on "inner-column"
+[13:37:18.710] Render complete in 0.532ms, 7 widgets registered
+[13:37:18.768]   Hover changed: "" -> "text-4"
+[13:37:18.768]   Calling OnHover(true) on "text-4"
+[13:37:18.768] Render complete in 0.433ms, 7 widgets registered
+[13:37:19.084]   Hover changed: "text-4" -> ""
+[13:37:19.084]   Calling OnHover(false) on "text-4"
+[13:37:19.085] Render complete in 0.736ms, 7 widgets registered
+[13:37:19.126]   Hover changed: "" -> "inner-column"
+[13:37:19.126]   Calling OnHover(true) on "inner-column"
+[13:37:19.126] Render complete in 0.393ms, 7 widgets registered
+[13:37:19.159]   Hover changed: "inner-column" -> "text-3"
+[13:37:19.159]   Calling OnHover(false) on "inner-column"
+[13:37:19.159]   Calling OnHover(true) on "text-3"
+[13:37:19.160] Render complete in 0.530ms, 7 widgets registered
+[13:37:19.209]   Hover changed: "text-3" -> "inner-column"
+[13:37:19.209]   Calling OnHover(false) on "text-3"
+[13:37:19.209]   Calling OnHover(true) on "inner-column"
+[13:37:19.210] Render complete in 0.356ms, 7 widgets registered
+[13:37:19.476]   Hover changed: "inner-column" -> "text-2"
+[13:37:19.476]   Calling OnHover(false) on "inner-column"
+[13:37:19.476]   Calling OnHover(true) on "text-2"
+[13:37:19.476] Render complete in 0.561ms, 7 widgets registered
+[13:37:19.526]   Hover changed: "text-2" -> "inner-column"
+[13:37:19.526]   Calling OnHover(false) on "text-2"
+[13:37:19.526]   Calling OnHover(true) on "inner-column"
+[13:37:19.526] Render complete in 0.211ms, 7 widgets registered
+[13:37:19.542]   Hover changed: "inner-column" -> ""
+[13:37:19.542]   Calling OnHover(false) on "inner-column"
+[13:37:19.543] Render complete in 0.540ms, 7 widgets registered
+[13:37:19.576]   Hover changed: "" -> "text-1"
+[13:37:19.576]   Calling OnHover(true) on "text-1"
+[13:37:19.576] Render complete in 0.365ms, 7 widgets registered
+[13:37:19.826]   Hover changed: "text-1" -> ""
+[13:37:19.826]   Calling OnHover(false) on "text-1"
+[13:37:19.826] Render complete in 0.400ms, 7 widgets registered
+[13:37:19.842]   Hover changed: "" -> "inner-column"
+[13:37:19.843]   Calling OnHover(true) on "inner-column"
+[13:37:19.843] Render complete in 0.325ms, 7 widgets registered
+[13:37:19.876]   Hover changed: "inner-column" -> "text-2"
+[13:37:19.876]   Calling OnHover(false) on "inner-column"
+[13:37:19.876]   Calling OnHover(true) on "text-2"
+[13:37:19.876] Render complete in 0.361ms, 7 widgets registered
+[13:37:19.926]   Hover changed: "text-2" -> "inner-column"
+[13:37:19.926]   Calling OnHover(false) on "text-2"
+[13:37:19.926]   Calling OnHover(true) on "inner-column"
+[13:37:19.926] Render complete in 0.367ms, 7 widgets registered
+[13:37:19.976]   Hover changed: "inner-column" -> "text-3"
+[13:37:19.976]   Calling OnHover(false) on "inner-column"
+[13:37:19.976]   Calling OnHover(true) on "text-3"
+[13:37:19.976] Render complete in 0.438ms, 7 widgets registered
+[13:37:20.034]   Hover changed: "text-3" -> "inner-column"
+[13:37:20.034]   Calling OnHover(false) on "text-3"
+[13:37:20.034]   Calling OnHover(true) on "inner-column"
+[13:37:20.034] Render complete in 0.333ms, 7 widgets registered
+[13:37:20.067]   Hover changed: "inner-column" -> ""
+[13:37:20.068]   Calling OnHover(false) on "inner-column"
+[13:37:20.068] Render complete in 0.371ms, 7 widgets registered
+[13:37:20.109]   Hover changed: "" -> "text-4"
+[13:37:20.109]   Calling OnHover(true) on "text-4"
+[13:37:20.110] Render complete in 0.305ms, 7 widgets registered
+[13:37:20.234]   Hover changed: "text-4" -> ""
+[13:37:20.234]   Calling OnHover(false) on "text-4"
+[13:37:20.235] Render complete in 0.468ms, 7 widgets registered
+[13:37:20.255]   Hover changed: "" -> "inner-column"
+[13:37:20.255]   Calling OnHover(true) on "inner-column"
+[13:37:20.255] Render complete in 0.363ms, 7 widgets registered
+[13:37:20.263]   Hover changed: "inner-column" -> "text-3"
+[13:37:20.263]   Calling OnHover(false) on "inner-column"
+[13:37:20.263]   Calling OnHover(true) on "text-3"
+[13:37:20.264] Render complete in 0.507ms, 7 widgets registered
+[13:37:20.280]   Hover changed: "text-3" -> "inner-column"
+[13:37:20.280]   Calling OnHover(false) on "text-3"
+[13:37:20.280]   Calling OnHover(true) on "inner-column"
+[13:37:20.280] Render complete in 0.395ms, 7 widgets registered
+[13:37:20.288]   Hover changed: "inner-column" -> "text-2"
+[13:37:20.288]   Calling OnHover(false) on "inner-column"
+[13:37:20.288]   Calling OnHover(true) on "text-2"
+[13:37:20.289] Render complete in 0.428ms, 7 widgets registered
+[13:37:20.322]   Hover changed: "text-2" -> "inner-column"
+[13:37:20.322]   Calling OnHover(false) on "text-2"
+[13:37:20.322]   Calling OnHover(true) on "inner-column"
+[13:37:20.322] Render complete in 0.325ms, 7 widgets registered
+[13:37:20.338]   Hover changed: "inner-column" -> ""
+[13:37:20.338]   Calling OnHover(false) on "inner-column"
+[13:37:20.339] Render complete in 0.388ms, 7 widgets registered
+[13:37:20.355]   Hover changed: "" -> "text-1"
+[13:37:20.356]   Calling OnHover(true) on "text-1"
+[13:37:20.356] Render complete in 0.681ms, 7 widgets registered
+[13:37:20.472]   Hover changed: "text-1" -> ""
+[13:37:20.472]   Calling OnHover(false) on "text-1"
+[13:37:20.472] Render complete in 0.374ms, 7 widgets registered
+[13:37:20.488]   Hover changed: "" -> "inner-column"
+[13:37:20.488]   Calling OnHover(true) on "inner-column"
+[13:37:20.489] Render complete in 0.377ms, 7 widgets registered
+[13:37:20.505]   Hover changed: "inner-column" -> "text-2"
+[13:37:20.505]   Calling OnHover(false) on "inner-column"
+[13:37:20.505]   Calling OnHover(true) on "text-2"
+[13:37:20.505] Render complete in 0.391ms, 7 widgets registered
+[13:37:20.538]   Hover changed: "text-2" -> "inner-column"
+[13:37:20.538]   Calling OnHover(false) on "text-2"
+[13:37:20.538]   Calling OnHover(true) on "inner-column"
+[13:37:20.539] Render complete in 0.297ms, 7 widgets registered
+[13:37:20.555]   Hover changed: "inner-column" -> "text-3"
+[13:37:20.555]   Calling OnHover(false) on "inner-column"
+[13:37:20.555]   Calling OnHover(true) on "text-3"
+[13:37:20.555] Render complete in 0.363ms, 7 widgets registered
+[13:37:20.580]   Hover changed: "text-3" -> "inner-column"
+[13:37:20.580]   Calling OnHover(false) on "text-3"
+[13:37:20.580]   Calling OnHover(true) on "inner-column"
+[13:37:20.580] Render complete in 0.307ms, 7 widgets registered
+[13:37:20.588]   Hover changed: "inner-column" -> ""
+[13:37:20.588]   Calling OnHover(false) on "inner-column"
+[13:37:20.589] Render complete in 0.325ms, 7 widgets registered
+[13:37:20.713]   Hover changed: "" -> "inner-column"
+[13:37:20.713]   Calling OnHover(true) on "inner-column"
+[13:37:20.714] Render complete in 0.258ms, 7 widgets registered
+[13:37:20.730]   Hover changed: "inner-column" -> "text-3"
+[13:37:20.730]   Calling OnHover(false) on "inner-column"
+[13:37:20.730]   Calling OnHover(true) on "text-3"
+[13:37:20.730] Render complete in 0.368ms, 7 widgets registered
+[13:37:20.747]   Hover changed: "text-3" -> "inner-column"
+[13:37:20.747]   Calling OnHover(false) on "text-3"
+[13:37:20.747]   Calling OnHover(true) on "inner-column"
+[13:37:20.747] Render complete in 0.337ms, 7 widgets registered
+[13:37:20.763]   Hover changed: "inner-column" -> "text-2"
+[13:37:20.763]   Calling OnHover(false) on "inner-column"
+[13:37:20.763]   Calling OnHover(true) on "text-2"
+[13:37:20.764] Render complete in 0.388ms, 7 widgets registered
+[13:37:20.780]   Hover changed: "text-2" -> "inner-column"
+[13:37:20.780]   Calling OnHover(false) on "text-2"
+[13:37:20.780]   Calling OnHover(true) on "inner-column"
+[13:37:20.780] Render complete in 0.352ms, 7 widgets registered
+[13:37:20.788]   Hover changed: "inner-column" -> ""
+[13:37:20.788]   Calling OnHover(false) on "inner-column"
+[13:37:20.789] Render complete in 0.362ms, 7 widgets registered
+[13:37:20.797]   Hover changed: "" -> "text-1"
+[13:37:20.797]   Calling OnHover(true) on "text-1"
+[13:37:20.797] Render complete in 0.314ms, 7 widgets registered
+[13:37:20.872]   Hover changed: "text-1" -> ""
+[13:37:20.872]   Calling OnHover(false) on "text-1"
+[13:37:20.872] Render complete in 0.342ms, 7 widgets registered
+[13:37:20.907]   Hover changed: "" -> "inner-column"
+[13:37:20.907]   Calling OnHover(true) on "inner-column"
+[13:37:20.907] Render complete in 0.625ms, 7 widgets registered
+[13:37:20.922]   Hover changed: "inner-column" -> "text-2"
+[13:37:20.922]   Calling OnHover(false) on "inner-column"
+[13:37:20.922]   Calling OnHover(true) on "text-2"
+[13:37:20.922] Render complete in 0.422ms, 7 widgets registered
+[13:37:20.930]   Hover changed: "text-2" -> "text-3"
+[13:37:20.930]   Calling OnHover(false) on "text-2"
+[13:37:20.930]   Calling OnHover(true) on "text-3"
+[13:37:20.931] Render complete in 0.448ms, 7 widgets registered
+[13:37:20.938]   Hover changed: "text-3" -> ""
+[13:37:20.938]   Calling OnHover(false) on "text-3"
+[13:37:20.939] Render complete in 0.343ms, 7 widgets registered
+[13:37:20.955]   Hover changed: "" -> "text-4"
+[13:37:20.955]   Calling OnHover(true) on "text-4"
+[13:37:20.955] Render complete in 0.279ms, 7 widgets registered
+[13:37:21.022]   Hover changed: "text-4" -> ""
+[13:37:21.022]   Calling OnHover(false) on "text-4"
+[13:37:21.022] Render complete in 0.313ms, 7 widgets registered
+[13:37:21.038]   Hover changed: "" -> "inner-column"
+[13:37:21.038]   Calling OnHover(true) on "inner-column"
+[13:37:21.038] Render complete in 0.254ms, 7 widgets registered
+[13:37:21.047]   Hover changed: "inner-column" -> "text-3"
+[13:37:21.047]   Calling OnHover(false) on "inner-column"
+[13:37:21.047]   Calling OnHover(true) on "text-3"
+[13:37:21.047] Render complete in 0.309ms, 7 widgets registered
+[13:37:21.063]   Hover changed: "text-3" -> "inner-column"
+[13:37:21.063]   Calling OnHover(false) on "text-3"
+[13:37:21.063]   Calling OnHover(true) on "inner-column"
+[13:37:21.064] Render complete in 0.303ms, 7 widgets registered
+[13:37:21.072]   Hover changed: "inner-column" -> "text-2"
+[13:37:21.072]   Calling OnHover(false) on "inner-column"
+[13:37:21.072]   Calling OnHover(true) on "text-2"
+[13:37:21.072] Render complete in 0.360ms, 7 widgets registered
+[13:37:21.088]   Hover changed: "text-2" -> "inner-column"
+[13:37:21.088]   Calling OnHover(false) on "text-2"
+[13:37:21.088]   Calling OnHover(true) on "inner-column"
+[13:37:21.089] Render complete in 0.257ms, 7 widgets registered
+[13:37:21.105]   Hover changed: "inner-column" -> ""
+[13:37:21.105]   Calling OnHover(false) on "inner-column"
+[13:37:21.105] Render complete in 0.309ms, 7 widgets registered
+[13:37:21.163]   Hover changed: "" -> "inner-column"
+[13:37:21.163]   Calling OnHover(true) on "inner-column"
+[13:37:21.164] Render complete in 0.606ms, 7 widgets registered
+[13:37:21.180]   Hover changed: "inner-column" -> "text-2"
+[13:37:21.180]   Calling OnHover(false) on "inner-column"
+[13:37:21.180]   Calling OnHover(true) on "text-2"
+[13:37:21.180] Render complete in 0.332ms, 7 widgets registered
+[13:37:21.197]   Hover changed: "text-2" -> "inner-column"
+[13:37:21.197]   Calling OnHover(false) on "text-2"
+[13:37:21.197]   Calling OnHover(true) on "inner-column"
+[13:37:21.197] Render complete in 0.281ms, 7 widgets registered
+[13:37:21.205]   Hover changed: "inner-column" -> "text-3"
+[13:37:21.205]   Calling OnHover(false) on "inner-column"
+[13:37:21.205]   Calling OnHover(true) on "text-3"
+[13:37:21.205] Render complete in 0.344ms, 7 widgets registered
+[13:37:21.222]   Hover changed: "text-3" -> "inner-column"
+[13:37:21.222]   Calling OnHover(false) on "text-3"
+[13:37:21.222]   Calling OnHover(true) on "inner-column"
+[13:37:21.222] Render complete in 0.290ms, 7 widgets registered
+[13:37:21.230]   Hover changed: "inner-column" -> ""
+[13:37:21.230]   Calling OnHover(false) on "inner-column"
+[13:37:21.230] Render complete in 0.331ms, 7 widgets registered
+[13:37:21.322]   Hover changed: "" -> "inner-column"
+[13:37:21.322]   Calling OnHover(true) on "inner-column"
+[13:37:21.322] Render complete in 0.286ms, 7 widgets registered
+[13:37:21.372]   Hover changed: "inner-column" -> ""
+[13:37:21.372]   Calling OnHover(false) on "inner-column"
+[13:37:21.372] Render complete in 0.367ms, 7 widgets registered
+[13:37:21.438]   Hover changed: "" -> "inner-column"
+[13:37:21.438]   Calling OnHover(true) on "inner-column"
+[13:37:21.439] Render complete in 0.259ms, 7 widgets registered
+[13:37:21.455]   Hover changed: "inner-column" -> "text-2"
+[13:37:21.455]   Calling OnHover(false) on "inner-column"
+[13:37:21.455]   Calling OnHover(true) on "text-2"
+[13:37:21.455] Render complete in 0.354ms, 7 widgets registered
+[13:37:21.472]   Hover changed: "text-2" -> "text-3"
+[13:37:21.472]   Calling OnHover(false) on "text-2"
+[13:37:21.472]   Calling OnHover(true) on "text-3"
+[13:37:21.472] Render complete in 0.246ms, 7 widgets registered
+[13:37:21.480]   Hover changed: "text-3" -> "inner-column"
+[13:37:21.480]   Calling OnHover(false) on "text-3"
+[13:37:21.480]   Calling OnHover(true) on "inner-column"
+[13:37:21.480] Render complete in 0.314ms, 7 widgets registered
+[13:37:21.497]   Hover changed: "inner-column" -> ""
+[13:37:21.497]   Calling OnHover(false) on "inner-column"
+[13:37:21.497] Render complete in 0.380ms, 7 widgets registered
+[13:37:21.547]   Hover changed: "" -> "inner-column"
+[13:37:21.547]   Calling OnHover(true) on "inner-column"
+[13:37:21.547] Render complete in 0.281ms, 7 widgets registered
+[13:37:21.605]   Hover changed: "inner-column" -> ""
+[13:37:21.605]   Calling OnHover(false) on "inner-column"
+[13:37:21.605] Render complete in 0.404ms, 7 widgets registered
+[13:37:21.688]   Hover changed: "" -> "inner-column"
+[13:37:21.688]   Calling OnHover(true) on "inner-column"
+[13:37:21.689] Render complete in 0.280ms, 7 widgets registered
+[13:37:21.788]   Hover changed: "inner-column" -> ""
+[13:37:21.788]   Calling OnHover(false) on "inner-column"
+[13:37:21.789] Render complete in 0.362ms, 7 widgets registered
+[13:37:22.776]   Hover changed: "" -> "inner-column"
+[13:37:22.776]   Calling OnHover(true) on "inner-column"
+[13:37:22.776] Render complete in 0.306ms, 7 widgets registered
+[13:37:22.792]   Hover changed: "inner-column" -> "text-2"
+[13:37:22.792]   Calling OnHover(false) on "inner-column"
+[13:37:22.792]   Calling OnHover(true) on "text-2"
+[13:37:22.793] Render complete in 0.412ms, 7 widgets registered
+[13:37:22.826]   Hover changed: "text-2" -> "inner-column"
+[13:37:22.826]   Calling OnHover(false) on "text-2"
+[13:37:22.826]   Calling OnHover(true) on "inner-column"
+[13:37:22.826] Render complete in 0.283ms, 7 widgets registered
+[13:37:22.851]   Hover changed: "inner-column" -> "text-3"
+[13:37:22.851]   Calling OnHover(false) on "inner-column"
+[13:37:22.851]   Calling OnHover(true) on "text-3"
+[13:37:22.851] Render complete in 0.337ms, 7 widgets registered
+[13:37:22.867]   Hover changed: "text-3" -> "inner-column"
+[13:37:22.867]   Calling OnHover(false) on "text-3"
+[13:37:22.867]   Calling OnHover(true) on "inner-column"
+[13:37:22.868] Render complete in 0.280ms, 7 widgets registered
+[13:37:22.892]   Hover changed: "inner-column" -> ""
+[13:37:22.892]   Calling OnHover(false) on "inner-column"
+[13:37:22.893] Render complete in 0.347ms, 7 widgets registered
+[13:37:23.151]   Hover changed: "" -> "inner-column"
+[13:37:23.151]   Calling OnHover(true) on "inner-column"
+[13:37:23.151] Render complete in 0.272ms, 7 widgets registered
+[13:37:23.159]   Hover changed: "inner-column" -> ""
+[13:37:23.159]   Calling OnHover(false) on "inner-column"
+[13:37:23.159] Render complete in 0.367ms, 7 widgets registered
+[13:37:23.184]   Hover changed: "" -> "text-4"
+[13:37:23.184]   Calling OnHover(true) on "text-4"
+[13:37:23.184] Render complete in 0.302ms, 7 widgets registered
+[13:37:23.217]   Hover changed: "text-4" -> ""
+[13:37:23.217]   Calling OnHover(false) on "text-4"
+[13:37:23.218] Render complete in 0.354ms, 7 widgets registered
+[13:37:23.409]   Hover changed: "" -> "inner-column"
+[13:37:23.409]   Calling OnHover(true) on "inner-column"
+[13:37:23.409] Render complete in 0.283ms, 7 widgets registered
+[13:37:23.442]   Hover changed: "inner-column" -> "text-3"
+[13:37:23.442]   Calling OnHover(false) on "inner-column"
+[13:37:23.442]   Calling OnHover(true) on "text-3"
+[13:37:23.443] Render complete in 0.355ms, 7 widgets registered
+[13:37:23.776]   Hover changed: "text-3" -> "inner-column"
+[13:37:23.776]   Calling OnHover(false) on "text-3"
+[13:37:23.776]   Calling OnHover(true) on "inner-column"
+[13:37:23.776] Render complete in 0.379ms, 7 widgets registered
+[13:37:23.817]   Hover changed: "inner-column" -> ""
+[13:37:23.817]   Calling OnHover(false) on "inner-column"
+[13:37:23.818] Render complete in 0.381ms, 7 widgets registered
+[13:37:24.305]   Hover changed: "" -> "inner-column"
+[13:37:24.305]   Calling OnHover(true) on "inner-column"
+[13:37:24.306] Render complete in 0.425ms, 7 widgets registered
+[13:37:24.330]   Hover changed: "inner-column" -> ""
+[13:37:24.330]   Calling OnHover(false) on "inner-column"
+[13:37:24.331] Render complete in 0.531ms, 7 widgets registered
+[13:37:49.284]   Hover changed: "" -> "inner-column"
+[13:37:49.284]   Calling OnHover(true) on "inner-column"
+[13:37:49.284] Render complete in 0.201ms, 7 widgets registered
+[13:37:49.325]   Hover changed: "inner-column" -> "text-3"
+[13:37:49.325]   Calling OnHover(false) on "inner-column"
+[13:37:49.325]   Calling OnHover(true) on "text-3"
+[13:37:49.326] Render complete in 0.316ms, 7 widgets registered
+[13:37:49.342]   Hover changed: "text-3" -> "inner-column"
+[13:37:49.342]   Calling OnHover(false) on "text-3"
+[13:37:49.342]   Calling OnHover(true) on "inner-column"
+[13:37:49.342] Render complete in 0.244ms, 7 widgets registered
+[13:37:49.409]   Hover changed: "inner-column" -> "text-2"
+[13:37:49.409]   Calling OnHover(false) on "inner-column"
+[13:37:49.409]   Calling OnHover(true) on "text-2"
+[13:37:49.409] Render complete in 0.282ms, 7 widgets registered
+[13:37:49.434]   Hover changed: "text-2" -> "inner-column"
+[13:37:49.434]   Calling OnHover(false) on "text-2"
+[13:37:49.434]   Calling OnHover(true) on "inner-column"
+[13:37:49.434] Render complete in 0.228ms, 7 widgets registered
+[13:37:49.475]   Hover changed: "inner-column" -> "text-3"
+[13:37:49.475]   Calling OnHover(false) on "inner-column"
+[13:37:49.475]   Calling OnHover(true) on "text-3"
+[13:37:49.476] Render complete in 0.258ms, 7 widgets registered
+[13:37:49.509]   Hover changed: "text-3" -> "inner-column"
+[13:37:49.509]   Calling OnHover(false) on "text-3"
+[13:37:49.509]   Calling OnHover(true) on "inner-column"
+[13:37:49.509] Render complete in 0.211ms, 7 widgets registered
+[13:37:49.525]   Hover changed: "inner-column" -> ""
+[13:37:49.525]   Calling OnHover(false) on "inner-column"
+[13:37:49.526] Render complete in 0.246ms, 7 widgets registered
+[13:37:49.559]   Hover changed: "" -> "text-4"
+[13:37:49.559]   Calling OnHover(true) on "text-4"
+[13:37:49.559] Render complete in 0.257ms, 7 widgets registered
+[13:37:49.625]   Hover changed: "text-4" -> ""
+[13:37:49.625]   Calling OnHover(false) on "text-4"
+[13:37:49.626] Render complete in 0.262ms, 7 widgets registered
+[13:37:49.642]   Hover changed: "" -> "inner-column"
+[13:37:49.642]   Calling OnHover(true) on "inner-column"
+[13:37:49.642] Render complete in 0.313ms, 7 widgets registered
+[13:37:49.667]   Hover changed: "inner-column" -> "text-3"
+[13:37:49.667]   Calling OnHover(false) on "inner-column"
+[13:37:49.667]   Calling OnHover(true) on "text-3"
+[13:37:49.667] Render complete in 0.289ms, 7 widgets registered
+[13:37:49.692]   Hover changed: "text-3" -> "inner-column"
+[13:37:49.692]   Calling OnHover(false) on "text-3"
+[13:37:49.692]   Calling OnHover(true) on "inner-column"
+[13:37:49.692] Render complete in 0.219ms, 7 widgets registered
+[13:37:49.700]   Hover changed: "inner-column" -> "text-2"
+[13:37:49.700]   Calling OnHover(false) on "inner-column"
+[13:37:49.700]   Calling OnHover(true) on "text-2"
+[13:37:49.701] Render complete in 0.284ms, 7 widgets registered
+[13:37:49.725]   Hover changed: "text-2" -> "inner-column"
+[13:37:49.725]   Calling OnHover(false) on "text-2"
+[13:37:49.725]   Calling OnHover(true) on "inner-column"
+[13:37:49.726] Render complete in 0.211ms, 7 widgets registered
+[13:37:49.800]   Hover changed: "inner-column" -> ""
+[13:37:49.800]   Calling OnHover(false) on "inner-column"
+[13:37:49.801] Render complete in 0.378ms, 7 widgets registered
+[13:37:49.875]   Hover changed: "" -> "text-1"
+[13:37:49.875]   Calling OnHover(true) on "text-1"
+[13:37:49.876] Render complete in 0.236ms, 7 widgets registered
+[13:37:50.129] MouseClickEvent at X=5 Y=3 Button=left
+[13:37:50.129]   Found widget: Key="text-1" Type=*main.HoverText
+[13:37:50.129]   Widget is Clickable, calling OnClick
+[13:37:50.130] Render complete in 0.601ms, 7 widgets registered
+[13:37:50.214] Unhandled event: uv.MouseReleaseEvent left
+[13:37:50.384]   Hover changed: "text-1" -> ""
+[13:37:50.384]   Calling OnHover(false) on "text-1"
+[13:37:50.384] Render complete in 0.258ms, 7 widgets registered
+[13:37:50.400]   Hover changed: "" -> "inner-column"
+[13:37:50.400]   Calling OnHover(true) on "inner-column"
+[13:37:50.401] Render complete in 0.196ms, 7 widgets registered
+[13:37:50.425]   Hover changed: "inner-column" -> "text-2"
+[13:37:50.425]   Calling OnHover(false) on "inner-column"
+[13:37:50.425]   Calling OnHover(true) on "text-2"
+[13:37:50.426] Render complete in 0.283ms, 7 widgets registered
+[13:37:50.640] MouseClickEvent at X=8 Y=13 Button=left
+[13:37:50.640]   Found widget: Key="text-2" Type=*main.HoverText
+[13:37:50.640]   Widget is Clickable, calling OnClick
+[13:37:50.640] Render complete in 0.169ms, 7 widgets registered
+[13:37:50.759] Unhandled event: uv.MouseReleaseEvent left
+[13:37:50.859]   Hover changed: "text-2" -> "inner-column"
+[13:37:50.859]   Calling OnHover(false) on "text-2"
+[13:37:50.859]   Calling OnHover(true) on "inner-column"
+[13:37:50.859] Render complete in 0.220ms, 7 widgets registered
+[13:37:50.892]   Hover changed: "inner-column" -> "text-3"
+[13:37:50.892]   Calling OnHover(false) on "inner-column"
+[13:37:50.892]   Calling OnHover(true) on "text-3"
+[13:37:50.892] Render complete in 0.263ms, 7 widgets registered
+[13:37:51.134]   Hover changed: "text-3" -> "inner-column"
+[13:37:51.134]   Calling OnHover(false) on "text-3"
+[13:37:51.134]   Calling OnHover(true) on "inner-column"
+[13:37:51.135] Render complete in 0.837ms, 7 widgets registered
+[13:37:51.167]   Hover changed: "inner-column" -> "text-2"
+[13:37:51.167]   Calling OnHover(false) on "inner-column"
+[13:37:51.167]   Calling OnHover(true) on "text-2"
+[13:37:51.167] Render complete in 0.369ms, 7 widgets registered
+[13:37:51.342]   Hover changed: "text-2" -> "inner-column"
+[13:37:51.342]   Calling OnHover(false) on "text-2"
+[13:37:51.342]   Calling OnHover(true) on "inner-column"
+[13:37:51.342] Render complete in 0.214ms, 7 widgets registered
+[13:37:51.571] MouseClickEvent at X=8 Y=15 Button=left
+[13:37:51.571]   Found widget: Key="inner-column" Type=terma.Column
+[13:37:51.571]   Widget is Clickable, calling OnClick
+[13:37:51.572] Render complete in 0.632ms, 7 widgets registered
+[13:37:51.690] Unhandled event: uv.MouseReleaseEvent left
+[13:38:38.029]   Hover changed: "inner-column" -> "text-2"
+[13:38:38.029]   Calling OnHover(false) on "inner-column"
+[13:38:38.029]   Calling OnHover(true) on "text-2"
+[13:38:38.030] Render complete in 1.222ms, 7 widgets registered
+[13:38:38.062]   Hover changed: "text-2" -> "inner-column"
+[13:38:38.062]   Calling OnHover(false) on "text-2"
+[13:38:38.063]   Calling OnHover(true) on "inner-column"
+[13:38:38.066] Render complete in 2.719ms, 7 widgets registered
+[13:38:38.262]   Hover changed: "inner-column" -> "text-2"
+[13:38:38.262]   Calling OnHover(false) on "inner-column"
+[13:38:38.262]   Calling OnHover(true) on "text-2"
+[13:38:38.265] Render complete in 2.249ms, 7 widgets registered
+[13:38:38.529]   Hover changed: "text-2" -> ""
+[13:38:38.529]   Calling OnHover(false) on "text-2"
+[13:38:38.529] Render complete in 0.267ms, 7 widgets registered
+[13:38:38.908]   Hover changed: "" -> "text-4"
+[13:38:38.908]   Calling OnHover(true) on "text-4"
+[13:38:38.909] Render complete in 0.469ms, 7 widgets registered
+[13:38:38.941]   Hover changed: "text-4" -> ""
+[13:38:38.941]   Calling OnHover(false) on "text-4"
+[13:38:38.942] Render complete in 0.263ms, 7 widgets registered
+[13:38:39.283]   Hover changed: "" -> "inner-column"
+[13:38:39.283]   Calling OnHover(true) on "inner-column"
+[13:38:39.283] Render complete in 0.187ms, 7 widgets registered
+[13:38:39.308]   Hover changed: "inner-column" -> "text-2"
+[13:38:39.308]   Calling OnHover(false) on "inner-column"
+[13:38:39.308]   Calling OnHover(true) on "text-2"
+[13:38:39.309] Render complete in 0.364ms, 7 widgets registered
+[13:38:39.471] MouseClickEvent at X=6 Y=11 Button=left
+[13:38:39.472]   Found widget: Key="text-2" Type=*main.HoverText
+[13:38:39.472]   Widget is Clickable, calling OnClick
+[13:38:39.472] Render complete in 0.281ms, 7 widgets registered
+[13:38:39.583] Unhandled event: uv.MouseReleaseEvent left
+[13:38:39.708]   Hover changed: "text-2" -> "inner-column"
+[13:38:39.708]   Calling OnHover(false) on "text-2"
+[13:38:39.708]   Calling OnHover(true) on "inner-column"
+[13:38:39.708] Render complete in 0.252ms, 7 widgets registered
+[13:38:39.733]   Hover changed: "inner-column" -> "text-3"
+[13:38:39.733]   Calling OnHover(false) on "inner-column"
+[13:38:39.733]   Calling OnHover(true) on "text-3"
+[13:38:39.733] Render complete in 0.294ms, 7 widgets registered
+[13:38:39.808] MouseClickEvent at X=7 Y=17 Button=left
+[13:38:39.808]   Found widget: Key="text-3" Type=*main.HoverText
+[13:38:39.808]   Widget is Clickable, calling OnClick
+[13:38:39.809] Render complete in 0.162ms, 7 widgets registered
+[13:38:39.908] Unhandled event: uv.MouseReleaseEvent left
+[13:38:39.983]   Hover changed: "text-3" -> "inner-column"
+[13:38:39.983]   Calling OnHover(false) on "text-3"
+[13:38:39.983]   Calling OnHover(true) on "inner-column"
+[13:38:39.983] Render complete in 0.209ms, 7 widgets registered
+[13:38:40.008]   Hover changed: "inner-column" -> "text-2"
+[13:38:40.008]   Calling OnHover(false) on "inner-column"
+[13:38:40.008]   Calling OnHover(true) on "text-2"
+[13:38:40.008] Render complete in 0.272ms, 7 widgets registered
+[13:38:40.025]   Hover changed: "text-2" -> "inner-column"
+[13:38:40.025]   Calling OnHover(false) on "text-2"
+[13:38:40.025]   Calling OnHover(true) on "inner-column"
+[13:38:40.025] Render complete in 0.255ms, 7 widgets registered
+[13:38:40.079] MouseClickEvent at X=8 Y=9 Button=left
+[13:38:40.079]   Found widget: Key="inner-column" Type=terma.Column
+[13:38:40.079]   Widget is Clickable, calling OnClick
+[13:38:40.079] Render complete in 0.163ms, 7 widgets registered
+[13:38:40.153] Unhandled event: uv.MouseReleaseEvent left
+[13:38:40.166]   Hover changed: "inner-column" -> ""
+[13:38:40.166]   Calling OnHover(false) on "inner-column"
+[13:38:40.167] Render complete in 0.262ms, 7 widgets registered
+[13:38:40.191]   Hover changed: "" -> "text-1"
+[13:38:40.191]   Calling OnHover(true) on "text-1"
+[13:38:40.192] Render complete in 0.338ms, 7 widgets registered
+[13:38:40.267] MouseClickEvent at X=8 Y=4 Button=left
+[13:38:40.267]   Found widget: Key="text-1" Type=*main.HoverText
+[13:38:40.267]   Widget is Clickable, calling OnClick
+[13:38:40.267] Render complete in 0.165ms, 7 widgets registered
+[13:38:40.371] Unhandled event: uv.MouseReleaseEvent left
+[13:38:40.425]   Hover changed: "text-1" -> ""
+[13:38:40.425]   Calling OnHover(false) on "text-1"
+[13:38:40.425] Render complete in 0.259ms, 7 widgets registered
+[13:38:40.441]   Hover changed: "" -> "inner-column"
+[13:38:40.441]   Calling OnHover(true) on "inner-column"
+[13:38:40.442] Render complete in 0.195ms, 7 widgets registered
+[13:38:40.475]   Hover changed: "inner-column" -> "text-2"
+[13:38:40.475]   Calling OnHover(false) on "inner-column"
+[13:38:40.475]   Calling OnHover(true) on "text-2"
+[13:38:40.475] Render complete in 0.269ms, 7 widgets registered
+[13:38:40.508] MouseClickEvent at X=8 Y=11 Button=left
+[13:38:40.508]   Found widget: Key="text-2" Type=*main.HoverText
+[13:38:40.508]   Widget is Clickable, calling OnClick
+[13:38:40.509] Render complete in 0.202ms, 7 widgets registered
+[13:38:40.612] Unhandled event: uv.MouseReleaseEvent left
+[13:38:40.729]   Hover changed: "text-2" -> "inner-column"
+[13:38:40.729]   Calling OnHover(false) on "text-2"
+[13:38:40.729]   Calling OnHover(true) on "inner-column"
+[13:38:40.729] Render complete in 0.231ms, 7 widgets registered
+[13:38:40.800] MouseClickEvent at X=7 Y=15 Button=left
+[13:38:40.800]   Found widget: Key="inner-column" Type=terma.Column
+[13:38:40.800]   Widget is Clickable, calling OnClick
+[13:38:40.801] Render complete in 0.375ms, 7 widgets registered
+[13:38:40.904] Unhandled event: uv.MouseReleaseEvent left
+[13:38:40.971]   Hover changed: "inner-column" -> "text-3"
+[13:38:40.971]   Calling OnHover(false) on "inner-column"
+[13:38:40.971]   Calling OnHover(true) on "text-3"
+[13:38:40.971] Render complete in 0.259ms, 7 widgets registered
+[13:38:41.029]   Hover changed: "text-3" -> "inner-column"
+[13:38:41.029]   Calling OnHover(false) on "text-3"
+[13:38:41.029]   Calling OnHover(true) on "inner-column"
+[13:38:41.029] Render complete in 0.205ms, 7 widgets registered
+[13:38:41.054]   Hover changed: "inner-column" -> ""
+[13:38:41.054]   Calling OnHover(false) on "inner-column"
+[13:38:41.054] Render complete in 0.353ms, 7 widgets registered
+[13:38:41.154]   Hover changed: "" -> "inner-column"
+[13:38:41.154]   Calling OnHover(true) on "inner-column"
+[13:38:41.154] Render complete in 0.186ms, 7 widgets registered
+[13:38:41.187]   Hover changed: "inner-column" -> "text-3"
+[13:38:41.187]   Calling OnHover(false) on "inner-column"
+[13:38:41.187]   Calling OnHover(true) on "text-3"
+[13:38:41.188] Render complete in 0.293ms, 7 widgets registered
+[13:38:41.221] MouseClickEvent at X=8 Y=18 Button=left
+[13:38:41.221]   Found widget: Key="text-3" Type=*main.HoverText
+[13:38:41.221]   Widget is Clickable, calling OnClick
+[13:38:41.221] Render complete in 0.163ms, 7 widgets registered
+[13:38:41.316] Unhandled event: uv.MouseReleaseEvent left
+[13:38:41.396]   Hover changed: "text-3" -> "inner-column"
+[13:38:41.396]   Calling OnHover(false) on "text-3"
+[13:38:41.396]   Calling OnHover(true) on "inner-column"
+[13:38:41.396] Render complete in 0.224ms, 7 widgets registered
+[13:38:41.412]   Hover changed: "inner-column" -> ""
+[13:38:41.412]   Calling OnHover(false) on "inner-column"
+[13:38:41.413] Render complete in 0.304ms, 7 widgets registered
+[13:38:41.821]   Hover changed: "" -> "text-1"
+[13:38:41.821]   Calling OnHover(true) on "text-1"
+[13:38:41.821] Render complete in 0.541ms, 7 widgets registered
+[13:38:41.917] MouseClickEvent at X=7 Y=5 Button=left
+[13:38:41.918]   Found widget: Key="text-1" Type=*main.HoverText
+[13:38:41.918]   Widget is Clickable, calling OnClick
+[13:38:41.918] Render complete in 0.365ms, 7 widgets registered
+[13:38:42.021] Unhandled event: uv.MouseReleaseEvent left
+[13:38:42.262]   Hover changed: "text-1" -> ""
+[13:38:42.262]   Calling OnHover(false) on "text-1"
+[13:38:42.263] Render complete in 0.398ms, 7 widgets registered
+[13:38:42.279]   Hover changed: "" -> "inner-column"
+[13:38:42.279]   Calling OnHover(true) on "inner-column"
+[13:38:42.279] Render complete in 0.406ms, 7 widgets registered
+[13:38:42.296]   Hover changed: "inner-column" -> "text-2"
+[13:38:42.296]   Calling OnHover(false) on "inner-column"
+[13:38:42.296]   Calling OnHover(true) on "text-2"
+[13:38:42.296] Render complete in 0.250ms, 7 widgets registered
+[13:38:42.337]   Hover changed: "text-2" -> "inner-column"
+[13:38:42.337]   Calling OnHover(false) on "text-2"
+[13:38:42.337]   Calling OnHover(true) on "inner-column"
+[13:38:42.338] Render complete in 0.273ms, 7 widgets registered
+[13:38:42.412] MouseClickEvent at X=9 Y=14 Button=left
+[13:38:42.412]   Found widget: Key="inner-column" Type=terma.Column
+[13:38:42.412]   Widget is Clickable, calling OnClick
+[13:38:42.413] Render complete in 0.224ms, 7 widgets registered
+[13:38:42.524] Unhandled event: uv.MouseReleaseEvent left
+[13:38:42.837]   Hover changed: "inner-column" -> "text-3"
+[13:38:42.837]   Calling OnHover(false) on "inner-column"
+[13:38:42.837]   Calling OnHover(true) on "text-3"
+[13:38:42.837] Render complete in 0.248ms, 7 widgets registered
+[13:38:42.921] MouseClickEvent at X=9 Y=17 Button=left
+[13:38:42.921]   Found widget: Key="text-3" Type=*main.HoverText
+[13:38:42.921]   Widget is Clickable, calling OnClick
+[13:38:42.921] Render complete in 0.554ms, 7 widgets registered
+[13:38:43.033] Unhandled event: uv.MouseReleaseEvent left
+[13:38:43.112]   Hover changed: "text-3" -> "inner-column"
+[13:38:43.112]   Calling OnHover(false) on "text-3"
+[13:38:43.112]   Calling OnHover(true) on "inner-column"
+[13:38:43.112] Render complete in 0.209ms, 7 widgets registered
+[13:38:43.137]   Hover changed: "inner-column" -> ""
+[13:38:43.137]   Calling OnHover(false) on "inner-column"
+[13:38:43.138] Render complete in 0.277ms, 7 widgets registered
+[13:38:43.154]   Hover changed: "" -> "text-4"
+[13:38:43.154]   Calling OnHover(true) on "text-4"
+[13:38:43.154] Render complete in 0.231ms, 7 widgets registered
+[13:38:43.237] MouseClickEvent at X=8 Y=24 Button=left
+[13:38:43.237]   Found widget: Key="text-4" Type=*main.HoverText
+[13:38:43.237]   Widget is Clickable, calling OnClick
+[13:38:43.238] Render complete in 0.173ms, 7 widgets registered
+[13:38:43.364] Unhandled event: uv.MouseReleaseEvent left
+[13:38:43.587]   Hover changed: "text-4" -> ""
+[13:38:43.587]   Calling OnHover(false) on "text-4"
+[13:38:43.587] Render complete in 0.279ms, 7 widgets registered
+[13:38:43.595]   Hover changed: "" -> "inner-column"
+[13:38:43.596]   Calling OnHover(true) on "inner-column"
+[13:38:43.596] Render complete in 0.174ms, 7 widgets registered
+[13:38:43.612]   Hover changed: "inner-column" -> "text-3"
+[13:38:43.612]   Calling OnHover(false) on "inner-column"
+[13:38:43.612]   Calling OnHover(true) on "text-3"
+[13:38:43.612] Render complete in 0.244ms, 7 widgets registered
+[13:38:43.646]   Hover changed: "text-3" -> "inner-column"
+[13:38:43.646]   Calling OnHover(false) on "text-3"
+[13:38:43.646]   Calling OnHover(true) on "inner-column"
+[13:38:43.646] Render complete in 0.246ms, 7 widgets registered
+[13:38:43.662]   Hover changed: "inner-column" -> "text-2"
+[13:38:43.662]   Calling OnHover(false) on "inner-column"
+[13:38:43.662]   Calling OnHover(true) on "text-2"
+[13:38:43.662] Render complete in 0.241ms, 7 widgets registered
+[13:38:43.879]   Hover changed: "text-2" -> "inner-column"
+[13:38:43.879]   Calling OnHover(false) on "text-2"
+[13:38:43.879]   Calling OnHover(true) on "inner-column"
+[13:38:43.879] Render complete in 0.214ms, 7 widgets registered
+[13:38:43.904]   Hover changed: "inner-column" -> ""
+[13:38:43.904]   Calling OnHover(false) on "inner-column"
+[13:38:43.904] Render complete in 0.322ms, 7 widgets registered
+[13:38:44.112]   Hover changed: "" -> "inner-column"
+[13:38:44.112]   Calling OnHover(true) on "inner-column"
+[13:38:44.112] Render complete in 0.206ms, 7 widgets registered
+[13:38:44.154]   Hover changed: "inner-column" -> "text-2"
+[13:38:44.154]   Calling OnHover(false) on "inner-column"
+[13:38:44.154]   Calling OnHover(true) on "text-2"
+[13:38:44.154] Render complete in 0.264ms, 7 widgets registered
+[13:38:44.196]   Hover changed: "text-2" -> "inner-column"
+[13:38:44.196]   Calling OnHover(false) on "text-2"
+[13:38:44.196]   Calling OnHover(true) on "inner-column"
+[13:38:44.196] Render complete in 0.265ms, 7 widgets registered
+[13:38:44.237]   Hover changed: "inner-column" -> "text-3"
+[13:38:44.237]   Calling OnHover(false) on "inner-column"
+[13:38:44.237]   Calling OnHover(true) on "text-3"
+[13:38:44.237] Render complete in 0.261ms, 7 widgets registered
+[13:38:44.304]   Hover changed: "text-3" -> "inner-column"
+[13:38:44.304]   Calling OnHover(false) on "text-3"
+[13:38:44.304]   Calling OnHover(true) on "inner-column"
+[13:38:44.304] Render complete in 0.273ms, 7 widgets registered
+[13:38:44.396]   Hover changed: "inner-column" -> ""
+[13:38:44.396]   Calling OnHover(false) on "inner-column"
+[13:38:44.396] Render complete in 0.258ms, 7 widgets registered
+[13:38:45.021]   Hover changed: "" -> "inner-column"
+[13:38:45.021]   Calling OnHover(true) on "inner-column"
+[13:38:45.021] Render complete in 0.373ms, 7 widgets registered
+[13:38:45.037]   Hover changed: "inner-column" -> "text-3"
+[13:38:45.037]   Calling OnHover(false) on "inner-column"
+[13:38:45.037]   Calling OnHover(true) on "text-3"
+[13:38:45.038] Render complete in 0.528ms, 7 widgets registered
+[13:38:45.087]   Hover changed: "text-3" -> "inner-column"
+[13:38:45.087]   Calling OnHover(false) on "text-3"
+[13:38:45.087]   Calling OnHover(true) on "inner-column"
+[13:38:45.087] Render complete in 0.226ms, 7 widgets registered
+[13:38:45.146]   Hover changed: "inner-column" -> "text-2"
+[13:38:45.146]   Calling OnHover(false) on "inner-column"
+[13:38:45.146]   Calling OnHover(true) on "text-2"
+[13:38:45.146] Render complete in 0.280ms, 7 widgets registered
+[13:38:45.229]   Hover changed: "text-2" -> "inner-column"
+[13:38:45.229]   Calling OnHover(false) on "text-2"
+[13:38:45.229]   Calling OnHover(true) on "inner-column"
+[13:38:45.229] Render complete in 0.242ms, 7 widgets registered
+[13:38:45.312]   Hover changed: "inner-column" -> ""
+[13:38:45.312]   Calling OnHover(false) on "inner-column"
+[13:38:45.312] Render complete in 0.257ms, 7 widgets registered
+[13:38:45.412]   Hover changed: "" -> "text-1"
+[13:38:45.412]   Calling OnHover(true) on "text-1"
+[13:38:45.413] Render complete in 0.326ms, 7 widgets registered
+[13:38:45.754]   Hover changed: "text-1" -> ""
+[13:38:45.754]   Calling OnHover(false) on "text-1"
+[13:38:45.754] Render complete in 0.276ms, 7 widgets registered
+[13:38:45.779]   Hover changed: "" -> "inner-column"
+[13:38:45.779]   Calling OnHover(true) on "inner-column"
+[13:38:45.779] Render complete in 0.196ms, 7 widgets registered
+[13:38:45.821]   Hover changed: "inner-column" -> "text-2"
+[13:38:45.821]   Calling OnHover(false) on "inner-column"
+[13:38:45.821]   Calling OnHover(true) on "text-2"
+[13:38:45.821] Render complete in 0.273ms, 7 widgets registered
+[13:38:45.904]   Hover changed: "text-2" -> "inner-column"
+[13:38:45.904]   Calling OnHover(false) on "text-2"
+[13:38:45.904]   Calling OnHover(true) on "inner-column"
+[13:38:45.904] Render complete in 0.214ms, 7 widgets registered
+[13:38:45.962]   Hover changed: "inner-column" -> "text-3"
+[13:38:45.962]   Calling OnHover(false) on "inner-column"
+[13:38:45.962]   Calling OnHover(true) on "text-3"
+[13:38:45.962] Render complete in 0.258ms, 7 widgets registered
+[13:38:46.045]   Hover changed: "text-3" -> "inner-column"
+[13:38:46.046]   Calling OnHover(false) on "text-3"
+[13:38:46.046]   Calling OnHover(true) on "inner-column"
+[13:38:46.046] Render complete in 0.227ms, 7 widgets registered
+[13:38:46.095]   Hover changed: "inner-column" -> ""
+[13:38:46.096]   Calling OnHover(false) on "inner-column"
+[13:38:46.096] Render complete in 0.255ms, 7 widgets registered
+[13:38:46.171]   Hover changed: "" -> "text-4"
+[13:38:46.171]   Calling OnHover(true) on "text-4"
+[13:38:46.171] Render complete in 0.206ms, 7 widgets registered
+[13:38:46.412]   Hover changed: "text-4" -> ""
+[13:38:46.412]   Calling OnHover(false) on "text-4"
+[13:38:46.412] Render complete in 0.257ms, 7 widgets registered
+[13:38:46.437]   Hover changed: "" -> "inner-column"
+[13:38:46.437]   Calling OnHover(true) on "inner-column"
+[13:38:46.437] Render complete in 0.200ms, 7 widgets registered
+[13:38:46.462]   Hover changed: "inner-column" -> "text-3"
+[13:38:46.462]   Calling OnHover(false) on "inner-column"
+[13:38:46.462]   Calling OnHover(true) on "text-3"
+[13:38:46.462] Render complete in 0.256ms, 7 widgets registered
+[13:38:46.512]   Hover changed: "text-3" -> "inner-column"
+[13:38:46.512]   Calling OnHover(false) on "text-3"
+[13:38:46.512]   Calling OnHover(true) on "inner-column"
+[13:38:46.513] Render complete in 0.305ms, 7 widgets registered
+[13:38:46.537]   Hover changed: "inner-column" -> "text-2"
+[13:38:46.537]   Calling OnHover(false) on "inner-column"
+[13:38:46.537]   Calling OnHover(true) on "text-2"
+[13:38:46.538] Render complete in 0.255ms, 7 widgets registered
+[13:38:46.604]   Hover changed: "text-2" -> "inner-column"
+[13:38:46.604]   Calling OnHover(false) on "text-2"
+[13:38:46.604]   Calling OnHover(true) on "inner-column"
+[13:38:46.604] Render complete in 0.217ms, 7 widgets registered
+[13:38:46.679]   Hover changed: "inner-column" -> ""
+[13:38:46.679]   Calling OnHover(false) on "inner-column"
+[13:38:46.679] Render complete in 0.257ms, 7 widgets registered
+[13:38:46.787]   Hover changed: "" -> "text-1"
+[13:38:46.787]   Calling OnHover(true) on "text-1"
+[13:38:46.787] Render complete in 0.225ms, 7 widgets registered
+[13:38:47.204]   Hover changed: "text-1" -> ""
+[13:38:47.204]   Calling OnHover(false) on "text-1"
+[13:38:47.204] Render complete in 0.255ms, 7 widgets registered
+[13:38:47.220]   Hover changed: "" -> "inner-column"
+[13:38:47.221]   Calling OnHover(true) on "inner-column"
+[13:38:47.221] Render complete in 0.200ms, 7 widgets registered
+[13:38:47.245]   Hover changed: "inner-column" -> "text-2"
+[13:38:47.246]   Calling OnHover(false) on "inner-column"
+[13:38:47.246]   Calling OnHover(true) on "text-2"
+[13:38:47.246] Render complete in 0.411ms, 7 widgets registered
+[13:38:47.487]   Hover changed: "text-2" -> "inner-column"
+[13:38:47.487]   Calling OnHover(false) on "text-2"
+[13:38:47.487]   Calling OnHover(true) on "inner-column"
+[13:38:47.487] Render complete in 0.264ms, 7 widgets registered
+[13:38:47.520]   Hover changed: "inner-column" -> "text-3"
+[13:38:47.521]   Calling OnHover(false) on "inner-column"
+[13:38:47.521]   Calling OnHover(true) on "text-3"
+[13:38:47.521] Render complete in 0.275ms, 7 widgets registered
+[13:38:47.654]   Hover changed: "text-3" -> "inner-column"
+[13:38:47.654]   Calling OnHover(false) on "text-3"
+[13:38:47.654]   Calling OnHover(true) on "inner-column"
+[13:38:47.654] Render complete in 0.232ms, 7 widgets registered
+[13:38:47.695]   Hover changed: "inner-column" -> ""
+[13:38:47.695]   Calling OnHover(false) on "inner-column"
+[13:38:47.696] Render complete in 0.282ms, 7 widgets registered
+[13:38:47.962]   Hover changed: "" -> "text-4"
+[13:38:47.962]   Calling OnHover(true) on "text-4"
+[13:38:47.962] Render complete in 0.270ms, 7 widgets registered
+[13:38:48.237]   Hover changed: "text-4" -> ""
+[13:38:48.237]   Calling OnHover(false) on "text-4"
+[13:38:48.238] Render complete in 0.707ms, 7 widgets registered
+[13:38:48.262]   Hover changed: "" -> "inner-column"
+[13:38:48.262]   Calling OnHover(true) on "inner-column"
+[13:38:48.262] Render complete in 0.195ms, 7 widgets registered
+[13:38:48.279]   Hover changed: "inner-column" -> "text-3"
+[13:38:48.279]   Calling OnHover(false) on "inner-column"
+[13:38:48.279]   Calling OnHover(true) on "text-3"
+[13:38:48.279] Render complete in 0.266ms, 7 widgets registered
+[13:38:48.879]   Hover changed: "text-3" -> "inner-column"
+[13:38:48.879]   Calling OnHover(false) on "text-3"
+[13:38:48.879]   Calling OnHover(true) on "inner-column"
+[13:38:48.879] Render complete in 0.224ms, 7 widgets registered
+[13:38:48.912]   Hover changed: "inner-column" -> "text-2"
+[13:38:48.912]   Calling OnHover(false) on "inner-column"
+[13:38:48.912]   Calling OnHover(true) on "text-2"
+[13:38:48.913] Render complete in 0.345ms, 7 widgets registered
+[13:38:49.204]   Hover changed: "text-2" -> "inner-column"
+[13:38:49.204]   Calling OnHover(false) on "text-2"
+[13:38:49.204]   Calling OnHover(true) on "inner-column"
+[13:38:49.204] Render complete in 0.214ms, 7 widgets registered
+[13:38:49.237]   Hover changed: "inner-column" -> ""
+[13:38:49.237]   Calling OnHover(false) on "inner-column"
+[13:38:49.238] Render complete in 0.420ms, 7 widgets registered
+[13:38:49.279]   Hover changed: "" -> "text-1"
+[13:38:49.279]   Calling OnHover(true) on "text-1"
+[13:38:49.279] Render complete in 0.222ms, 7 widgets registered
+[13:38:49.520]   Hover changed: "text-1" -> ""
+[13:38:49.520]   Calling OnHover(false) on "text-1"
+[13:38:49.521] Render complete in 0.306ms, 7 widgets registered
+[13:38:49.554]   Hover changed: "" -> "inner-column"
+[13:38:49.554]   Calling OnHover(true) on "inner-column"
+[13:38:49.554] Render complete in 0.199ms, 7 widgets registered
+[13:38:49.612]   Hover changed: "inner-column" -> "text-2"
+[13:38:49.612]   Calling OnHover(false) on "inner-column"
+[13:38:49.612]   Calling OnHover(true) on "text-2"
+[13:38:49.613] Render complete in 0.627ms, 7 widgets registered
+[13:38:49.879]   Hover changed: "text-2" -> "inner-column"
+[13:38:49.879]   Calling OnHover(false) on "text-2"
+[13:38:49.879]   Calling OnHover(true) on "inner-column"
+[13:38:49.880] Render complete in 0.730ms, 7 widgets registered
+[13:38:49.912]   Hover changed: "inner-column" -> "text-3"
+[13:38:49.912]   Calling OnHover(false) on "inner-column"
+[13:38:49.912]   Calling OnHover(true) on "text-3"
+[13:38:49.912] Render complete in 0.258ms, 7 widgets registered
+[13:38:50.062]   Hover changed: "text-3" -> "inner-column"
+[13:38:50.062]   Calling OnHover(false) on "text-3"
+[13:38:50.062]   Calling OnHover(true) on "inner-column"
+[13:38:50.062] Render complete in 0.211ms, 7 widgets registered
+[13:38:50.187]   Hover changed: "inner-column" -> ""
+[13:38:50.187]   Calling OnHover(false) on "inner-column"
+[13:38:50.187] Render complete in 0.266ms, 7 widgets registered
+[13:38:50.262]   Hover changed: "" -> "text-4"
+[13:38:50.262]   Calling OnHover(true) on "text-4"
+[13:38:50.262] Render complete in 0.318ms, 7 widgets registered
+[13:38:50.479]   Hover changed: "text-4" -> ""
+[13:38:50.479]   Calling OnHover(false) on "text-4"
+[13:38:50.479] Render complete in 0.267ms, 7 widgets registered
+[13:38:50.495]   Hover changed: "" -> "inner-column"
+[13:38:50.495]   Calling OnHover(true) on "inner-column"
+[13:38:50.496] Render complete in 0.312ms, 7 widgets registered
+[13:38:50.521]   Hover changed: "inner-column" -> "text-3"
+[13:38:50.521]   Calling OnHover(false) on "inner-column"
+[13:38:50.521]   Calling OnHover(true) on "text-3"
+[13:38:50.521] Render complete in 0.337ms, 7 widgets registered
+[13:38:50.579]   Hover changed: "text-3" -> "inner-column"
+[13:38:50.579]   Calling OnHover(false) on "text-3"
+[13:38:50.579]   Calling OnHover(true) on "inner-column"
+[13:38:50.579] Render complete in 0.286ms, 7 widgets registered
+[13:38:50.679]   Hover changed: "inner-column" -> "text-2"
+[13:38:50.679]   Calling OnHover(false) on "inner-column"
+[13:38:50.679]   Calling OnHover(true) on "text-2"
+[13:38:50.679] Render complete in 0.256ms, 7 widgets registered
+[13:38:50.795]   Hover changed: "text-2" -> "inner-column"
+[13:38:50.795]   Calling OnHover(false) on "text-2"
+[13:38:50.795]   Calling OnHover(true) on "inner-column"
+[13:38:50.796] Render complete in 0.209ms, 7 widgets registered
+[13:38:50.845]   Hover changed: "inner-column" -> ""
+[13:38:50.845]   Calling OnHover(false) on "inner-column"
+[13:38:50.846] Render complete in 0.255ms, 7 widgets registered
+[13:38:50.904]   Hover changed: "" -> "text-1"
+[13:38:50.904]   Calling OnHover(true) on "text-1"
+[13:38:50.904] Render complete in 0.497ms, 7 widgets registered
+[13:38:51.137]   Hover changed: "text-1" -> ""
+[13:38:51.137]   Calling OnHover(false) on "text-1"
+[13:38:51.138] Render complete in 0.499ms, 7 widgets registered
+[13:38:51.162]   Hover changed: "" -> "inner-column"
+[13:38:51.162]   Calling OnHover(true) on "inner-column"
+[13:38:51.162] Render complete in 0.190ms, 7 widgets registered
+[13:38:51.187]   Hover changed: "inner-column" -> "text-2"
+[13:38:51.187]   Calling OnHover(false) on "inner-column"
+[13:38:51.187]   Calling OnHover(true) on "text-2"
+[13:38:51.187] Render complete in 0.254ms, 7 widgets registered
+[13:38:51.245]   Hover changed: "text-2" -> "inner-column"
+[13:38:51.245]   Calling OnHover(false) on "text-2"
+[13:38:51.245]   Calling OnHover(true) on "inner-column"
+[13:38:51.246] Render complete in 0.211ms, 7 widgets registered
+[13:38:51.320]   Hover changed: "inner-column" -> "text-3"
+[13:38:51.320]   Calling OnHover(false) on "inner-column"
+[13:38:51.320]   Calling OnHover(true) on "text-3"
+[13:38:51.321] Render complete in 0.333ms, 7 widgets registered
+[13:38:51.404]   Hover changed: "text-3" -> "inner-column"
+[13:38:51.404]   Calling OnHover(false) on "text-3"
+[13:38:51.404]   Calling OnHover(true) on "inner-column"
+[13:38:51.404] Render complete in 0.203ms, 7 widgets registered
+[13:38:51.445]   Hover changed: "inner-column" -> ""
+[13:38:51.445]   Calling OnHover(false) on "inner-column"
+[13:38:51.446] Render complete in 0.254ms, 7 widgets registered
+[13:38:51.487]   Hover changed: "" -> "text-4"
+[13:38:51.487]   Calling OnHover(true) on "text-4"
+[13:38:51.487] Render complete in 0.215ms, 7 widgets registered
+[13:38:51.725]   Hover changed: "text-4" -> ""
+[13:38:51.725]   Calling OnHover(false) on "text-4"
+[13:38:51.725] Render complete in 0.266ms, 7 widgets registered
+[13:38:51.758]   Hover changed: "" -> "inner-column"
+[13:38:51.758]   Calling OnHover(true) on "inner-column"
+[13:38:51.758] Render complete in 0.207ms, 7 widgets registered
+[13:38:51.775]   Hover changed: "inner-column" -> ""
+[13:38:51.775]   Calling OnHover(false) on "inner-column"
+[13:38:51.775] Render complete in 0.252ms, 7 widgets registered

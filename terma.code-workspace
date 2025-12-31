@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"gopls": {
+			"build.env": {
+				"GO111MODULE": "on"
+			}
+		}
+	}
+}
