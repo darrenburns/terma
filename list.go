@@ -1,9 +1,9 @@
 package terma
 
-import "strings"
+import "fmt"
 
-// List is a focusable widget that displays a selectable list of items.
-// It builds a Column of Text widgets, with the selected item highlighted.
+// List is a generic focusable widget that displays a selectable list of items.
+// It builds a Column of widgets, with the selected item highlighted.
 // Use with Scrollable and a shared ScrollController to enable scroll-into-view.
 //
 // Example usage:
@@ -14,78 +14,46 @@ import "strings"
 //
 //	&terma.Scrollable{
 //	    Controller: controller,
-//	    Child: &terma.List{
+//	    Child: &terma.List[string]{
 //	        ID:               "my-list",
 //	        Items:            items,
 //	        Selected:         selected,
 //	        ScrollController: controller,
 //	    },
 //	}
-type List struct {
-	ID               string            // Unique identifier (required for focus management)
-	Items            []string          // List items to display
-	Selected         *Signal[int]      // Signal tracking the selected index
-	ScrollController *ScrollController // Optional controller for scroll-into-view
-	Width            Dimension         // Optional width (zero value = auto)
-	Height           Dimension         // Optional height (zero value = auto)
-	Style            Style             // Base style for unselected items
-	SelectedStyle    Style             // Style for selected item (defaults to white on blue)
-	Prefix           string            // Prefix for unselected items (defaults to "  ")
-	SelectedPrefix   string            // Prefix for selected item (defaults to "▶ ")
-}
+type List[T any] struct {
+	ID               string                             // Unique identifier (required for focus management)
+	Items            []T                                // List items to display
+	Selected         *Signal[int]                       // Signal tracking the selected index
+	ScrollController *ScrollController                  // Optional controller for scroll-into-view
+	Width            Dimension                          // Optional width (zero value = auto)
+	Height           Dimension                          // Optional height (zero value = auto)
+	RenderItem       func(item T, selected bool) Widget // Function to render each item (uses default if nil)
 
-func NewList(
-	id string,
-	items []string,
-	selected *Signal[int],
-	scrollController *ScrollController,
-	width Dimension,
-	height Dimension,
-	style Style,
-	selectedStyle Style,
-	prefix string,
-	selectedPrefix string,
-) *List {
-	return &List{
-		ID:               id,
-		Items:            items,
-		Selected:         selected,
-		ScrollController: scrollController,
-		Width:            width,
-		Height:           height,
-		Style:            style,
-		SelectedStyle:    selectedStyle,
-		Prefix:           prefix,
-		SelectedPrefix:   selectedPrefix,
-	}
+	// Cached item heights computed during Build, used for scroll calculations
+	itemHeights []int
 }
 
 // Key returns the widget's unique identifier.
 // Implements the Keyed interface.
-func (l *List) Key() string {
+func (l *List[T]) Key() string {
 	return l.ID
 }
 
 // GetDimensions returns the width and height dimension preferences.
 // Implements the Dimensioned interface.
-func (l *List) GetDimensions() (width, height Dimension) {
+func (l *List[T]) GetDimensions() (width, height Dimension) {
 	return l.Width, l.Height
-}
-
-// GetStyle returns the base style of the list.
-// Implements the Styled interface.
-func (l *List) GetStyle() Style {
-	return l.Style
 }
 
 // IsFocusable returns true to allow keyboard navigation.
 // Implements the Focusable interface.
-func (l *List) IsFocusable() bool {
+func (l *List[T]) IsFocusable() bool {
 	return true
 }
 
-// Build returns a Column of Text widgets, each styled based on selection state.
-func (l *List) Build(ctx BuildContext) Widget {
+// Build returns a Column of widgets, each rendered via RenderItem.
+func (l *List[T]) Build(ctx BuildContext) Widget {
 	if len(l.Items) == 0 {
 		return Column{}
 	}
@@ -104,44 +72,22 @@ func (l *List) Build(ctx BuildContext) Widget {
 	// Register scroll callbacks for mouse wheel support
 	l.registerScrollCallbacks()
 
-	// Determine prefixes (use defaults if not set)
-	prefix := l.Prefix
-	selectedPrefix := l.SelectedPrefix
-
-	// Determine selected style (use default if not set)
-	selectedStyle := l.SelectedStyle
-	if selectedStyle.ForegroundColor == DefaultColor && selectedStyle.BackgroundColor == DefaultColor {
-		selectedStyle = Style{
-			ForegroundColor: Magenta,
-		}
+	// Use default render function if none provided
+	renderItem := l.RenderItem
+	if renderItem == nil {
+		renderItem = defaultRenderItem[T]
 	}
 
+	// Build children and cache their heights
 	children := make([]Widget, len(l.Items))
+	l.itemHeights = make([]int, len(l.Items))
+
 	for i, item := range l.Items {
-		var style Style
-		var itemPrefix string
+		widget := renderItem(item, i == selected)
+		children[i] = widget
 
-		if i == selected {
-			style = selectedStyle
-			itemPrefix = selectedPrefix
-		} else {
-			style = l.Style
-			itemPrefix = prefix
-		}
-
-		// Get item height (default 1 if not specified)
-		itemHeight := l.getItemHeight(i)
-		var heightDim Dimension
-		if itemHeight > 1 {
-			heightDim = Cells(itemHeight)
-		}
-
-		children[i] = Text{
-			Content: itemPrefix + item,
-			Style:   style,
-			Width:   Fr(1), // Fill available width for consistent background
-			Height:  heightDim,
-		}
+		// Cache height: check if widget implements Dimensioned, otherwise default to 1
+		l.itemHeights[i] = getWidgetHeight(widget)
 	}
 
 	// Ensure selected item is visible whenever we rebuild
@@ -154,9 +100,45 @@ func (l *List) Build(ctx BuildContext) Widget {
 	}
 }
 
+// defaultRenderItem provides a default rendering for list items.
+// Uses magenta foreground and "▶ " prefix for selected items.
+func defaultRenderItem[T any](item T, selected bool) Widget {
+	content := fmt.Sprintf("%v", item)
+	prefix := "  "
+	style := Style{}
+
+	if selected {
+		prefix = "▶ "
+		style.ForegroundColor = Magenta
+	}
+
+	return Text{
+		Content: prefix + content,
+		Style:   style,
+		Width:   Fr(1), // Fill available width for consistent background
+	}
+}
+
+// getWidgetHeight extracts the height from a widget if it implements Dimensioned,
+// otherwise returns 1 as the default height.
+// Panics if the widget uses Fr dimensions, as fractional heights are not supported
+// for list items (scroll calculations require known cell heights).
+func getWidgetHeight(widget Widget) int {
+	if dimensioned, ok := widget.(Dimensioned); ok {
+		_, height := dimensioned.GetDimensions()
+		if height.IsFr() {
+			panic("List item widgets cannot use Fr height dimensions. Use Cells(n) for multi-line items or omit Height for single-line items.")
+		}
+		if height.IsCells() && height.CellsValue() > 0 {
+			return height.CellsValue()
+		}
+	}
+	return 1
+}
+
 // OnKey handles navigation keys, updating selection and scrolling into view.
 // Implements the Focusable interface.
-func (l *List) OnKey(event KeyEvent) bool {
+func (l *List[T]) OnKey(event KeyEvent) bool {
 	if l.Selected == nil || len(l.Items) == 0 {
 		return false
 	}
@@ -213,7 +195,7 @@ func (l *List) OnKey(event KeyEvent) bool {
 
 // scrollSelectedIntoView uses the ScrollController to ensure
 // the selected item is visible in the viewport.
-func (l *List) scrollSelectedIntoView() {
+func (l *List[T]) scrollSelectedIntoView() {
 	if l.ScrollController == nil || l.Selected == nil {
 		return
 	}
@@ -224,17 +206,17 @@ func (l *List) scrollSelectedIntoView() {
 }
 
 // getItemHeight returns the height of the item at the given index.
-func (l *List) getItemHeight(index int) int {
-	// Auto-calculate from content by counting lines
-	if index < len(l.Items) {
-		return countLines(l.Items[index])
+// Uses cached heights from Build if available, otherwise returns 1.
+func (l *List[T]) getItemHeight(index int) int {
+	if index < len(l.itemHeights) {
+		return l.itemHeights[index]
 	}
 	return 1
 }
 
 // getItemY returns the Y position of the item at the given index,
 // calculated by summing the heights of all preceding items.
-func (l *List) getItemY(index int) int {
+func (l *List[T]) getItemY(index int) int {
 	y := 0
 	for i := 0; i < index && i < len(l.Items); i++ {
 		y += l.getItemHeight(i)
@@ -242,18 +224,10 @@ func (l *List) getItemY(index int) int {
 	return y
 }
 
-// countLines returns the number of lines in a string (1 + number of newlines).
-func countLines(s string) int {
-	if s == "" {
-		return 1
-	}
-	return strings.Count(s, "\n") + 1
-}
-
 // registerScrollCallbacks sets up callbacks on the ScrollController
 // to update selection when mouse wheel scrolling occurs.
 // The callbacks move selection first, then scroll only if needed.
-func (l *List) registerScrollCallbacks() {
+func (l *List[T]) registerScrollCallbacks() {
 	if l.ScrollController == nil {
 		return
 	}
@@ -271,7 +245,7 @@ func (l *List) registerScrollCallbacks() {
 }
 
 // moveSelectionUp moves the selection up by the given number of items.
-func (l *List) moveSelectionUp(count int) {
+func (l *List[T]) moveSelectionUp(count int) {
 	if l.Selected == nil || len(l.Items) == 0 {
 		return
 	}
@@ -284,7 +258,7 @@ func (l *List) moveSelectionUp(count int) {
 }
 
 // moveSelectionDown moves the selection down by the given number of items.
-func (l *List) moveSelectionDown(count int) {
+func (l *List[T]) moveSelectionDown(count int) {
 	if l.Selected == nil || len(l.Items) == 0 {
 		return
 	}
@@ -306,4 +280,18 @@ func clampInt(value, min, max int) int {
 		return max
 	}
 	return value
+}
+
+// SelectedItem returns the currently selected item.
+// Returns the zero value of T if the list is empty or Selected is nil.
+func (l *List[T]) SelectedItem() T {
+	var zero T
+	if l.Selected == nil || len(l.Items) == 0 {
+		return zero
+	}
+	idx := l.Selected.Peek()
+	if idx < 0 || idx >= len(l.Items) {
+		return zero
+	}
+	return l.Items[idx]
 }

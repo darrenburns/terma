@@ -1,1560 +1,311 @@
-[16:56:29.564] Logger initialized
-[16:56:29.586] SetFocusables: 1 focusable widgets collected
-[16:56:29.586]   [0] Key="demo-list" Type=*terma.List
-[16:56:29.586] SetFocusables: auto-focusing first widget "demo-list"
-[16:56:29.587] Render complete in 20.001ms, 10006 widgets registered
-[16:56:29.600] SetFocusables: 1 focusable widgets collected
-[16:56:29.600]   [0] Key="demo-list" Type=*terma.List
-[16:56:29.601] Render complete in 14.020ms, 10006 widgets registered
-[16:56:29.601] Unhandled event: uv.WindowPixelSizeEvent {1960 1974}
-[16:56:30.370]   Hover changed: "" -> "list-scroll"
-[16:56:30.384] SetFocusables: 1 focusable widgets collected
-[16:56:30.384]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.384] Render complete in 14.284ms, 10006 widgets registered
-[16:56:30.403]   Hover changed: "list-scroll" -> ""
-[16:56:30.413] SetFocusables: 1 focusable widgets collected
-[16:56:30.413]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.413] Render complete in 10.169ms, 10006 widgets registered
-[16:56:30.545]   Hover changed: "" -> "list-scroll"
-[16:56:30.558] SetFocusables: 1 focusable widgets collected
-[16:56:30.558]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.559] Render complete in 13.710ms, 10006 widgets registered
-[16:56:30.578]   Hover changed: "list-scroll" -> ""
-[16:56:30.578]   Calling OnHover(true) on ""
-[16:56:30.588] SetFocusables: 1 focusable widgets collected
-[16:56:30.588]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.588] Render complete in 10.282ms, 10006 widgets registered
-[16:56:30.636] MouseWheelEvent wheeldown at X=25 Y=8 on Scrollable[list-scroll]
-[16:56:30.649] SetFocusables: 1 focusable widgets collected
-[16:56:30.649]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.649] Render complete in 12.973ms, 10006 widgets registered
-[16:56:30.653] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.664] SetFocusables: 1 focusable widgets collected
-[16:56:30.664]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.665] Render complete in 11.712ms, 10006 widgets registered
-[16:56:30.665] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.675] SetFocusables: 1 focusable widgets collected
-[16:56:30.675]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.675] Render complete in 10.378ms, 10006 widgets registered
-[16:56:30.675] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.685] SetFocusables: 1 focusable widgets collected
-[16:56:30.685]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.685] Render complete in 10.231ms, 10006 widgets registered
-[16:56:30.685] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.695] SetFocusables: 1 focusable widgets collected
-[16:56:30.695]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.696] Render complete in 10.089ms, 10006 widgets registered
-[16:56:30.696] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.706] SetFocusables: 1 focusable widgets collected
-[16:56:30.706]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.706] Render complete in 10.489ms, 10006 widgets registered
-[16:56:30.706] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.715] SetFocusables: 1 focusable widgets collected
-[16:56:30.715]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.715] Render complete in 9.288ms, 10006 widgets registered
-[16:56:30.715] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.725] SetFocusables: 1 focusable widgets collected
-[16:56:30.725]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.725] Render complete in 9.569ms, 10006 widgets registered
-[16:56:30.725] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.734] SetFocusables: 1 focusable widgets collected
-[16:56:30.734]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.735] Render complete in 9.772ms, 10006 widgets registered
-[16:56:30.735] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.744] SetFocusables: 1 focusable widgets collected
-[16:56:30.744]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.744] Render complete in 9.695ms, 10006 widgets registered
-[16:56:30.745] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.755] SetFocusables: 1 focusable widgets collected
-[16:56:30.755]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.755] Render complete in 10.740ms, 10006 widgets registered
-[16:56:30.755] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.765] SetFocusables: 1 focusable widgets collected
-[16:56:30.765]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.765] Render complete in 9.600ms, 10006 widgets registered
-[16:56:30.765] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.774] SetFocusables: 1 focusable widgets collected
-[16:56:30.774]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.775] Render complete in 9.622ms, 10006 widgets registered
-[16:56:30.775] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.784] SetFocusables: 1 focusable widgets collected
-[16:56:30.784]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.784] Render complete in 9.698ms, 10006 widgets registered
-[16:56:30.784] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.794] SetFocusables: 1 focusable widgets collected
-[16:56:30.794]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.794] Render complete in 9.755ms, 10006 widgets registered
-[16:56:30.794] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.804] SetFocusables: 1 focusable widgets collected
-[16:56:30.804]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.804] Render complete in 10.296ms, 10006 widgets registered
-[16:56:30.804] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.814] SetFocusables: 1 focusable widgets collected
-[16:56:30.814]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.815] Render complete in 10.210ms, 10006 widgets registered
-[16:56:30.815] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.824] SetFocusables: 1 focusable widgets collected
-[16:56:30.824]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.825] Render complete in 9.945ms, 10006 widgets registered
-[16:56:30.825] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.835] SetFocusables: 1 focusable widgets collected
-[16:56:30.835]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.835] Render complete in 10.272ms, 10006 widgets registered
-[16:56:30.835] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.845] SetFocusables: 1 focusable widgets collected
-[16:56:30.845]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.845] Render complete in 10.191ms, 10006 widgets registered
-[16:56:30.845] MouseWheelEvent wheeldown at X=26 Y=9 on Scrollable[list-scroll]
-[16:56:30.855] SetFocusables: 1 focusable widgets collected
-[16:56:30.855]   [0] Key="demo-list" Type=*terma.List
-[16:56:30.855] Render complete in 9.906ms, 10006 widgets registered
-[16:56:31.314] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.325] SetFocusables: 1 focusable widgets collected
-[16:56:31.325]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.325] Render complete in 11.075ms, 10006 widgets registered
-[16:56:31.325] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.338] SetFocusables: 1 focusable widgets collected
-[16:56:31.338]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.338] Render complete in 12.539ms, 10006 widgets registered
-[16:56:31.338] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.349] SetFocusables: 1 focusable widgets collected
-[16:56:31.349]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.349] Render complete in 11.014ms, 10006 widgets registered
-[16:56:31.349] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.360] SetFocusables: 1 focusable widgets collected
-[16:56:31.360]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.360] Render complete in 10.817ms, 10006 widgets registered
-[16:56:31.360] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.370] SetFocusables: 1 focusable widgets collected
-[16:56:31.370]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.370] Render complete in 9.946ms, 10006 widgets registered
-[16:56:31.370] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.380] SetFocusables: 1 focusable widgets collected
-[16:56:31.380]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.380] Render complete in 9.947ms, 10006 widgets registered
-[16:56:31.380] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.390] SetFocusables: 1 focusable widgets collected
-[16:56:31.390]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.390] Render complete in 10.075ms, 10006 widgets registered
-[16:56:31.390] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.399] SetFocusables: 1 focusable widgets collected
-[16:56:31.399]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.399] Render complete in 9.397ms, 10006 widgets registered
-[16:56:31.399] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.409] SetFocusables: 1 focusable widgets collected
-[16:56:31.409]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.409] Render complete in 9.525ms, 10006 widgets registered
-[16:56:31.409] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.418] SetFocusables: 1 focusable widgets collected
-[16:56:31.418]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.419] Render complete in 9.657ms, 10006 widgets registered
-[16:56:31.419] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.427] SetFocusables: 1 focusable widgets collected
-[16:56:31.427]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.428] Render complete in 9.055ms, 10006 widgets registered
-[16:56:31.428] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.437] SetFocusables: 1 focusable widgets collected
-[16:56:31.437]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.438] Render complete in 9.844ms, 10006 widgets registered
-[16:56:31.438] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.447] SetFocusables: 1 focusable widgets collected
-[16:56:31.447]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.447] Render complete in 9.392ms, 10006 widgets registered
-[16:56:31.447] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.457] SetFocusables: 1 focusable widgets collected
-[16:56:31.457]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.457] Render complete in 10.153ms, 10006 widgets registered
-[16:56:31.457] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.467] SetFocusables: 1 focusable widgets collected
-[16:56:31.467]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.468] Render complete in 10.402ms, 10006 widgets registered
-[16:56:31.468] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.477] SetFocusables: 1 focusable widgets collected
-[16:56:31.477]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.477] Render complete in 9.554ms, 10006 widgets registered
-[16:56:31.477] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.487] SetFocusables: 1 focusable widgets collected
-[16:56:31.487]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.487] Render complete in 9.977ms, 10006 widgets registered
-[16:56:31.487] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.497] SetFocusables: 1 focusable widgets collected
-[16:56:31.497]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.497] Render complete in 10.059ms, 10006 widgets registered
-[16:56:31.497] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.507] SetFocusables: 1 focusable widgets collected
-[16:56:31.507]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.507] Render complete in 10.123ms, 10006 widgets registered
-[16:56:31.507] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.517] SetFocusables: 1 focusable widgets collected
-[16:56:31.517]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.517] Render complete in 9.907ms, 10006 widgets registered
-[16:56:31.517] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.527] SetFocusables: 1 focusable widgets collected
-[16:56:31.527]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.527] Render complete in 9.426ms, 10006 widgets registered
-[16:56:31.527] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.537] SetFocusables: 1 focusable widgets collected
-[16:56:31.537]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.537] Render complete in 10.261ms, 10006 widgets registered
-[16:56:31.537] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.547] SetFocusables: 1 focusable widgets collected
-[16:56:31.547]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.547] Render complete in 9.774ms, 10006 widgets registered
-[16:56:31.547] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.557] SetFocusables: 1 focusable widgets collected
-[16:56:31.557]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.557] Render complete in 10.198ms, 10006 widgets registered
-[16:56:31.557] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.566] SetFocusables: 1 focusable widgets collected
-[16:56:31.566]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.567] Render complete in 9.619ms, 10006 widgets registered
-[16:56:31.567] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.577] SetFocusables: 1 focusable widgets collected
-[16:56:31.577]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.577] Render complete in 10.018ms, 10006 widgets registered
-[16:56:31.577] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.586] SetFocusables: 1 focusable widgets collected
-[16:56:31.586]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.586] Render complete in 9.292ms, 10006 widgets registered
-[16:56:31.586] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.596] SetFocusables: 1 focusable widgets collected
-[16:56:31.596]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.596] Render complete in 9.666ms, 10006 widgets registered
-[16:56:31.596] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.606] SetFocusables: 1 focusable widgets collected
-[16:56:31.606]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.606] Render complete in 10.129ms, 10006 widgets registered
-[16:56:31.606] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.615] SetFocusables: 1 focusable widgets collected
-[16:56:31.615]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.616] Render complete in 9.612ms, 10006 widgets registered
-[16:56:31.616] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.626] SetFocusables: 1 focusable widgets collected
-[16:56:31.626]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.626] Render complete in 10.145ms, 10006 widgets registered
-[16:56:31.626] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.635] SetFocusables: 1 focusable widgets collected
-[16:56:31.635]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.636] Render complete in 9.749ms, 10006 widgets registered
-[16:56:31.636] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.645] SetFocusables: 1 focusable widgets collected
-[16:56:31.645]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.645] Render complete in 9.665ms, 10006 widgets registered
-[16:56:31.645] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.655] SetFocusables: 1 focusable widgets collected
-[16:56:31.655]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.655] Render complete in 9.798ms, 10006 widgets registered
-[16:56:31.655] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.665] SetFocusables: 1 focusable widgets collected
-[16:56:31.665]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.665] Render complete in 10.160ms, 10006 widgets registered
-[16:56:31.665] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:31.675] SetFocusables: 1 focusable widgets collected
-[16:56:31.675]   [0] Key="demo-list" Type=*terma.List
-[16:56:31.675] Render complete in 9.969ms, 10006 widgets registered
-[16:56:32.034] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.050] SetFocusables: 1 focusable widgets collected
-[16:56:32.050]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.050] Render complete in 15.388ms, 10006 widgets registered
-[16:56:32.050] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.061] SetFocusables: 1 focusable widgets collected
-[16:56:32.061]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.061] Render complete in 11.002ms, 10006 widgets registered
-[16:56:32.061] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.071] SetFocusables: 1 focusable widgets collected
-[16:56:32.071]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.071] Render complete in 9.907ms, 10006 widgets registered
-[16:56:32.071] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.082] SetFocusables: 1 focusable widgets collected
-[16:56:32.082]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.082] Render complete in 11.375ms, 10006 widgets registered
-[16:56:32.082] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.092] SetFocusables: 1 focusable widgets collected
-[16:56:32.092]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.092] Render complete in 9.799ms, 10006 widgets registered
-[16:56:32.092] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.102] SetFocusables: 1 focusable widgets collected
-[16:56:32.102]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.102] Render complete in 9.856ms, 10006 widgets registered
-[16:56:32.102] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.112] SetFocusables: 1 focusable widgets collected
-[16:56:32.112]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.112] Render complete in 9.948ms, 10006 widgets registered
-[16:56:32.112] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.121] SetFocusables: 1 focusable widgets collected
-[16:56:32.122]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.122] Render complete in 9.950ms, 10006 widgets registered
-[16:56:32.122] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.132] SetFocusables: 1 focusable widgets collected
-[16:56:32.132]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.132] Render complete in 9.859ms, 10006 widgets registered
-[16:56:32.132] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.141] SetFocusables: 1 focusable widgets collected
-[16:56:32.141]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.141] Render complete in 9.602ms, 10006 widgets registered
-[16:56:32.141] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.151] SetFocusables: 1 focusable widgets collected
-[16:56:32.151]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.152] Render complete in 10.159ms, 10006 widgets registered
-[16:56:32.152] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.161] SetFocusables: 1 focusable widgets collected
-[16:56:32.161]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.162] Render complete in 10.154ms, 10006 widgets registered
-[16:56:32.162] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.172] SetFocusables: 1 focusable widgets collected
-[16:56:32.172]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.172] Render complete in 10.175ms, 10006 widgets registered
-[16:56:32.172] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.181] SetFocusables: 1 focusable widgets collected
-[16:56:32.181]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.182] Render complete in 9.487ms, 10006 widgets registered
-[16:56:32.182] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.191] SetFocusables: 1 focusable widgets collected
-[16:56:32.191]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.191] Render complete in 9.645ms, 10006 widgets registered
-[16:56:32.191] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.201] SetFocusables: 1 focusable widgets collected
-[16:56:32.201]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.201] Render complete in 9.838ms, 10006 widgets registered
-[16:56:32.201] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.211] SetFocusables: 1 focusable widgets collected
-[16:56:32.211]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.211] Render complete in 10.181ms, 10006 widgets registered
-[16:56:32.211] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.221] SetFocusables: 1 focusable widgets collected
-[16:56:32.221]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.221] Render complete in 9.674ms, 10006 widgets registered
-[16:56:32.221] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.231] SetFocusables: 1 focusable widgets collected
-[16:56:32.231]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.231] Render complete in 10.080ms, 10006 widgets registered
-[16:56:32.231] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.241] SetFocusables: 1 focusable widgets collected
-[16:56:32.241]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.241] Render complete in 9.829ms, 10006 widgets registered
-[16:56:32.241] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.251] SetFocusables: 1 focusable widgets collected
-[16:56:32.251]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.252] Render complete in 10.461ms, 10006 widgets registered
-[16:56:32.252] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.261] SetFocusables: 1 focusable widgets collected
-[16:56:32.261]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.262] Render complete in 10.111ms, 10006 widgets registered
-[16:56:32.262] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.272] SetFocusables: 1 focusable widgets collected
-[16:56:32.272]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.272] Render complete in 10.257ms, 10006 widgets registered
-[16:56:32.272] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.281] SetFocusables: 1 focusable widgets collected
-[16:56:32.281]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.282] Render complete in 9.518ms, 10006 widgets registered
-[16:56:32.282] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.291] SetFocusables: 1 focusable widgets collected
-[16:56:32.291]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.291] Render complete in 9.683ms, 10006 widgets registered
-[16:56:32.291] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.301] SetFocusables: 1 focusable widgets collected
-[16:56:32.301]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.301] Render complete in 10.156ms, 10006 widgets registered
-[16:56:32.301] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.312] SetFocusables: 1 focusable widgets collected
-[16:56:32.312]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.312] Render complete in 10.536ms, 10006 widgets registered
-[16:56:32.312] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.321] SetFocusables: 1 focusable widgets collected
-[16:56:32.321]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.322] Render complete in 9.905ms, 10006 widgets registered
-[16:56:32.322] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.331] SetFocusables: 1 focusable widgets collected
-[16:56:32.332]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.332] Render complete in 9.828ms, 10006 widgets registered
-[16:56:32.332] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.342] SetFocusables: 1 focusable widgets collected
-[16:56:32.342]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.342] Render complete in 9.984ms, 10006 widgets registered
-[16:56:32.342] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.351] SetFocusables: 1 focusable widgets collected
-[16:56:32.351]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.352] Render complete in 9.691ms, 10006 widgets registered
-[16:56:32.352] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.361] SetFocusables: 1 focusable widgets collected
-[16:56:32.361]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.362] Render complete in 10.155ms, 10006 widgets registered
-[16:56:32.362] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.371] SetFocusables: 1 focusable widgets collected
-[16:56:32.371]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.372] Render complete in 9.954ms, 10006 widgets registered
-[16:56:32.372] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.381] SetFocusables: 1 focusable widgets collected
-[16:56:32.381]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.382] Render complete in 9.853ms, 10006 widgets registered
-[16:56:32.382] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.391] SetFocusables: 1 focusable widgets collected
-[16:56:32.391]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.392] Render complete in 10.266ms, 10006 widgets registered
-[16:56:32.392] MouseWheelEvent wheeldown at X=30 Y=12 on Scrollable[list-scroll]
-[16:56:32.402] SetFocusables: 1 focusable widgets collected
-[16:56:32.402]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.402] Render complete in 10.067ms, 10006 widgets registered
-[16:56:32.870] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:32.886] SetFocusables: 1 focusable widgets collected
-[16:56:32.886]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.887] Render complete in 16.007ms, 10006 widgets registered
-[16:56:32.887] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:32.898] SetFocusables: 1 focusable widgets collected
-[16:56:32.898]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.898] Render complete in 11.627ms, 10006 widgets registered
-[16:56:32.898] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:32.909] SetFocusables: 1 focusable widgets collected
-[16:56:32.909]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.909] Render complete in 10.474ms, 10006 widgets registered
-[16:56:32.909] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:32.919] SetFocusables: 1 focusable widgets collected
-[16:56:32.919]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.919] Render complete in 10.106ms, 10006 widgets registered
-[16:56:32.919] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:32.929] SetFocusables: 1 focusable widgets collected
-[16:56:32.929]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.929] Render complete in 10.175ms, 10006 widgets registered
-[16:56:32.929] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:32.939] SetFocusables: 1 focusable widgets collected
-[16:56:32.939]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.939] Render complete in 10.123ms, 10006 widgets registered
-[16:56:32.939] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:32.949] SetFocusables: 1 focusable widgets collected
-[16:56:32.949]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.949] Render complete in 9.992ms, 10006 widgets registered
-[16:56:32.949] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:32.959] SetFocusables: 1 focusable widgets collected
-[16:56:32.959]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.959] Render complete in 10.009ms, 10006 widgets registered
-[16:56:32.959] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:32.969] SetFocusables: 1 focusable widgets collected
-[16:56:32.969]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.969] Render complete in 9.861ms, 10006 widgets registered
-[16:56:32.969] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:32.979] SetFocusables: 1 focusable widgets collected
-[16:56:32.979]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.979] Render complete in 9.742ms, 10006 widgets registered
-[16:56:32.979] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:32.989] SetFocusables: 1 focusable widgets collected
-[16:56:32.989]   [0] Key="demo-list" Type=*terma.List
-[16:56:32.990] Render complete in 10.521ms, 10006 widgets registered
-[16:56:32.990] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.000] SetFocusables: 1 focusable widgets collected
-[16:56:33.000]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.000] Render complete in 10.269ms, 10006 widgets registered
-[16:56:33.000] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.010] SetFocusables: 1 focusable widgets collected
-[16:56:33.010]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.011] Render complete in 10.491ms, 10006 widgets registered
-[16:56:33.011] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.021] SetFocusables: 1 focusable widgets collected
-[16:56:33.021]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.021] Render complete in 10.640ms, 10006 widgets registered
-[16:56:33.021] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.031] SetFocusables: 1 focusable widgets collected
-[16:56:33.031]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.031] Render complete in 9.960ms, 10006 widgets registered
-[16:56:33.031] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.041] SetFocusables: 1 focusable widgets collected
-[16:56:33.041]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.041] Render complete in 9.762ms, 10006 widgets registered
-[16:56:33.041] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.051] SetFocusables: 1 focusable widgets collected
-[16:56:33.051]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.051] Render complete in 10.054ms, 10006 widgets registered
-[16:56:33.051] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.062] SetFocusables: 1 focusable widgets collected
-[16:56:33.062]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.062] Render complete in 10.901ms, 10006 widgets registered
-[16:56:33.062] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.071] SetFocusables: 1 focusable widgets collected
-[16:56:33.072]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.072] Render complete in 9.768ms, 10006 widgets registered
-[16:56:33.072] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.081] SetFocusables: 1 focusable widgets collected
-[16:56:33.081]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.082] Render complete in 9.873ms, 10006 widgets registered
-[16:56:33.082] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.091] SetFocusables: 1 focusable widgets collected
-[16:56:33.091]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.092] Render complete in 9.762ms, 10006 widgets registered
-[16:56:33.092] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.102] SetFocusables: 1 focusable widgets collected
-[16:56:33.102]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.102] Render complete in 10.414ms, 10006 widgets registered
-[16:56:33.102] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.111] SetFocusables: 1 focusable widgets collected
-[16:56:33.111]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.112] Render complete in 9.704ms, 10006 widgets registered
-[16:56:33.112] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.121] SetFocusables: 1 focusable widgets collected
-[16:56:33.122]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.122] Render complete in 10.068ms, 10006 widgets registered
-[16:56:33.122] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.131] SetFocusables: 1 focusable widgets collected
-[16:56:33.131]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.131] Render complete in 9.649ms, 10006 widgets registered
-[16:56:33.132] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.141] SetFocusables: 1 focusable widgets collected
-[16:56:33.141]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.142] Render complete in 10.055ms, 10006 widgets registered
-[16:56:33.142] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.152] SetFocusables: 1 focusable widgets collected
-[16:56:33.152]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.152] Render complete in 10.579ms, 10006 widgets registered
-[16:56:33.152] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.162] SetFocusables: 1 focusable widgets collected
-[16:56:33.162]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.162] Render complete in 9.836ms, 10006 widgets registered
-[16:56:33.162] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.172] SetFocusables: 1 focusable widgets collected
-[16:56:33.172]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.172] Render complete in 10.023ms, 10006 widgets registered
-[16:56:33.172] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.182] SetFocusables: 1 focusable widgets collected
-[16:56:33.182]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.182] Render complete in 10.261ms, 10006 widgets registered
-[16:56:33.182] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.192] SetFocusables: 1 focusable widgets collected
-[16:56:33.192]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.193] Render complete in 10.319ms, 10006 widgets registered
-[16:56:33.193] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.202] SetFocusables: 1 focusable widgets collected
-[16:56:33.202]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.203] Render complete in 9.800ms, 10006 widgets registered
-[16:56:33.203] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.213] SetFocusables: 1 focusable widgets collected
-[16:56:33.213]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.213] Render complete in 10.174ms, 10006 widgets registered
-[16:56:33.213] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.223] SetFocusables: 1 focusable widgets collected
-[16:56:33.223]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.223] Render complete in 10.109ms, 10006 widgets registered
-[16:56:33.223] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.233] SetFocusables: 1 focusable widgets collected
-[16:56:33.233]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.234] Render complete in 10.742ms, 10006 widgets registered
-[16:56:33.234] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.243] SetFocusables: 1 focusable widgets collected
-[16:56:33.243]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.243] Render complete in 9.681ms, 10006 widgets registered
-[16:56:33.243] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.253] SetFocusables: 1 focusable widgets collected
-[16:56:33.254]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.254] Render complete in 10.320ms, 10006 widgets registered
-[16:56:33.254] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.264] SetFocusables: 1 focusable widgets collected
-[16:56:33.264]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.264] Render complete in 10.446ms, 10006 widgets registered
-[16:56:33.264] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.274] SetFocusables: 1 focusable widgets collected
-[16:56:33.274]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.275] Render complete in 10.466ms, 10006 widgets registered
-[16:56:33.275] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.285] SetFocusables: 1 focusable widgets collected
-[16:56:33.285]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.285] Render complete in 10.047ms, 10006 widgets registered
-[16:56:33.285] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.295] SetFocusables: 1 focusable widgets collected
-[16:56:33.295]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.295] Render complete in 10.321ms, 10006 widgets registered
-[16:56:33.295] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.305] SetFocusables: 1 focusable widgets collected
-[16:56:33.305]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.305] Render complete in 9.753ms, 10006 widgets registered
-[16:56:33.305] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.315] SetFocusables: 1 focusable widgets collected
-[16:56:33.315]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.315] Render complete in 10.217ms, 10006 widgets registered
-[16:56:33.315] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.325] SetFocusables: 1 focusable widgets collected
-[16:56:33.325]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.326] Render complete in 10.554ms, 10006 widgets registered
-[16:56:33.326] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.336] SetFocusables: 1 focusable widgets collected
-[16:56:33.336]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.336] Render complete in 10.272ms, 10006 widgets registered
-[16:56:33.336] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.346] SetFocusables: 1 focusable widgets collected
-[16:56:33.346]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.346] Render complete in 10.270ms, 10006 widgets registered
-[16:56:33.346] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.356] SetFocusables: 1 focusable widgets collected
-[16:56:33.356]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.356] Render complete in 9.744ms, 10006 widgets registered
-[16:56:33.356] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.366] SetFocusables: 1 focusable widgets collected
-[16:56:33.366]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.366] Render complete in 10.222ms, 10006 widgets registered
-[16:56:33.366] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.376] SetFocusables: 1 focusable widgets collected
-[16:56:33.376]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.376] Render complete in 9.998ms, 10006 widgets registered
-[16:56:33.376] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.387] SetFocusables: 1 focusable widgets collected
-[16:56:33.387]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.387] Render complete in 10.441ms, 10006 widgets registered
-[16:56:33.387] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.397] SetFocusables: 1 focusable widgets collected
-[16:56:33.397]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.397] Render complete in 10.058ms, 10006 widgets registered
-[16:56:33.397] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.407] SetFocusables: 1 focusable widgets collected
-[16:56:33.407]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.407] Render complete in 9.975ms, 10006 widgets registered
-[16:56:33.407] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.416] SetFocusables: 1 focusable widgets collected
-[16:56:33.416]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.417] Render complete in 9.584ms, 10006 widgets registered
-[16:56:33.417] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.427] SetFocusables: 1 focusable widgets collected
-[16:56:33.427]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.427] Render complete in 10.157ms, 10006 widgets registered
-[16:56:33.427] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.436] SetFocusables: 1 focusable widgets collected
-[16:56:33.436]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.437] Render complete in 9.797ms, 10006 widgets registered
-[16:56:33.437] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.447] SetFocusables: 1 focusable widgets collected
-[16:56:33.447]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.447] Render complete in 10.198ms, 10006 widgets registered
-[16:56:33.447] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.456] SetFocusables: 1 focusable widgets collected
-[16:56:33.456]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.457] Render complete in 9.814ms, 10006 widgets registered
-[16:56:33.457] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.466] SetFocusables: 1 focusable widgets collected
-[16:56:33.466]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.467] Render complete in 10.033ms, 10006 widgets registered
-[16:56:33.467] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.476] SetFocusables: 1 focusable widgets collected
-[16:56:33.476]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.476] Render complete in 9.594ms, 10006 widgets registered
-[16:56:33.476] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.486] SetFocusables: 1 focusable widgets collected
-[16:56:33.486]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.487] Render complete in 10.123ms, 10006 widgets registered
-[16:56:33.487] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.496] SetFocusables: 1 focusable widgets collected
-[16:56:33.496]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.497] Render complete in 10.100ms, 10006 widgets registered
-[16:56:33.497] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.507] SetFocusables: 1 focusable widgets collected
-[16:56:33.507]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.507] Render complete in 10.537ms, 10006 widgets registered
-[16:56:33.507] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.517] SetFocusables: 1 focusable widgets collected
-[16:56:33.517]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.517] Render complete in 10.167ms, 10006 widgets registered
-[16:56:33.517] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.527] SetFocusables: 1 focusable widgets collected
-[16:56:33.527]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.528] Render complete in 10.055ms, 10006 widgets registered
-[16:56:33.528] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.538] SetFocusables: 1 focusable widgets collected
-[16:56:33.538]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.538] Render complete in 10.360ms, 10006 widgets registered
-[16:56:33.538] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.547] SetFocusables: 1 focusable widgets collected
-[16:56:33.548]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.548] Render complete in 9.873ms, 10006 widgets registered
-[16:56:33.548] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.558] SetFocusables: 1 focusable widgets collected
-[16:56:33.558]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.558] Render complete in 9.989ms, 10006 widgets registered
-[16:56:33.558] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.568] SetFocusables: 1 focusable widgets collected
-[16:56:33.568]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.568] Render complete in 10.444ms, 10006 widgets registered
-[16:56:33.568] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.578] SetFocusables: 1 focusable widgets collected
-[16:56:33.578]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.578] Render complete in 10.079ms, 10006 widgets registered
-[16:56:33.578] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.588] SetFocusables: 1 focusable widgets collected
-[16:56:33.588]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.588] Render complete in 10.026ms, 10006 widgets registered
-[16:56:33.588] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.599] SetFocusables: 1 focusable widgets collected
-[16:56:33.599]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.599] Render complete in 10.629ms, 10006 widgets registered
-[16:56:33.599] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.609] SetFocusables: 1 focusable widgets collected
-[16:56:33.609]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.609] Render complete in 9.809ms, 10006 widgets registered
-[16:56:33.609] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.618] SetFocusables: 1 focusable widgets collected
-[16:56:33.619]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.619] Render complete in 9.837ms, 10006 widgets registered
-[16:56:33.619] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.629] SetFocusables: 1 focusable widgets collected
-[16:56:33.629]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.629] Render complete in 10.511ms, 10006 widgets registered
-[16:56:33.629] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.639] SetFocusables: 1 focusable widgets collected
-[16:56:33.639]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.639] Render complete in 9.821ms, 10006 widgets registered
-[16:56:33.639] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.649] SetFocusables: 1 focusable widgets collected
-[16:56:33.650]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.650] Render complete in 10.603ms, 10006 widgets registered
-[16:56:33.650] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.660] SetFocusables: 1 focusable widgets collected
-[16:56:33.660]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.660] Render complete in 10.123ms, 10006 widgets registered
-[16:56:33.660] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.670] SetFocusables: 1 focusable widgets collected
-[16:56:33.670]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.670] Render complete in 9.983ms, 10006 widgets registered
-[16:56:33.670] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.680] SetFocusables: 1 focusable widgets collected
-[16:56:33.680]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.680] Render complete in 10.094ms, 10006 widgets registered
-[16:56:33.680] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.690] SetFocusables: 1 focusable widgets collected
-[16:56:33.690]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.690] Render complete in 9.906ms, 10006 widgets registered
-[16:56:33.690] MouseWheelEvent wheelup at X=29 Y=12 on Scrollable[list-scroll]
-[16:56:33.699] SetFocusables: 1 focusable widgets collected
-[16:56:33.699]   [0] Key="demo-list" Type=*terma.List
-[16:56:33.700] Render complete in 9.657ms, 10006 widgets registered
-[16:56:34.163] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.180] SetFocusables: 1 focusable widgets collected
-[16:56:34.180]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.180] Render complete in 17.579ms, 10006 widgets registered
-[16:56:34.182] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.192] SetFocusables: 1 focusable widgets collected
-[16:56:34.192]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.193] Render complete in 10.480ms, 10006 widgets registered
-[16:56:34.193] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.205] SetFocusables: 1 focusable widgets collected
-[16:56:34.205]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.205] Render complete in 12.043ms, 10006 widgets registered
-[16:56:34.205] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.215] SetFocusables: 1 focusable widgets collected
-[16:56:34.215]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.216] Render complete in 10.934ms, 10006 widgets registered
-[16:56:34.216] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.226] SetFocusables: 1 focusable widgets collected
-[16:56:34.226]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.226] Render complete in 10.602ms, 10006 widgets registered
-[16:56:34.226] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.236] SetFocusables: 1 focusable widgets collected
-[16:56:34.236]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.236] Render complete in 10.050ms, 10006 widgets registered
-[16:56:34.237] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.246] SetFocusables: 1 focusable widgets collected
-[16:56:34.246]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.246] Render complete in 9.778ms, 10006 widgets registered
-[16:56:34.246] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.256] SetFocusables: 1 focusable widgets collected
-[16:56:34.256]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.256] Render complete in 10.057ms, 10006 widgets registered
-[16:56:34.256] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.266] SetFocusables: 1 focusable widgets collected
-[16:56:34.266]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.267] Render complete in 10.104ms, 10006 widgets registered
-[16:56:34.267] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.276] SetFocusables: 1 focusable widgets collected
-[16:56:34.276]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.276] Render complete in 9.860ms, 10006 widgets registered
-[16:56:34.276] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.286] SetFocusables: 1 focusable widgets collected
-[16:56:34.286]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.286] Render complete in 9.964ms, 10006 widgets registered
-[16:56:34.286] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.296] SetFocusables: 1 focusable widgets collected
-[16:56:34.296]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.296] Render complete in 9.599ms, 10006 widgets registered
-[16:56:34.296] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.306] SetFocusables: 1 focusable widgets collected
-[16:56:34.306]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.306] Render complete in 9.804ms, 10006 widgets registered
-[16:56:34.306] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.315] SetFocusables: 1 focusable widgets collected
-[16:56:34.315]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.315] Render complete in 9.564ms, 10006 widgets registered
-[16:56:34.315] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.326] SetFocusables: 1 focusable widgets collected
-[16:56:34.326]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.326] Render complete in 10.553ms, 10006 widgets registered
-[16:56:34.326] MouseWheelEvent wheelup at X=28 Y=13 on Scrollable[list-scroll]
-[16:56:34.336] SetFocusables: 1 focusable widgets collected
-[16:56:34.336]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.336] Render complete in 10.244ms, 10006 widgets registered
-[16:56:34.490] MouseWheelEvent wheelup at X=28 Y=14 on Scrollable[list-scroll]
-[16:56:34.501] SetFocusables: 1 focusable widgets collected
-[16:56:34.501]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.501] Render complete in 10.765ms, 10006 widgets registered
-[16:56:34.516] MouseWheelEvent wheelup at X=28 Y=14 on Scrollable[list-scroll]
-[16:56:34.525] SetFocusables: 1 focusable widgets collected
-[16:56:34.525]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.526] Render complete in 10.020ms, 10006 widgets registered
-[16:56:34.526] MouseWheelEvent wheelup at X=28 Y=14 on Scrollable[list-scroll]
-[16:56:34.536] SetFocusables: 1 focusable widgets collected
-[16:56:34.536]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.536] Render complete in 10.555ms, 10006 widgets registered
-[16:56:34.536] MouseWheelEvent wheelup at X=28 Y=14 on Scrollable[list-scroll]
-[16:56:34.547] SetFocusables: 1 focusable widgets collected
-[16:56:34.547]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.547] Render complete in 10.934ms, 10006 widgets registered
-[16:56:34.563] MouseWheelEvent wheelup at X=28 Y=14 on Scrollable[list-scroll]
-[16:56:34.573] SetFocusables: 1 focusable widgets collected
-[16:56:34.573]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.574] Render complete in 10.510ms, 10006 widgets registered
-[16:56:34.574] MouseWheelEvent wheelup at X=28 Y=14 on Scrollable[list-scroll]
-[16:56:34.584] SetFocusables: 1 focusable widgets collected
-[16:56:34.584]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.585] Render complete in 10.750ms, 10006 widgets registered
-[16:56:34.585] MouseWheelEvent wheelup at X=28 Y=14 on Scrollable[list-scroll]
-[16:56:34.594] SetFocusables: 1 focusable widgets collected
-[16:56:34.594]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.594] Render complete in 9.901ms, 10006 widgets registered
-[16:56:34.594] MouseWheelEvent wheelup at X=28 Y=14 on Scrollable[list-scroll]
-[16:56:34.604] SetFocusables: 1 focusable widgets collected
-[16:56:34.604]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.604] Render complete in 9.616ms, 10006 widgets registered
-[16:56:34.604] MouseWheelEvent wheelup at X=28 Y=14 on Scrollable[list-scroll]
-[16:56:34.614] SetFocusables: 1 focusable widgets collected
-[16:56:34.614]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.614] Render complete in 9.804ms, 10006 widgets registered
-[16:56:34.807] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.819] SetFocusables: 1 focusable widgets collected
-[16:56:34.819]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.819] Render complete in 11.825ms, 10006 widgets registered
-[16:56:34.819] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.830] SetFocusables: 1 focusable widgets collected
-[16:56:34.830]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.830] Render complete in 10.826ms, 10006 widgets registered
-[16:56:34.830] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.840] SetFocusables: 1 focusable widgets collected
-[16:56:34.840]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.840] Render complete in 10.241ms, 10006 widgets registered
-[16:56:34.840] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.851] SetFocusables: 1 focusable widgets collected
-[16:56:34.851]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.851] Render complete in 10.972ms, 10006 widgets registered
-[16:56:34.851] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.861] SetFocusables: 1 focusable widgets collected
-[16:56:34.861]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.862] Render complete in 10.304ms, 10006 widgets registered
-[16:56:34.862] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.871] SetFocusables: 1 focusable widgets collected
-[16:56:34.871]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.872] Render complete in 10.171ms, 10006 widgets registered
-[16:56:34.872] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.881] SetFocusables: 1 focusable widgets collected
-[16:56:34.881]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.881] Render complete in 9.637ms, 10006 widgets registered
-[16:56:34.881] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.891] SetFocusables: 1 focusable widgets collected
-[16:56:34.891]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.891] Render complete in 10.013ms, 10006 widgets registered
-[16:56:34.891] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.901] SetFocusables: 1 focusable widgets collected
-[16:56:34.901]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.901] Render complete in 9.728ms, 10006 widgets registered
-[16:56:34.901] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.911] SetFocusables: 1 focusable widgets collected
-[16:56:34.911]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.911] Render complete in 10.023ms, 10006 widgets registered
-[16:56:34.911] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.921] SetFocusables: 1 focusable widgets collected
-[16:56:34.921]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.921] Render complete in 10.191ms, 10006 widgets registered
-[16:56:34.922] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.930] SetFocusables: 1 focusable widgets collected
-[16:56:34.930]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.931] Render complete in 9.260ms, 10006 widgets registered
-[16:56:34.931] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.941] SetFocusables: 1 focusable widgets collected
-[16:56:34.941]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.941] Render complete in 10.037ms, 10006 widgets registered
-[16:56:34.941] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.951] SetFocusables: 1 focusable widgets collected
-[16:56:34.951]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.951] Render complete in 10.417ms, 10006 widgets registered
-[16:56:34.951] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.961] SetFocusables: 1 focusable widgets collected
-[16:56:34.961]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.961] Render complete in 10.058ms, 10006 widgets registered
-[16:56:34.961] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.971] SetFocusables: 1 focusable widgets collected
-[16:56:34.971]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.971] Render complete in 9.787ms, 10006 widgets registered
-[16:56:34.971] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.981] SetFocusables: 1 focusable widgets collected
-[16:56:34.981]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.982] Render complete in 10.399ms, 10006 widgets registered
-[16:56:34.982] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:34.991] SetFocusables: 1 focusable widgets collected
-[16:56:34.991]   [0] Key="demo-list" Type=*terma.List
-[16:56:34.992] Render complete in 10.122ms, 10006 widgets registered
-[16:56:34.992] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.001] SetFocusables: 1 focusable widgets collected
-[16:56:35.001]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.002] Render complete in 9.895ms, 10006 widgets registered
-[16:56:35.002] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.012] SetFocusables: 1 focusable widgets collected
-[16:56:35.012]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.012] Render complete in 10.198ms, 10006 widgets registered
-[16:56:35.012] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.022] SetFocusables: 1 focusable widgets collected
-[16:56:35.022]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.022] Render complete in 10.152ms, 10006 widgets registered
-[16:56:35.409] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.425] SetFocusables: 1 focusable widgets collected
-[16:56:35.425]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.425] Render complete in 15.988ms, 10006 widgets registered
-[16:56:35.425] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.437] SetFocusables: 1 focusable widgets collected
-[16:56:35.437]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.437] Render complete in 11.418ms, 10006 widgets registered
-[16:56:35.437] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.448] SetFocusables: 1 focusable widgets collected
-[16:56:35.448]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.448] Render complete in 11.201ms, 10006 widgets registered
-[16:56:35.448] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.458] SetFocusables: 1 focusable widgets collected
-[16:56:35.458]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.459] Render complete in 10.695ms, 10006 widgets registered
-[16:56:35.459] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.469] SetFocusables: 1 focusable widgets collected
-[16:56:35.469]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.469] Render complete in 10.523ms, 10006 widgets registered
-[16:56:35.469] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.479] SetFocusables: 1 focusable widgets collected
-[16:56:35.479]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.479] Render complete in 9.972ms, 10006 widgets registered
-[16:56:35.479] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.489] SetFocusables: 1 focusable widgets collected
-[16:56:35.489]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.489] Render complete in 9.697ms, 10006 widgets registered
-[16:56:35.489] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.499] SetFocusables: 1 focusable widgets collected
-[16:56:35.499]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.499] Render complete in 9.970ms, 10006 widgets registered
-[16:56:35.499] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.509] SetFocusables: 1 focusable widgets collected
-[16:56:35.509]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.509] Render complete in 9.995ms, 10006 widgets registered
-[16:56:35.509] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.519] SetFocusables: 1 focusable widgets collected
-[16:56:35.519]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.519] Render complete in 9.987ms, 10006 widgets registered
-[16:56:35.519] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.529] SetFocusables: 1 focusable widgets collected
-[16:56:35.529]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.529] Render complete in 9.757ms, 10006 widgets registered
-[16:56:35.529] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.538] SetFocusables: 1 focusable widgets collected
-[16:56:35.538]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.539] Render complete in 9.749ms, 10006 widgets registered
-[16:56:35.539] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.548] SetFocusables: 1 focusable widgets collected
-[16:56:35.548]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.548] Render complete in 9.773ms, 10006 widgets registered
-[16:56:35.548] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.558] SetFocusables: 1 focusable widgets collected
-[16:56:35.558]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.558] Render complete in 9.741ms, 10006 widgets registered
-[16:56:35.558] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.568] SetFocusables: 1 focusable widgets collected
-[16:56:35.568]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.568] Render complete in 10.207ms, 10006 widgets registered
-[16:56:35.568] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.578] SetFocusables: 1 focusable widgets collected
-[16:56:35.578]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.578] Render complete in 9.995ms, 10006 widgets registered
-[16:56:35.578] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.588] SetFocusables: 1 focusable widgets collected
-[16:56:35.588]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.588] Render complete in 9.656ms, 10006 widgets registered
-[16:56:35.588] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.598] SetFocusables: 1 focusable widgets collected
-[16:56:35.598]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.598] Render complete in 9.629ms, 10006 widgets registered
-[16:56:35.598] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.607] SetFocusables: 1 focusable widgets collected
-[16:56:35.607]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.607] Render complete in 9.594ms, 10006 widgets registered
-[16:56:35.607] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.617] SetFocusables: 1 focusable widgets collected
-[16:56:35.617]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.617] Render complete in 9.905ms, 10006 widgets registered
-[16:56:35.676] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.686] SetFocusables: 1 focusable widgets collected
-[16:56:35.686]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.686] Render complete in 10.207ms, 10006 widgets registered
-[16:56:35.691] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.701] SetFocusables: 1 focusable widgets collected
-[16:56:35.701]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.702] Render complete in 11.098ms, 10006 widgets registered
-[16:56:35.702] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.712] SetFocusables: 1 focusable widgets collected
-[16:56:35.712]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.712] Render complete in 10.210ms, 10006 widgets registered
-[16:56:35.712] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.722] SetFocusables: 1 focusable widgets collected
-[16:56:35.722]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.722] Render complete in 9.960ms, 10006 widgets registered
-[16:56:35.722] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.731] SetFocusables: 1 focusable widgets collected
-[16:56:35.731]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.732] Render complete in 9.798ms, 10006 widgets registered
-[16:56:35.732] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.741] SetFocusables: 1 focusable widgets collected
-[16:56:35.741]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.742] Render complete in 9.884ms, 10006 widgets registered
-[16:56:35.742] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.752] SetFocusables: 1 focusable widgets collected
-[16:56:35.752]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.752] Render complete in 10.358ms, 10006 widgets registered
-[16:56:35.752] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.762] SetFocusables: 1 focusable widgets collected
-[16:56:35.762]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.762] Render complete in 9.997ms, 10006 widgets registered
-[16:56:35.762] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.772] SetFocusables: 1 focusable widgets collected
-[16:56:35.772]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.772] Render complete in 10.087ms, 10006 widgets registered
-[16:56:35.772] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.782] SetFocusables: 1 focusable widgets collected
-[16:56:35.782]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.782] Render complete in 9.602ms, 10006 widgets registered
-[16:56:35.782] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.792] SetFocusables: 1 focusable widgets collected
-[16:56:35.792]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.792] Render complete in 10.201ms, 10006 widgets registered
-[16:56:35.792] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.802] SetFocusables: 1 focusable widgets collected
-[16:56:35.802]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.802] Render complete in 10.197ms, 10006 widgets registered
-[16:56:35.802] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.812] SetFocusables: 1 focusable widgets collected
-[16:56:35.812]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.813] Render complete in 10.461ms, 10006 widgets registered
-[16:56:35.813] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.822] SetFocusables: 1 focusable widgets collected
-[16:56:35.822]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.822] Render complete in 9.525ms, 10006 widgets registered
-[16:56:35.822] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.832] SetFocusables: 1 focusable widgets collected
-[16:56:35.832]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.833] Render complete in 10.173ms, 10006 widgets registered
-[16:56:35.833] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.842] SetFocusables: 1 focusable widgets collected
-[16:56:35.842]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.843] Render complete in 9.997ms, 10006 widgets registered
-[16:56:35.903] MouseWheelEvent wheelup at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:35.913] SetFocusables: 1 focusable widgets collected
-[16:56:35.913]   [0] Key="demo-list" Type=*terma.List
-[16:56:35.913] Render complete in 10.180ms, 10006 widgets registered
-[16:56:36.091] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:36.102] SetFocusables: 1 focusable widgets collected
-[16:56:36.102]   [0] Key="demo-list" Type=*terma.List
-[16:56:36.102] Render complete in 10.559ms, 10006 widgets registered
-[16:56:36.152] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:36.164] SetFocusables: 1 focusable widgets collected
-[16:56:36.164]   [0] Key="demo-list" Type=*terma.List
-[16:56:36.164] Render complete in 11.871ms, 10006 widgets registered
-[16:56:36.164] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:36.175] SetFocusables: 1 focusable widgets collected
-[16:56:36.175]   [0] Key="demo-list" Type=*terma.List
-[16:56:36.175] Render complete in 10.822ms, 10006 widgets registered
-[16:56:36.736] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:36.746] SetFocusables: 1 focusable widgets collected
-[16:56:36.746]   [0] Key="demo-list" Type=*terma.List
-[16:56:36.746] Render complete in 10.627ms, 10006 widgets registered
-[16:56:36.746] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:36.758] SetFocusables: 1 focusable widgets collected
-[16:56:36.758]   [0] Key="demo-list" Type=*terma.List
-[16:56:36.758] Render complete in 12.049ms, 10006 widgets registered
-[16:56:36.758] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:36.769] SetFocusables: 1 focusable widgets collected
-[16:56:36.769]   [0] Key="demo-list" Type=*terma.List
-[16:56:36.770] Render complete in 11.376ms, 10006 widgets registered
-[16:56:36.770] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:36.780] SetFocusables: 1 focusable widgets collected
-[16:56:36.780]   [0] Key="demo-list" Type=*terma.List
-[16:56:36.780] Render complete in 10.695ms, 10006 widgets registered
-[16:56:36.780] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:36.790] SetFocusables: 1 focusable widgets collected
-[16:56:36.790]   [0] Key="demo-list" Type=*terma.List
-[16:56:36.791] Render complete in 10.263ms, 10006 widgets registered
-[16:56:36.791] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:36.800] SetFocusables: 1 focusable widgets collected
-[16:56:36.800]   [0] Key="demo-list" Type=*terma.List
-[16:56:36.801] Render complete in 9.857ms, 10006 widgets registered
-[16:56:36.801] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:36.811] SetFocusables: 1 focusable widgets collected
-[16:56:36.811]   [0] Key="demo-list" Type=*terma.List
-[16:56:36.811] Render complete in 10.416ms, 10006 widgets registered
-[16:56:36.811] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:36.820] SetFocusables: 1 focusable widgets collected
-[16:56:36.820]   [0] Key="demo-list" Type=*terma.List
-[16:56:36.821] Render complete in 9.573ms, 10006 widgets registered
-[16:56:36.821] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:36.831] SetFocusables: 1 focusable widgets collected
-[16:56:36.831]   [0] Key="demo-list" Type=*terma.List
-[16:56:36.831] Render complete in 10.255ms, 10006 widgets registered
-[16:56:36.831] MouseWheelEvent wheeldown at X=27 Y=14 on Scrollable[list-scroll]
-[16:56:36.840] SetFocusables: 1 focusable widgets collected
-[16:56:36.840]   [0] Key="demo-list" Type=*terma.List
-[16:56:36.841] Render complete in 9.766ms, 10006 widgets registered
-[16:56:53.555] MouseClickEvent at X=14 Y=10 Button=left
-[16:56:53.555]   Found widget: Key="" Type=terma.Text
-[16:56:53.555]   Widget is Clickable, calling OnClick
-[16:56:53.574] SetFocusables: 1 focusable widgets collected
-[16:56:53.574]   [0] Key="demo-list" Type=*terma.List
-[16:56:53.575] Render complete in 19.520ms, 10006 widgets registered
-[16:56:53.634] Unhandled event: uv.MouseReleaseEvent left
-[16:56:54.158] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.170] SetFocusables: 1 focusable widgets collected
-[16:56:54.170]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.170] Render complete in 12.200ms, 10006 widgets registered
-[16:56:54.203] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.215] SetFocusables: 1 focusable widgets collected
-[16:56:54.215]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.216] Render complete in 12.601ms, 10006 widgets registered
-[16:56:54.216] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.227] SetFocusables: 1 focusable widgets collected
-[16:56:54.227]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.227] Render complete in 11.148ms, 10006 widgets registered
-[16:56:54.228] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.238] SetFocusables: 1 focusable widgets collected
-[16:56:54.238]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.238] Render complete in 10.548ms, 10006 widgets registered
-[16:56:54.238] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.249] SetFocusables: 1 focusable widgets collected
-[16:56:54.249]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.249] Render complete in 10.322ms, 10006 widgets registered
-[16:56:54.249] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.259] SetFocusables: 1 focusable widgets collected
-[16:56:54.259]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.259] Render complete in 10.036ms, 10006 widgets registered
-[16:56:54.259] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.268] SetFocusables: 1 focusable widgets collected
-[16:56:54.268]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.268] Render complete in 9.442ms, 10006 widgets registered
-[16:56:54.268] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.278] SetFocusables: 1 focusable widgets collected
-[16:56:54.278]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.278] Render complete in 9.843ms, 10006 widgets registered
-[16:56:54.295] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.305] SetFocusables: 1 focusable widgets collected
-[16:56:54.305]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.305] Render complete in 10.591ms, 10006 widgets registered
-[16:56:54.305] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.315] SetFocusables: 1 focusable widgets collected
-[16:56:54.315]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.315] Render complete in 9.680ms, 10006 widgets registered
-[16:56:54.315] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.325] SetFocusables: 1 focusable widgets collected
-[16:56:54.325]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.325] Render complete in 10.441ms, 10006 widgets registered
-[16:56:54.325] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.335] SetFocusables: 1 focusable widgets collected
-[16:56:54.335]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.335] Render complete in 9.785ms, 10006 widgets registered
-[16:56:54.335] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.344] SetFocusables: 1 focusable widgets collected
-[16:56:54.345]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.345] Render complete in 9.632ms, 10006 widgets registered
-[16:56:54.488] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.498] SetFocusables: 1 focusable widgets collected
-[16:56:54.498]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.498] Render complete in 10.322ms, 10006 widgets registered
-[16:56:54.498] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.510] SetFocusables: 1 focusable widgets collected
-[16:56:54.510]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.510] Render complete in 11.567ms, 10006 widgets registered
-[16:56:54.511] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.521] SetFocusables: 1 focusable widgets collected
-[16:56:54.521]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.521] Render complete in 9.987ms, 10006 widgets registered
-[16:56:54.521] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.532] SetFocusables: 1 focusable widgets collected
-[16:56:54.532]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.532] Render complete in 10.694ms, 10006 widgets registered
-[16:56:54.532] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.541] SetFocusables: 1 focusable widgets collected
-[16:56:54.541]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.542] Render complete in 9.597ms, 10006 widgets registered
-[16:56:54.542] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.552] SetFocusables: 1 focusable widgets collected
-[16:56:54.552]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.552] Render complete in 10.261ms, 10006 widgets registered
-[16:56:54.552] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.561] SetFocusables: 1 focusable widgets collected
-[16:56:54.561]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.561] Render complete in 9.458ms, 10006 widgets registered
-[16:56:54.561] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.571] SetFocusables: 1 focusable widgets collected
-[16:56:54.571]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.571] Render complete in 9.702ms, 10006 widgets registered
-[16:56:54.571] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.580] SetFocusables: 1 focusable widgets collected
-[16:56:54.580]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.581] Render complete in 9.481ms, 10006 widgets registered
-[16:56:54.581] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.590] SetFocusables: 1 focusable widgets collected
-[16:56:54.590]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.590] Render complete in 9.796ms, 10006 widgets registered
-[16:56:54.590] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.600] SetFocusables: 1 focusable widgets collected
-[16:56:54.600]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.600] Render complete in 9.432ms, 10006 widgets registered
-[16:56:54.600] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.610] SetFocusables: 1 focusable widgets collected
-[16:56:54.610]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.610] Render complete in 10.150ms, 10006 widgets registered
-[16:56:54.610] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.619] SetFocusables: 1 focusable widgets collected
-[16:56:54.619]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.620] Render complete in 9.596ms, 10006 widgets registered
-[16:56:54.620] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.629] SetFocusables: 1 focusable widgets collected
-[16:56:54.629]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.629] Render complete in 9.492ms, 10006 widgets registered
-[16:56:54.629] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.639] SetFocusables: 1 focusable widgets collected
-[16:56:54.639]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.639] Render complete in 9.885ms, 10006 widgets registered
-[16:56:54.639] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.649] SetFocusables: 1 focusable widgets collected
-[16:56:54.649]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.649] Render complete in 10.152ms, 10006 widgets registered
-[16:56:54.649] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.659] SetFocusables: 1 focusable widgets collected
-[16:56:54.659]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.659] Render complete in 9.767ms, 10006 widgets registered
-[16:56:54.659] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.669] SetFocusables: 1 focusable widgets collected
-[16:56:54.669]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.669] Render complete in 9.872ms, 10006 widgets registered
-[16:56:54.669] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.679] SetFocusables: 1 focusable widgets collected
-[16:56:54.679]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.679] Render complete in 10.229ms, 10006 widgets registered
-[16:56:54.679] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.689] SetFocusables: 1 focusable widgets collected
-[16:56:54.689]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.689] Render complete in 9.982ms, 10006 widgets registered
-[16:56:54.689] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.699] SetFocusables: 1 focusable widgets collected
-[16:56:54.699]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.699] Render complete in 10.102ms, 10006 widgets registered
-[16:56:54.699] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.709] SetFocusables: 1 focusable widgets collected
-[16:56:54.709]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.709] Render complete in 9.930ms, 10006 widgets registered
-[16:56:54.709] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.719] SetFocusables: 1 focusable widgets collected
-[16:56:54.719]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.719] Render complete in 9.751ms, 10006 widgets registered
-[16:56:54.719] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.729] SetFocusables: 1 focusable widgets collected
-[16:56:54.729]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.729] Render complete in 10.223ms, 10006 widgets registered
-[16:56:54.729] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.739] SetFocusables: 1 focusable widgets collected
-[16:56:54.739]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.739] Render complete in 9.900ms, 10006 widgets registered
-[16:56:54.739] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.749] SetFocusables: 1 focusable widgets collected
-[16:56:54.749]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.749] Render complete in 9.831ms, 10006 widgets registered
-[16:56:54.749] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.759] SetFocusables: 1 focusable widgets collected
-[16:56:54.759]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.759] Render complete in 10.114ms, 10006 widgets registered
-[16:56:54.759] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.769] SetFocusables: 1 focusable widgets collected
-[16:56:54.769]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.769] Render complete in 9.669ms, 10006 widgets registered
-[16:56:54.769] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.778] SetFocusables: 1 focusable widgets collected
-[16:56:54.778]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.779] Render complete in 9.681ms, 10006 widgets registered
-[16:56:54.779] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.789] SetFocusables: 1 focusable widgets collected
-[16:56:54.789]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.789] Render complete in 10.529ms, 10006 widgets registered
-[16:56:54.789] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.798] SetFocusables: 1 focusable widgets collected
-[16:56:54.798]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.799] Render complete in 9.404ms, 10006 widgets registered
-[16:56:54.799] MouseWheelEvent wheelup at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.809] SetFocusables: 1 focusable widgets collected
-[16:56:54.809]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.809] Render complete in 10.316ms, 10006 widgets registered
-[16:56:54.809] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.819] SetFocusables: 1 focusable widgets collected
-[16:56:54.819]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.819] Render complete in 10.106ms, 10006 widgets registered
-[16:56:54.819] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.829] SetFocusables: 1 focusable widgets collected
-[16:56:54.829]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.829] Render complete in 9.614ms, 10006 widgets registered
-[16:56:54.829] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.839] SetFocusables: 1 focusable widgets collected
-[16:56:54.839]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.839] Render complete in 10.214ms, 10006 widgets registered
-[16:56:54.839] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.849] SetFocusables: 1 focusable widgets collected
-[16:56:54.849]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.849] Render complete in 10.104ms, 10006 widgets registered
-[16:56:54.849] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.859] SetFocusables: 1 focusable widgets collected
-[16:56:54.859]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.859] Render complete in 10.104ms, 10006 widgets registered
-[16:56:54.859] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.869] SetFocusables: 1 focusable widgets collected
-[16:56:54.869]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.869] Render complete in 10.044ms, 10006 widgets registered
-[16:56:54.869] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.879] SetFocusables: 1 focusable widgets collected
-[16:56:54.879]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.880] Render complete in 10.349ms, 10006 widgets registered
-[16:56:54.880] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.889] SetFocusables: 1 focusable widgets collected
-[16:56:54.889]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.889] Render complete in 9.545ms, 10006 widgets registered
-[16:56:54.889] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.899] SetFocusables: 1 focusable widgets collected
-[16:56:54.899]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.899] Render complete in 10.086ms, 10006 widgets registered
-[16:56:54.899] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.909] SetFocusables: 1 focusable widgets collected
-[16:56:54.909]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.909] Render complete in 9.831ms, 10006 widgets registered
-[16:56:54.909] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.919] SetFocusables: 1 focusable widgets collected
-[16:56:54.919]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.919] Render complete in 9.773ms, 10006 widgets registered
-[16:56:54.919] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.929] SetFocusables: 1 focusable widgets collected
-[16:56:54.929]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.929] Render complete in 9.978ms, 10006 widgets registered
-[16:56:54.929] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.939] SetFocusables: 1 focusable widgets collected
-[16:56:54.939]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.939] Render complete in 10.337ms, 10006 widgets registered
-[16:56:54.940] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.949] SetFocusables: 1 focusable widgets collected
-[16:56:54.949]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.949] Render complete in 9.691ms, 10006 widgets registered
-[16:56:54.949] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.959] SetFocusables: 1 focusable widgets collected
-[16:56:54.959]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.959] Render complete in 9.749ms, 10006 widgets registered
-[16:56:54.959] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.969] SetFocusables: 1 focusable widgets collected
-[16:56:54.969]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.969] Render complete in 10.202ms, 10006 widgets registered
-[16:56:54.969] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.979] SetFocusables: 1 focusable widgets collected
-[16:56:54.979]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.979] Render complete in 9.929ms, 10006 widgets registered
-[16:56:54.979] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.989] SetFocusables: 1 focusable widgets collected
-[16:56:54.989]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.989] Render complete in 9.861ms, 10006 widgets registered
-[16:56:54.989] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:54.999] SetFocusables: 1 focusable widgets collected
-[16:56:54.999]   [0] Key="demo-list" Type=*terma.List
-[16:56:54.999] Render complete in 9.725ms, 10006 widgets registered
-[16:56:54.999] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.008] SetFocusables: 1 focusable widgets collected
-[16:56:55.008]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.009] Render complete in 9.625ms, 10006 widgets registered
-[16:56:55.009] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.018] SetFocusables: 1 focusable widgets collected
-[16:56:55.018]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.019] Render complete in 10.030ms, 10006 widgets registered
-[16:56:55.019] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.028] SetFocusables: 1 focusable widgets collected
-[16:56:55.028]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.028] Render complete in 9.581ms, 10006 widgets registered
-[16:56:55.028] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.038] SetFocusables: 1 focusable widgets collected
-[16:56:55.038]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.038] Render complete in 9.890ms, 10006 widgets registered
-[16:56:55.038] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.048] SetFocusables: 1 focusable widgets collected
-[16:56:55.048]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.049] Render complete in 10.344ms, 10006 widgets registered
-[16:56:55.049] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.058] SetFocusables: 1 focusable widgets collected
-[16:56:55.058]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.059] Render complete in 10.219ms, 10006 widgets registered
-[16:56:55.059] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.068] SetFocusables: 1 focusable widgets collected
-[16:56:55.068]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.068] Render complete in 9.498ms, 10006 widgets registered
-[16:56:55.068] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.078] SetFocusables: 1 focusable widgets collected
-[16:56:55.078]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.079] Render complete in 10.174ms, 10006 widgets registered
-[16:56:55.079] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.088] SetFocusables: 1 focusable widgets collected
-[16:56:55.088]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.088] Render complete in 9.667ms, 10006 widgets registered
-[16:56:55.088] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.098] SetFocusables: 1 focusable widgets collected
-[16:56:55.098]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.099] Render complete in 10.309ms, 10006 widgets registered
-[16:56:55.099] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.108] SetFocusables: 1 focusable widgets collected
-[16:56:55.108]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.108] Render complete in 9.938ms, 10006 widgets registered
-[16:56:55.109] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.118] SetFocusables: 1 focusable widgets collected
-[16:56:55.118]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.118] Render complete in 9.464ms, 10006 widgets registered
-[16:56:55.118] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.128] SetFocusables: 1 focusable widgets collected
-[16:56:55.128]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.128] Render complete in 9.947ms, 10006 widgets registered
-[16:56:55.128] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.137] SetFocusables: 1 focusable widgets collected
-[16:56:55.137]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.138] Render complete in 9.577ms, 10006 widgets registered
-[16:56:55.138] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.148] SetFocusables: 1 focusable widgets collected
-[16:56:55.148]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.148] Render complete in 10.312ms, 10006 widgets registered
-[16:56:55.148] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.158] SetFocusables: 1 focusable widgets collected
-[16:56:55.158]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.158] Render complete in 10.286ms, 10006 widgets registered
-[16:56:55.158] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.168] SetFocusables: 1 focusable widgets collected
-[16:56:55.168]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.168] Render complete in 9.955ms, 10006 widgets registered
-[16:56:55.168] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.179] SetFocusables: 1 focusable widgets collected
-[16:56:55.179]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.179] Render complete in 10.796ms, 10006 widgets registered
-[16:56:55.179] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.189] SetFocusables: 1 focusable widgets collected
-[16:56:55.189]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.189] Render complete in 10.016ms, 10006 widgets registered
-[16:56:55.189] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.199] SetFocusables: 1 focusable widgets collected
-[16:56:55.199]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.199] Render complete in 9.912ms, 10006 widgets registered
-[16:56:55.199] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.208] SetFocusables: 1 focusable widgets collected
-[16:56:55.208]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.209] Render complete in 9.713ms, 10006 widgets registered
-[16:56:55.403] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.414] SetFocusables: 1 focusable widgets collected
-[16:56:55.414]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.414] Render complete in 11.041ms, 10006 widgets registered
-[16:56:55.414] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.425] SetFocusables: 1 focusable widgets collected
-[16:56:55.425]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.425] Render complete in 11.163ms, 10006 widgets registered
-[16:56:55.425] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.435] SetFocusables: 1 focusable widgets collected
-[16:56:55.435]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.435] Render complete in 9.768ms, 10006 widgets registered
-[16:56:55.435] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.445] SetFocusables: 1 focusable widgets collected
-[16:56:55.445]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.445] Render complete in 10.017ms, 10006 widgets registered
-[16:56:55.445] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.455] SetFocusables: 1 focusable widgets collected
-[16:56:55.455]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.455] Render complete in 10.219ms, 10006 widgets registered
-[16:56:55.455] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.465] SetFocusables: 1 focusable widgets collected
-[16:56:55.465]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.465] Render complete in 9.697ms, 10006 widgets registered
-[16:56:55.465] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.475] SetFocusables: 1 focusable widgets collected
-[16:56:55.475]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.475] Render complete in 9.701ms, 10006 widgets registered
-[16:56:55.475] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.485] SetFocusables: 1 focusable widgets collected
-[16:56:55.485]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.485] Render complete in 10.020ms, 10006 widgets registered
-[16:56:55.485] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.494] SetFocusables: 1 focusable widgets collected
-[16:56:55.494]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.495] Render complete in 9.616ms, 10006 widgets registered
-[16:56:55.495] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.504] SetFocusables: 1 focusable widgets collected
-[16:56:55.504]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.505] Render complete in 9.921ms, 10006 widgets registered
-[16:56:55.505] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.514] SetFocusables: 1 focusable widgets collected
-[16:56:55.514]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.514] Render complete in 9.569ms, 10006 widgets registered
-[16:56:55.514] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.524] SetFocusables: 1 focusable widgets collected
-[16:56:55.524]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.524] Render complete in 10.326ms, 10006 widgets registered
-[16:56:55.525] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.534] SetFocusables: 1 focusable widgets collected
-[16:56:55.534]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.534] Render complete in 9.892ms, 10006 widgets registered
-[16:56:55.534] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.544] SetFocusables: 1 focusable widgets collected
-[16:56:55.544]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.545] Render complete in 10.294ms, 10006 widgets registered
-[16:56:55.545] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.555] SetFocusables: 1 focusable widgets collected
-[16:56:55.555]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.555] Render complete in 10.247ms, 10006 widgets registered
-[16:56:55.555] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.565] SetFocusables: 1 focusable widgets collected
-[16:56:55.565]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.565] Render complete in 9.890ms, 10006 widgets registered
-[16:56:55.565] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.575] SetFocusables: 1 focusable widgets collected
-[16:56:55.575]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.575] Render complete in 10.184ms, 10006 widgets registered
-[16:56:55.575] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.585] SetFocusables: 1 focusable widgets collected
-[16:56:55.585]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.585] Render complete in 10.254ms, 10006 widgets registered
-[16:56:55.585] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.595] SetFocusables: 1 focusable widgets collected
-[16:56:55.595]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.595] Render complete in 9.827ms, 10006 widgets registered
-[16:56:55.595] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.605] SetFocusables: 1 focusable widgets collected
-[16:56:55.605]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.605] Render complete in 10.122ms, 10006 widgets registered
-[16:56:55.605] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.615] SetFocusables: 1 focusable widgets collected
-[16:56:55.615]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.616] Render complete in 10.246ms, 10006 widgets registered
-[16:56:55.616] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.625] SetFocusables: 1 focusable widgets collected
-[16:56:55.625]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.626] Render complete in 9.880ms, 10006 widgets registered
-[16:56:55.626] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.635] SetFocusables: 1 focusable widgets collected
-[16:56:55.636]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.636] Render complete in 10.101ms, 10006 widgets registered
-[16:56:55.636] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.645] SetFocusables: 1 focusable widgets collected
-[16:56:55.645]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.645] Render complete in 9.553ms, 10006 widgets registered
-[16:56:55.645] MouseWheelEvent wheeldown at X=21 Y=13 on Scrollable[list-scroll]
-[16:56:55.655] SetFocusables: 1 focusable widgets collected
-[16:56:55.655]   [0] Key="demo-list" Type=*terma.List
-[16:56:55.655] Render complete in 10.043ms, 10006 widgets registered
-[16:57:06.061] MouseClickEvent at X=64 Y=32 Button=left
-[16:57:06.061]   Found widget: Key="" Type=terma.Text
-[16:57:06.061]   Widget is Clickable, calling OnClick
-[16:57:06.073] SetFocusables: 1 focusable widgets collected
-[16:57:06.073]   [0] Key="demo-list" Type=*terma.List
-[16:57:06.073] Render complete in 11.873ms, 10006 widgets registered
-[16:57:06.128] Unhandled event: uv.MouseReleaseEvent left
+[17:40:48.399] Logger initialized
+[17:40:48.402] SetFocusables: 1 focusable widgets collected
+[17:40:48.402]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:48.402] SetFocusables: auto-focusing first widget "demo-list"
+[17:40:48.404] Render complete in 2.749ms, 306 widgets registered
+[17:40:48.405] SetFocusables: 1 focusable widgets collected
+[17:40:48.405]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:48.407] Render complete in 2.555ms, 306 widgets registered
+[17:40:48.407] Unhandled event: uv.WindowPixelSizeEvent {1960 1974}
+[17:40:48.735] HandleKey: received key "down"
+[17:40:48.735] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:48.735] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:48.735] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:48.738] SetFocusables: 1 focusable widgets collected
+[17:40:48.738]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:48.739] Render complete in 3.618ms, 306 widgets registered
+[17:40:49.154] HandleKey: received key "down"
+[17:40:49.154] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.154] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.154] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.156] SetFocusables: 1 focusable widgets collected
+[17:40:49.156]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.157] Render complete in 2.573ms, 306 widgets registered
+[17:40:49.190] HandleKey: received key "down"
+[17:40:49.190] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.190] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.190] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.191] SetFocusables: 1 focusable widgets collected
+[17:40:49.191]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.191] Render complete in 1.182ms, 306 widgets registered
+[17:40:49.219] HandleKey: received key "down"
+[17:40:49.219] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.219] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.219] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.219] SetFocusables: 1 focusable widgets collected
+[17:40:49.219]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.220] Render complete in 1.174ms, 306 widgets registered
+[17:40:49.259] HandleKey: received key "down"
+[17:40:49.259] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.259] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.259] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.260] SetFocusables: 1 focusable widgets collected
+[17:40:49.260]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.260] Render complete in 1.425ms, 306 widgets registered
+[17:40:49.292] HandleKey: received key "down"
+[17:40:49.292] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.292] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.292] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.293] SetFocusables: 1 focusable widgets collected
+[17:40:49.293]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.295] Render complete in 2.773ms, 306 widgets registered
+[17:40:49.317] HandleKey: received key "down"
+[17:40:49.317] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.317] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.317] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.317] SetFocusables: 1 focusable widgets collected
+[17:40:49.317]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.318] Render complete in 0.692ms, 306 widgets registered
+[17:40:49.351] HandleKey: received key "down"
+[17:40:49.360] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.360] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.360] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.365] SetFocusables: 1 focusable widgets collected
+[17:40:49.365]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.366] Render complete in 5.510ms, 306 widgets registered
+[17:40:49.388] HandleKey: received key "down"
+[17:40:49.388] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.388] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.388] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.389] SetFocusables: 1 focusable widgets collected
+[17:40:49.389]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.389] Render complete in 1.313ms, 306 widgets registered
+[17:40:49.419] HandleKey: received key "down"
+[17:40:49.419] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.419] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.419] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.420] SetFocusables: 1 focusable widgets collected
+[17:40:49.420]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.420] Render complete in 1.774ms, 306 widgets registered
+[17:40:49.453] HandleKey: received key "down"
+[17:40:49.453] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.453] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.453] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.454] SetFocusables: 1 focusable widgets collected
+[17:40:49.454]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.455] Render complete in 1.780ms, 306 widgets registered
+[17:40:49.489] HandleKey: received key "down"
+[17:40:49.489] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.489] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.489] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.490] SetFocusables: 1 focusable widgets collected
+[17:40:49.490]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.491] Render complete in 2.420ms, 306 widgets registered
+[17:40:49.526] HandleKey: received key "down"
+[17:40:49.529] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.529] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.529] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.531] SetFocusables: 1 focusable widgets collected
+[17:40:49.533]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.534] Render complete in 4.986ms, 306 widgets registered
+[17:40:49.556] HandleKey: received key "down"
+[17:40:49.556] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.556] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.556] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.557] SetFocusables: 1 focusable widgets collected
+[17:40:49.557]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.557] Render complete in 1.317ms, 306 widgets registered
+[17:40:49.590] HandleKey: received key "down"
+[17:40:49.590] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.590] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.590] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.591] SetFocusables: 1 focusable widgets collected
+[17:40:49.591]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.592] Render complete in 1.889ms, 306 widgets registered
+[17:40:49.622] HandleKey: received key "down"
+[17:40:49.622] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.622] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.622] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.624] SetFocusables: 1 focusable widgets collected
+[17:40:49.624]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.624] Render complete in 1.797ms, 306 widgets registered
+[17:40:49.656] HandleKey: received key "down"
+[17:40:49.656] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.657] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.657] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.658] SetFocusables: 1 focusable widgets collected
+[17:40:49.658]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.658] Render complete in 1.820ms, 306 widgets registered
+[17:40:49.689] HandleKey: received key "down"
+[17:40:49.689] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.689] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.689] HandleKey: key "down" handled by OnKey on focused widget "demo-list"
+[17:40:49.690] SetFocusables: 1 focusable widgets collected
+[17:40:49.690]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.691] Render complete in 1.568ms, 306 widgets registered
+[17:40:49.815] HandleKey: received key "up"
+[17:40:49.815] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:49.815] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:49.815] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:49.817] SetFocusables: 1 focusable widgets collected
+[17:40:49.817]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:49.818] Render complete in 2.575ms, 306 widgets registered
+[17:40:50.235] HandleKey: received key "up"
+[17:40:50.235] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.235] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.235] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.238] SetFocusables: 1 focusable widgets collected
+[17:40:50.238]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.239] Render complete in 4.001ms, 306 widgets registered
+[17:40:50.268] HandleKey: received key "up"
+[17:40:50.269] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.269] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.269] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.270] SetFocusables: 1 focusable widgets collected
+[17:40:50.270]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.271] Render complete in 1.933ms, 306 widgets registered
+[17:40:50.300] HandleKey: received key "up"
+[17:40:50.300] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.300] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.301] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.302] SetFocusables: 1 focusable widgets collected
+[17:40:50.302]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.302] Render complete in 1.759ms, 306 widgets registered
+[17:40:50.333] HandleKey: received key "up"
+[17:40:50.333] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.333] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.333] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.334] SetFocusables: 1 focusable widgets collected
+[17:40:50.334]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.335] Render complete in 1.079ms, 306 widgets registered
+[17:40:50.367] HandleKey: received key "up"
+[17:40:50.367] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.367] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.367] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.367] SetFocusables: 1 focusable widgets collected
+[17:40:50.367]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.367] Render complete in 0.674ms, 306 widgets registered
+[17:40:50.402] HandleKey: received key "up"
+[17:40:50.402] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.402] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.402] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.403] SetFocusables: 1 focusable widgets collected
+[17:40:50.403]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.403] Render complete in 1.478ms, 306 widgets registered
+[17:40:50.434] HandleKey: received key "up"
+[17:40:50.434] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.434] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.434] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.435] SetFocusables: 1 focusable widgets collected
+[17:40:50.435]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.435] Render complete in 1.073ms, 306 widgets registered
+[17:40:50.468] HandleKey: received key "up"
+[17:40:50.468] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.468] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.468] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.468] SetFocusables: 1 focusable widgets collected
+[17:40:50.468]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.468] Render complete in 0.719ms, 306 widgets registered
+[17:40:50.509] HandleKey: received key "up"
+[17:40:50.509] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.509] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.509] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.510] SetFocusables: 1 focusable widgets collected
+[17:40:50.510]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.511] Render complete in 2.144ms, 306 widgets registered
+[17:40:50.542] HandleKey: received key "up"
+[17:40:50.542] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.542] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.542] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.543] SetFocusables: 1 focusable widgets collected
+[17:40:50.543]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.544] Render complete in 1.775ms, 306 widgets registered
+[17:40:50.567] HandleKey: received key "up"
+[17:40:50.567] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.567] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.567] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.568] SetFocusables: 1 focusable widgets collected
+[17:40:50.568]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.568] Render complete in 1.138ms, 306 widgets registered
+[17:40:50.601] HandleKey: received key "up"
+[17:40:50.601] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.601] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.601] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.601] SetFocusables: 1 focusable widgets collected
+[17:40:50.601]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.602] Render complete in 0.989ms, 306 widgets registered
+[17:40:50.635] HandleKey: received key "up"
+[17:40:50.635] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.635] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.635] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.635] SetFocusables: 1 focusable widgets collected
+[17:40:50.635]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.636] Render complete in 0.645ms, 306 widgets registered
+[17:40:50.667] HandleKey: received key "up"
+[17:40:50.667] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.667] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.667] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.668] SetFocusables: 1 focusable widgets collected
+[17:40:50.668]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.668] Render complete in 0.946ms, 306 widgets registered
+[17:40:50.701] HandleKey: received key "up"
+[17:40:50.701] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.701] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.701] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.702] SetFocusables: 1 focusable widgets collected
+[17:40:50.702]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.702] Render complete in 0.623ms, 306 widgets registered
+[17:40:50.733] HandleKey: received key "up"
+[17:40:50.733] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.733] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.733] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.734] SetFocusables: 1 focusable widgets collected
+[17:40:50.734]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.734] Render complete in 0.906ms, 306 widgets registered
+[17:40:50.767] HandleKey: received key "up"
+[17:40:50.767] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.767] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.767] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.767] SetFocusables: 1 focusable widgets collected
+[17:40:50.767]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.768] Render complete in 0.892ms, 306 widgets registered
+[17:40:50.809] HandleKey: received key "up"
+[17:40:50.809] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.809] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.809] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.811] SetFocusables: 1 focusable widgets collected
+[17:40:50.811]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.811] Render complete in 2.703ms, 306 widgets registered
+[17:40:50.842] HandleKey: received key "up"
+[17:40:50.842] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.842] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.842] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.844] SetFocusables: 1 focusable widgets collected
+[17:40:50.844]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.845] Render complete in 3.365ms, 306 widgets registered
+[17:40:50.867] HandleKey: received key "up"
+[17:40:50.867] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.867] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.867] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.868] SetFocusables: 1 focusable widgets collected
+[17:40:50.868]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.868] Render complete in 0.986ms, 306 widgets registered
+[17:40:50.901] HandleKey: received key "up"
+[17:40:50.901] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:50.901] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:50.901] HandleKey: key "up" handled by OnKey on focused widget "demo-list"
+[17:40:50.901] SetFocusables: 1 focusable widgets collected
+[17:40:50.901]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:50.901] Render complete in 0.758ms, 306 widgets registered
+[17:40:51.198] HandleKey: received key "enter"
+[17:40:51.198] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:51.198] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:51.198] HandleKey: focused widget "demo-list" did not handle key, bubbling up
+[17:40:51.198] HandleKey: calling OnKey on ancestor "demo-list" (*terma.List[main.ListItem])
+[17:40:51.198] HandleKey: calling OnKey on ancestor "list-scroll" (*terma.Scrollable)
+[17:40:51.198] HandleKey: checking keybindings on ancestor "" (*main.ListDemo)
+[17:40:51.198] HandleKey: key "enter" not handled by any widget
+[17:40:51.200] SetFocusables: 1 focusable widgets collected
+[17:40:51.200]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:51.201] Render complete in 2.680ms, 306 widgets registered
+[17:40:52.207] HandleKey: received key "esc"
+[17:40:52.207] HandleKey: focused widget is "demo-list" (*terma.List[main.ListItem]), 3 ancestors in chain
+[17:40:52.207] HandleKey: calling OnKey on focused widget "demo-list"
+[17:40:52.207] HandleKey: focused widget "demo-list" did not handle key, bubbling up
+[17:40:52.207] HandleKey: calling OnKey on ancestor "demo-list" (*terma.List[main.ListItem])
+[17:40:52.207] HandleKey: calling OnKey on ancestor "list-scroll" (*terma.Scrollable)
+[17:40:52.207] HandleKey: checking keybindings on ancestor "" (*main.ListDemo)
+[17:40:52.207] HandleKey: key "esc" not handled by any widget
+[17:40:52.210] SetFocusables: 1 focusable widgets collected
+[17:40:52.210]   [0] Key="demo-list" Type=*terma.List[main.ListItem]
+[17:40:52.211] Render complete in 4.007ms, 306 widgets registered

@@ -13,20 +13,30 @@ func init() {
 	}
 }
 
-// ListDemo demonstrates the List widget.
-// The List widget builds a Column of Text objects internally,
+// ListItem represents a single item in our list.
+// This is pure data - rendering is handled by RenderItem.
+type ListItem struct {
+	Title       string
+	Description string
+}
+
+// ListDemo demonstrates the List widget with custom data types.
+// The List widget builds a Column of widgets internally,
 // and integrates with ScrollController for scroll-into-view.
 type ListDemo struct {
 	controller *t.ScrollController
 	selected   *t.Signal[int]
-	items      []string
+	items      []ListItem
 }
 
 func NewListDemo() *ListDemo {
-	// Generate items
-	items := make([]string, 10000)
+	// Generate sample items
+	items := make([]ListItem, 100)
 	for i := range items {
-		items[i] = fmt.Sprintf("List item %d\nClick or use arrow keys to navigate", i+1)
+		items[i] = ListItem{
+			Title:       fmt.Sprintf("Item %d", i+1),
+			Description: "Use arrow keys to navigate",
+		}
 	}
 
 	return &ListDemo{
@@ -92,11 +102,36 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 					Border:  t.RoundedBorder(t.Cyan, t.BorderTitle("Selectable List")),
 					Padding: t.EdgeInsetsAll(1),
 				},
-				Child: &t.List{
+				Child: &t.List[ListItem]{
 					ID:               "demo-list",
 					Items:            d.items,
 					Selected:         d.selected,
 					ScrollController: d.controller,
+					// Describe how to render each item in the list as a widget
+					RenderItem: func(item ListItem, selected bool) t.Widget {
+						// Style the title based on selection state
+						titleStyle := t.Style{ForegroundColor: t.White}
+						if selected {
+							titleStyle.ForegroundColor = t.Magenta
+						}
+
+						// Each item is 2 lines tall (title + description)
+						return t.Column{
+							Height: t.Cells(2),
+							Children: []t.Widget{
+								t.Text{
+									Content: item.Title,
+									Style:   titleStyle,
+									Width:   t.Fr(1),
+								},
+								t.Text{
+									Content: item.Description,
+									Style:   t.Style{ForegroundColor: t.BrightBlack},
+									Width:   t.Fr(1),
+								},
+							},
+						}
+					},
 				},
 			},
 
