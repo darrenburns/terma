@@ -103,48 +103,58 @@ func (d *EditorSettingsMenu) Build(ctx t.BuildContext) t.Widget {
 				},
 			},
 
-			// The List widget inside a Scrollable
-			&t.Scrollable{
-				ID:           "list-scroll",
-				Controller:   d.controller,
-				Height:       t.Cells(12),
-				DisableFocus: true, // Let List handle focus
-				Style: t.Style{
-					Border: t.RoundedBorder(t.Cyan, t.BorderTitle("Editor Settings"),
-						t.BorderDecoration{Text: fmt.Sprintf("%d", d.controller.Offset()), Position: t.DecorationBottomRight}),
-					Padding: t.EdgeInsetsAll(1),
-				},
-				Child: &t.List[ListItem]{
-					ID:               "demo-list",
-					Items:            d.items,
-					CursorIndex:      d.cursorIndex,
-					ScrollController: d.controller,
-					OnSelect: func(item ListItem) {
-						d.message.Set(fmt.Sprintf("Selected: %s", item.Title))
-					},
-					// Describe how to render each item in the list as a widget
-					RenderItem: func(item ListItem, active bool) t.Widget {
-						// Style the title based on cursor position
-						titleStyle := t.Style{ForegroundColor: t.White}
-						if active {
-							titleStyle.ForegroundColor = t.Magenta
-						}
-
-						// Each item is 2 lines tall (title + description)
-						return t.Column{
-							Height: t.Cells(2), // We need to declare the height of the rendered item
-							Children: []t.Widget{
-								t.Text{
-									Content: item.Title,
-									Style:   titleStyle,
-								},
-								t.Text{
-									Content: item.Description,
-									Style:   t.Style{ForegroundColor: t.BrightBlack},
-								},
+			t.Row{
+				Height: t.Fr(1),
+				Children: []t.Widget{
+					// The List widget inside a Scrollable (left side)
+					&t.Scrollable{
+						ID:           "list-scroll",
+						Controller:   d.controller,
+						Height:       t.Cells(12),
+						Width:        t.Fr(2),
+						DisableFocus: true, // Let List handle focus
+						Style: t.Style{
+							Border: t.RoundedBorder(t.Cyan, t.BorderTitle("Editor Settings"),
+								t.BorderDecoration{Text: fmt.Sprintf("%d", d.controller.Offset()), Position: t.DecorationBottomRight}),
+							Padding: t.EdgeInsetsAll(1),
+						},
+						Child: &t.List[ListItem]{
+							ID:               "demo-list",
+							Items:            d.items,
+							CursorIndex:      d.cursorIndex,
+							ScrollController: d.controller,
+							OnSelect: func(item ListItem) {
+								d.message.Set(fmt.Sprintf("Selected: %s", item.Title))
 							},
-						}
+							// Describe how to render each item in the list as a widget
+							RenderItem: func(item ListItem, active bool) t.Widget {
+								// Style the title based on cursor position
+								titleStyle := t.Style{ForegroundColor: t.DefaultColor}
+								if active {
+									titleStyle.ForegroundColor = t.Magenta
+								}
+
+								// Each item is 2 lines tall (title + description)
+								return t.Column{
+									Height: t.Cells(2), // We need to declare the height of the rendered item
+									Children: []t.Widget{
+										t.Text{
+											Content: item.Title,
+											Style:   titleStyle,
+											Width:   t.Fr(1),
+										},
+										t.Text{
+											Content: item.Description,
+											Style:   t.Style{ForegroundColor: t.BrightBlack},
+										},
+									},
+								}
+							},
+						},
 					},
+
+					// Right side of the screen showing the current scroll offset
+					t.Text{Content: fmt.Sprintf("%d", d.controller.Offset()), Width: t.Fr(1), Height: t.Fr(1), Style: t.Style{ForegroundColor: t.Black, BackgroundColor: t.Magenta}},
 				},
 			},
 
