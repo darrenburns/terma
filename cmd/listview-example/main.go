@@ -17,11 +17,12 @@ func init() {
 
 // ListViewDemo demonstrates the ScrollController pattern.
 // A custom SelectableList widget shares a ScrollController with its
-// parent Scrollable, allowing the list to scroll the selected item into view.
+// parent Scrollable, allowing the list to scroll the cursor item into view.
 type ListViewDemo struct {
-	controller *t.ScrollController
-	selected   *t.Signal[int]
-	items      []string
+	controller  *t.ScrollController
+	cursorIndex *t.Signal[int]
+	items       []string
+	message     *t.Signal[string]
 }
 
 func NewListViewDemo() *ListViewDemo {
@@ -32,9 +33,10 @@ func NewListViewDemo() *ListViewDemo {
 	}
 
 	return &ListViewDemo{
-		controller: t.NewScrollController(),
-		selected:   t.NewSignal(0),
-		items:      items,
+		controller:  t.NewScrollController(),
+		cursorIndex: t.NewSignal(0),
+		items:       items,
+		message:     t.NewSignal(""),
 	}
 }
 
@@ -63,7 +65,9 @@ func (d *ListViewDemo) Build(ctx t.BuildContext) t.Widget {
 					t.BoldSpan("↑/↓", t.BrightCyan),
 					t.PlainSpan(" or "),
 					t.BoldSpan("j/k", t.BrightCyan),
-					t.PlainSpan(" to navigate • Selection auto-scrolls into view"),
+					t.PlainSpan(" to navigate • "),
+					t.BoldSpan("Enter", t.BrightCyan),
+					t.PlainSpan(" to select • Cursor auto-scrolls into view"),
 				},
 			},
 
@@ -82,18 +86,23 @@ func (d *ListViewDemo) Build(ctx t.BuildContext) t.Widget {
 				Child: &SelectableList{
 					ID:               "selectable-list",
 					Items:            d.items,
-					Selected:         d.selected,
+					CursorIndex:      d.cursorIndex,
 					ScrollController: d.controller,
+					OnSelect: func(item string) {
+						d.message.Set(fmt.Sprintf("Selected: %s", item))
+					},
 				},
 			},
 
-			// Footer showing current selection
+			// Footer showing current cursor position and last selection
 			t.Text{
 				Spans: []t.Span{
-					t.PlainSpan("Selected: "),
-					t.BoldSpan(fmt.Sprintf("%d", d.selected.Get()+1), t.BrightYellow),
+					t.PlainSpan("Cursor: "),
+					t.BoldSpan(fmt.Sprintf("%d", d.cursorIndex.Get()+1), t.BrightYellow),
 					t.PlainSpan(" / "),
 					t.PlainSpan(fmt.Sprintf("%d", len(d.items))),
+					t.PlainSpan(" • "),
+					t.PlainSpan(d.message.Get()),
 					t.PlainSpan(" • Press "),
 					t.BoldSpan("Ctrl+C", t.BrightRed),
 					t.PlainSpan(" to quit"),
@@ -103,12 +112,13 @@ func (d *ListViewDemo) Build(ctx t.BuildContext) t.Widget {
 	}
 }
 
-// SelectableList is a custom widget that renders a list of items with selection.
-// It uses a ScrollController to scroll the selected item into view.
+// SelectableList is a custom widget that renders a list of items with cursor navigation.
+// It uses a ScrollController to scroll the cursor item into view.
 type SelectableList struct {
 	ID               string
 	Items            []string
-	Selected         *t.Signal[int]
+	CursorIndex      *t.Signal[int]
+	OnSelect         func(item string)
 	ScrollController *t.ScrollController
 }
 
@@ -127,67 +137,74 @@ func (l *SelectableList) IsFocusable() bool {
 	return true
 }
 
-// OnKey handles navigation keys, updating selection and scrolling into view.
+// OnKey handles navigation keys and selection, updating cursor position and scrolling into view.
 func (l *SelectableList) OnKey(event t.KeyEvent) bool {
-	selected := l.Selected.Peek()
+	cursorIdx := l.CursorIndex.Peek()
 	itemCount := len(l.Items)
 
 	switch {
+	case event.MatchString("enter"):
+		// Handle selection (Enter key press)
+		if l.OnSelect != nil && cursorIdx >= 0 && cursorIdx < len(l.Items) {
+			l.OnSelect(l.Items[cursorIdx])
+		}
+		return true
+
 	case event.MatchString("up", "k"):
-		if selected > 0 {
-			l.Selected.Set(selected - 1)
-			l.scrollSelectedIntoView()
+		if cursorIdx > 0 {
+			l.CursorIndex.Set(cursorIdx - 1)
+			l.scrollCursorIntoView()
 		}
 		return true
 
 	case event.MatchString("down", "j"):
-		if selected < itemCount-1 {
-			l.Selected.Set(selected + 1)
-			l.scrollSelectedIntoView()
+		if cursorIdx < itemCount-1 {
+			l.CursorIndex.Set(cursorIdx + 1)
+			l.scrollCursorIntoView()
 		}
 		return true
 
 	case event.MatchString("home", "g"):
-		l.Selected.Set(0)
-		l.scrollSelectedIntoView()
+		l.CursorIndex.Set(0)
+		l.scrollCursorIntoView()
 		return true
 
 	case event.MatchString("end", "G"):
-		l.Selected.Set(itemCount - 1)
-		l.scrollSelectedIntoView()
+		l.CursorIndex.Set(itemCount - 1)
+		l.scrollCursorIntoView()
 		return true
 
 	case event.MatchString("pgup", "ctrl+u"):
-		newSelected := selected - 10
-		if newSelected < 0 {
-			newSelected = 0
+		newCursor := cursorIdx - 10
+		if newCursor < 0 {
+			newCursor = 0
 		}
-		l.Selected.Set(newSelected)
-		l.scrollSelectedIntoView()
+		l.CursorIndex.Set(newCursor)
+		l.scrollCursorIntoView()
 		return true
 
 	case event.MatchString("pgdown", "ctrl+d"):
-		newSelected := selected + 10
-		if newSelected >= itemCount {
-			newSelected = itemCount - 1
+		newCursor := cursorIdx + 10
+		if newCursor >= itemCount {
+			newCursor = itemCount - 1
 		}
-		l.Selected.Set(newSelected)
-		l.scrollSelectedIntoView()
+		l.CursorIndex.Set(newCursor)
+		l.scrollCursorIntoView()
 		return true
 	}
 
 	return false
 }
 
-// scrollSelectedIntoView uses the ScrollController to ensure
-// the selected item is visible in the viewport.
-func (l *SelectableList) scrollSelectedIntoView() {
+// scrollCursorIntoView uses the ScrollController to ensure
+// the cursor item is visible in the viewport.
+func (l *SelectableList) scrollCursorIntoView() {
 	if l.ScrollController == nil {
 		return
 	}
 	// Each item is 1 line tall
 	itemHeight := 1
-	itemY := l.Selected.Peek() * itemHeight
+	itemY := l.CursorIndex.Peek() * itemHeight
 	l.ScrollController.ScrollToView(itemY, itemHeight)
 }
 
@@ -201,15 +218,15 @@ func (l *SelectableList) Layout(constraints t.Constraints) t.Size {
 	return t.Size{Width: constraints.MaxWidth, Height: len(l.Items)}
 }
 
-// Render draws all items, highlighting the selected one.
+// Render draws all items, highlighting the cursor item.
 func (l *SelectableList) Render(ctx *t.RenderContext) {
-	selected := l.Selected.Peek()
+	cursorIdx := l.CursorIndex.Peek()
 
 	for i, item := range l.Items {
 		style := t.Style{ForegroundColor: t.White}
 		prefix := "  "
 
-		if i == selected {
+		if i == cursorIdx {
 			style.ForegroundColor = t.BrightWhite
 			style.BackgroundColor = t.Blue
 			prefix = "▶ "

@@ -2,14 +2,14 @@ package terma
 
 import "fmt"
 
-// List is a generic focusable widget that displays a selectable list of items.
-// It builds a Column of widgets, with the selected item highlighted.
+// List is a generic focusable widget that displays a navigable list of items.
+// It builds a Column of widgets, with the active item (cursor position) highlighted.
 // Use with Scrollable and a shared ScrollController to enable scroll-into-view.
 //
 // Example usage:
 //
 //	controller := terma.NewScrollController()
-//	selected := terma.NewSignal(0)
+//	cursorIndex := terma.NewSignal(0)
 //	items := []string{"Item 1", "Item 2", "Item 3"}
 //
 //	&terma.Scrollable{
@@ -17,18 +17,22 @@ import "fmt"
 //	    Child: &terma.List[string]{
 //	        ID:               "my-list",
 //	        Items:            items,
-//	        Selected:         selected,
+//	        CursorIndex:      cursorIndex,
 //	        ScrollController: controller,
+//	        OnSelect: func(item string) {
+//	            // Handle selection (Enter key)
+//	        },
 //	    },
 //	}
 type List[T any] struct {
-	ID               string                             // Unique identifier (required for focus management)
-	Items            []T                                // List items to display
-	Selected         *Signal[int]                       // Signal tracking the selected index
-	ScrollController *ScrollController                  // Optional controller for scroll-into-view
-	Width            Dimension                          // Optional width (zero value = auto)
-	Height           Dimension                          // Optional height (zero value = auto)
-	RenderItem       func(item T, selected bool) Widget // Function to render each item (uses default if nil)
+	ID               string                           // Unique identifier (required for focus management)
+	Items            []T                              // List items to display
+	CursorIndex      *Signal[int]                     // Signal tracking the cursor/highlighted index
+	OnSelect         func(item T)                     // Callback invoked when Enter is pressed on an item
+	ScrollController *ScrollController                // Optional controller for scroll-into-view
+	Width            Dimension                        // Optional width (zero value = auto)
+	Height           Dimension                        // Optional height (zero value = auto)
+	RenderItem       func(item T, active bool) Widget // Function to render each item (uses default if nil)
 
 	// Cached item heights computed during Build, used for scroll calculations
 	itemHeights []int
@@ -58,14 +62,14 @@ func (l *List[T]) Build(ctx BuildContext) Widget {
 		return Column{}
 	}
 
-	// Get and clamp selection to valid bounds
-	selected := 0
-	if l.Selected != nil {
-		selected = l.Selected.Get()
-		clamped := clampInt(selected, 0, len(l.Items)-1)
-		if clamped != selected {
-			l.Selected.Set(clamped) // Update signal (won't loop since value changed)
-			selected = clamped
+	// Get and clamp cursor position to valid bounds
+	cursorIdx := 0
+	if l.CursorIndex != nil {
+		cursorIdx = l.CursorIndex.Get()
+		clamped := clampInt(cursorIdx, 0, len(l.Items)-1)
+		if clamped != cursorIdx {
+			l.CursorIndex.Set(clamped) // Update signal (won't loop since value changed)
+			cursorIdx = clamped
 		}
 	}
 
@@ -83,15 +87,15 @@ func (l *List[T]) Build(ctx BuildContext) Widget {
 	l.itemHeights = make([]int, len(l.Items))
 
 	for i, item := range l.Items {
-		widget := renderItem(item, i == selected)
+		widget := renderItem(item, i == cursorIdx)
 		children[i] = widget
 
 		// Cache height: check if widget implements Dimensioned, otherwise default to 1
 		l.itemHeights[i] = getWidgetHeight(widget)
 	}
 
-	// Ensure selected item is visible whenever we rebuild
-	l.scrollSelectedIntoView()
+	// Ensure cursor item is visible whenever we rebuild
+	l.scrollCursorIntoView()
 
 	return Column{
 		Width:    l.Width,
@@ -101,13 +105,13 @@ func (l *List[T]) Build(ctx BuildContext) Widget {
 }
 
 // defaultRenderItem provides a default rendering for list items.
-// Uses magenta foreground and "▶ " prefix for selected items.
-func defaultRenderItem[T any](item T, selected bool) Widget {
+// Uses magenta foreground and "▶ " prefix for the active (cursor) item.
+func defaultRenderItem[T any](item T, active bool) Widget {
 	content := fmt.Sprintf("%v", item)
 	prefix := "  "
 	style := Style{}
 
-	if selected {
+	if active {
 		prefix = "▶ "
 		style.ForegroundColor = Magenta
 	}
@@ -136,72 +140,79 @@ func getWidgetHeight(widget Widget) int {
 	return 1
 }
 
-// OnKey handles navigation keys, updating selection and scrolling into view.
+// OnKey handles navigation keys and selection, updating cursor position and scrolling into view.
 // Implements the Focusable interface.
 func (l *List[T]) OnKey(event KeyEvent) bool {
-	if l.Selected == nil || len(l.Items) == 0 {
+	if l.CursorIndex == nil || len(l.Items) == 0 {
 		return false
 	}
 
-	selected := l.Selected.Peek()
+	cursorIdx := l.CursorIndex.Peek()
 	itemCount := len(l.Items)
 
 	switch {
+	case event.MatchString("enter"):
+		// Handle selection (Enter key press)
+		if l.OnSelect != nil {
+			l.OnSelect(l.CursorItem())
+		}
+		return true
+
 	case event.MatchString("up", "k"):
-		if selected > 0 {
-			l.Selected.Set(selected - 1)
-			l.scrollSelectedIntoView()
+		if cursorIdx > 0 {
+			l.CursorIndex.Set(cursorIdx - 1)
+			l.scrollCursorIntoView()
 		}
 		return true
 
 	case event.MatchString("down", "j"):
-		if selected < itemCount-1 {
-			l.Selected.Set(selected + 1)
-			l.scrollSelectedIntoView()
+		if cursorIdx < itemCount-1 {
+			l.CursorIndex.Set(cursorIdx + 1)
+			l.scrollCursorIntoView()
 		}
 		return true
 
 	case event.MatchString("home", "g"):
-		l.Selected.Set(0)
-		l.scrollSelectedIntoView()
+		l.CursorIndex.Set(0)
+		l.scrollCursorIntoView()
 		return true
 
 	case event.MatchString("end", "G"):
-		l.Selected.Set(itemCount - 1)
-		l.scrollSelectedIntoView()
+		l.CursorIndex.Set(itemCount - 1)
+		l.scrollCursorIntoView()
 		return true
 
 	case event.MatchString("pgup", "ctrl+u"):
-		newSelected := selected - 10
-		if newSelected < 0 {
-			newSelected = 0
+		newCursor := cursorIdx - 10
+		if newCursor < 0 {
+			newCursor = 0
 		}
-		l.Selected.Set(newSelected)
-		l.scrollSelectedIntoView()
+		l.CursorIndex.Set(newCursor)
+		l.scrollCursorIntoView()
 		return true
 
 	case event.MatchString("pgdown", "ctrl+d"):
-		newSelected := selected + 10
-		if newSelected >= itemCount {
-			newSelected = itemCount - 1
+		newCursor := cursorIdx + 10
+		if newCursor >= itemCount {
+			newCursor = itemCount - 1
 		}
-		l.Selected.Set(newSelected)
-		l.scrollSelectedIntoView()
+		l.CursorIndex.Set(newCursor)
+		l.scrollCursorIntoView()
 		return true
 	}
 
 	return false
 }
 
-// scrollSelectedIntoView uses the ScrollController to ensure
-// the selected item is visible in the viewport.
-func (l *List[T]) scrollSelectedIntoView() {
-	if l.ScrollController == nil || l.Selected == nil {
+// scrollCursorIntoView uses the ScrollController to ensure
+// the cursor item is visible in the viewport.
+func (l *List[T]) scrollCursorIntoView() {
+	if l.ScrollController == nil || l.CursorIndex == nil {
 		return
 	}
-	selectedIdx := l.Selected.Peek()
-	itemY := l.getItemY(selectedIdx)
-	itemHeight := l.getItemHeight(selectedIdx)
+	cursorIdx := l.CursorIndex.Peek()
+	itemY := l.getItemY(cursorIdx)
+	itemHeight := l.getItemHeight(cursorIdx)
 	l.ScrollController.ScrollToView(itemY, itemHeight)
 }
 
@@ -225,50 +236,50 @@ func (l *List[T]) getItemY(index int) int {
 }
 
 // registerScrollCallbacks sets up callbacks on the ScrollController
-// to update selection when mouse wheel scrolling occurs.
-// The callbacks move selection first, then scroll only if needed.
+// to update cursor position when mouse wheel scrolling occurs.
+// The callbacks move cursor first, then scroll only if needed.
 func (l *List[T]) registerScrollCallbacks() {
 	if l.ScrollController == nil {
 		return
 	}
 
 	l.ScrollController.OnScrollUp = func(lines int) bool {
-		l.moveSelectionUp(lines)
-		l.scrollSelectedIntoView()
-		return true // We handle scrolling via scrollSelectedIntoView
+		l.moveCursorUp(lines)
+		l.scrollCursorIntoView()
+		return true // We handle scrolling via scrollCursorIntoView
 	}
 	l.ScrollController.OnScrollDown = func(lines int) bool {
-		l.moveSelectionDown(lines)
-		l.scrollSelectedIntoView()
-		return true // We handle scrolling via scrollSelectedIntoView
+		l.moveCursorDown(lines)
+		l.scrollCursorIntoView()
+		return true // We handle scrolling via scrollCursorIntoView
 	}
 }
 
-// moveSelectionUp moves the selection up by the given number of items.
-func (l *List[T]) moveSelectionUp(count int) {
-	if l.Selected == nil || len(l.Items) == 0 {
+// moveCursorUp moves the cursor up by the given number of items.
+func (l *List[T]) moveCursorUp(count int) {
+	if l.CursorIndex == nil || len(l.Items) == 0 {
 		return
 	}
-	selected := l.Selected.Peek()
-	newSelected := selected - count
-	if newSelected < 0 {
-		newSelected = 0
+	cursorIdx := l.CursorIndex.Peek()
+	newCursor := cursorIdx - count
+	if newCursor < 0 {
+		newCursor = 0
 	}
-	l.Selected.Set(newSelected)
+	l.CursorIndex.Set(newCursor)
 }
 
-// moveSelectionDown moves the selection down by the given number of items.
-func (l *List[T]) moveSelectionDown(count int) {
-	if l.Selected == nil || len(l.Items) == 0 {
+// moveCursorDown moves the cursor down by the given number of items.
+func (l *List[T]) moveCursorDown(count int) {
+	if l.CursorIndex == nil || len(l.Items) == 0 {
 		return
 	}
-	selected := l.Selected.Peek()
+	cursorIdx := l.CursorIndex.Peek()
 	itemCount := len(l.Items)
-	newSelected := selected + count
-	if newSelected >= itemCount {
-		newSelected = itemCount - 1
+	newCursor := cursorIdx + count
+	if newCursor >= itemCount {
+		newCursor = itemCount - 1
 	}
-	l.Selected.Set(newSelected)
+	l.CursorIndex.Set(newCursor)
 }
 
 // clampInt clamps value to the range [min, max].
@@ -282,14 +293,14 @@ func clampInt(value, min, max int) int {
 	return value
 }
 
-// SelectedItem returns the currently selected item.
-// Returns the zero value of T if the list is empty or Selected is nil.
-func (l *List[T]) SelectedItem() T {
+// CursorItem returns the item at the current cursor position.
+// Returns the zero value of T if the list is empty or CursorIndex is nil.
+func (l *List[T]) CursorItem() T {
 	var zero T
-	if l.Selected == nil || len(l.Items) == 0 {
+	if l.CursorIndex == nil || len(l.Items) == 0 {
 		return zero
 	}
-	idx := l.Selected.Peek()
+	idx := l.CursorIndex.Peek()
 	if idx < 0 || idx >= len(l.Items) {
 		return zero
 	}
