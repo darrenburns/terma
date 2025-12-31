@@ -193,9 +193,9 @@ func Run(root Widget) error {
 					Log("MouseWheelEvent %v at X=%d Y=%d on Scrollable[%s]", ev.Button, ev.X, ev.Y, scrollable.ID)
 					switch ev.Button {
 					case uv.MouseWheelUp:
-						scrollable.ScrollUp(3)
+						scrollable.ScrollUp(1)
 					case uv.MouseWheelDown:
-						scrollable.ScrollDown(3)
+						scrollable.ScrollDown(1)
 					}
 					// Re-render after scroll
 					display()

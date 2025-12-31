@@ -1,6 +1,10 @@
 package terma
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/charmbracelet/x/ansi"
+)
 
 // Text is a leaf widget that displays text content.
 type Text struct {
@@ -72,8 +76,9 @@ func (t Text) Layout(constraints Constraints) Size {
 	naturalHeight := len(lines)
 	naturalWidth := 0
 	for _, line := range lines {
-		if len(line) > naturalWidth {
-			naturalWidth = len(line)
+		lineWidth := ansi.StringWidth(line)
+		if lineWidth > naturalWidth {
+			naturalWidth = lineWidth
 		}
 	}
 
@@ -135,13 +140,15 @@ func (t Text) renderPlain(ctx *RenderContext) {
 		if i < len(lines) {
 			line = lines[i]
 		}
-		// Truncate line if it exceeds width
-		if len(line) > ctx.Width {
-			line = line[:ctx.Width]
+		// Truncate line if it exceeds width (using display width)
+		lineWidth := ansi.StringWidth(line)
+		if lineWidth > ctx.Width {
+			line = ansi.Truncate(line, ctx.Width, "")
+			lineWidth = ctx.Width
 		}
 		// Pad line to fill the full width (for background colors)
-		if len(line) < ctx.Width {
-			line = line + strings.Repeat(" ", ctx.Width-len(line))
+		if lineWidth < ctx.Width {
+			line = line + strings.Repeat(" ", ctx.Width-lineWidth)
 		}
 		ctx.DrawStyledText(0, i, line, t.Style)
 	}
@@ -179,7 +186,7 @@ func (t Text) renderSpans(ctx *RenderContext) {
 				// Create a span for just this part
 				partSpan := Span{Text: part, Style: span.Style}
 				ctx.DrawSpan(x, y, partSpan, t.Style)
-				x += len(part)
+				x += ansi.StringWidth(part)
 			}
 		}
 	}

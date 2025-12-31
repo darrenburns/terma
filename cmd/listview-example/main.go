@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
+	"github.com/charmbracelet/x/ansi"
 	t "terma"
 )
 
@@ -215,14 +217,16 @@ func (l *SelectableList) Render(ctx *t.RenderContext) {
 			style.ForegroundColor = t.BrightBlack
 		}
 
-		// Truncate item if needed to fit width
+		// Truncate item if needed to fit width (using display width)
 		text := prefix + item
-		if len(text) > ctx.Width {
-			text = text[:ctx.Width]
+		textWidth := ansi.StringWidth(text)
+		if textWidth > ctx.Width {
+			text = ansi.Truncate(text, ctx.Width, "")
+			textWidth = ctx.Width
 		}
 		// Pad to full width for consistent background color
-		for len(text) < ctx.Width {
-			text += " "
+		if textWidth < ctx.Width {
+			text += strings.Repeat(" ", ctx.Width-textWidth)
 		}
 
 		ctx.DrawStyledText(0, i, text, style)

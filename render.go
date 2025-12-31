@@ -2,6 +2,7 @@ package terma
 
 import (
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // RenderContext provides drawing primitives for widgets.
@@ -383,11 +384,11 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		for _, dec := range decorations {
 			// Add spacing around text: " text "
 			text := " " + dec.Text + " "
-			textLen := len(text)
+			textLen := ansi.StringWidth(text)
 
 			if textLen > edgeWidth {
-				// Truncate if too long
-				text = text[:edgeWidth]
+				// Truncate if too long (using display width)
+				text = ansi.Truncate(text, edgeWidth, "")
 				textLen = edgeWidth
 			}
 
@@ -483,14 +484,19 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 		Bg: style.BackgroundColor.toANSI(),
 	}
 
-	// Draw each character as a cell
-	for i, r := range text {
-		cellX := absX + i
+	// Draw each grapheme cluster as a cell, advancing by its display width
+	col := 0
+	remaining := text
+	for len(remaining) > 0 {
+		grapheme, width := ansi.FirstGraphemeCluster(remaining, ansi.GraphemeWidth)
+		cellX := absX + col
 		if cellX >= ctx.X+ctx.Width {
 			break
 		}
-		cell := &uv.Cell{Content: string(r), Width: 1, Style: cellStyle}
+		cell := &uv.Cell{Content: grapheme, Width: width, Style: cellStyle}
 		ctx.terminal.SetCell(cellX, absY, cell)
+		col += width
+		remaining = remaining[len(grapheme):]
 	}
 }
 
@@ -510,7 +516,7 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 
 	// Skip if outside render region (accounting for scroll)
 	if absY < clipY || absY >= clipY+clipHeight {
-		return len(span.Text)
+		return ansi.StringWidth(span.Text)
 	}
 
 	// Determine colors: span style overrides base style
@@ -546,19 +552,22 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 		Underline: underline,
 	}
 
-	// Draw each character as a cell
-	drawn := 0
-	for i, r := range span.Text {
-		cellX := absX + i
+	// Draw each grapheme cluster as a cell, advancing by its display width
+	col := 0
+	remaining := span.Text
+	for len(remaining) > 0 {
+		grapheme, width := ansi.FirstGraphemeCluster(remaining, ansi.GraphemeWidth)
+		cellX := absX + col
 		if cellX >= ctx.X+ctx.Width {
 			break
 		}
-		cell := &uv.Cell{Content: string(r), Width: 1, Style: cellStyle}
+		cell := &uv.Cell{Content: grapheme, Width: width, Style: cellStyle}
 		ctx.terminal.SetCell(cellX, absY, cell)
-		drawn++
+		col += width
+		remaining = remaining[len(grapheme):]
 	}
 
-	return len(span.Text)
+	return ansi.StringWidth(span.Text)
 }
 
 // Renderer handles the widget tree rendering pipeline.

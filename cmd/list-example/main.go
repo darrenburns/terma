@@ -30,13 +30,22 @@ type ListDemo struct {
 }
 
 func NewListDemo() *ListDemo {
-	// Generate sample items
-	items := make([]ListItem, 100)
-	for i := range items {
-		items[i] = ListItem{
-			Title:       fmt.Sprintf("Item %d", i+1),
-			Description: "Use arrow keys to navigate",
-		}
+	items := []ListItem{
+		{Title: "New Project", Description: "Create a new project from template"},
+		{Title: "Open Folder", Description: "Open an existing folder"},
+		{Title: "Clone Repository", Description: "Clone a Git repository from URL"},
+		{Title: "Connect to Remote", Description: "SSH into a remote server"},
+		{Title: "Import Settings", Description: "Import settings from another editor"},
+		{Title: "Install Extensions", Description: "Browse and install extensions"},
+		{Title: "Keyboard Shortcuts", Description: "Customize key bindings"},
+		{Title: "Color Theme", Description: "Change the editor color theme"},
+		{Title: "Font Settings", Description: "Configure font family and size"},
+		{Title: "Auto Save", Description: "Configure automatic file saving"},
+		{Title: "Format on Save", Description: "Run formatter when saving files"},
+		{Title: "Line Numbers", Description: "Toggle line number visibility"},
+		{Title: "Word Wrap", Description: "Configure text wrapping behavior"},
+		{Title: "Terminal", Description: "Open integrated terminal"},
+		{Title: "Check for Updates", Description: "Check for application updates"},
 	}
 
 	return &ListDemo{
