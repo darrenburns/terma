@@ -113,25 +113,25 @@ func (ctx *RenderContext) collectFocusable(widget Widget) {
 }
 
 // IsFocused returns true if the given widget currently has focus.
-// The widget must implement Keyed for reliable focus tracking across rebuilds.
+// The widget must implement Identifiable for reliable focus tracking across rebuilds.
 func (ctx *RenderContext) IsFocused(widget Widget) bool {
 	if ctx.focusManager == nil {
 		return false
 	}
 
-	focusedKey := ctx.focusManager.FocusedKey()
-	if focusedKey == "" {
+	focusedID := ctx.focusManager.FocusedID()
+	if focusedID == "" {
 		return false
 	}
 
-	// Check if widget has an explicit key
-	if keyed, ok := widget.(Keyed); ok {
-		return keyed.Key() == focusedKey
+	// Check if widget has an explicit ID
+	if identifiable, ok := widget.(Identifiable); ok {
+		return identifiable.WidgetID() == focusedID
 	}
 
-	// For auto-keyed widgets, check against current path
-	autoKey := "_auto:" + ctx.focusCollector.currentPath()
-	return autoKey == focusedKey
+	// For auto-ID widgets, check against current path
+	autoID := "_auto:" + ctx.focusCollector.currentPath()
+	return autoID == focusedID
 }
 
 // pushChild enters a child context for auto-key generation.
@@ -237,10 +237,10 @@ func (ctx *RenderContext) RenderChild(index int, child Widget, xOffset, yOffset,
 	// This ensures parents are recorded before children, so when searching
 	// back-to-front we find the deepest (most nested) widget first.
 	if ctx.widgetRegistry != nil {
-		// Get the widget's key if it has one
-		var key string
-		if keyed, ok := child.(Keyed); ok {
-			key = keyed.Key()
+		// Get the widget's ID if it has one
+		var id string
+		if identifiable, ok := child.(Identifiable); ok {
+			id = identifiable.WidgetID()
 		}
 
 		// Calculate absolute position of the bordered area (excludes margin).
@@ -249,7 +249,7 @@ func (ctx *RenderContext) RenderChild(index int, child Widget, xOffset, yOffset,
 		absX := ctx.X + borderedXOffset
 		absY := ctx.Y + borderedYOffset
 
-		ctx.widgetRegistry.Record(child, key, Rect{
+		ctx.widgetRegistry.Record(child, id, Rect{
 			X:      absX,
 			Y:      absY,
 			Width:  borderedWidth,
@@ -694,11 +694,11 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 	// This ensures the root is recorded first, so when searching back-to-front
 	// we find the deepest (most nested) widget first.
 	// Use bordered area (excludes margin) - margin is outside the widget.
-	var rootKey string
-	if keyed, ok := root.(Keyed); ok {
-		rootKey = keyed.Key()
+	var rootID string
+	if identifiable, ok := root.(Identifiable); ok {
+		rootID = identifiable.WidgetID()
 	}
-	r.widgetRegistry.Record(root, rootKey, Rect{
+	r.widgetRegistry.Record(root, rootID, Rect{
 		X:      borderedXOffset,
 		Y:      borderedYOffset,
 		Width:  borderedWidth,
@@ -723,10 +723,10 @@ func (r *Renderer) WidgetAt(x, y int) *WidgetEntry {
 	return r.widgetRegistry.WidgetAt(x, y)
 }
 
-// WidgetByKey returns the widget entry with the given key.
-// Returns nil if no widget has that key.
-func (r *Renderer) WidgetByKey(key string) *WidgetEntry {
-	return r.widgetRegistry.WidgetByKey(key)
+// WidgetByID returns the widget entry with the given ID.
+// Returns nil if no widget has that ID.
+func (r *Renderer) WidgetByID(id string) *WidgetEntry {
+	return r.widgetRegistry.WidgetByID(id)
 }
 
 // ScrollableAt returns the innermost Scrollable widget at the given coordinates.

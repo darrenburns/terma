@@ -36,9 +36,9 @@ type List[T any] struct {
 	ItemHeight       int                              // Height of each item in cells (default 1, must be uniform)
 }
 
-// Key returns the widget's unique identifier.
-// Implements the Keyed interface.
-func (l *List[T]) Key() string {
+// WidgetID returns the widget's unique identifier.
+// Implements the Identifiable interface.
+func (l *List[T]) WidgetID() string {
 	return l.ID
 }
 

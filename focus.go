@@ -22,10 +22,10 @@ func (k KeyEvent) Key() string {
 	return k.event.String()
 }
 
-// Keyed is implemented by widgets that provide a stable identity key.
-// The key must be unique among siblings and persist across rebuilds.
-type Keyed interface {
-	Key() string
+// Identifiable is implemented by widgets that provide a stable identity.
+// The ID must be unique among siblings and persist across rebuilds.
+type Identifiable interface {
+	WidgetID() string
 }
 
 // Focusable is implemented by widgets that can receive keyboard focus.
@@ -56,9 +56,9 @@ type Hoverable interface {
 	OnHover(hovered bool)
 }
 
-// FocusableEntry pairs a focusable widget with its identity key and ancestor chain.
+// FocusableEntry pairs a focusable widget with its identity and ancestor chain.
 type FocusableEntry struct {
-	Key       string
+	ID        string
 	Focusable Focusable
 	// Ancestors is the chain of widgets from root to this widget's parent
 	// that implement KeyHandler or KeybindProvider.
@@ -71,8 +71,8 @@ type FocusManager struct {
 	// focusables is the ordered list of focusable widgets (in tab order)
 	focusables []FocusableEntry
 
-	// focusedKey is the key of the currently focused widget ("" if none)
-	focusedKey string
+	// focusedID is the ID of the currently focused widget ("" if none)
+	focusedID string
 }
 
 // NewFocusManager creates a new focus manager.
@@ -89,36 +89,36 @@ func (fm *FocusManager) SetFocusables(focusables []FocusableEntry) {
 	if len(focusables) > 0 {
 		Log("SetFocusables: %d focusable widgets collected", len(focusables))
 		for i, entry := range focusables {
-			Log("  [%d] Key=%q Type=%T", i, entry.Key, entry.Focusable)
+			Log("  [%d] ID=%q Type=%T", i, entry.ID, entry.Focusable)
 		}
 	}
 
-	// If we have a focused key, verify it still exists
-	if fm.focusedKey != "" {
+	// If we have a focused ID, verify it still exists
+	if fm.focusedID != "" {
 		found := false
 		for _, entry := range focusables {
-			if entry.Key == fm.focusedKey {
+			if entry.ID == fm.focusedID {
 				found = true
 				break
 			}
 		}
 		if !found {
-			Log("SetFocusables: focused key %q no longer exists, clearing focus", fm.focusedKey)
-			fm.focusedKey = ""
+			Log("SetFocusables: focused ID %q no longer exists, clearing focus", fm.focusedID)
+			fm.focusedID = ""
 		}
 	}
 
 	// If no focus and there are focusables, focus the first one
-	if fm.focusedKey == "" && len(focusables) > 0 {
-		fm.focusedKey = focusables[0].Key
-		Log("SetFocusables: auto-focusing first widget %q", fm.focusedKey)
+	if fm.focusedID == "" && len(focusables) > 0 {
+		fm.focusedID = focusables[0].ID
+		Log("SetFocusables: auto-focusing first widget %q", fm.focusedID)
 	}
 }
 
 // focusedIndex returns the index of the focused widget (-1 if none).
 func (fm *FocusManager) focusedIndex() int {
 	for i, entry := range fm.focusables {
-		if entry.Key == fm.focusedKey {
+		if entry.ID == fm.focusedID {
 			return i
 		}
 	}
@@ -128,16 +128,16 @@ func (fm *FocusManager) focusedIndex() int {
 // Focused returns the currently focused widget, or nil if none.
 func (fm *FocusManager) Focused() Focusable {
 	for _, entry := range fm.focusables {
-		if entry.Key == fm.focusedKey {
+		if entry.ID == fm.focusedID {
 			return entry.Focusable
 		}
 	}
 	return nil
 }
 
-// FocusedKey returns the key of the focused widget ("" if none).
-func (fm *FocusManager) FocusedKey() string {
-	return fm.focusedKey
+// FocusedID returns the ID of the focused widget ("" if none).
+func (fm *FocusManager) FocusedID() string {
+	return fm.focusedID
 }
 
 // ActiveKeybinds returns all declarative keybindings currently active
@@ -148,7 +148,7 @@ func (fm *FocusManager) ActiveKeybinds() []Keybind {
 	// Find the focused entry
 	var focusedEntry *FocusableEntry
 	for i := range fm.focusables {
-		if fm.focusables[i].Key == fm.focusedKey {
+		if fm.focusables[i].ID == fm.focusedID {
 			focusedEntry = &fm.focusables[i]
 			break
 		}
@@ -175,11 +175,11 @@ func (fm *FocusManager) ActiveKeybinds() []Keybind {
 	return keybinds
 }
 
-// FocusByKey sets focus to the widget with the given key.
-func (fm *FocusManager) FocusByKey(key string) {
+// FocusByID sets focus to the widget with the given ID.
+func (fm *FocusManager) FocusByID(id string) {
 	for _, entry := range fm.focusables {
-		if entry.Key == key && entry.Focusable.IsFocusable() {
-			fm.focusedKey = key
+		if entry.ID == id && entry.Focusable.IsFocusable() {
+			fm.focusedID = id
 			return
 		}
 	}
@@ -192,7 +192,7 @@ func (fm *FocusManager) FocusNext() {
 		return
 	}
 
-	oldKey := fm.focusedKey
+	oldID := fm.focusedID
 	startIndex := fm.focusedIndex()
 	if startIndex < 0 {
 		startIndex = -1
@@ -202,8 +202,8 @@ func (fm *FocusManager) FocusNext() {
 	for i := 0; i < len(fm.focusables); i++ {
 		nextIndex := (startIndex + 1 + i) % len(fm.focusables)
 		if fm.focusables[nextIndex].Focusable.IsFocusable() {
-			fm.focusedKey = fm.focusables[nextIndex].Key
-			Log("FocusNext: %q -> %q", oldKey, fm.focusedKey)
+			fm.focusedID = fm.focusables[nextIndex].ID
+			Log("FocusNext: %q -> %q", oldID, fm.focusedID)
 			return
 		}
 	}
@@ -217,7 +217,7 @@ func (fm *FocusManager) FocusPrevious() {
 		return
 	}
 
-	oldKey := fm.focusedKey
+	oldID := fm.focusedID
 	startIndex := fm.focusedIndex()
 	if startIndex < 0 {
 		startIndex = 0
@@ -227,8 +227,8 @@ func (fm *FocusManager) FocusPrevious() {
 	for i := 0; i < len(fm.focusables); i++ {
 		prevIndex := (startIndex - 1 - i + len(fm.focusables)) % len(fm.focusables)
 		if fm.focusables[prevIndex].Focusable.IsFocusable() {
-			fm.focusedKey = fm.focusables[prevIndex].Key
-			Log("FocusPrevious: %q -> %q", oldKey, fm.focusedKey)
+			fm.focusedID = fm.focusables[prevIndex].ID
+			Log("FocusPrevious: %q -> %q", oldID, fm.focusedID)
 			return
 		}
 	}
@@ -257,7 +257,7 @@ func (fm *FocusManager) HandleKey(event KeyEvent) bool {
 	// Find the focused entry to get the ancestor chain
 	var focusedEntry *FocusableEntry
 	for i := range fm.focusables {
-		if fm.focusables[i].Key == fm.focusedKey {
+		if fm.focusables[i].ID == fm.focusedID {
 			focusedEntry = &fm.focusables[i]
 			break
 		}
@@ -269,47 +269,47 @@ func (fm *FocusManager) HandleKey(event KeyEvent) bool {
 	}
 
 	Log("HandleKey: focused widget is %q (%T), %d ancestors in chain",
-		focusedEntry.Key, focusedEntry.Focusable, len(focusedEntry.Ancestors))
+		focusedEntry.ID, focusedEntry.Focusable, len(focusedEntry.Ancestors))
 
 	// First, try the focused widget itself
 	// Check declarative keybindings first
 	if provider, ok := focusedEntry.Focusable.(KeybindProvider); ok {
-		Log("HandleKey: checking keybindings on focused widget %q", focusedEntry.Key)
+		Log("HandleKey: checking keybindings on focused widget %q", focusedEntry.ID)
 		if matchKeybind(event, provider.Keybinds()) {
-			Log("HandleKey: key %q handled by keybinding on focused widget %q", event.Key(), focusedEntry.Key)
+			Log("HandleKey: key %q handled by keybinding on focused widget %q", event.Key(), focusedEntry.ID)
 			return true
 		}
 	}
 	// Then try imperative OnKey
-	Log("HandleKey: calling OnKey on focused widget %q", focusedEntry.Key)
+	Log("HandleKey: calling OnKey on focused widget %q", focusedEntry.ID)
 	if focusedEntry.Focusable.OnKey(event) {
-		Log("HandleKey: key %q handled by OnKey on focused widget %q", event.Key(), focusedEntry.Key)
+		Log("HandleKey: key %q handled by OnKey on focused widget %q", event.Key(), focusedEntry.ID)
 		return true
 	}
-	Log("HandleKey: focused widget %q did not handle key, bubbling up", focusedEntry.Key)
+	Log("HandleKey: focused widget %q did not handle key, bubbling up", focusedEntry.ID)
 
 	// Bubble up through ancestors (from innermost to outermost/root)
 	for i := len(focusedEntry.Ancestors) - 1; i >= 0; i-- {
 		ancestor := focusedEntry.Ancestors[i]
-		ancestorKey := ""
-		if keyed, ok := ancestor.(Keyed); ok {
-			ancestorKey = keyed.Key()
+		ancestorID := ""
+		if identifiable, ok := ancestor.(Identifiable); ok {
+			ancestorID = identifiable.WidgetID()
 		}
 
 		// Check declarative keybindings first
 		if provider, ok := ancestor.(KeybindProvider); ok {
-			Log("HandleKey: checking keybindings on ancestor %q (%T)", ancestorKey, ancestor)
+			Log("HandleKey: checking keybindings on ancestor %q (%T)", ancestorID, ancestor)
 			if matchKeybind(event, provider.Keybinds()) {
-				Log("HandleKey: key %q handled by keybinding on ancestor %q", event.Key(), ancestorKey)
+				Log("HandleKey: key %q handled by keybinding on ancestor %q", event.Key(), ancestorID)
 				return true
 			}
 		}
 
 		// Then try imperative OnKey
 		if handler, ok := ancestor.(KeyHandler); ok {
-			Log("HandleKey: calling OnKey on ancestor %q (%T)", ancestorKey, ancestor)
+			Log("HandleKey: calling OnKey on ancestor %q (%T)", ancestorID, ancestor)
 			if handler.OnKey(event) {
-				Log("HandleKey: key %q handled by OnKey on ancestor %q", event.Key(), ancestorKey)
+				Log("HandleKey: key %q handled by OnKey on ancestor %q", event.Key(), ancestorID)
 				return true
 			}
 		}
@@ -383,20 +383,20 @@ func (fc *FocusCollector) currentPath() string {
 }
 
 // Collect adds a focusable widget to the collection.
-// If the widget implements Keyed, its key is used; otherwise an auto-key is generated.
+// If the widget implements Identifiable, its ID is used; otherwise an auto-ID is generated.
 func (fc *FocusCollector) Collect(widget Widget) {
 	focusable, ok := widget.(Focusable)
 	if !ok || !focusable.IsFocusable() {
 		return
 	}
 
-	// Get the widget's key, falling back to auto-key if not provided or empty
-	var key string
-	if keyed, ok := widget.(Keyed); ok && keyed.Key() != "" {
-		key = keyed.Key()
+	// Get the widget's ID, falling back to auto-ID if not provided or empty
+	var id string
+	if identifiable, ok := widget.(Identifiable); ok && identifiable.WidgetID() != "" {
+		id = identifiable.WidgetID()
 	} else {
-		// Generate auto-key from tree position
-		key = "_auto:" + fc.currentPath()
+		// Generate auto-ID from tree position
+		id = "_auto:" + fc.currentPath()
 	}
 
 	// Copy the current ancestor chain for this focusable
@@ -407,7 +407,7 @@ func (fc *FocusCollector) Collect(widget Widget) {
 	}
 
 	fc.focusables = append(fc.focusables, FocusableEntry{
-		Key:       key,
+		ID:        id,
 		Focusable: focusable,
 		Ancestors: ancestors,
 	})

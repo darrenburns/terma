@@ -15,7 +15,7 @@ func (r Rect) Contains(x, y int) bool {
 // WidgetEntry stores a widget along with its position and identity.
 type WidgetEntry struct {
 	Widget Widget
-	Key    string
+	ID     string
 	Bounds Rect
 }
 
@@ -31,11 +31,11 @@ func NewWidgetRegistry() *WidgetRegistry {
 	return &WidgetRegistry{}
 }
 
-// Record adds a widget to the registry with its bounds and optional key.
-func (r *WidgetRegistry) Record(widget Widget, key string, bounds Rect) {
+// Record adds a widget to the registry with its bounds and optional ID.
+func (r *WidgetRegistry) Record(widget Widget, id string, bounds Rect) {
 	r.entries = append(r.entries, WidgetEntry{
 		Widget: widget,
-		Key:    key,
+		ID:     id,
 		Bounds: bounds,
 	})
 }
@@ -59,14 +59,14 @@ func (r *WidgetRegistry) Entries() []WidgetEntry {
 	return r.entries
 }
 
-// WidgetByKey returns the widget entry with the given key.
-// Returns nil if no widget has that key.
-func (r *WidgetRegistry) WidgetByKey(key string) *WidgetEntry {
-	if key == "" {
+// WidgetByID returns the widget entry with the given ID.
+// Returns nil if no widget has that ID.
+func (r *WidgetRegistry) WidgetByID(id string) *WidgetEntry {
+	if id == "" {
 		return nil
 	}
 	for i := range r.entries {
-		if r.entries[i].Key == key {
+		if r.entries[i].ID == id {
 			return &r.entries[i]
 		}
 	}

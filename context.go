@@ -21,20 +21,20 @@ func NewBuildContext(fm *FocusManager, focusedSignal *AnySignal[Focusable], hove
 }
 
 // IsFocused returns true if the given widget currently has focus.
-// The widget should implement Keyed for reliable focus tracking across rebuilds.
+// The widget should implement Identifiable for reliable focus tracking across rebuilds.
 func (ctx BuildContext) IsFocused(widget Widget) bool {
 	if ctx.focusManager == nil {
 		return false
 	}
 
-	focusedKey := ctx.focusManager.FocusedKey()
-	if focusedKey == "" {
+	focusedID := ctx.focusManager.FocusedID()
+	if focusedID == "" {
 		return false
 	}
 
-	// Check if widget has an explicit key
-	if keyed, ok := widget.(Keyed); ok {
-		return keyed.Key() == focusedKey
+	// Check if widget has an explicit ID
+	if identifiable, ok := widget.(Identifiable); ok {
+		return identifiable.WidgetID() == focusedID
 	}
 
 	return false
@@ -67,16 +67,16 @@ func (ctx BuildContext) ActiveKeybinds() []Keybind {
 }
 
 // IsHovered returns true if the given widget is currently being hovered.
-// The widget must implement Keyed for hover comparison.
+// The widget must implement Identifiable for hover comparison.
 func (ctx BuildContext) IsHovered(widget Widget) bool {
-	hoveredKey := ctx.HoveredKey()
-	if hoveredKey == "" {
+	hoveredID := ctx.HoveredID()
+	if hoveredID == "" {
 		return false
 	}
 
-	// Compare by key to avoid issues with incomparable types (e.g., slices in Column)
-	if keyed, ok := widget.(Keyed); ok {
-		return keyed.Key() == hoveredKey
+	// Compare by ID to avoid issues with incomparable types (e.g., slices in Column)
+	if identifiable, ok := widget.(Identifiable); ok {
+		return identifiable.WidgetID() == hoveredID
 	}
 
 	return false
@@ -92,10 +92,10 @@ func (ctx BuildContext) Hovered() Widget {
 	return ctx.hoveredSignal.Get()
 }
 
-// HoveredKey returns the key of the currently hovered widget ("" if none).
+// HoveredID returns the ID of the currently hovered widget ("" if none).
 // This is a reactive value - reading it during Build() will cause
 // the widget to rebuild when hover changes.
-func (ctx BuildContext) HoveredKey() string {
+func (ctx BuildContext) HoveredID() string {
 	if ctx.hoveredSignal == nil {
 		return ""
 	}
@@ -103,8 +103,8 @@ func (ctx BuildContext) HoveredKey() string {
 	if hovered == nil {
 		return ""
 	}
-	if keyed, ok := hovered.(Keyed); ok {
-		return keyed.Key()
+	if identifiable, ok := hovered.(Identifiable); ok {
+		return identifiable.WidgetID()
 	}
 	return ""
 }

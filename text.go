@@ -23,9 +23,9 @@ func (t Text) Build(ctx BuildContext) Widget {
 	return t
 }
 
-// Key returns the text widget's unique identifier.
-// Implements the Keyed interface.
-func (t Text) Key() string {
+// WidgetID returns the text widget's unique identifier.
+// Implements the Identifiable interface.
+func (t Text) WidgetID() string {
 	return t.ID
 }
 

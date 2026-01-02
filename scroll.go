@@ -147,8 +147,9 @@ type Scrollable struct {
 	viewportHeight int // Cached viewport height from last layout
 }
 
-// Key returns the widget's unique identifier.
-func (s *Scrollable) Key() string {
+// WidgetID returns the widget's unique identifier.
+// Implements the Identifiable interface.
+func (s *Scrollable) WidgetID() string {
 	return s.ID
 }
 

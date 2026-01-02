@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Terma is a declarative terminal UI (TUI) framework for Go. It provides a reactive widget system with automatic dependency tracking, similar to React or Flutter but for the terminal.
 
+This project is not currently in use by any developers, so maintaining backwards compatibility is not a requirement. Improvements should always be preferred over backwards compatibility.
+
 ## Build Commands
 
 ```bash

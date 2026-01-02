@@ -22,9 +22,9 @@ func (r Row) GetStyle() Style {
 	return r.Style
 }
 
-// Key returns the row's unique identifier.
-// Implements the Keyed interface.
-func (r Row) Key() string {
+// WidgetID returns the row's unique identifier.
+// Implements the Identifiable interface.
+func (r Row) WidgetID() string {
 	return r.ID
 }
 
@@ -311,9 +311,9 @@ func (c Column) GetStyle() Style {
 	return c.Style
 }
 
-// Key returns the column's unique identifier.
-// Implements the Keyed interface.
-func (c Column) Key() string {
+// WidgetID returns the column's unique identifier.
+// Implements the Identifiable interface.
+func (c Column) WidgetID() string {
 	return c.ID
 }
 

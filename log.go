@@ -70,8 +70,8 @@ func LogWidgetRegistry(registry *WidgetRegistry) {
 	}
 	Log("=== Widget Registry (%d entries) ===", len(registry.entries))
 	for i, entry := range registry.entries {
-		Log("  [%d] Key=%q Bounds={X:%d Y:%d W:%d H:%d} Type=%T",
-			i, entry.Key, entry.Bounds.X, entry.Bounds.Y,
+		Log("  [%d] ID=%q Bounds={X:%d Y:%d W:%d H:%d} Type=%T",
+			i, entry.ID, entry.Bounds.X, entry.Bounds.Y,
 			entry.Bounds.Width, entry.Bounds.Height, entry.Widget)
 	}
 	Log("=== End Registry ===")

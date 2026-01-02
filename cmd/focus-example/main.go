@@ -16,8 +16,8 @@ func (f FocusedLabel) Build(ctx t.BuildContext) t.Widget {
 
 	label := "(none)"
 	if focused != nil {
-		if keyed, ok := focused.(t.Keyed); ok {
-			label = keyed.Key()
+		if identifiable, ok := focused.(t.Identifiable); ok {
+			label = identifiable.WidgetID()
 		}
 	}
 

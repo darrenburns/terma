@@ -13,9 +13,9 @@ type Button struct {
 	Style   Style     // Optional styling (colors) applied when not focused
 }
 
-// Key returns the button's unique identifier.
-// Implements the Keyed interface.
-func (b *Button) Key() string {
+// WidgetID returns the button's unique identifier.
+// Implements the Identifiable interface.
+func (b *Button) WidgetID() string {
 	return b.ID
 }
 

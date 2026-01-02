@@ -89,11 +89,11 @@ func NewNestedSpacing() *NestedSpacing {
 
 func (n *NestedSpacing) Build(ctx t.BuildContext) t.Widget {
 	clicked := n.clickedKey.Get()
-	hoveredKey := ctx.HoveredKey()
+	hoveredID := ctx.HoveredID()
 
 	statusText := "Move mouse over widgets to hover, click to select"
-	if clicked != "" || hoveredKey != "" {
-		statusText = fmt.Sprintf("Clicked: %q  |  Hovered: %q", clicked, hoveredKey)
+	if clicked != "" || hoveredID != "" {
+		statusText = fmt.Sprintf("Clicked: %q  |  Hovered: %q", clicked, hoveredID)
 	}
 
 	return t.Column{

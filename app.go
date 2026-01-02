@@ -119,7 +119,7 @@ func Run(root Widget) error {
 				// Find the widget under the cursor
 				entry := renderer.WidgetAt(ev.X, ev.Y)
 				if entry != nil {
-					Log("  Found widget: Key=%q Type=%T", entry.Key, entry.Widget)
+					Log("  Found widget: ID=%q Type=%T", entry.ID, entry.Widget)
 					// If the widget implements Clickable, call OnClick
 					if clickable, ok := entry.Widget.(Clickable); ok {
 						Log("  Widget is Clickable, calling OnClick")
@@ -141,32 +141,32 @@ func Run(root Widget) error {
 				// Find the widget under the cursor
 				entry := renderer.WidgetAt(ev.X, ev.Y)
 				var newHovered Widget
-				newHoveredKey := ""
+				newHoveredID := ""
 				if entry != nil {
 					newHovered = entry.Widget
-					newHoveredKey = entry.Key
-					// Log("  Widget at position: Key=%q Type=%T", entry.Key, entry.Widget)
+					newHoveredID = entry.ID
+					// Log("  Widget at position: ID=%q Type=%T", entry.ID, entry.Widget)
 				} else {
 					// Log("  No widget at position")
 				}
 
-				// Get old hovered widget and its key
+				// Get old hovered widget and its ID
 				oldHovered := hoveredSignal.Get()
-				oldHoveredKey := ""
+				oldHoveredID := ""
 				if oldHovered != nil {
-					if keyed, ok := oldHovered.(Keyed); ok {
-						oldHoveredKey = keyed.Key()
+					if identifiable, ok := oldHovered.(Identifiable); ok {
+						oldHoveredID = identifiable.WidgetID()
 					}
 				}
 
-				// Only update if hover changed (compare by key to avoid incomparable type issues)
-				if newHoveredKey != oldHoveredKey {
-					Log("  Hover changed: %q -> %q", oldHoveredKey, newHoveredKey)
+				// Only update if hover changed (compare by ID to avoid incomparable type issues)
+				if newHoveredID != oldHoveredID {
+					Log("  Hover changed: %q -> %q", oldHoveredID, newHoveredID)
 
 					// Notify old widget it's no longer hovered
 					if oldHovered != nil {
 						if hoverable, ok := oldHovered.(Hoverable); ok {
-							Log("  Calling OnHover(false) on %q", oldHoveredKey)
+							Log("  Calling OnHover(false) on %q", oldHoveredID)
 							hoverable.OnHover(false)
 						}
 					}
@@ -177,7 +177,7 @@ func Run(root Widget) error {
 					// Notify new widget it's now hovered
 					if entry != nil {
 						if hoverable, ok := entry.Widget.(Hoverable); ok {
-							Log("  Calling OnHover(true) on %q", newHoveredKey)
+							Log("  Calling OnHover(true) on %q", newHoveredID)
 							hoverable.OnHover(true)
 						}
 					}
