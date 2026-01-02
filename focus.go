@@ -1,10 +1,6 @@
 package terma
 
-import (
-	"fmt"
-
-	uv "github.com/charmbracelet/ultraviolet"
-)
+import uv "github.com/charmbracelet/ultraviolet"
 
 // KeyEvent wraps a key press event from ultraviolet.
 type KeyEvent struct {
@@ -322,8 +318,6 @@ func (fm *FocusManager) HandleKey(event KeyEvent) bool {
 // FocusCollector collects focusable widgets during render traversal.
 type FocusCollector struct {
 	focusables []FocusableEntry
-	// path tracks the current position in the widget tree for auto-keys
-	path []int
 	// ancestorStack tracks widgets that implement KeyHandler or KeybindProvider
 	// from root to current position
 	ancestorStack []Widget
@@ -331,21 +325,7 @@ type FocusCollector struct {
 
 // NewFocusCollector creates a new focus collector.
 func NewFocusCollector() *FocusCollector {
-	return &FocusCollector{
-		path: []int{0},
-	}
-}
-
-// PushChild enters a child widget context for key generation.
-func (fc *FocusCollector) PushChild(index int) {
-	fc.path = append(fc.path, index)
-}
-
-// PopChild exits the current child widget context.
-func (fc *FocusCollector) PopChild() {
-	if len(fc.path) > 1 {
-		fc.path = fc.path[:len(fc.path)-1]
-	}
+	return &FocusCollector{}
 }
 
 // PushAncestor adds a widget to the ancestor chain.
@@ -370,33 +350,19 @@ func (fc *FocusCollector) ShouldTrackAncestor(widget Widget) bool {
 	return isHandler || isProvider
 }
 
-// currentPath returns the current path as a string for auto-key generation.
-func (fc *FocusCollector) currentPath() string {
-	result := ""
-	for i, idx := range fc.path {
-		if i > 0 {
-			result += "."
-		}
-		result += fmt.Sprintf("%d", idx)
-	}
-	return result
-}
-
 // Collect adds a focusable widget to the collection.
-// If the widget implements Identifiable, its ID is used; otherwise an auto-ID is generated.
-func (fc *FocusCollector) Collect(widget Widget) {
+// The autoID is the position-based auto-generated ID from BuildContext.
+// If the widget implements Identifiable with a non-empty ID, that is used instead.
+func (fc *FocusCollector) Collect(widget Widget, autoID string) {
 	focusable, ok := widget.(Focusable)
 	if !ok || !focusable.IsFocusable() {
 		return
 	}
 
 	// Get the widget's ID, falling back to auto-ID if not provided or empty
-	var id string
+	id := autoID
 	if identifiable, ok := widget.(Identifiable); ok && identifiable.WidgetID() != "" {
 		id = identifiable.WidgetID()
-	} else {
-		// Generate auto-ID from tree position
-		id = "_auto:" + fc.currentPath()
 	}
 
 	// Copy the current ancestor chain for this focusable
@@ -421,7 +387,5 @@ func (fc *FocusCollector) Focusables() []FocusableEntry {
 // Reset clears the collected focusables for a new render pass.
 func (fc *FocusCollector) Reset() {
 	fc.focusables = fc.focusables[:0]
-	fc.path = fc.path[:1]
-	fc.path[0] = 0
 	fc.ancestorStack = fc.ancestorStack[:0]
 }

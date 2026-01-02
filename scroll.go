@@ -1,9 +1,17 @@
 package terma
 
-// scrollStateRegistry stores scroll state by widget ID to persist across renders.
-// This follows the pattern used by React (useState), Flutter (State), and SwiftUI (@State)
-// where state is stored externally and associated with widget identity.
-var scrollStateRegistry = make(map[string]*Signal[int])
+// ScrollableState holds the state for a Scrollable widget.
+// This is used internally when no ScrollController is provided.
+type ScrollableState struct {
+	Offset *Signal[int]
+}
+
+// NewScrollableState creates a new ScrollableState with default values.
+func NewScrollableState() *ScrollableState {
+	return &ScrollableState{
+		Offset: NewSignal(0),
+	}
+}
 
 // ScrollController provides programmatic control over a Scrollable.
 // Share the same controller between Scrollable and widgets that need
@@ -140,9 +148,8 @@ type Scrollable struct {
 	// (like ListView) that need to scroll items into view.
 	Controller *ScrollController
 
-	// Internal state - lazily initialized, persisted via scrollStateRegistry
-	// Only used when Controller is nil.
-	scrollOffset   *Signal[int]
+	// Internal state - resolved during Build, persisted via state registry
+	resolvedState  *ScrollableState
 	contentHeight  int // Cached content height from last layout
 	viewportHeight int // Cached viewport height from last layout
 }
@@ -165,37 +172,15 @@ func (s *Scrollable) GetStyle() Style {
 
 // Build returns itself as Scrollable manages its own child.
 func (s *Scrollable) Build(ctx BuildContext) Widget {
-	return s
-}
-
-// ensureScrollOffset initializes the scroll offset signal if needed.
-// If a Controller is provided, this is a no-op (controller manages its own state).
-// If the widget has an ID, state is persisted in the registry across renders.
-func (s *Scrollable) ensureScrollOffset() {
-	// If we have a controller, it manages the offset
-	if s.Controller != nil {
-		return
-	}
-
-	if s.scrollOffset != nil {
-		return
-	}
-
-	// Look up existing state by ID to persist across renders
-	if s.ID != "" {
-		if existing, ok := scrollStateRegistry[s.ID]; ok {
-			s.scrollOffset = existing
-			return
+	// Resolve internal state if no controller provided
+	if s.Controller == nil {
+		id := s.ID
+		if id == "" {
+			id = ctx.AutoID()
 		}
+		s.resolvedState = GetOrCreateState(id, NewScrollableState)
 	}
-
-	// Create new state
-	s.scrollOffset = NewSignal(0)
-
-	// Register it for persistence if we have an ID
-	if s.ID != "" {
-		scrollStateRegistry[s.ID] = s.scrollOffset
-	}
+	return s
 }
 
 // getScrollOffset returns the current scroll offset from either the controller or internal state.
@@ -203,8 +188,10 @@ func (s *Scrollable) getScrollOffset() int {
 	if s.Controller != nil {
 		return s.Controller.Offset()
 	}
-	s.ensureScrollOffset()
-	return s.scrollOffset.Peek()
+	if s.resolvedState != nil {
+		return s.resolvedState.Offset.Peek()
+	}
+	return 0
 }
 
 // setScrollOffset sets the scroll offset on either the controller or internal state.
@@ -213,8 +200,9 @@ func (s *Scrollable) setScrollOffset(offset int) {
 		s.Controller.SetOffset(offset)
 		return
 	}
-	s.ensureScrollOffset()
-	s.scrollOffset.Set(offset)
+	if s.resolvedState != nil {
+		s.resolvedState.Offset.Set(offset)
+	}
 }
 
 // canScroll returns true if scrolling is possible (content exceeds viewport).
@@ -247,13 +235,15 @@ func (s *Scrollable) clampScrollOffset() {
 		s.Controller.SetOffset(s.Controller.Offset())
 		return
 	}
-	s.ensureScrollOffset()
-	offset := s.scrollOffset.Peek()
+	if s.resolvedState == nil {
+		return
+	}
+	offset := s.resolvedState.Offset.Peek()
 	max := s.maxScrollOffset()
 	if offset < 0 {
-		s.scrollOffset.Set(0)
+		s.resolvedState.Offset.Set(0)
 	} else if offset > max {
-		s.scrollOffset.Set(max)
+		s.resolvedState.Offset.Set(max)
 	}
 }
 
@@ -266,12 +256,14 @@ func (s *Scrollable) ScrollUp(lines int) {
 		s.Controller.ScrollUp(lines)
 		return
 	}
-	s.ensureScrollOffset()
-	newOffset := s.scrollOffset.Peek() - lines
+	if s.resolvedState == nil {
+		return
+	}
+	newOffset := s.resolvedState.Offset.Peek() - lines
 	if newOffset < 0 {
 		newOffset = 0
 	}
-	s.scrollOffset.Set(newOffset)
+	s.resolvedState.Offset.Set(newOffset)
 }
 
 // ScrollDown scrolls the content down by the given number of lines.
@@ -283,13 +275,15 @@ func (s *Scrollable) ScrollDown(lines int) {
 		s.Controller.ScrollDown(lines)
 		return
 	}
-	s.ensureScrollOffset()
-	newOffset := s.scrollOffset.Peek() + lines
+	if s.resolvedState == nil {
+		return
+	}
+	newOffset := s.resolvedState.Offset.Peek() + lines
 	max := s.maxScrollOffset()
 	if newOffset > max {
 		newOffset = max
 	}
-	s.scrollOffset.Set(newOffset)
+	s.resolvedState.Offset.Set(newOffset)
 }
 
 // Layout computes the size of the scrollable widget.

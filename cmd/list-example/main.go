@@ -24,10 +24,9 @@ type ListItem struct {
 // The List widget builds a Column of widgets internally,
 // and integrates with ScrollController for scroll-into-view.
 type EditorSettingsMenu struct {
-	controller  *t.ScrollController
-	cursorIndex *t.Signal[int]
-	items       []ListItem
-	message     *t.Signal[string]
+	controller *t.ScrollController
+	listState  *t.ListState[ListItem] // ListState holds both items and cursor position
+	message    *t.Signal[string]
 }
 
 func NewEditorSettingsMenu() *EditorSettingsMenu {
@@ -49,11 +48,14 @@ func NewEditorSettingsMenu() *EditorSettingsMenu {
 		{Title: "Check for Updates", Description: "Check for application updates"},
 	}
 
+	// Create ListState and set items - state is source of truth
+	listState := t.NewListState[ListItem]()
+	listState.SetItems(items)
+
 	return &EditorSettingsMenu{
-		controller:  t.NewScrollController(),
-		cursorIndex: t.NewSignal(0),
-		items:       items,
-		message:     t.NewSignal(""),
+		controller: t.NewScrollController(),
+		listState:  listState,
+		message:    t.NewSignal(""),
 	}
 }
 
@@ -61,11 +63,13 @@ func (d *EditorSettingsMenu) Keybinds() []t.Keybind {
 	return []t.Keybind{
 		{Key: "r", Name: "Move 2 rows down", Action: func() {
 			d.controller.ScrollDown(2)
-			d.cursorIndex.Update(func(s int) int { return s + 2 })
+			cursorIdx := d.listState.CursorIndex.Peek()
+			d.listState.SelectIndex(cursorIdx + 2)
 		}},
 		{Key: "l", Name: "Move 2 rows up", Action: func() {
 			d.controller.ScrollUp(2)
-			d.cursorIndex.Update(func(s int) int { return s - 2 })
+			cursorIdx := d.listState.CursorIndex.Peek()
+			d.listState.SelectIndex(cursorIdx - 2)
 		}},
 	}
 }
@@ -120,8 +124,7 @@ func (d *EditorSettingsMenu) Build(ctx t.BuildContext) t.Widget {
 						},
 						Child: &t.List[ListItem]{
 							ID:               "demo-list",
-							Items:            d.items,
-							CursorIndex:      d.cursorIndex,
+							State:            d.listState,
 							ScrollController: d.controller,
 							OnSelect: func(item ListItem) {
 								d.message.Set(fmt.Sprintf("Selected: %s", item.Title))
@@ -162,9 +165,9 @@ func (d *EditorSettingsMenu) Build(ctx t.BuildContext) t.Widget {
 			t.Text{
 				Spans: []t.Span{
 					t.PlainSpan("Cursor: "),
-					t.BoldSpan(fmt.Sprintf("%d", d.cursorIndex.Get()+1), t.BrightYellow),
+					t.BoldSpan(fmt.Sprintf("%d", d.listState.CursorIndex.Get()+1), t.BrightYellow),
 					t.PlainSpan(" / "),
-					t.PlainSpan(fmt.Sprintf("%d", len(d.items))),
+					t.PlainSpan(fmt.Sprintf("%d", d.listState.ItemCount())),
 					t.PlainSpan(" • "),
 					t.PlainSpan(d.message.Get()),
 					t.PlainSpan(" • Press "),

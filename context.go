@@ -1,5 +1,7 @@
 package terma
 
+import "fmt"
+
 // BuildContext provides access to framework state during widget building.
 // It is passed to Widget.Build() to allow widgets to access focus state,
 // hover state, and other framework features in a declarative way.
@@ -9,6 +11,8 @@ type BuildContext struct {
 	focusedSignal *AnySignal[Focusable]
 	// Signal that holds the currently hovered widget (nil if none)
 	hoveredSignal *AnySignal[Widget]
+	// path tracks the current position in the widget tree for auto-ID generation
+	path []int
 }
 
 // NewBuildContext creates a new build context.
@@ -17,6 +21,42 @@ func NewBuildContext(fm *FocusManager, focusedSignal *AnySignal[Focusable], hove
 		focusManager:  fm,
 		focusedSignal: focusedSignal,
 		hoveredSignal: hoveredSignal,
+		path:          []int{0},
+	}
+}
+
+// AutoID returns an automatically generated ID based on tree position.
+// This is used for state persistence when widgets don't provide an explicit ID.
+func (ctx BuildContext) AutoID() string {
+	return "_auto:" + ctx.pathString()
+}
+
+// pathString converts the path slice to a dot-separated string (e.g., "0.1.3").
+func (ctx BuildContext) pathString() string {
+	if len(ctx.path) == 0 {
+		return "0"
+	}
+	result := ""
+	for i, idx := range ctx.path {
+		if i > 0 {
+			result += "."
+		}
+		result += fmt.Sprintf("%d", idx)
+	}
+	return result
+}
+
+// PushChild creates a child context with the given index appended to the path.
+// Used by container widgets when rendering children.
+func (ctx BuildContext) PushChild(index int) BuildContext {
+	newPath := make([]int, len(ctx.path)+1)
+	copy(newPath, ctx.path)
+	newPath[len(ctx.path)] = index
+	return BuildContext{
+		focusManager:  ctx.focusManager,
+		focusedSignal: ctx.focusedSignal,
+		hoveredSignal: ctx.hoveredSignal,
+		path:          newPath,
 	}
 }
 

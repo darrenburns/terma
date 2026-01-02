@@ -15,7 +15,7 @@ This project is not currently in use by any developers, so maintaining backwards
 go run ./cmd/example/main.go
 go run ./cmd/simple-list-example/main.go
 
-# Build an example
+# Build an example (cleanup the artifact afterwards)
 go build ./cmd/example
 
 # Fetch/tidy dependencies

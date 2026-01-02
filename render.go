@@ -108,7 +108,7 @@ func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, sc
 // collectFocusable automatically registers a widget if it implements Focusable.
 func (ctx *RenderContext) collectFocusable(widget Widget) {
 	if ctx.focusCollector != nil {
-		ctx.focusCollector.Collect(widget)
+		ctx.focusCollector.Collect(widget, ctx.buildContext.AutoID())
 	}
 }
 
@@ -129,23 +129,8 @@ func (ctx *RenderContext) IsFocused(widget Widget) bool {
 		return identifiable.WidgetID() == focusedID
 	}
 
-	// For auto-ID widgets, check against current path
-	autoID := "_auto:" + ctx.focusCollector.currentPath()
-	return autoID == focusedID
-}
-
-// pushChild enters a child context for auto-key generation.
-func (ctx *RenderContext) pushChild(index int) {
-	if ctx.focusCollector != nil {
-		ctx.focusCollector.PushChild(index)
-	}
-}
-
-// popChild exits the current child context.
-func (ctx *RenderContext) popChild() {
-	if ctx.focusCollector != nil {
-		ctx.focusCollector.PopChild()
-	}
+	// For auto-ID widgets, check against current path from BuildContext
+	return ctx.buildContext.AutoID() == focusedID
 }
 
 // RenderChild handles the complete rendering of a child widget.
@@ -153,8 +138,10 @@ func (ctx *RenderContext) popChild() {
 // Automatically applies padding, margin, and border from the widget's style.
 // Returns the size of the rendered child including padding, margin, and border.
 func (ctx *RenderContext) RenderChild(index int, child Widget, xOffset, yOffset, maxWidth, maxHeight int) Size {
-	ctx.pushChild(index)
-	defer ctx.popChild()
+	// Update build context with child path
+	parentBuildContext := ctx.buildContext
+	ctx.buildContext = ctx.buildContext.PushChild(index)
+	defer func() { ctx.buildContext = parentBuildContext }()
 
 	// Track if this widget handles keys (KeyHandler or KeybindProvider) for bubbling
 	if ctx.focusCollector != nil && ctx.focusCollector.ShouldTrackAncestor(child) {
