@@ -292,13 +292,13 @@ func (s *Scrollable) ScrollDown(lines int) {
 }
 
 // Layout computes the size of the scrollable widget.
-func (s *Scrollable) Layout(constraints Constraints) Size {
+func (s *Scrollable) Layout(ctx BuildContext, constraints Constraints) Size {
 	if s.Child == nil {
 		return Size{Width: constraints.MinWidth, Height: constraints.MinHeight}
 	}
 
 	// Build the child first
-	built := s.Child.Build(BuildContext{})
+	built := s.Child.Build(ctx)
 
 	// Determine if we need space for scrollbar
 	scrollbarWidth := 0
@@ -331,7 +331,7 @@ func (s *Scrollable) Layout(constraints Constraints) Size {
 			MinHeight: 0,
 			MaxHeight: 100000, // Large value to allow natural height
 		}
-		size := layoutable.Layout(childConstraints)
+		size := layoutable.Layout(ctx, childConstraints)
 		childWidth = size.Width
 		// Add child's vertical insets since RenderChild will apply them
 		s.contentHeight = size.Height + childVInset

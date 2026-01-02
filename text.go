@@ -69,7 +69,7 @@ func (t Text) textContent() string {
 }
 
 // Layout computes the size of the text widget.
-func (t Text) Layout(constraints Constraints) Size {
+func (t Text) Layout(ctx BuildContext, constraints Constraints) Size {
 	// Calculate natural size from content (spans or plain text)
 	content := t.textContent()
 	lines := strings.Split(content, "\n")

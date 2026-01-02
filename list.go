@@ -25,7 +25,7 @@ import "fmt"
 //	    },
 //	}
 type List[T any] struct {
-	ID               string                           // Unique identifier (required for focus management)
+	ID               string                           // Optional unique identifier (auto-generated from tree position if empty)
 	Items            []T                              // List items to display
 	CursorIndex      *Signal[int]                     // Signal tracking the cursor/highlighted index
 	OnSelect         func(item T)                     // Callback invoked when Enter is pressed on an item
@@ -33,9 +33,7 @@ type List[T any] struct {
 	Width            Dimension                        // Optional width (zero value = auto)
 	Height           Dimension                        // Optional height (zero value = auto)
 	RenderItem       func(item T, active bool) Widget // Function to render each item (uses default if nil)
-
-	// Cached item heights computed during Build, used for scroll calculations
-	itemHeights []int
+	ItemHeight       int                              // Height of each item in cells (default 1, must be uniform)
 }
 
 // Key returns the widget's unique identifier.
@@ -82,16 +80,10 @@ func (l *List[T]) Build(ctx BuildContext) Widget {
 		renderItem = defaultRenderItem[T]
 	}
 
-	// Build children and cache their heights
+	// Build children
 	children := make([]Widget, len(l.Items))
-	l.itemHeights = make([]int, len(l.Items))
-
 	for i, item := range l.Items {
-		widget := renderItem(item, i == cursorIdx)
-		children[i] = widget
-
-		// Cache height: check if widget implements Dimensioned, otherwise default to 1
-		l.itemHeights[i] = getWidgetHeight(widget)
+		children[i] = renderItem(item, i == cursorIdx)
 	}
 
 	// Ensure cursor item is visible whenever we rebuild
@@ -121,23 +113,6 @@ func defaultRenderItem[T any](item T, active bool) Widget {
 		Style:   style,
 		Width:   Fr(1), // Fill available width for consistent background
 	}
-}
-
-// getWidgetHeight extracts the height from a widget if it implements Dimensioned,
-// otherwise returns 1 as the default height.
-// Panics if the widget uses Fr dimensions, as fractional heights are not supported
-// for list items (scroll calculations require known cell heights).
-func getWidgetHeight(widget Widget) int {
-	if dimensioned, ok := widget.(Dimensioned); ok {
-		_, height := dimensioned.GetDimensions()
-		if height.IsFr() {
-			panic("List item widgets cannot use Fr height dimensions. Use Cells(n) for multi-line items or omit Height for single-line items.")
-		}
-		if height.IsCells() && height.CellsValue() > 0 {
-			return height.CellsValue()
-		}
-	}
-	return 1
 }
 
 // OnKey handles navigation keys and selection, updating cursor position and scrolling into view.
@@ -212,27 +187,21 @@ func (l *List[T]) scrollCursorIntoView() {
 	}
 	cursorIdx := l.CursorIndex.Peek()
 	itemY := l.getItemY(cursorIdx)
-	itemHeight := l.getItemHeight(cursorIdx)
-	l.ScrollController.ScrollToView(itemY, itemHeight)
+	l.ScrollController.ScrollToView(itemY, l.getItemHeight())
 }
 
-// getItemHeight returns the height of the item at the given index.
-// Uses cached heights from Build if available, otherwise returns 1.
-func (l *List[T]) getItemHeight(index int) int {
-	if index < len(l.itemHeights) {
-		return l.itemHeights[index]
+// getItemHeight returns the uniform height of list items.
+// Returns ItemHeight if set, otherwise defaults to 1.
+func (l *List[T]) getItemHeight() int {
+	if l.ItemHeight > 0 {
+		return l.ItemHeight
 	}
 	return 1
 }
 
-// getItemY returns the Y position of the item at the given index,
-// calculated by summing the heights of all preceding items.
+// getItemY returns the Y position of the item at the given index.
 func (l *List[T]) getItemY(index int) int {
-	y := 0
-	for i := 0; i < index && i < len(l.Items); i++ {
-		y += l.getItemHeight(i)
-	}
-	return y
+	return index * l.getItemHeight()
 }
 
 // registerScrollCallbacks sets up callbacks on the ScrollController

@@ -50,7 +50,7 @@ func (r Row) Build(ctx BuildContext) Widget {
 }
 
 // Layout computes the size of the row and positions children.
-func (r Row) Layout(constraints Constraints) Size {
+func (r Row) Layout(ctx BuildContext, constraints Constraints) Size {
 	// Two-pass layout algorithm for fractional dimensions:
 	// Pass 1: Measure fixed/auto children, collect fr children
 	// Pass 2: Distribute remaining space to fr children
@@ -79,7 +79,7 @@ func (r Row) Layout(constraints Constraints) Size {
 
 	// Pass 1: Measure fixed/auto children and collect fr info
 	for i, child := range r.Children {
-		built := child.Build(BuildContext{})
+		built := child.Build(ctx)
 		layoutable, ok := built.(Layoutable)
 		if !ok {
 			continue
@@ -114,7 +114,7 @@ func (r Row) Layout(constraints Constraints) Size {
 				MinHeight: constraints.MinHeight,
 				MaxHeight: constraints.MaxHeight - children[i].vInset,
 			}
-			size := layoutable.Layout(childConstraints)
+			size := layoutable.Layout(ctx, childConstraints)
 			children[i].size = size
 			totalFixedWidth += size.Width + children[i].hInset
 			totalHeight := size.Height + children[i].vInset
@@ -148,7 +148,7 @@ func (r Row) Layout(constraints Constraints) Size {
 			MinHeight: constraints.MinHeight,
 			MaxHeight: constraints.MaxHeight - children[i].vInset,
 		}
-		size := children[i].layoutable.Layout(childConstraints)
+		size := children[i].layoutable.Layout(ctx, childConstraints)
 		children[i].size = size
 		totalHeight := size.Height + children[i].vInset
 		if totalHeight > maxHeight {
@@ -226,7 +226,7 @@ func (r Row) Render(ctx *RenderContext) {
 
 	// Pass 1: Measure fixed/auto children
 	for i, child := range r.Children {
-		built := child.Build(BuildContext{})
+		built := child.Build(ctx.buildContext)
 
 		var widthDim Dimension
 		if dimensioned, ok := built.(Dimensioned); ok {
@@ -246,7 +246,7 @@ func (r Row) Render(ctx *RenderContext) {
 					MinHeight: 0,
 					MaxHeight: ctx.Height,
 				}
-				size := layoutable.Layout(childConstraints)
+				size := layoutable.Layout(ctx.buildContext, childConstraints)
 				childWidth := size.Width
 				// Add padding, margin, and border to get total space needed
 				if styled, ok := built.(Styled); ok {
@@ -339,7 +339,7 @@ func (c Column) Build(ctx BuildContext) Widget {
 }
 
 // Layout computes the size of the column and positions children.
-func (c Column) Layout(constraints Constraints) Size {
+func (c Column) Layout(ctx BuildContext, constraints Constraints) Size {
 	// Two-pass layout algorithm for fractional dimensions:
 	// Pass 1: Measure fixed/auto children, collect fr children
 	// Pass 2: Distribute remaining space to fr children
@@ -368,7 +368,7 @@ func (c Column) Layout(constraints Constraints) Size {
 
 	// Pass 1: Measure fixed/auto children and collect fr info
 	for i, child := range c.Children {
-		built := child.Build(BuildContext{})
+		built := child.Build(ctx)
 		layoutable, ok := built.(Layoutable)
 		if !ok {
 			continue
@@ -403,7 +403,7 @@ func (c Column) Layout(constraints Constraints) Size {
 				MinHeight: 0,
 				MaxHeight: availableHeight - totalFixedHeight - children[i].vInset,
 			}
-			size := layoutable.Layout(childConstraints)
+			size := layoutable.Layout(ctx, childConstraints)
 			children[i].size = size
 			totalFixedHeight += size.Height + children[i].vInset
 			totalWidth := size.Width + children[i].hInset
@@ -437,7 +437,7 @@ func (c Column) Layout(constraints Constraints) Size {
 			MinHeight: childHeight - children[i].vInset,
 			MaxHeight: childHeight - children[i].vInset,
 		}
-		size := children[i].layoutable.Layout(childConstraints)
+		size := children[i].layoutable.Layout(ctx, childConstraints)
 		children[i].size = size
 		totalWidth := size.Width + children[i].hInset
 		if totalWidth > maxWidth {
@@ -515,7 +515,7 @@ func (c Column) Render(ctx *RenderContext) {
 
 	// Pass 1: Measure fixed/auto children
 	for i, child := range c.Children {
-		built := child.Build(BuildContext{})
+		built := child.Build(ctx.buildContext)
 
 		var heightDim Dimension
 		if dimensioned, ok := built.(Dimensioned); ok {
@@ -535,7 +535,7 @@ func (c Column) Render(ctx *RenderContext) {
 					MinHeight: 0,
 					MaxHeight: availableHeight - totalFixedHeight,
 				}
-				size := layoutable.Layout(childConstraints)
+				size := layoutable.Layout(ctx.buildContext, childConstraints)
 				childHeight := size.Height
 				// Add padding, margin, and border to get total space needed
 				if styled, ok := built.(Styled); ok {

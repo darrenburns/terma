@@ -390,9 +390,9 @@ func (fc *FocusCollector) Collect(widget Widget) {
 		return
 	}
 
-	// Get the widget's key
+	// Get the widget's key, falling back to auto-key if not provided or empty
 	var key string
-	if keyed, ok := widget.(Keyed); ok {
+	if keyed, ok := widget.(Keyed); ok && keyed.Key() != "" {
 		key = keyed.Key()
 	} else {
 		// Generate auto-key from tree position

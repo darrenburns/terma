@@ -209,7 +209,7 @@ func (l *SelectableList) scrollCursorIntoView() {
 }
 
 // Layout computes the size needed for all items.
-func (l *SelectableList) Layout(constraints t.Constraints) t.Size {
+func (l *SelectableList) Layout(ctx t.BuildContext, constraints t.Constraints) t.Size {
 	// Each item takes 1 line, width is constrained
 	height := len(l.Items)
 	if height > constraints.MaxHeight {

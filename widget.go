@@ -21,7 +21,7 @@ type Size struct {
 // Layoutable is implemented by widgets that can compute their size
 // given constraints and perform layout on their children.
 type Layoutable interface {
-	Layout(constraints Constraints) Size
+	Layout(ctx BuildContext, constraints Constraints) Size
 }
 
 // Renderable is implemented by widgets that can render themselves.
@@ -97,7 +97,7 @@ func (n *widgetNode) layout(ctx BuildContext, constraints Constraints, x, y int)
 
 	// If the built widget implements Layoutable, use it
 	if layoutable, ok := built.(Layoutable); ok {
-		size := layoutable.Layout(constraints)
+		size := layoutable.Layout(ctx, constraints)
 		n.width = size.Width
 		n.height = size.Height
 		return size

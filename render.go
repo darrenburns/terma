@@ -196,7 +196,7 @@ func (ctx *RenderContext) RenderChild(index int, child Widget, xOffset, yOffset,
 	contentWidth := contentMaxWidth
 	contentHeight := contentMaxHeight
 	if layoutable, ok := built.(Layoutable); ok {
-		size := layoutable.Layout(Constraints{
+		size := layoutable.Layout(ctx.buildContext, Constraints{
 			MinWidth:  0,
 			MaxWidth:  contentMaxWidth,
 			MinHeight: 0,
@@ -660,7 +660,7 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 	// Layout the widget
 	var contentWidth, contentHeight int
 	if layoutable, ok := built.(Layoutable); ok {
-		size := layoutable.Layout(constraints)
+		size := layoutable.Layout(buildCtx, constraints)
 		contentWidth = size.Width
 		contentHeight = size.Height
 	} else {
