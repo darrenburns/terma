@@ -24,37 +24,81 @@ func (f FocusedLabel) Build(ctx t.BuildContext) t.Widget {
 	return t.Text{Content: fmt.Sprintf("Focused: %q", label)}
 }
 
-// Footer displays the currently active keybindings.
-type Footer struct{}
+// EditorPanel is a container widget with its own keybinds.
+// When a child inside this panel is focused, the panel's keybinds
+// bubble up and appear in the footer alongside the child's keybinds.
+type EditorPanel struct {
+	message *t.Signal[string]
+}
 
-func (f Footer) Build(ctx t.BuildContext) t.Widget {
-	keybinds := ctx.ActiveKeybinds()
-
-	if len(keybinds) == 0 {
-		return t.Text{Content: ""}
+// Keybinds returns panel-level keybindings available to all children.
+func (p *EditorPanel) Keybinds() []t.Keybind {
+	return []t.Keybind{
+		{Key: "ctrl+s", Name: "Save", Action: func() {
+			p.message.Set("Panel: Save triggered!")
+		}},
+		{Key: "ctrl+z", Name: "Undo", Action: func() {
+			p.message.Set("Panel: Undo triggered!")
+		}},
+		{Key: "d", Name: "Delete", Action: func() {
+			p.message.Set("Panel: Delete triggered!")
+		}},
 	}
+}
 
-	// Build the keybinding display, deduplicating by key
-	seen := make(map[string]bool)
-	var children []t.Widget
-	for _, kb := range keybinds {
-		if seen[kb.Key] {
-			continue
-		}
-		seen[kb.Key] = true
-
-		// Add separator between keybindings
-		if len(children) > 0 {
-			children = append(children, t.Text{Content: "  "})
-		}
-
-		children = append(children, t.Text{
-			Content: fmt.Sprintf("[%s] %s", kb.Key, kb.Name),
-			Style:   t.Style{ForegroundColor: t.Cyan},
-		})
+func (p *EditorPanel) Build(ctx t.BuildContext) t.Widget {
+	return t.Column{
+		Style: t.Style{
+			Padding:         t.EdgeInsets{Left: 2, Right: 2, Top: 1, Bottom: 1},
+			BackgroundColor: t.Hex("#1a1a2e"),
+		},
+		Children: []t.Widget{
+			t.Text{Content: "Editor Panel (has ctrl+s, ctrl+z, d keybinds):"},
+			t.Text{Content: ""},
+			// Regular button - inherits panel keybinds
+			&t.Button{ID: "btn-new-file", Label: "New File", OnPress: func() {
+				p.message.Set("New File button pressed!")
+			}},
+			// Button with conflicting "d" keybind - overrides panel's "d"
+			&DeleteButton{message: p.message},
+		},
 	}
+}
 
-	return t.Row{Children: children}
+// DeleteButton is a focusable widget that overrides the parent's "d" keybind.
+// When focused, pressing "d" triggers this button's action, not the panel's.
+type DeleteButton struct {
+	message *t.Signal[string]
+}
+
+func (b *DeleteButton) WidgetID() string { return "btn-delete" }
+func (b *DeleteButton) IsFocusable() bool { return true }
+func (b *DeleteButton) OnKey(event t.KeyEvent) bool { return false }
+
+// Keybinds overrides the parent panel's "d" keybind with a different action.
+func (b *DeleteButton) Keybinds() []t.Keybind {
+	return []t.Keybind{
+		{Key: "enter", Name: "Press", Action: b.press},
+		{Key: " ", Name: "Press", Action: b.press},
+		// This "d" keybind takes precedence over the panel's "d" keybind
+		{Key: "d", Name: "Delete Forever", Action: func() {
+			b.message.Set("DeleteButton: DELETE FOREVER! (overrides panel)")
+		}},
+	}
+}
+
+func (b *DeleteButton) press() {
+	b.message.Set("Delete button pressed!")
+}
+
+func (b *DeleteButton) Build(ctx t.BuildContext) t.Widget {
+	style := t.Style{Padding: t.EdgeInsets{Left: 1, Right: 1}}
+	if ctx.IsFocused(b) {
+		theme := ctx.Theme()
+		style.BackgroundColor = theme.Primary
+		style.ForegroundColor = theme.TextOnPrimary
+	}
+	return t.Text{Content: "Delete", Style: style}
 }
 
 // App is the root widget for this application.
@@ -81,48 +125,26 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 
 	return t.Column{
 		Children: []t.Widget{
-			t.Text{Content: "=== Focus Demo (Declarative Keybindings) ==="},
+			t.Text{Content: "=== Focus Demo (Keybind Bubbling) ==="},
 			t.Text{Content: ""},
-			FocusedLabel{}, // Uses ctx.Focused() to get current focus
+			FocusedLabel{},
 			t.Text{Content: ""},
-			// Show message if set
 			t.Text{Content: msg, Style: t.Style{ForegroundColor: t.Green}},
 			t.Text{Content: ""},
-			t.Text{Content: "Use Tab/Shift+Tab to navigate:"},
+			t.Text{Content: "Use Tab/Shift+Tab to navigate. Watch footer change!"},
 			t.Text{Content: ""},
-			t.Row{
-				Children: []t.Widget{
-					&t.Button{ID: "btn-save", Label: "Save", OnPress: func() {
-						a.message.Set("Save button pressed!")
-					}},
-					t.Text{Content: "  "},
-					&t.Button{ID: "btn-cancel", Label: "Cancel", OnPress: func() {
-						a.message.Set("Cancel button pressed!")
-					}},
-					t.Text{Content: "  "},
-					&t.Button{ID: "btn-help", Label: "Help", OnPress: func() {
-						a.message.Set("Help button pressed!")
-					}},
-				},
-			},
+			// Standalone button - only has app-level keybinds (?, r)
+			&t.Button{ID: "btn-standalone", Label: "Standalone Button", OnPress: func() {
+				a.message.Set("Standalone button pressed!")
+			}},
 			t.Text{Content: ""},
-			t.Column{
-				Children: []t.Widget{
-					&t.Button{ID: "btn-option-1", Label: "Option 1", OnPress: func() {
-						a.message.Set("Option 1 selected!")
-					}},
-					&t.Button{ID: "btn-option-2", Label: "Option 2", OnPress: func() {
-						a.message.Set("Option 2 selected!")
-					}},
-					&t.Button{ID: "btn-option-3", Label: "Option 3", OnPress: func() {
-						a.message.Set("Option 3 selected!")
-					}},
-				},
-			},
+			// EditorPanel has its own keybinds that bubble to children
+			&EditorPanel{message: a.message},
 			t.Text{Content: ""},
-			t.Text{Content: "Press Ctrl+C to quit"},
+			t.Text{Content: "Try: Tab to 'New File' shows panel keybinds (ctrl+s, ctrl+z, d)"},
+			t.Text{Content: "     Tab to 'Delete' shows 'd' as 'Delete Forever' (overrides panel)"},
 			t.Text{Content: ""},
-			Footer{}, // Displays active keybindings from focused widget + ancestors
+			t.KeybindFooter{},
 		},
 	}
 }

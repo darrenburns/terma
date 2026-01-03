@@ -9,6 +9,9 @@ type Keybind struct {
 	Name string
 	// Action is the callback to execute when the keybinding is triggered
 	Action func()
+	// Hidden prevents this keybind from appearing in KeybindFooter.
+	// Use for internal bindings that shouldn't be displayed to users.
+	Hidden bool
 }
 
 // KeybindProvider is implemented by widgets that declare keybindings.
