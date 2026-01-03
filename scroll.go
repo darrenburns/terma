@@ -138,6 +138,10 @@ type Scrollable struct {
 	Style         Style        // Optional styling
 	DisableScroll bool         // If true, scrolling is disabled and scrollbar hidden (default: false)
 	DisableFocus  bool         // If true, widget cannot receive focus (default: false = focusable)
+
+	// Scrollbar appearance customization
+	ScrollbarThumbColor Color // Custom thumb color (default: White unfocused, BrightCyan focused)
+	ScrollbarTrackColor Color // Custom track color (default: BrightBlack)
 }
 
 // WidgetID returns the widget's unique identifier.
@@ -372,13 +376,18 @@ func (s Scrollable) renderScrollbar(ctx *RenderContext, scrollOffset int, focuse
 		thumbY = (scrollOffset * (trackHeight - thumbHeight)) / maxScroll
 	}
 
-	// Determine scrollbar colors based on focus state
+	// Determine scrollbar colors based on focus state and custom settings
 	var trackColor, thumbColor Color
-	if focused {
-		trackColor = BrightBlack
-		thumbColor = BrightCyan
+	if s.ScrollbarTrackColor.IsSet() {
+		trackColor = s.ScrollbarTrackColor
 	} else {
 		trackColor = BrightBlack
+	}
+	if s.ScrollbarThumbColor.IsSet() {
+		thumbColor = s.ScrollbarThumbColor
+	} else if focused {
+		thumbColor = BrightCyan
+	} else {
 		thumbColor = White
 	}
 

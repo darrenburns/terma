@@ -11,6 +11,9 @@ import (
 
 // Color represents a terminal color with full RGB, HSL, and alpha support.
 // The zero value (Color{}) is transparent/default - inherits from terminal.
+// Alpha values < 1.0 enable transparency:
+//   - For background colors: blends with inherited background
+//   - For foreground colors: blends with effective background, creating faded text
 type Color struct {
 	r, g, b uint8
 	a       float64 // 0.0 = fully transparent, 1.0 = fully opaque

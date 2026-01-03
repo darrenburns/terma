@@ -6,7 +6,9 @@ import (
 	t "terma"
 )
 
-type ColorDemo struct{}
+type ColorDemo struct {
+	scrollState *t.ScrollState
+}
 
 func (d *ColorDemo) Build(ctx t.BuildContext) t.Widget {
 	return t.GradientBox{
@@ -16,44 +18,52 @@ func (d *ColorDemo) Build(ctx t.BuildContext) t.Widget {
 		),
 		Width:  t.Fr(1),
 		Height: t.Fr(1),
-		Child: t.Column{
-			Style: t.Style{
-				Padding: t.EdgeInsetsXY(2, 1),
-			},
-			Children: []t.Widget{
-				header(),
-				t.Text{Content: ""},
+		Child: t.Scrollable{
+			ID:                  "color-demo-scroll",
+			State:               d.scrollState,
+			Width:               t.Fr(1),
+			Height:              t.Fr(1),
+			ScrollbarThumbColor: t.Hex("#475569"), // Slate 600
+			ScrollbarTrackColor: t.Hex("#1E293B"), // Slate 800 (matches gradient)
+			Child: t.Column{
+				Style: t.Style{
+					Padding: t.EdgeInsetsXY(2, 1),
+				},
+				Children: []t.Widget{
+					header(),
+					t.Text{Content: ""},
 
-				// Color constructors showcase
-				constructorsSection(),
-				t.Text{Content: ""},
+					// Color constructors showcase
+					constructorsSection(),
+					t.Text{Content: ""},
 
-				// Lightness manipulation
-				lightnessSection(),
-				t.Text{Content: ""},
+					// Lightness manipulation
+					lightnessSection(),
+					t.Text{Content: ""},
 
-				// Saturation manipulation
-				saturationSection(),
-				t.Text{Content: ""},
+					// Saturation manipulation
+					saturationSection(),
+					t.Text{Content: ""},
 
-				// Color harmonies
-				harmoniesSection(),
-				t.Text{Content: ""},
+					// Color harmonies
+					harmoniesSection(),
+					t.Text{Content: ""},
 
-				// Blending showcase
-				blendingSection(),
-				t.Text{Content: ""},
+					// Blending showcase
+					blendingSection(),
+					t.Text{Content: ""},
 
-				// AutoText showcase
-				autoTextSection(),
-				t.Text{Content: ""},
+					// AutoText showcase
+					autoTextSection(),
+					t.Text{Content: ""},
 
-				// Contrast & accessibility
-				accessibilitySection(),
-				t.Text{Content: ""},
+					// Contrast & accessibility
+					accessibilitySection(),
+					t.Text{Content: ""},
 
-				// Alpha transparency showcase
-				transparencySection(),
+					// Alpha transparency showcase
+					transparencySection(),
+				},
 			},
 		},
 	}
@@ -420,15 +430,27 @@ func transparencySection() t.Widget {
 		Children: []t.Widget{
 			sectionHeader("Alpha Transparency", t.Hex("#A78BFA")),
 
-			// Single layer transparency
+			// Single layer transparency (background)
 			t.Row{
 				Children: []t.Widget{
-					alphaLabel("Single Layer"),
+					alphaLabel("Background"),
 					alphaBlock(pink.WithAlpha(1.0), "100%"),
 					alphaBlock(pink.WithAlpha(0.75), "75%"),
 					alphaBlock(pink.WithAlpha(0.5), "50%"),
 					alphaBlock(pink.WithAlpha(0.25), "25%"),
 					alphaBlock(pink.WithAlpha(0.1), "10%"),
+				},
+			},
+
+			// Foreground transparency
+			t.Row{
+				Children: []t.Widget{
+					alphaLabel("Foreground"),
+					fgAlphaBlock(t.White, 1.0, "100%"),
+					fgAlphaBlock(t.White, 0.75, "75%"),
+					fgAlphaBlock(t.White, 0.5, "50%"),
+					fgAlphaBlock(t.White, 0.25, "25%"),
+					fgAlphaBlock(t.White, 0.1, "10%"),
 				},
 			},
 		},
@@ -460,6 +482,21 @@ func alphaBlock(color t.Color, label string) t.Widget {
 	}
 }
 
+func fgAlphaBlock(color t.Color, alpha float64, label string) t.Widget {
+	for len(label) < 5 {
+		label = " " + label
+	}
+	return t.Text{
+		Content: " " + label + " ",
+		Style: t.Style{
+			ForegroundColor: color.WithAlpha(alpha),
+			BackgroundColor: t.Hex("#1E293B"), // Dark slate background
+		},
+	}
+}
+
 func main() {
-	t.Run(&ColorDemo{})
+	t.Run(&ColorDemo{
+		scrollState: t.NewScrollState(),
+	})
 }

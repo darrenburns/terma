@@ -5,6 +5,19 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+// blendForeground blends a semi-transparent foreground color over a background.
+// Returns the foreground unchanged if it's opaque or not set.
+func blendForeground(fg, bg Color) Color {
+	if !fg.IsSet() || fg.IsOpaque() {
+		return fg
+	}
+	blendTarget := bg
+	if !blendTarget.IsSet() {
+		blendTarget = Black
+	}
+	return fg.BlendOver(blendTarget)
+}
+
 // RenderContext provides drawing primitives for widgets.
 // It tracks the current region where the widget should render.
 type RenderContext struct {
@@ -372,8 +385,10 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		if ctx.inheritedBgAt != nil {
 			bg = ctx.inheritedBgAt(absY)
 		}
+		// Blend foreground if semi-transparent
+		effectiveFg := blendForeground(fgColor, bg)
 		style := uv.Style{
-			Fg: fgColor.toANSI(),
+			Fg: effectiveFg.toANSI(),
 			Bg: bg.toANSI(),
 		}
 		cell := &uv.Cell{Content: content, Width: 1, Style: style}
@@ -533,9 +548,12 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 		bg = ctx.inheritedBgAt(absY)
 	}
 
+	// Blend foreground if semi-transparent
+	fg := blendForeground(style.ForegroundColor, bg)
+
 	// Build the cell style
 	cellStyle := uv.Style{
-		Fg: style.ForegroundColor.toANSI(),
+		Fg: fg.toANSI(),
 		Bg: bg.toANSI(),
 	}
 
@@ -597,6 +615,9 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 	} else if !bg.IsSet() && ctx.inheritedBgAt != nil {
 		bg = ctx.inheritedBgAt(absY)
 	}
+
+	// Blend foreground if semi-transparent
+	fg = blendForeground(fg, bg)
 
 	// Build text attributes bitmask
 	var attrs uint8
