@@ -50,15 +50,25 @@ func (b *Button) OnKey(event KeyEvent) bool {
 }
 
 // Build returns a Text widget with appropriate styling based on focus state.
-// When focused, the button is highlighted with colors.
+// When focused, the button is highlighted with theme colors.
+// If no explicit style colors are set, theme defaults are applied.
 func (b *Button) Build(ctx BuildContext) Widget {
 	label := fmt.Sprintf("%s", b.Label)
+	theme := ctx.Theme()
 	style := b.Style
 
+	// Apply theme defaults if no explicit colors set
+	if !style.ForegroundColor.IsSet() {
+		style.ForegroundColor = theme.Text
+	}
+	if !style.BackgroundColor.IsSet() {
+		style.BackgroundColor = theme.Surface
+	}
+
 	if ctx.IsFocused(b) {
-		// Highlight with colors when focused
-		style.BackgroundColor = BrightBlue
-		style.ForegroundColor = Black
+		// Highlight with theme colors when focused
+		style.BackgroundColor = theme.Primary
+		style.ForegroundColor = theme.TextOnPrimary
 	}
 
 	return Text{

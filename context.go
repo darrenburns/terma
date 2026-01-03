@@ -148,3 +148,23 @@ func (ctx BuildContext) HoveredID() string {
 	}
 	return ""
 }
+
+// Theme returns the current theme data.
+// This is a reactive value - reading it during Build() will cause
+// the widget to rebuild when the theme changes.
+//
+// Example:
+//
+//	func (w *MyWidget) Build(ctx BuildContext) Widget {
+//	    theme := ctx.Theme()
+//	    return Text{
+//	        Content: "Hello",
+//	        Style: Style{
+//	            ForegroundColor: theme.Text,
+//	            BackgroundColor: theme.Surface,
+//	        },
+//	    }
+//	}
+func (ctx BuildContext) Theme() ThemeData {
+	return getTheme()
+}

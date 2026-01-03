@@ -406,7 +406,7 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 	// Use default render function if none provided
 	renderItem := l.RenderItem
 	if renderItem == nil {
-		renderItem = defaultRenderItem[T]
+		renderItem = l.themedDefaultRenderItem(ctx)
 	}
 
 	// Build children
@@ -426,8 +426,35 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 	}
 }
 
-// defaultRenderItem provides a default rendering for list items.
-// Uses magenta foreground and "▶ " prefix for the active (cursor) item.
+// themedDefaultRenderItem returns a themed render function for list items.
+// Captures theme colors from the context for use in the render function.
+func (l List[T]) themedDefaultRenderItem(ctx BuildContext) func(item T, active bool, selected bool) Widget {
+	theme := ctx.Theme()
+	return func(item T, active bool, selected bool) Widget {
+		content := fmt.Sprintf("%v", item)
+		prefix := "  "
+		style := Style{ForegroundColor: theme.Text}
+
+		if selected && active {
+			prefix = "▶*"
+			style.ForegroundColor = theme.Accent
+		} else if active {
+			prefix = "▶ "
+			style.ForegroundColor = theme.Accent
+		} else if selected {
+			prefix = " *"
+		}
+
+		return Text{
+			Content: prefix + content,
+			Style:   style,
+			Width:   Fr(1), // Fill available width for consistent background
+		}
+	}
+}
+
+// defaultRenderItem provides a non-themed default rendering for list items.
+// Deprecated: Use themedDefaultRenderItem instead, which applies theme colors.
 func defaultRenderItem[T any](item T, active bool, selected bool) Widget {
 	content := fmt.Sprintf("%v", item)
 	prefix := "  "

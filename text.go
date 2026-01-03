@@ -137,7 +137,12 @@ func (t Text) renderPlain(ctx *RenderContext) {
 	// Create a style without BackgroundColor - the background is already drawn
 	// by RenderChild's FillRect. We only need ForegroundColor here.
 	// Using the inherited background (via ctx.inheritedBgAt) for transparent text.
-	style := Style{ForegroundColor: t.Style.ForegroundColor}
+	fgColor := t.Style.ForegroundColor
+	if !fgColor.IsSet() {
+		// Use theme text color as default
+		fgColor = ctx.buildContext.Theme().Text
+	}
+	style := Style{ForegroundColor: fgColor}
 
 	lines := strings.Split(t.Content, "\n")
 	for i := 0; i < ctx.Height; i++ {
@@ -163,7 +168,12 @@ func (t Text) renderPlain(ctx *RenderContext) {
 func (t Text) renderSpans(ctx *RenderContext) {
 	// Create a base style without BackgroundColor - the background is already drawn
 	// by RenderChild's FillRect. We only need ForegroundColor here.
-	baseStyle := Style{ForegroundColor: t.Style.ForegroundColor}
+	fgColor := t.Style.ForegroundColor
+	if !fgColor.IsSet() {
+		// Use theme text color as default
+		fgColor = ctx.buildContext.Theme().Text
+	}
+	baseStyle := Style{ForegroundColor: fgColor}
 
 	x, y := 0, 0
 
