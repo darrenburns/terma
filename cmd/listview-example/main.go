@@ -15,11 +15,11 @@ func init() {
 	}
 }
 
-// ListViewDemo demonstrates the ScrollController pattern.
-// A custom SelectableList widget shares a ScrollController with its
+// ListViewDemo demonstrates the ScrollState pattern.
+// A custom SelectableList widget shares a ScrollState with its
 // parent Scrollable, allowing the list to scroll the cursor item into view.
 type ListViewDemo struct {
-	controller  *t.ScrollController
+	scrollState *t.ScrollState
 	cursorIndex *t.Signal[int]
 	items       []string
 	message     *t.Signal[string]
@@ -33,7 +33,7 @@ func NewListViewDemo() *ListViewDemo {
 	}
 
 	return &ListViewDemo{
-		controller:  t.NewScrollController(),
+		scrollState: t.NewScrollState(),
 		cursorIndex: t.NewSignal(0),
 		items:       items,
 		message:     t.NewSignal(""),
@@ -71,12 +71,12 @@ func (d *ListViewDemo) Build(ctx t.BuildContext) t.Widget {
 				},
 			},
 
-			// Scrollable wrapping a SelectableList, both share the same controller.
+			// Scrollable wrapping a SelectableList, both share the same scroll state.
 			// DisableFocus lets the child SelectableList receive focus directly,
 			// while still showing the scrollbar for visual feedback.
-			&t.Scrollable{
+			t.Scrollable{
 				ID:           "list-scroll",
-				Controller:   d.controller,
+				State:        d.scrollState,
 				Height:       t.Cells(15),
 				DisableFocus: true, // Let child handle focus, but keep scrollbar visible
 				Style: t.Style{
@@ -84,10 +84,10 @@ func (d *ListViewDemo) Build(ctx t.BuildContext) t.Widget {
 					Padding: t.EdgeInsetsAll(1),
 				},
 				Child: &SelectableList{
-					ID:               "selectable-list",
-					Items:            d.items,
-					CursorIndex:      d.cursorIndex,
-					ScrollController: d.controller,
+					ID:          "selectable-list",
+					Items:       d.items,
+					CursorIndex: d.cursorIndex,
+					ScrollState: d.scrollState,
 					OnSelect: func(item string) {
 						d.message.Set(fmt.Sprintf("Selected: %s", item))
 					},
@@ -113,13 +113,13 @@ func (d *ListViewDemo) Build(ctx t.BuildContext) t.Widget {
 }
 
 // SelectableList is a custom widget that renders a list of items with cursor navigation.
-// It uses a ScrollController to scroll the cursor item into view.
+// It uses a ScrollState to scroll the cursor item into view.
 type SelectableList struct {
-	ID               string
-	Items            []string
-	CursorIndex      *t.Signal[int]
-	OnSelect         func(item string)
-	ScrollController *t.ScrollController
+	ID          string
+	Items       []string
+	CursorIndex *t.Signal[int]
+	OnSelect    func(item string)
+	ScrollState *t.ScrollState
 }
 
 // Key returns the widget's unique identifier.
@@ -196,16 +196,16 @@ func (l *SelectableList) OnKey(event t.KeyEvent) bool {
 	return false
 }
 
-// scrollCursorIntoView uses the ScrollController to ensure
+// scrollCursorIntoView uses the ScrollState to ensure
 // the cursor item is visible in the viewport.
 func (l *SelectableList) scrollCursorIntoView() {
-	if l.ScrollController == nil {
+	if l.ScrollState == nil {
 		return
 	}
 	// Each item is 1 line tall
 	itemHeight := 1
 	itemY := l.CursorIndex.Peek() * itemHeight
-	l.ScrollController.ScrollToView(itemY, itemHeight)
+	l.ScrollState.ScrollToView(itemY, itemHeight)
 }
 
 // Layout computes the size needed for all items.

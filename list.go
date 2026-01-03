@@ -3,46 +3,129 @@ package terma
 import "fmt"
 
 // ListState holds the state for a List widget.
-// When provided to a List, it becomes the source of truth for items and cursor position.
-// This allows external control over the list's state.
+// It is the source of truth for items and cursor position, and must be provided to List.
+// Items is a reactive Signal - changes trigger automatic re-renders.
 type ListState[T any] struct {
-	items       []T          // The list data
-	CursorIndex *Signal[int] // Selection state (exported for direct access)
+	Items       *AnySignal[[]T] // Reactive list data
+	CursorIndex *Signal[int]    // Cursor position
 }
 
-// NewListState creates a new ListState with default values.
-func NewListState[T any]() *ListState[T] {
+// NewListState creates a new ListState with the given initial items.
+func NewListState[T any](initialItems []T) *ListState[T] {
+	if initialItems == nil {
+		initialItems = []T{}
+	}
 	return &ListState[T]{
+		Items:       NewAnySignal(initialItems),
 		CursorIndex: NewSignal(0),
 	}
 }
 
-// SetItems updates the list data and clamps cursor to valid range.
+// SetItems replaces all items and clamps cursor to valid range.
 func (s *ListState[T]) SetItems(items []T) {
-	s.items = items
-	// Clamp cursor to valid range
-	if idx := s.CursorIndex.Peek(); idx >= len(items) && len(items) > 0 {
-		s.CursorIndex.Set(len(items) - 1)
-	} else if len(items) == 0 {
-		s.CursorIndex.Set(0)
+	if items == nil {
+		items = []T{}
 	}
+	s.Items.Set(items)
+	s.clampCursor()
 }
 
-// Items returns the current list data.
-func (s *ListState[T]) Items() []T {
-	return s.items
+// GetItems returns the current list data (without subscribing to changes).
+func (s *ListState[T]) GetItems() []T {
+	return s.Items.Peek()
 }
 
 // ItemCount returns the number of items.
 func (s *ListState[T]) ItemCount() int {
-	return len(s.items)
+	return len(s.Items.Peek())
+}
+
+// Append adds an item to the end of the list.
+func (s *ListState[T]) Append(item T) {
+	s.Items.Update(func(items []T) []T {
+		return append(items, item)
+	})
+}
+
+// Prepend adds an item to the beginning of the list.
+func (s *ListState[T]) Prepend(item T) {
+	s.Items.Update(func(items []T) []T {
+		return append([]T{item}, items...)
+	})
+	// Adjust cursor to keep same item selected
+	s.CursorIndex.Update(func(i int) int {
+		return i + 1
+	})
+}
+
+// InsertAt inserts an item at the specified index.
+// If index is out of bounds, it's clamped to valid range.
+func (s *ListState[T]) InsertAt(index int, item T) {
+	s.Items.Update(func(items []T) []T {
+		if index < 0 {
+			index = 0
+		}
+		if index > len(items) {
+			index = len(items)
+		}
+		// Make room for new item
+		items = append(items, item) // Extend slice
+		copy(items[index+1:], items[index:])
+		items[index] = item
+		return items
+	})
+	// Adjust cursor if insertion was at or before cursor
+	cursorIdx := s.CursorIndex.Peek()
+	if index <= cursorIdx {
+		s.CursorIndex.Set(cursorIdx + 1)
+	}
+}
+
+// RemoveAt removes the item at the specified index.
+// Returns true if an item was removed, false if index was out of bounds.
+func (s *ListState[T]) RemoveAt(index int) bool {
+	items := s.Items.Peek()
+	if index < 0 || index >= len(items) {
+		return false
+	}
+	s.Items.Update(func(items []T) []T {
+		return append(items[:index], items[index+1:]...)
+	})
+	s.clampCursor()
+	return true
+}
+
+// RemoveWhere removes all items matching the predicate.
+// Returns the number of items removed.
+func (s *ListState[T]) RemoveWhere(predicate func(T) bool) int {
+	removed := 0
+	s.Items.Update(func(items []T) []T {
+		result := make([]T, 0, len(items))
+		for _, item := range items {
+			if !predicate(item) {
+				result = append(result, item)
+			} else {
+				removed++
+			}
+		}
+		return result
+	})
+	s.clampCursor()
+	return removed
+}
+
+// Clear removes all items from the list.
+func (s *ListState[T]) Clear() {
+	s.Items.Set([]T{})
+	s.CursorIndex.Set(0)
 }
 
 // SelectedItem returns the currently selected item (if any).
 func (s *ListState[T]) SelectedItem() (T, bool) {
+	items := s.Items.Peek()
 	idx := s.CursorIndex.Peek()
-	if idx >= 0 && idx < len(s.items) {
-		return s.items[idx], true
+	if idx >= 0 && idx < len(items) {
+		return items[idx], true
 	}
 	var zero T
 	return zero, false
@@ -50,8 +133,9 @@ func (s *ListState[T]) SelectedItem() (T, bool) {
 
 // SelectNext moves cursor to the next item.
 func (s *ListState[T]) SelectNext() {
+	items := s.Items.Peek()
 	s.CursorIndex.Update(func(i int) int {
-		if i < len(s.items)-1 {
+		if i < len(items)-1 {
 			return i + 1
 		}
 		return i
@@ -75,112 +159,97 @@ func (s *ListState[T]) SelectFirst() {
 
 // SelectLast moves cursor to the last item.
 func (s *ListState[T]) SelectLast() {
-	if len(s.items) > 0 {
-		s.CursorIndex.Set(len(s.items) - 1)
+	items := s.Items.Peek()
+	if len(items) > 0 {
+		s.CursorIndex.Set(len(items) - 1)
 	}
 }
 
 // SelectIndex sets cursor to a specific index, clamped to valid range.
 func (s *ListState[T]) SelectIndex(index int) {
-	clamped := clampInt(index, 0, len(s.items)-1)
+	items := s.Items.Peek()
+	clamped := clampInt(index, 0, len(items)-1)
 	s.CursorIndex.Set(clamped)
+}
+
+// clampCursor ensures cursor is within valid bounds after items change.
+func (s *ListState[T]) clampCursor() {
+	items := s.Items.Peek()
+	idx := s.CursorIndex.Peek()
+	if len(items) == 0 {
+		s.CursorIndex.Set(0)
+	} else if idx >= len(items) {
+		s.CursorIndex.Set(len(items) - 1)
+	}
 }
 
 // List is a generic focusable widget that displays a navigable list of items.
 // It builds a Column of widgets, with the active item (cursor position) highlighted.
-// Use with Scrollable and a shared ScrollController to enable scroll-into-view.
+// Use with Scrollable and a shared ScrollState to enable scroll-into-view.
 //
-// Example usage (simple - widget manages state):
+// Example usage:
 //
-//	list := &terma.List[string]{
-//	    Items: []string{"Item 1", "Item 2", "Item 3"},
-//	    OnSelect: func(item string) {
-//	        // Handle selection
-//	    },
-//	}
-//
-// Example usage (controlled - external state):
-//
-//	state := terma.NewListState[string]()
-//	state.SetItems(items)
-//	list := &terma.List[string]{
+//	state := terma.NewListState([]string{"Item 1", "Item 2", "Item 3"})
+//	list := terma.List[string]{
 //	    State: state,
 //	    OnSelect: func(item string) {
 //	        // Handle selection
 //	    },
 //	}
-//	state.SelectLast() // Programmatic control
+//
+//	// Add item at runtime:
+//	state.Append("Item 4")
+//
+//	// Remove item at runtime:
+//	state.RemoveAt(0)
 type List[T any] struct {
-	ID               string                           // Optional unique identifier (auto-generated from tree position if empty)
-	Items            []T                              // List items (used when State is nil)
-	State            *ListState[T]                    // Optional state - if provided, is source of truth
-	OnSelect         func(item T)                     // Callback invoked when Enter is pressed on an item
-	ScrollController *ScrollController                // Optional controller for scroll-into-view
-	Width            Dimension                        // Optional width (zero value = auto)
-	Height           Dimension                        // Optional height (zero value = auto)
-	RenderItem       func(item T, active bool) Widget // Function to render each item (uses default if nil)
-	ItemHeight       int                              // Height of each item in cells (default 1, must be uniform)
-
-	resolvedState *ListState[T] // Cached during Build() for OnKey access
+	ID          string                           // Optional unique identifier
+	State       *ListState[T]                    // Required - holds items and cursor position
+	OnSelect    func(item T)                     // Callback invoked when Enter is pressed on an item
+	ScrollState *ScrollState                     // Optional state for scroll-into-view
+	Width       Dimension                        // Optional width (zero value = auto)
+	Height      Dimension                        // Optional height (zero value = auto)
+	RenderItem  func(item T, active bool) Widget // Function to render each item (uses default if nil)
+	ItemHeight  int                              // Height of each item in cells (default 1, must be uniform)
 }
 
 // WidgetID returns the widget's unique identifier.
 // Implements the Identifiable interface.
-func (l *List[T]) WidgetID() string {
+func (l List[T]) WidgetID() string {
 	return l.ID
 }
 
 // GetDimensions returns the width and height dimension preferences.
 // Implements the Dimensioned interface.
-func (l *List[T]) GetDimensions() (width, height Dimension) {
+func (l List[T]) GetDimensions() (width, height Dimension) {
 	return l.Width, l.Height
 }
 
 // IsFocusable returns true to allow keyboard navigation.
 // Implements the Focusable interface.
-func (l *List[T]) IsFocusable() bool {
+func (l List[T]) IsFocusable() bool {
 	return true
 }
 
-// getState returns provided state or creates/retrieves internal state.
-func (l *List[T]) getState(ctx BuildContext) *ListState[T] {
-	if l.State != nil {
-		return l.State
-	}
-
-	// Use explicit ID or auto-ID for internal state
-	id := l.ID
-	if id == "" {
-		id = ctx.AutoID()
-	}
-
-	state := GetOrCreateState(id, NewListState[T])
-
-	// Sync Items field to internal state
-	// (only when State not provided - widget's Items field is source)
-	state.SetItems(l.Items)
-
-	return state
-}
-
 // Build returns a Column of widgets, each rendered via RenderItem.
-func (l *List[T]) Build(ctx BuildContext) Widget {
-	// Resolve state (provided or internal)
-	l.resolvedState = l.getState(ctx)
+func (l List[T]) Build(ctx BuildContext) Widget {
+	if l.State == nil {
+		return Column{}
+	}
 
-	// Get items and cursor from state
-	items := l.resolvedState.Items()
+	// Get items (subscribes to changes via signal)
+	items := l.State.Items.Get()
 	if len(items) == 0 {
 		return Column{}
 	}
 
 	// Get cursor position (subscribes to changes)
-	cursorIdx := l.resolvedState.CursorIndex.Get()
+	cursorIdx := l.State.CursorIndex.Get()
 
 	// Clamp cursor to valid bounds
 	clamped := clampInt(cursorIdx, 0, len(items)-1)
 	if clamped != cursorIdx {
-		l.resolvedState.CursorIndex.Set(clamped)
+		l.State.CursorIndex.Set(clamped)
 		cursorIdx = clamped
 	}
 
@@ -230,42 +299,41 @@ func defaultRenderItem[T any](item T, active bool) Widget {
 
 // OnKey handles navigation keys and selection, updating cursor position and scrolling into view.
 // Implements the Focusable interface.
-func (l *List[T]) OnKey(event KeyEvent) bool {
-	state := l.resolvedState
-	if state == nil || state.ItemCount() == 0 {
+func (l List[T]) OnKey(event KeyEvent) bool {
+	if l.State == nil || l.State.ItemCount() == 0 {
 		return false
 	}
 
-	cursorIdx := state.CursorIndex.Peek()
-	itemCount := state.ItemCount()
+	cursorIdx := l.State.CursorIndex.Peek()
+	itemCount := l.State.ItemCount()
 
 	switch {
 	case event.MatchString("enter"):
 		// Handle selection (Enter key press)
 		if l.OnSelect != nil {
-			if item, ok := state.SelectedItem(); ok {
+			if item, ok := l.State.SelectedItem(); ok {
 				l.OnSelect(item)
 			}
 		}
 		return true
 
 	case event.MatchString("up", "k"):
-		state.SelectPrevious()
+		l.State.SelectPrevious()
 		l.scrollCursorIntoView()
 		return true
 
 	case event.MatchString("down", "j"):
-		state.SelectNext()
+		l.State.SelectNext()
 		l.scrollCursorIntoView()
 		return true
 
 	case event.MatchString("home", "g"):
-		state.SelectFirst()
+		l.State.SelectFirst()
 		l.scrollCursorIntoView()
 		return true
 
 	case event.MatchString("end", "G"):
-		state.SelectLast()
+		l.State.SelectLast()
 		l.scrollCursorIntoView()
 		return true
 
@@ -274,7 +342,7 @@ func (l *List[T]) OnKey(event KeyEvent) bool {
 		if newCursor < 0 {
 			newCursor = 0
 		}
-		state.SelectIndex(newCursor)
+		l.State.SelectIndex(newCursor)
 		l.scrollCursorIntoView()
 		return true
 
@@ -283,7 +351,7 @@ func (l *List[T]) OnKey(event KeyEvent) bool {
 		if newCursor >= itemCount {
 			newCursor = itemCount - 1
 		}
-		state.SelectIndex(newCursor)
+		l.State.SelectIndex(newCursor)
 		l.scrollCursorIntoView()
 		return true
 	}
@@ -291,20 +359,20 @@ func (l *List[T]) OnKey(event KeyEvent) bool {
 	return false
 }
 
-// scrollCursorIntoView uses the ScrollController to ensure
+// scrollCursorIntoView uses the ScrollState to ensure
 // the cursor item is visible in the viewport.
-func (l *List[T]) scrollCursorIntoView() {
-	if l.ScrollController == nil || l.resolvedState == nil {
+func (l List[T]) scrollCursorIntoView() {
+	if l.ScrollState == nil || l.State == nil {
 		return
 	}
-	cursorIdx := l.resolvedState.CursorIndex.Peek()
+	cursorIdx := l.State.CursorIndex.Peek()
 	itemY := l.getItemY(cursorIdx)
-	l.ScrollController.ScrollToView(itemY, l.getItemHeight())
+	l.ScrollState.ScrollToView(itemY, l.getItemHeight())
 }
 
 // getItemHeight returns the uniform height of list items.
 // Returns ItemHeight if set, otherwise defaults to 1.
-func (l *List[T]) getItemHeight() int {
+func (l List[T]) getItemHeight() int {
 	if l.ItemHeight > 0 {
 		return l.ItemHeight
 	}
@@ -312,24 +380,24 @@ func (l *List[T]) getItemHeight() int {
 }
 
 // getItemY returns the Y position of the item at the given index.
-func (l *List[T]) getItemY(index int) int {
+func (l List[T]) getItemY(index int) int {
 	return index * l.getItemHeight()
 }
 
-// registerScrollCallbacks sets up callbacks on the ScrollController
+// registerScrollCallbacks sets up callbacks on the ScrollState
 // to update cursor position when mouse wheel scrolling occurs.
 // The callbacks move cursor first, then scroll only if needed.
-func (l *List[T]) registerScrollCallbacks() {
-	if l.ScrollController == nil {
+func (l List[T]) registerScrollCallbacks() {
+	if l.ScrollState == nil {
 		return
 	}
 
-	l.ScrollController.OnScrollUp = func(lines int) bool {
+	l.ScrollState.OnScrollUp = func(lines int) bool {
 		l.moveCursorUp(lines)
 		l.scrollCursorIntoView()
 		return true // We handle scrolling via scrollCursorIntoView
 	}
-	l.ScrollController.OnScrollDown = func(lines int) bool {
+	l.ScrollState.OnScrollDown = func(lines int) bool {
 		l.moveCursorDown(lines)
 		l.scrollCursorIntoView()
 		return true // We handle scrolling via scrollCursorIntoView
@@ -337,32 +405,30 @@ func (l *List[T]) registerScrollCallbacks() {
 }
 
 // moveCursorUp moves the cursor up by the given number of items.
-func (l *List[T]) moveCursorUp(count int) {
-	state := l.resolvedState
-	if state == nil || state.ItemCount() == 0 {
+func (l List[T]) moveCursorUp(count int) {
+	if l.State == nil || l.State.ItemCount() == 0 {
 		return
 	}
-	cursorIdx := state.CursorIndex.Peek()
+	cursorIdx := l.State.CursorIndex.Peek()
 	newCursor := cursorIdx - count
 	if newCursor < 0 {
 		newCursor = 0
 	}
-	state.SelectIndex(newCursor)
+	l.State.SelectIndex(newCursor)
 }
 
 // moveCursorDown moves the cursor down by the given number of items.
-func (l *List[T]) moveCursorDown(count int) {
-	state := l.resolvedState
-	if state == nil || state.ItemCount() == 0 {
+func (l List[T]) moveCursorDown(count int) {
+	if l.State == nil || l.State.ItemCount() == 0 {
 		return
 	}
-	cursorIdx := state.CursorIndex.Peek()
-	itemCount := state.ItemCount()
+	cursorIdx := l.State.CursorIndex.Peek()
+	itemCount := l.State.ItemCount()
 	newCursor := cursorIdx + count
 	if newCursor >= itemCount {
 		newCursor = itemCount - 1
 	}
-	state.SelectIndex(newCursor)
+	l.State.SelectIndex(newCursor)
 }
 
 // clampInt clamps value to the range [min, max].
@@ -378,14 +444,13 @@ func clampInt(value, min, max int) int {
 
 // CursorItem returns the item at the current cursor position.
 // Returns the zero value of T if the list is empty or state is nil.
-// Deprecated: Use state.SelectedItem() instead when using controlled mode.
-func (l *List[T]) CursorItem() T {
+// Deprecated: Use State.SelectedItem() instead.
+func (l List[T]) CursorItem() T {
 	var zero T
-	state := l.resolvedState
-	if state == nil || state.ItemCount() == 0 {
+	if l.State == nil || l.State.ItemCount() == 0 {
 		return zero
 	}
-	if item, ok := state.SelectedItem(); ok {
+	if item, ok := l.State.SelectedItem(); ok {
 		return item
 	}
 	return zero

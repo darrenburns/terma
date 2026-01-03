@@ -22,52 +22,46 @@ type ListItem struct {
 
 // ListDemo demonstrates the List widget with custom data types.
 // The List widget builds a Column of widgets internally,
-// and integrates with ScrollController for scroll-into-view.
+// and integrates with ScrollState for scroll-into-view.
 type EditorSettingsMenu struct {
-	controller *t.ScrollController
-	listState  *t.ListState[ListItem] // ListState holds both items and cursor position
-	message    *t.Signal[string]
+	scrollState *t.ScrollState
+	listState   *t.ListState[ListItem] // ListState holds both items and cursor position
+	message     *t.Signal[string]
 }
 
 func NewEditorSettingsMenu() *EditorSettingsMenu {
-	items := []ListItem{
-		{Title: "New Project", Description: "Create a new project from template"},
-		{Title: "Open Folder", Description: "Open an existing folder"},
-		{Title: "Clone Repository", Description: "Clone a Git repository from URL"},
-		{Title: "Connect to Remote", Description: "SSH into a remote server"},
-		{Title: "Import Settings", Description: "Import settings from another editor"},
-		{Title: "Install Extensions", Description: "Browse and install extensions"},
-		{Title: "Keyboard Shortcuts", Description: "Customize key bindings"},
-		{Title: "Color Theme", Description: "Change the editor color theme"},
-		{Title: "Font Settings", Description: "Configure font family and size"},
-		{Title: "Auto Save", Description: "Configure automatic file saving"},
-		{Title: "Format on Save", Description: "Run formatter when saving files"},
-		{Title: "Line Numbers", Description: "Toggle line number visibility"},
-		{Title: "Word Wrap", Description: "Configure text wrapping behavior"},
-		{Title: "Terminal", Description: "Open integrated terminal"},
-		{Title: "Check for Updates", Description: "Check for application updates"},
-	}
-
-	// Create ListState and set items - state is source of truth
-	listState := t.NewListState[ListItem]()
-	listState.SetItems(items)
-
 	return &EditorSettingsMenu{
-		controller: t.NewScrollController(),
-		listState:  listState,
-		message:    t.NewSignal(""),
+		scrollState: t.NewScrollState(),
+		listState: t.NewListState([]ListItem{
+			{Title: "New Project", Description: "Create a new project from template"},
+			{Title: "Open Folder", Description: "Open an existing folder"},
+			{Title: "Clone Repository", Description: "Clone a Git repository from URL"},
+			{Title: "Connect to Remote", Description: "SSH into a remote server"},
+			{Title: "Import Settings", Description: "Import settings from another editor"},
+			{Title: "Install Extensions", Description: "Browse and install extensions"},
+			{Title: "Keyboard Shortcuts", Description: "Customize key bindings"},
+			{Title: "Color Theme", Description: "Change the editor color theme"},
+			{Title: "Font Settings", Description: "Configure font family and size"},
+			{Title: "Auto Save", Description: "Configure automatic file saving"},
+			{Title: "Format on Save", Description: "Run formatter when saving files"},
+			{Title: "Line Numbers", Description: "Toggle line number visibility"},
+			{Title: "Word Wrap", Description: "Configure text wrapping behavior"},
+			{Title: "Terminal", Description: "Open integrated terminal"},
+			{Title: "Check for Updates", Description: "Check for application updates"},
+		}),
+		message: t.NewSignal(""),
 	}
 }
 
 func (d *EditorSettingsMenu) Keybinds() []t.Keybind {
 	return []t.Keybind{
 		{Key: "r", Name: "Move 2 rows down", Action: func() {
-			d.controller.ScrollDown(2)
+			d.scrollState.ScrollDown(2)
 			cursorIdx := d.listState.CursorIndex.Peek()
 			d.listState.SelectIndex(cursorIdx + 2)
 		}},
 		{Key: "l", Name: "Move 2 rows up", Action: func() {
-			d.controller.ScrollUp(2)
+			d.scrollState.ScrollUp(2)
 			cursorIdx := d.listState.CursorIndex.Peek()
 			d.listState.SelectIndex(cursorIdx - 2)
 		}},
@@ -111,21 +105,21 @@ func (d *EditorSettingsMenu) Build(ctx t.BuildContext) t.Widget {
 				Height: t.Fr(1),
 				Children: []t.Widget{
 					// The List widget inside a Scrollable (left side)
-					&t.Scrollable{
+					t.Scrollable{
 						ID:           "list-scroll",
-						Controller:   d.controller,
+						State:        d.scrollState,
 						Height:       t.Cells(12),
 						Width:        t.Fr(2),
 						DisableFocus: true, // Let List handle focus
 						Style: t.Style{
 							Border: t.RoundedBorder(t.Cyan, t.BorderTitle("Editor Settings"),
-								t.BorderDecoration{Text: fmt.Sprintf("%d", d.controller.Offset()), Position: t.DecorationBottomRight}),
+								t.BorderDecoration{Text: fmt.Sprintf("%d", d.scrollState.GetOffset()), Position: t.DecorationBottomRight}),
 							Padding: t.EdgeInsetsAll(1),
 						},
-						Child: &t.List[ListItem]{
-							ID:               "demo-list",
-							State:            d.listState,
-							ScrollController: d.controller,
+						Child: t.List[ListItem]{
+							ID:          "demo-list",
+							State:       d.listState,
+							ScrollState: d.scrollState,
 							OnSelect: func(item ListItem) {
 								d.message.Set(fmt.Sprintf("Selected: %s", item.Title))
 							},
@@ -157,7 +151,7 @@ func (d *EditorSettingsMenu) Build(ctx t.BuildContext) t.Widget {
 					},
 
 					// Right side of the screen showing the current scroll offset
-					t.Text{Content: fmt.Sprintf("%d", d.controller.Offset()), Width: t.Fr(1), Height: t.Fr(1), Style: t.Style{ForegroundColor: t.Black, BackgroundColor: t.Magenta}},
+					t.Text{Content: fmt.Sprintf("%d", d.scrollState.GetOffset()), Width: t.Fr(1), Height: t.Fr(1), Style: t.Style{ForegroundColor: t.Black, BackgroundColor: t.Magenta}},
 				},
 			},
 

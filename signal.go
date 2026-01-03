@@ -92,3 +92,8 @@ func (s *AnySignal[T]) Set(value T) {
 func (s *AnySignal[T]) Peek() T {
 	return s.value
 }
+
+// Update applies a function to the current value and sets the result.
+func (s *AnySignal[T]) Update(fn func(T) T) {
+	s.Set(fn(s.value))
+}

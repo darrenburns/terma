@@ -15,26 +15,25 @@ func init() {
 
 // SimpleListDemo demonstrates the most basic usage of List[string]
 // without custom rendering logic or scrollable wrapper.
-// This uses the simple pattern where the widget manages its own state.
 type SimpleListDemo struct {
+	listState   *t.ListState[string]
 	selectedMsg *t.Signal[string]
 }
 
 func NewSimpleListDemo() *SimpleListDemo {
 	return &SimpleListDemo{
+		listState: t.NewListState([]string{
+			"Apple",
+			"Banana",
+			"Cherry",
+			"Date",
+			"Elderberry",
+		}),
 		selectedMsg: t.NewSignal("No selection yet"),
 	}
 }
 
 func (d *SimpleListDemo) Build(ctx t.BuildContext) t.Widget {
-	items := []string{
-		"Apple",
-		"Banana",
-		"Cherry",
-		"Date",
-		"Elderberry",
-	}
-
 	return t.Column{
 		ID:      "simple-list-root",
 		Spacing: 1,
@@ -63,16 +62,15 @@ func (d *SimpleListDemo) Build(ctx t.BuildContext) t.Widget {
 				},
 			},
 
-			// Simple List[string] - widget manages its own state internally
-			// No State field needed - cursor is tracked automatically by widget ID
-			&t.List[string]{
+			// List with state - the state holds items and cursor position
+			t.List[string]{
 				ID:    "simple-string-list",
-				Items: items, // Just pass items - widget handles cursor state
+				State: d.listState,
 				OnSelect: func(item string) {
 					d.selectedMsg.Set(fmt.Sprintf("You selected: %s", item))
 				},
 				// No RenderItem - uses default rendering
-				// No ScrollController - not wrapped in Scrollable
+				// No ScrollState - not wrapped in Scrollable
 			},
 
 			// Display the selection message
