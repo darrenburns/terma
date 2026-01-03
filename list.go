@@ -371,11 +371,33 @@ func (l List[T]) scrollCursorIntoView() {
 }
 
 // getItemHeight returns the uniform height of list items.
-// Returns ItemHeight if set, otherwise defaults to 1.
+// If ItemHeight is explicitly set, uses that value.
+// Otherwise, attempts to infer height from RenderItem by checking
+// if the returned widget has an explicit Cells height dimension.
+// Falls back to 1 if height cannot be determined.
 func (l List[T]) getItemHeight() int {
 	if l.ItemHeight > 0 {
 		return l.ItemHeight
 	}
+
+	// Try to infer from RenderItem
+	if l.State != nil && l.State.ItemCount() > 0 {
+		items := l.State.Items.Peek()
+		renderItem := l.RenderItem
+		if renderItem == nil {
+			renderItem = defaultRenderItem[T]
+		}
+
+		// Render the first item and check its dimensions
+		widget := renderItem(items[0], false)
+		if dimensioned, ok := widget.(Dimensioned); ok {
+			_, height := dimensioned.GetDimensions()
+			if height.IsCells() {
+				return height.CellsValue()
+			}
+		}
+	}
+
 	return 1
 }
 
