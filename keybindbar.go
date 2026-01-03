@@ -2,7 +2,7 @@ package terma
 
 import "strings"
 
-// KeybindFooter displays available keybinds based on the currently focused widget.
+// KeybindBar displays available keybinds based on the currently focused widget.
 // It automatically updates when focus changes, showing keybinds from the focused
 // widget and its ancestors in the widget tree.
 //
@@ -11,8 +11,14 @@ import "strings"
 //
 // Consecutive keybinds with the same Name are grouped together, displaying
 // their keys joined with "/" (e.g., "enter/space Press").
-type KeybindFooter struct {
+type KeybindBar struct {
 	Style Style // Optional styling (background, padding, etc.)
+
+	// FormatKey transforms key strings for display. If nil, uses minimal
+	// normalization (e.g., " " → "space"). Use preset formatters like
+	// FormatKeyCaret, FormatKeyEmacs, FormatKeyVim, or FormatKeyVerbose,
+	// or provide a custom function.
+	FormatKey func(string) string
 }
 
 // keybindGroup represents a group of keys that share the same action name.
@@ -21,8 +27,8 @@ type keybindGroup struct {
 	name string
 }
 
-// Build constructs the footer by collecting active keybinds from context.
-func (f KeybindFooter) Build(ctx BuildContext) Widget {
+// Build constructs the keybind bar by collecting active keybinds from context.
+func (f KeybindBar) Build(ctx BuildContext) Widget {
 	keybinds := ctx.ActiveKeybinds()
 	theme := ctx.Theme()
 
@@ -46,7 +52,7 @@ func (f KeybindFooter) Build(ctx BuildContext) Widget {
 	var groups []keybindGroup
 
 	for _, kb := range visible {
-		key := normalizeKeyForDisplay(kb.Key)
+		key := f.formatKey(kb.Key)
 
 		// Check if we can add to the last group (same Name)
 		if len(groups) > 0 && groups[len(groups)-1].name == kb.Name {
@@ -77,8 +83,13 @@ func (f KeybindFooter) Build(ctx BuildContext) Widget {
 	}
 }
 
-// normalizeKeyForDisplay converts key patterns to user-friendly display names.
-func normalizeKeyForDisplay(key string) string {
+// formatKey applies the custom FormatKey function if set, otherwise uses
+// minimal normalization.
+func (f KeybindBar) formatKey(key string) string {
+	if f.FormatKey != nil {
+		return f.FormatKey(key)
+	}
+	// Default: minimal normalization
 	if key == " " {
 		return "space"
 	}

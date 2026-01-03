@@ -144,7 +144,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 			t.Text{Content: "Try: Tab to 'New File' shows panel keybinds (ctrl+s, ctrl+z, d)"},
 			t.Text{Content: "     Tab to 'Delete' shows 'd' as 'Delete Forever' (overrides panel)"},
 			t.Text{Content: ""},
-			t.KeybindFooter{},
+			t.KeybindBar{},
 		},
 	}
 }

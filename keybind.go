@@ -9,7 +9,7 @@ type Keybind struct {
 	Name string
 	// Action is the callback to execute when the keybinding is triggered
 	Action func()
-	// Hidden prevents this keybind from appearing in KeybindFooter.
+	// Hidden prevents this keybind from appearing in KeybindBar.
 	// Use for internal bindings that shouldn't be displayed to users.
 	Hidden bool
 }
