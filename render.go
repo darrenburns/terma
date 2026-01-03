@@ -29,6 +29,10 @@ type RenderContext struct {
 	// These stay constant within a scrolled region while X/Y change for virtual positions
 	viewportY      int
 	viewportHeight int
+	// Returns inherited background color at absolute screen Y.
+	// Used for transparent backgrounds to sample from underlying widgets (e.g., GradientBox).
+	// Nil means no inherited background (use terminal default).
+	inheritedBgAt func(absY int) Color
 }
 
 // NewRenderContext creates a root render context for the terminal.
@@ -87,6 +91,7 @@ func (ctx *RenderContext) SubContext(xOffset, yOffset, width, height int) *Rende
 		virtualHeight:  ctx.virtualHeight,
 		viewportY:      ctx.viewportY,
 		viewportHeight: ctx.viewportHeight,
+		inheritedBgAt:  ctx.inheritedBgAt,
 	}
 }
 
@@ -250,6 +255,11 @@ func (ctx *RenderContext) RenderChild(index int, child Widget, xOffset, yOffset,
 		contentXOffset := xOffset + margin.Left + borderWidth + padding.Left
 		contentYOffset := yOffset + margin.Top + borderWidth + padding.Top
 		childCtx := ctx.SubContext(contentXOffset, contentYOffset, contentWidth, contentHeight)
+		// Set inherited background callback for solid backgrounds
+		if style.BackgroundColor.IsSet() {
+			bg := style.BackgroundColor
+			childCtx.inheritedBgAt = func(absY int) Color { return bg }
+		}
 		renderable.Render(childCtx)
 	}
 
@@ -307,10 +317,6 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		return
 	}
 
-	borderStyle := uv.Style{
-		Fg: border.Color.toANSI(),
-	}
-
 	// Use viewport bounds for clipping if in a scrolled region
 	clipY, clipHeight := ctx.Y, ctx.Height
 	if ctx.viewportHeight > 0 {
@@ -318,20 +324,29 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		clipHeight = ctx.viewportHeight
 	}
 
-	// Helper to set a cell with a specific style
-	setCellStyled := func(cx, cy int, content string, style uv.Style) {
+	// Helper to set a cell with a specific foreground color
+	setCellStyled := func(cx, cy int, content string, fgColor Color) {
 		absX := ctx.X + cx
 		absY := ctx.Y + cy - ctx.scrollYOffset
 		if absX < ctx.X || absX >= ctx.X+ctx.Width || absY < clipY || absY >= clipY+clipHeight {
 			return
 		}
+		// Use inherited background if available
+		var bg Color
+		if ctx.inheritedBgAt != nil {
+			bg = ctx.inheritedBgAt(absY)
+		}
+		style := uv.Style{
+			Fg: fgColor.toANSI(),
+			Bg: bg.toANSI(),
+		}
 		cell := &uv.Cell{Content: content, Width: 1, Style: style}
 		ctx.terminal.SetCell(absX, absY, cell)
 	}
 
-	// Helper to set a cell with border style
+	// Helper to set a cell with border color
 	setCell := func(cx, cy int, content string) {
-		setCellStyled(cx, cy, content, borderStyle)
+		setCellStyled(cx, cy, content, border.Color)
 	}
 
 	// Draw corners
@@ -418,13 +433,13 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 
 		// Draw decoration text
 		for _, p := range placed {
-			decorationStyle := borderStyle
+			fgColor := border.Color
 			if p.color.IsSet() {
-				decorationStyle = uv.Style{Fg: p.color.toANSI()}
+				fgColor = p.color
 			}
 			for i, r := range p.text {
 				if p.start+i < edgeWidth {
-					setCellStyled(x+1+p.start+i, edgeY, string(r), decorationStyle)
+					setCellStyled(x+1+p.start+i, edgeY, string(r), fgColor)
 				}
 			}
 		}
@@ -465,10 +480,16 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 		return
 	}
 
+	// Determine background color: use inherited if no explicit background
+	bg := style.BackgroundColor
+	if !bg.IsSet() && ctx.inheritedBgAt != nil {
+		bg = ctx.inheritedBgAt(absY)
+	}
+
 	// Build the cell style
 	cellStyle := uv.Style{
 		Fg: style.ForegroundColor.toANSI(),
-		Bg: style.BackgroundColor.toANSI(),
+		Bg: bg.toANSI(),
 	}
 
 	// Draw each grapheme cluster as a cell, advancing by its display width
@@ -506,7 +527,7 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 		return ansi.StringWidth(span.Text)
 	}
 
-	// Determine colors: span style overrides base style
+	// Determine colors: span style overrides base style, then inherited
 	fg := span.Style.Foreground
 	if !fg.IsSet() {
 		fg = baseStyle.ForegroundColor
@@ -514,6 +535,10 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 	bg := span.Style.Background
 	if !bg.IsSet() {
 		bg = baseStyle.BackgroundColor
+	}
+	// Fall back to inherited background if still not set
+	if !bg.IsSet() && ctx.inheritedBgAt != nil {
+		bg = ctx.inheritedBgAt(absY)
 	}
 
 	// Build text attributes bitmask
@@ -698,6 +723,11 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 		contentXOffset := margin.Left + borderWidth + padding.Left
 		contentYOffset := margin.Top + borderWidth + padding.Top
 		childCtx := ctx.SubContext(contentXOffset, contentYOffset, contentWidth, contentHeight)
+		// Set inherited background callback for solid backgrounds
+		if style.BackgroundColor.IsSet() {
+			bg := style.BackgroundColor
+			childCtx.inheritedBgAt = func(absY int) Color { return bg }
+		}
 		renderable.Render(childCtx)
 	}
 

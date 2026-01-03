@@ -93,6 +93,20 @@ func (g GradientBox) Render(ctx *RenderContext) {
 		}
 	}
 
+	// Set up inherited background callback so children with transparent
+	// backgrounds can sample the gradient color at their Y position
+	gradientY := ctx.Y
+	gradientHeight := ctx.Height
+	gradient := g.Gradient
+	ctx.inheritedBgAt = func(absY int) Color {
+		relY := absY - gradientY
+		t := float64(relY) / float64(gradientHeight-1)
+		if gradientHeight == 1 {
+			t = 0.5
+		}
+		return gradient.At(clamp01(t))
+	}
+
 	// Render child on top
 	if g.Child != nil {
 		ctx.RenderChild(0, g.Child, 0, 0, ctx.Width, ctx.Height)
