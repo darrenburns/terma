@@ -201,7 +201,7 @@ func (ctx *RenderContext) RenderChild(index int, child Widget, xOffset, yOffset,
 	borderedYOffset := yOffset + margin.Top
 
 	// Fill the inner area (padding + content) with background color if set
-	if style.BackgroundColor != DefaultColor {
+	if style.BackgroundColor.IsSet() {
 		innerXOffset := borderedXOffset + borderWidth
 		innerYOffset := borderedYOffset + borderWidth
 		innerWidth := contentWidth + padding.Horizontal()
@@ -258,7 +258,7 @@ func (ctx *RenderContext) RenderChild(index int, child Widget, xOffset, yOffset,
 
 // FillRect fills a rectangular region with a background color.
 func (ctx *RenderContext) FillRect(x, y, width, height int, bgColor Color) {
-	if bgColor == DefaultColor {
+	if !bgColor.IsSet() {
 		return
 	}
 
@@ -419,7 +419,7 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		// Draw decoration text
 		for _, p := range placed {
 			decorationStyle := borderStyle
-			if p.color != DefaultColor {
+			if p.color.IsSet() {
 				decorationStyle = uv.Style{Fg: p.color.toANSI()}
 			}
 			for i, r := range p.text {
@@ -508,11 +508,11 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 
 	// Determine colors: span style overrides base style
 	fg := span.Style.Foreground
-	if fg == DefaultColor {
+	if !fg.IsSet() {
 		fg = baseStyle.ForegroundColor
 	}
 	bg := span.Style.Background
-	if bg == DefaultColor {
+	if !bg.IsSet() {
 		bg = baseStyle.BackgroundColor
 	}
 
@@ -662,7 +662,7 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 	borderedYOffset := margin.Top
 
 	// Fill the inner area (padding + content) with background color if set
-	if style.BackgroundColor != DefaultColor {
+	if style.BackgroundColor.IsSet() {
 		innerXOffset := borderedXOffset + borderWidth
 		innerYOffset := borderedYOffset + borderWidth
 		innerWidth := contentWidth + padding.Horizontal()

@@ -126,7 +126,7 @@ func (d *EditorSettingsMenu) Build(ctx t.BuildContext) t.Widget {
 							// Describe how to render each item in the list as a widget
 							RenderItem: func(item ListItem, active bool) t.Widget {
 								// Style the title based on cursor position
-								titleStyle := t.Style{ForegroundColor: t.DefaultColor}
+								var titleStyle t.Style
 								if active {
 									titleStyle.ForegroundColor = t.Magenta
 								}

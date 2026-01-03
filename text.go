@@ -165,7 +165,7 @@ func (t Text) renderSpans(ctx *RenderContext) {
 			// Move to next line if this isn't the first part (after a newline)
 			if partIdx > 0 {
 				// Pad remainder of current line with spaces for background
-				if x < ctx.Width && t.Style.BackgroundColor != DefaultColor {
+				if x < ctx.Width && t.Style.BackgroundColor.IsSet() {
 					padding := strings.Repeat(" ", ctx.Width-x)
 					ctx.DrawStyledText(x, y, padding, t.Style)
 				}
@@ -192,14 +192,14 @@ func (t Text) renderSpans(ctx *RenderContext) {
 	}
 
 	// Pad remainder of last line with spaces for background
-	if x < ctx.Width && t.Style.BackgroundColor != DefaultColor {
+	if x < ctx.Width && t.Style.BackgroundColor.IsSet() {
 		padding := strings.Repeat(" ", ctx.Width-x)
 		ctx.DrawStyledText(x, y, padding, t.Style)
 	}
 
 	// Fill remaining lines with spaces for background
 	for row := y + 1; row < ctx.Height; row++ {
-		if t.Style.BackgroundColor != DefaultColor {
+		if t.Style.BackgroundColor.IsSet() {
 			padding := strings.Repeat(" ", ctx.Width)
 			ctx.DrawStyledText(0, row, padding, t.Style)
 		}

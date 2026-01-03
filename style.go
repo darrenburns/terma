@@ -1,35 +1,5 @@
 package terma
 
-import (
-	"image/color"
-
-	"github.com/charmbracelet/x/ansi"
-)
-
-// Color represents an ANSI color.
-type Color uint8
-
-// ANSI color constants.
-const (
-	DefaultColor Color = iota
-	Black
-	Red
-	Green
-	Yellow
-	Blue
-	Magenta
-	Cyan
-	White
-	BrightBlack
-	BrightRed
-	BrightGreen
-	BrightYellow
-	BrightBlue
-	BrightMagenta
-	BrightCyan
-	BrightWhite
-)
-
 // EdgeInsets represents spacing around the four edges of a widget.
 type EdgeInsets struct {
 	Top, Right, Bottom, Left int
@@ -87,7 +57,7 @@ const (
 type BorderDecoration struct {
 	Text     string
 	Position DecorationPosition
-	Color    Color // If DefaultColor, inherits border color
+	Color    Color // If unset (zero value), inherits border color
 }
 
 // BorderTitle creates a title decoration at the top-left of the border.
@@ -160,20 +130,10 @@ type Style struct {
 	Border          Border
 }
 
-// toANSI converts a terma Color to an ANSI color for ultraviolet.
-func (c Color) toANSI() color.Color {
-	if c == DefaultColor {
-		return nil
-	}
-	// ANSI basic colors are 0-7, bright colors are 8-15
-	// Our enum starts at 1 for Black, so subtract 1
-	return ansi.BasicColor(c - 1)
-}
-
 // IsZero returns true if the style has no values set.
 func (s Style) IsZero() bool {
-	return s.ForegroundColor == DefaultColor &&
-		s.BackgroundColor == DefaultColor &&
+	return !s.ForegroundColor.IsSet() &&
+		!s.BackgroundColor.IsSet() &&
 		s.Padding == (EdgeInsets{}) &&
 		s.Margin == (EdgeInsets{}) &&
 		s.Border.IsZero()
