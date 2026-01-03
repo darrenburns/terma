@@ -9,11 +9,18 @@ import (
 type ColorDemo struct{}
 
 func (d *ColorDemo) Build(ctx t.BuildContext) t.Widget {
-	return t.Column{
-		Style: t.Style{
-			Padding: t.EdgeInsetsXY(2, 1),
-		},
-		Children: []t.Widget{
+	return t.GradientBox{
+		Gradient: t.NewGradient(
+			t.Hex("#0F172A"), // Slate 900
+			t.Hex("#1E293B"), // Slate 800
+		),
+		Width:  t.Fr(1),
+		Height: t.Fr(1),
+		Child: t.Column{
+			Style: t.Style{
+				Padding: t.EdgeInsetsXY(2, 1),
+			},
+			Children: []t.Widget{
 			header(),
 			t.Text{Content: ""},
 
@@ -43,6 +50,7 @@ func (d *ColorDemo) Build(ctx t.BuildContext) t.Widget {
 
 			// Contrast & accessibility
 			accessibilitySection(),
+			},
 		},
 	}
 }
