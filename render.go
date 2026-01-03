@@ -218,17 +218,14 @@ func (ctx *RenderContext) RenderChild(index int, child Widget, xOffset, yOffset,
 	borderedXOffset := xOffset + margin.Left
 	borderedYOffset := yOffset + margin.Top
 
-	// Fill the inner area (padding + content) with background color if set
+	// Fill the bordered area (border + padding + content) with background color if set
+	// This ensures border cells also have the correct background color
 	if style.BackgroundColor.IsSet() {
-		innerXOffset := borderedXOffset + borderWidth
-		innerYOffset := borderedYOffset + borderWidth
-		innerWidth := contentWidth + padding.Horizontal()
-		innerHeight := contentHeight + padding.Vertical()
-		innerCtx := ctx.SubContext(innerXOffset, innerYOffset, innerWidth, innerHeight)
-		innerCtx.FillRect(0, 0, innerWidth, innerHeight, style.BackgroundColor)
+		borderedCtx := ctx.SubContext(borderedXOffset, borderedYOffset, borderedWidth, borderedHeight)
+		borderedCtx.FillRect(0, 0, borderedWidth, borderedHeight, style.BackgroundColor)
 	}
 
-	// Draw border if set
+	// Draw border if set (on top of the background)
 	if !border.IsZero() {
 		borderCtx := ctx.SubContext(borderedXOffset, borderedYOffset, borderedWidth, borderedHeight)
 		borderCtx.DrawBorder(0, 0, borderedWidth, borderedHeight, border)
@@ -344,6 +341,64 @@ func (ctx *RenderContext) FillRect(x, y, width, height int, bgColor Color) {
 			}
 			cell := &uv.Cell{Content: " ", Width: 1, Style: cellStyle}
 			ctx.terminal.SetCell(absX, absY, cell)
+		}
+	}
+}
+
+// DrawBackdrop applies a semi-transparent overlay over existing content.
+// Unlike FillRect, this preserves the underlying characters and blends
+// the backdrop color over both foreground and background colors.
+// This creates a true transparency effect where text behind is still visible.
+func (ctx *RenderContext) DrawBackdrop(x, y, width, height int, backdropColor Color) {
+	if !backdropColor.IsSet() {
+		return
+	}
+
+	for row := 0; row < height; row++ {
+		absY := ctx.Y + y + row
+		if absY < 0 || absY >= ctx.Height {
+			continue
+		}
+
+		for col := 0; col < width; col++ {
+			absX := ctx.X + x + col
+			if absX < 0 || absX >= ctx.Width {
+				continue
+			}
+
+			// Read existing cell from terminal buffer
+			existingCell := ctx.terminal.CellAt(absX, absY)
+			if existingCell == nil {
+				// No existing cell, just fill with backdrop color
+				cell := &uv.Cell{
+					Content: " ",
+					Width:   1,
+					Style:   uv.Style{Bg: backdropColor.toANSI()},
+				}
+				ctx.terminal.SetCell(absX, absY, cell)
+				continue
+			}
+
+			// Convert existing colors and blend with backdrop
+			existingFg := FromANSI(existingCell.Style.Fg)
+			existingBg := FromANSI(existingCell.Style.Bg)
+
+			// Blend backdrop over both foreground and background
+			blendedFg := backdropColor.BlendOver(existingFg)
+			blendedBg := backdropColor.BlendOver(existingBg)
+
+			// Re-write cell with same content but blended colors
+			newCell := &uv.Cell{
+				Content: existingCell.Content,
+				Width:   existingCell.Width,
+				Style: uv.Style{
+					Fg:        blendedFg.toANSI(),
+					Bg:        blendedBg.toANSI(),
+					Attrs:     existingCell.Style.Attrs,
+					Underline: existingCell.Style.Underline,
+				},
+			}
+			ctx.terminal.SetCell(absX, absY, newCell)
 		}
 	}
 }
@@ -670,6 +725,10 @@ type Renderer struct {
 	focusedSignal  *AnySignal[Focusable]
 	hoveredSignal  *AnySignal[Widget]
 	widgetRegistry *WidgetRegistry
+	floatCollector *FloatCollector
+	// modalFocusTarget is the ID of the first focusable in a modal float.
+	// Used to auto-focus into modals when they open.
+	modalFocusTarget string
 }
 
 // NewRenderer creates a new renderer for the given terminal.
@@ -683,6 +742,7 @@ func NewRenderer(terminal *uv.Terminal, width, height int, fm *FocusManager, foc
 		focusedSignal:  focusedSignal,
 		hoveredSignal:  hoveredSignal,
 		widgetRegistry: NewWidgetRegistry(),
+		floatCollector: NewFloatCollector(),
 	}
 }
 
@@ -694,12 +754,14 @@ func (r *Renderer) Resize(width, height int) {
 
 // Render renders the widget tree to the terminal and returns collected focusables.
 func (r *Renderer) Render(root Widget) []FocusableEntry {
-	// Reset focus collector and widget registry for this render pass
+	// Reset collectors and widget registry for this render pass
 	r.focusCollector.Reset()
 	r.widgetRegistry.Reset()
+	r.floatCollector.Reset()
+	r.modalFocusTarget = ""
 
 	// Create build context
-	buildCtx := NewBuildContext(r.focusManager, r.focusedSignal, r.hoveredSignal)
+	buildCtx := NewBuildContext(r.focusManager, r.focusedSignal, r.hoveredSignal, r.floatCollector)
 
 	// Create render context
 	ctx := NewRenderContext(r.terminal, r.width, r.height, r.focusCollector, r.focusManager, buildCtx, r.widgetRegistry)
@@ -764,17 +826,14 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 	borderedXOffset := margin.Left
 	borderedYOffset := margin.Top
 
-	// Fill the inner area (padding + content) with background color if set
+	// Fill the bordered area (border + padding + content) with background color if set
+	// This ensures border cells also have the correct background color
 	if style.BackgroundColor.IsSet() {
-		innerXOffset := borderedXOffset + borderWidth
-		innerYOffset := borderedYOffset + borderWidth
-		innerWidth := contentWidth + padding.Horizontal()
-		innerHeight := contentHeight + padding.Vertical()
-		innerCtx := ctx.SubContext(innerXOffset, innerYOffset, innerWidth, innerHeight)
-		innerCtx.FillRect(0, 0, innerWidth, innerHeight, style.BackgroundColor)
+		borderedCtx := ctx.SubContext(borderedXOffset, borderedYOffset, borderedWidth, borderedHeight)
+		borderedCtx.FillRect(0, 0, borderedWidth, borderedHeight, style.BackgroundColor)
 	}
 
-	// Draw border if set
+	// Draw border if set (on top of the background)
 	if !border.IsZero() {
 		borderCtx := ctx.SubContext(borderedXOffset, borderedYOffset, borderedWidth, borderedHeight)
 		borderCtx.DrawBorder(0, 0, borderedWidth, borderedHeight, border)
@@ -825,7 +884,126 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 		renderable.Render(childCtx)
 	}
 
+	// Phase 2: Render floating widgets on top
+	// Set up inherited background on root context so float backdrops can blend properly
+	if style.BackgroundColor.IsSet() {
+		rootBg := style.BackgroundColor
+		ctx.inheritedBgAt = func(absY int) Color { return rootBg }
+	}
+	r.renderFloats(ctx, buildCtx)
+
 	return r.focusCollector.Focusables()
+}
+
+// renderFloats renders all collected floating widgets on top of the main widget tree.
+func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
+	for i := range r.floatCollector.entries {
+		entry := &r.floatCollector.entries[i]
+
+		// For modal floats, track focusables so we can auto-focus into the modal
+		var focusableCountBefore int
+		if entry.Config.Modal {
+			focusableCountBefore = len(r.focusCollector.Focusables())
+		}
+
+		r.renderFloat(ctx, buildCtx, entry)
+
+		// If this was a modal and new focusables were added, check if we need to auto-focus
+		if entry.Config.Modal && r.modalFocusTarget == "" {
+			focusables := r.focusCollector.Focusables()
+			if len(focusables) > focusableCountBefore {
+				// Get the modal's focusables (those added during this float's render)
+				modalFocusables := focusables[focusableCountBefore:]
+
+				// Check if focus is already inside the modal
+				currentFocusID := r.focusManager.FocusedID()
+				focusInModal := false
+				for _, f := range modalFocusables {
+					if f.ID == currentFocusID {
+						focusInModal = true
+						break
+					}
+				}
+
+				// Only set focus target if focus is NOT already in the modal
+				if !focusInModal {
+					r.modalFocusTarget = modalFocusables[0].ID
+				}
+			}
+		}
+	}
+}
+
+// renderFloat renders a single floating widget.
+func (r *Renderer) renderFloat(ctx *RenderContext, buildCtx BuildContext, entry *FloatEntry) {
+	// First, we need to calculate the float's size to determine position.
+	// Build the child and compute its layout size.
+	built := entry.Child.Build(buildCtx)
+
+	// Extract style to account for insets in size calculation
+	var style Style
+	if styled, ok := built.(Styled); ok {
+		style = styled.GetStyle()
+	}
+	margin := style.Margin
+	padding := style.Padding
+	border := style.Border
+	borderWidth := border.Width()
+	hInset := margin.Horizontal() + borderWidth*2 + padding.Horizontal()
+	vInset := margin.Vertical() + borderWidth*2 + padding.Vertical()
+
+	// Get the content size via layout (constraints reduced by insets)
+	var contentWidth, contentHeight int
+	if layoutable, ok := built.(Layoutable); ok {
+		constraints := Constraints{
+			MinWidth:  0,
+			MaxWidth:  r.width - hInset,
+			MinHeight: 0,
+			MaxHeight: r.height - vInset,
+		}
+		size := layoutable.Layout(buildCtx, constraints)
+		contentWidth = size.Width
+		contentHeight = size.Height
+	} else {
+		contentWidth = r.width/2 - hInset
+		contentHeight = r.height/2 - vInset
+	}
+
+	// Total float size includes insets
+	floatWidth := contentWidth + hInset
+	floatHeight := contentHeight + vInset
+
+	// Calculate position
+	var x, y int
+	if entry.Config.AnchorID != "" {
+		anchor := r.widgetRegistry.WidgetByID(entry.Config.AnchorID)
+		x, y = calculateAnchorPosition(anchor, entry.Config.Anchor, floatWidth, floatHeight, entry.Config.Offset)
+	} else {
+		x, y = calculateAbsolutePosition(entry.Config.Position, r.width, r.height, floatWidth, floatHeight, entry.Config.Offset)
+	}
+
+	// Clamp to screen bounds
+	x, y = clampToScreen(x, y, floatWidth, floatHeight, r.width, r.height)
+
+	// Store computed position and size for event handling
+	entry.X = x
+	entry.Y = y
+	entry.Width = floatWidth
+	entry.Height = floatHeight
+
+	// For modal floats, draw a transparent backdrop that preserves underlying content
+	if entry.Config.Modal {
+		backdropColor := entry.Config.BackdropColor
+		if !backdropColor.IsSet() {
+			backdropColor = RGBA(0, 0, 0, 128)
+		}
+		ctx.DrawBackdrop(0, 0, r.width, r.height, backdropColor)
+	}
+
+	// Use RenderChild to properly handle all rendering (background, border, content)
+	// Create a sub-context positioned at the float location
+	floatCtx := ctx.SubContext(x, y, floatWidth, floatHeight)
+	floatCtx.RenderChild(1000, entry.Child, 0, 0, floatWidth, floatHeight)
 }
 
 // WidgetAt returns the topmost widget at the given terminal coordinates.
@@ -844,4 +1022,43 @@ func (r *Renderer) WidgetByID(id string) *WidgetEntry {
 // Returns nil if no Scrollable is at that position.
 func (r *Renderer) ScrollableAt(x, y int) *Scrollable {
 	return r.widgetRegistry.ScrollableAt(x, y)
+}
+
+// HasFloats returns true if there are any floating widgets.
+func (r *Renderer) HasFloats() bool {
+	return r.floatCollector.Len() > 0
+}
+
+// FloatAt returns the topmost float entry containing the point (x, y).
+// Returns nil if no float contains the point.
+func (r *Renderer) FloatAt(x, y int) *FloatEntry {
+	// Search back-to-front (topmost floats are last)
+	for i := len(r.floatCollector.entries) - 1; i >= 0; i-- {
+		entry := &r.floatCollector.entries[i]
+		if x >= entry.X && x < entry.X+entry.Width &&
+			y >= entry.Y && y < entry.Y+entry.Height {
+			return entry
+		}
+	}
+	return nil
+}
+
+// TopFloat returns the topmost (last registered) float entry, or nil if none.
+func (r *Renderer) TopFloat() *FloatEntry {
+	if r.floatCollector.Len() == 0 {
+		return nil
+	}
+	return &r.floatCollector.entries[len(r.floatCollector.entries)-1]
+}
+
+// HasModalFloat returns true if any float is modal.
+func (r *Renderer) HasModalFloat() bool {
+	return r.floatCollector.HasModal()
+}
+
+// ModalFocusTarget returns the ID of the first focusable widget in a modal float.
+// Returns empty string if there's no modal or no focusables in the modal.
+// Used to auto-focus into modals when they open.
+func (r *Renderer) ModalFocusTarget() string {
+	return r.modalFocusTarget
 }

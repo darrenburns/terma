@@ -87,30 +87,12 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 
 			// Theme indicator
 			t.Text{
-				Spans: []t.Span{
-					t.ColorSpan("Theme: ", theme.TextMuted),
-					t.ColorSpan(currentTheme, theme.Accent),
-					t.ColorSpan(" (press t to change)", theme.TextMuted),
-				},
+				Spans: t.ParseMarkup(fmt.Sprintf("[$TextMuted]Theme: [/][$Accent]%s[/][$TextMuted] (press t to change)[/]", currentTheme), theme),
 			},
 
 			// Instructions
 			t.Text{
-				Spans: []t.Span{
-					t.PlainSpan("Use "),
-					t.BoldSpan("↑/↓", theme.Info),
-					t.PlainSpan(" or "),
-					t.BoldSpan("j/k", theme.Info),
-					t.PlainSpan(" to scroll • "),
-					t.BoldSpan("PgUp/PgDn", theme.Info),
-					t.PlainSpan(" or "),
-					t.BoldSpan("Ctrl+U/D", theme.Info),
-					t.PlainSpan(" for half-page • "),
-					t.BoldSpan("Home/End", theme.Info),
-					t.PlainSpan(" or "),
-					t.BoldSpan("g/G", theme.Info),
-					t.PlainSpan(" for top/bottom"),
-				},
+				Spans: t.ParseMarkup("Use [b $Info]↑/↓[/] or [b $Info]j/k[/] to scroll • [b $Info]PgUp/PgDn[/] or [b $Info]Ctrl+U/D[/] for half-page • [b $Info]Home/End[/] or [b $Info]g/G[/] for top/bottom", theme),
 			},
 
 			// Side by side: scrollable list and non-scrollable content
@@ -204,13 +186,7 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 
 			// Footer
 			t.Text{
-				Spans: []t.Span{
-					t.PlainSpan("Press "),
-					t.BoldSpan("Tab", theme.Warning),
-					t.PlainSpan(" to switch focus between scrollable panels • "),
-					t.BoldSpan("Ctrl+C", theme.Error),
-					t.PlainSpan(" to quit"),
-				},
+				Spans: t.ParseMarkup("Press [b $Warning]Tab[/] to switch focus between scrollable panels • [b $Error]Ctrl+C[/] to quit", theme),
 			},
 		},
 	}

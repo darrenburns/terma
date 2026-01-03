@@ -51,15 +51,7 @@ func (d *SimpleListDemo) Build(ctx t.BuildContext) t.Widget {
 			},
 
 			t.Text{
-				Spans: []t.Span{
-					t.PlainSpan("Use "),
-					t.BoldSpan("↑/↓", t.BrightCyan),
-					t.PlainSpan(" or "),
-					t.BoldSpan("j/k", t.BrightCyan),
-					t.PlainSpan(" to navigate • "),
-					t.BoldSpan("Enter", t.BrightCyan),
-					t.PlainSpan(" to select"),
-				},
+				Spans: t.ParseMarkup("Use [b #00ffff]↑/↓[/] or [b #00ffff]j/k[/] to navigate • [b #00ffff]Enter[/] to select", t.ThemeData{}),
 			},
 
 			// List with state - the state holds items and cursor position
@@ -82,11 +74,7 @@ func (d *SimpleListDemo) Build(ctx t.BuildContext) t.Widget {
 			},
 
 			t.Text{
-				Spans: []t.Span{
-					t.PlainSpan("Press "),
-					t.BoldSpan("Ctrl+C", t.BrightRed),
-					t.PlainSpan(" to quit"),
-				},
+				Spans: t.ParseMarkup("Press [b #ff5555]Ctrl+C[/] to quit", t.ThemeData{}),
 			},
 		},
 	}

@@ -66,6 +66,14 @@ func Run(root Widget) error {
 
 		focusables := renderer.Render(root)
 		focusManager.SetFocusables(focusables)
+		// Auto-focus into modal floats when they open
+		if modalTarget := renderer.ModalFocusTarget(); modalTarget != "" {
+			focusManager.FocusByID(modalTarget)
+			// Update the signal and re-render so the focused widget shows focus style
+			focusedSignal.Set(focusManager.Focused())
+			renderer.Render(root)
+		}
+
 		t.Display()
 
 		elapsed := time.Since(startTime)
@@ -95,6 +103,17 @@ func Run(root Widget) error {
 					return
 				}
 
+				// Check for Escape to dismiss floats
+				if ev.MatchString("escape") {
+					if topFloat := renderer.TopFloat(); topFloat != nil {
+						if topFloat.Config.shouldDismissOnEsc() && topFloat.Config.OnDismiss != nil {
+							topFloat.Config.OnDismiss()
+							display()
+							continue
+						}
+					}
+				}
+
 				// Route key event through focus manager (bubbles through widget tree)
 				keyEvent := KeyEvent{event: ev}
 				handled := focusManager.HandleKey(keyEvent)
@@ -115,6 +134,39 @@ func Run(root Widget) error {
 
 			case uv.MouseClickEvent:
 				Log("MouseClickEvent at X=%d Y=%d Button=%v", ev.X, ev.Y, ev.Button)
+
+				// Check if click is on a float
+				floatEntry := renderer.FloatAt(ev.X, ev.Y)
+				if floatEntry != nil {
+					// Click is on a float - handle normally
+					Log("  Click on float")
+					entry := renderer.WidgetAt(ev.X, ev.Y)
+					if entry != nil {
+						if clickable, ok := entry.Widget.(Clickable); ok {
+							clickable.OnClick()
+						}
+					}
+					display()
+					continue
+				}
+
+				// Click is outside all floats - check for dismissal
+				if renderer.HasFloats() {
+					topFloat := renderer.TopFloat()
+					if topFloat != nil && topFloat.Config.shouldDismissOnClickOutside() && topFloat.Config.OnDismiss != nil {
+						Log("  Dismissing float on click outside")
+						topFloat.Config.OnDismiss()
+						display()
+						continue
+					}
+
+					// For modal floats, block the click from reaching underlying widgets
+					if renderer.HasModalFloat() {
+						Log("  Modal float blocking click")
+						display()
+						continue
+					}
+				}
 
 				// Find the widget under the cursor
 				entry := renderer.WidgetAt(ev.X, ev.Y)

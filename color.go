@@ -397,6 +397,24 @@ func (c Color) toANSI() color.Color {
 	return ansi.RGBColor{R: c.r, G: c.g, B: c.b}
 }
 
+// FromANSI converts an ANSI color (from terminal cells) back to our Color type.
+// Returns an unset Color if the input is nil.
+func FromANSI(c color.Color) Color {
+	if c == nil {
+		return Color{} // unset/default
+	}
+
+	// Try direct type assertion for ansi.RGBColor first (most common case)
+	if rgb, ok := c.(ansi.RGBColor); ok {
+		return RGB(rgb.R, rgb.G, rgb.B)
+	}
+
+	// Fall back to the standard color.Color interface
+	// RGBA returns 16-bit values (0-65535), so we need to scale down
+	r, g, b, _ := c.RGBA()
+	return RGB(uint8(r>>8), uint8(g>>8), uint8(b>>8))
+}
+
 // --- Helper Functions ---
 
 // rgbToHSL converts RGB (0-255) to HSL (h: 0-360, s: 0-1, l: 0-1).

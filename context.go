@@ -13,15 +13,18 @@ type BuildContext struct {
 	hoveredSignal *AnySignal[Widget]
 	// path tracks the current position in the widget tree for auto-ID generation
 	path []int
+	// floatCollector gathers Floating widgets for deferred rendering
+	floatCollector *FloatCollector
 }
 
 // NewBuildContext creates a new build context.
-func NewBuildContext(fm *FocusManager, focusedSignal *AnySignal[Focusable], hoveredSignal *AnySignal[Widget]) BuildContext {
+func NewBuildContext(fm *FocusManager, focusedSignal *AnySignal[Focusable], hoveredSignal *AnySignal[Widget], fc *FloatCollector) BuildContext {
 	return BuildContext{
-		focusManager:  fm,
-		focusedSignal: focusedSignal,
-		hoveredSignal: hoveredSignal,
-		path:          []int{0},
+		focusManager:   fm,
+		focusedSignal:  focusedSignal,
+		hoveredSignal:  hoveredSignal,
+		path:           []int{0},
+		floatCollector: fc,
 	}
 }
 
@@ -53,10 +56,11 @@ func (ctx BuildContext) PushChild(index int) BuildContext {
 	copy(newPath, ctx.path)
 	newPath[len(ctx.path)] = index
 	return BuildContext{
-		focusManager:  ctx.focusManager,
-		focusedSignal: ctx.focusedSignal,
-		hoveredSignal: ctx.hoveredSignal,
-		path:          newPath,
+		focusManager:   ctx.focusManager,
+		focusedSignal:  ctx.focusedSignal,
+		hoveredSignal:  ctx.hoveredSignal,
+		path:           newPath,
+		floatCollector: ctx.floatCollector,
 	}
 }
 

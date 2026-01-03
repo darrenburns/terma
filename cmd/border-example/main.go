@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	t "terma"
@@ -70,11 +71,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 
 			// Theme indicator
 			t.Text{
-				Spans: []t.Span{
-					t.ColorSpan("Theme: ", theme.TextMuted),
-					t.ColorSpan(currentTheme, theme.Accent),
-					t.ColorSpan(" (press t to change, Ctrl+C to quit)", theme.TextMuted),
-				},
+				Spans: t.ParseMarkup(fmt.Sprintf("[$TextMuted]Theme: [/][$Accent]%s[/][$TextMuted] (press t to change, Ctrl+C to quit)[/]", currentTheme), theme),
 			},
 
 			// Row with square and rounded borders side by side
@@ -216,40 +213,15 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 				Children: []t.Widget{
 					// Status line with multiple colored spans
 					t.Text{
-						Spans: []t.Span{
-							t.PlainSpan("Status: "),
-							t.ColorSpan("Online", theme.Success),
-							t.PlainSpan(" | Errors: "),
-							t.ColorSpan("3", theme.Error),
-						},
+						Spans: t.ParseMarkup("Status: [$Success]Online[/] | Errors: [$Error]3[/]", theme),
 					},
 					// Text with formatting attributes
 					t.Text{
-						Spans: []t.Span{
-							t.PlainSpan("This is "),
-							t.BoldSpan("bold", theme.Text),
-							t.PlainSpan(", "),
-							t.ItalicSpan("italic", theme.Info),
-							t.PlainSpan(", and "),
-							t.UnderlineSpan("underlined", theme.Warning),
-							t.PlainSpan(" text."),
-						},
+						Spans: t.ParseMarkup("This is [b $Text]bold[/], [i $Info]italic[/], and [u $Warning]underlined[/] text.", theme),
 					},
 					// Fully styled span
 					t.Text{
-						Spans: []t.Span{
-							t.PlainSpan("Mixed: "),
-							t.StyledSpan("Bold+Color", t.SpanStyle{
-								Foreground: theme.Secondary,
-								Bold:       true,
-							}),
-							t.PlainSpan(" and "),
-							t.StyledSpan("Italic+Underline", t.SpanStyle{
-								Foreground: theme.Primary,
-								Italic:     true,
-								Underline:  true,
-							}),
-						},
+						Spans: t.ParseMarkup("Mixed: [b $Secondary]Bold+Color[/] and [i u $Primary]Italic+Underline[/]", theme),
 					},
 				},
 			},

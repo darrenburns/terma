@@ -88,17 +88,7 @@ func (d *EditorSettingsMenu) Build(ctx t.BuildContext) t.Widget {
 
 			// Instructions
 			t.Text{
-				Spans: []t.Span{
-					t.PlainSpan("Use "),
-					t.BoldSpan("↑/↓", t.BrightCyan),
-					t.PlainSpan(" or "),
-					t.BoldSpan("j/k", t.BrightCyan),
-					t.PlainSpan(" to navigate • "),
-					t.BoldSpan("Enter", t.BrightCyan),
-					t.PlainSpan(" to select • "),
-					t.BoldSpan("PgUp/PgDn", t.BrightCyan),
-					t.PlainSpan(" for fast scroll"),
-				},
+				Spans: t.ParseMarkup("Use [b #00ffff]↑/↓[/] or [b #00ffff]j/k[/] to navigate • [b #00ffff]Enter[/] to select • [b #00ffff]PgUp/PgDn[/] for fast scroll", t.ThemeData{}),
 			},
 
 			t.Row{
@@ -161,17 +151,7 @@ func (d *EditorSettingsMenu) Build(ctx t.BuildContext) t.Widget {
 
 			// Footer showing current cursor position and last selection
 			t.Text{
-				Spans: []t.Span{
-					t.PlainSpan("Cursor: "),
-					t.BoldSpan(fmt.Sprintf("%d", d.listState.CursorIndex.Get()+1), t.BrightYellow),
-					t.PlainSpan(" / "),
-					t.PlainSpan(fmt.Sprintf("%d", d.listState.ItemCount())),
-					t.PlainSpan(" • "),
-					t.PlainSpan(d.message.Get()),
-					t.PlainSpan(" • Press "),
-					t.BoldSpan("Ctrl+C", t.BrightRed),
-					t.PlainSpan(" to quit"),
-				},
+				Spans: t.ParseMarkup(fmt.Sprintf("Cursor: [b #ffff00]%d[/] / %d • %s • Press [b #ff5555]Ctrl+C[/] to quit", d.listState.CursorIndex.Get()+1, d.listState.ItemCount(), d.message.Get()), t.ThemeData{}),
 			},
 		},
 	}
