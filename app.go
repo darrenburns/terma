@@ -2,6 +2,8 @@ package terma
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"time"
 
 	uv "github.com/charmbracelet/ultraviolet"
@@ -12,12 +14,24 @@ import (
 // appCancel holds the cancel function for the currently running app.
 var appCancel func()
 
+// appRenderer holds the current renderer for screen export.
+var appRenderer *Renderer
+
 // Quit exits the running application gracefully.
 // This performs the same teardown as pressing Ctrl+C.
 func Quit() {
 	if appCancel != nil {
 		appCancel()
 	}
+}
+
+// ScreenText returns the current screen content as plain text.
+// Returns empty string if no app is running.
+func ScreenText() string {
+	if appRenderer == nil {
+		return ""
+	}
+	return appRenderer.ScreenText()
 }
 
 // Run starts the application with the given root widget and blocks until it exits.
@@ -40,6 +54,7 @@ func Run(root Widget) error {
 	appCancel = cancel
 	defer func() {
 		appCancel = nil
+		appRenderer = nil
 		cancel()
 	}()
 
@@ -56,6 +71,7 @@ func Run(root Widget) error {
 
 	// Create renderer with focus manager and signal
 	renderer := NewRenderer(t, width, height, focusManager, focusedSignal, hoveredSignal)
+	appRenderer = renderer
 
 	// Render and update focusables
 	display := func() {
@@ -101,6 +117,12 @@ func Run(root Widget) error {
 				if ev.MatchString("ctrl+c") {
 					cancel()
 					return
+				}
+
+				// Screen export keybind
+				if ev.MatchString("ctrl+shift+s") {
+					exportScreenToFile()
+					continue
 				}
 
 				// Check for Escape to dismiss floats
@@ -269,4 +291,22 @@ func Run(root Widget) error {
 	t.WriteString(ansi.ResetModeMouseExtSgr)
 
 	return t.Shutdown(context.Background())
+}
+
+// exportScreenToFile saves the current screen content to a timestamped file.
+func exportScreenToFile() {
+	if appRenderer == nil {
+		return
+	}
+
+	text := appRenderer.ScreenText()
+	timestamp := time.Now().Format("20060102-150405")
+	filename := fmt.Sprintf("terma-screenshot-%s.txt", timestamp)
+
+	if err := os.WriteFile(filename, []byte(text), 0644); err != nil {
+		Log("Screen export failed: %v", err)
+		return
+	}
+
+	Log("Screen exported to %s", filename)
 }

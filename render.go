@@ -1,6 +1,8 @@
 package terma
 
 import (
+	"strings"
+
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 )
@@ -750,6 +752,40 @@ func NewRenderer(terminal *uv.Terminal, width, height int, fm *FocusManager, foc
 func (r *Renderer) Resize(width, height int) {
 	r.width = width
 	r.height = height
+}
+
+// ScreenText returns the current screen content as plain text.
+// Each row is separated by a newline. Wide characters are handled correctly.
+func (r *Renderer) ScreenText() string {
+	var builder strings.Builder
+
+	for y := 0; y < r.height; y++ {
+		x := 0
+		for x < r.width {
+			cell := r.terminal.CellAt(x, y)
+
+			if cell == nil || cell.Content == "" {
+				builder.WriteByte(' ')
+				x++
+				continue
+			}
+
+			builder.WriteString(cell.Content)
+
+			// Skip continuation cells for wide characters
+			if cell.Width > 1 {
+				x += cell.Width
+			} else {
+				x++
+			}
+		}
+
+		if y < r.height-1 {
+			builder.WriteByte('\n')
+		}
+	}
+
+	return builder.String()
 }
 
 // Render renders the widget tree to the terminal and returns collected focusables.
