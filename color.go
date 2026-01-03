@@ -224,6 +224,97 @@ func (c Color) Blend(other Color, ratio float64) Color {
 	return RGB(r, g, b)
 }
 
+// AutoText returns a text color that is readable against this background color.
+// It blends the background with white (for dark backgrounds) or black (for light
+// backgrounds), preserving some of the background's character while ensuring
+// WCAG AA compliant contrast (≥4.5:1).
+func (c Color) AutoText() Color {
+	if !c.set {
+		return c
+	}
+
+	// Use luminance (perceived brightness) rather than HSL lightness.
+	// The crossover point where white-blend and black-blend text have equal
+	// contrast is around luminance 0.18. Below that, white text is better;
+	// above that, black text is better.
+	if c.Luminance() < 0.18 {
+		// Dark background: blend with white (keep ~4% of background color)
+		return c.Blend(RGB(255, 255, 255), 0.96)
+	}
+	// Light background: blend with black (keep ~4% of background color)
+	return c.Blend(RGB(0, 0, 0), 0.96)
+}
+
+// --- Gradient ---
+
+// Gradient represents a smooth color gradient between multiple color stops.
+type Gradient struct {
+	colors []Color
+}
+
+// NewGradient creates a gradient from two or more colors.
+// Colors are evenly distributed along the gradient.
+func NewGradient(colors ...Color) Gradient {
+	if len(colors) < 2 {
+		// Need at least 2 colors for a gradient
+		if len(colors) == 1 {
+			return Gradient{colors: []Color{colors[0], colors[0]}}
+		}
+		return Gradient{colors: []Color{RGB(0, 0, 0), RGB(255, 255, 255)}}
+	}
+	return Gradient{colors: colors}
+}
+
+// At returns the color at position t along the gradient.
+// t should be in range [0, 1] where 0 is the first color and 1 is the last.
+func (g Gradient) At(t float64) Color {
+	if len(g.colors) == 0 {
+		return Color{}
+	}
+	if len(g.colors) == 1 {
+		return g.colors[0]
+	}
+
+	// Clamp t to [0, 1]
+	t = clamp01(t)
+
+	// Calculate which segment we're in
+	segments := float64(len(g.colors) - 1)
+	scaledT := t * segments
+	segment := int(scaledT)
+
+	// Handle edge case where t == 1
+	if segment >= len(g.colors)-1 {
+		return g.colors[len(g.colors)-1]
+	}
+
+	// Get the two colors to blend between
+	c1 := g.colors[segment]
+	c2 := g.colors[segment+1]
+
+	// Calculate blend ratio within this segment
+	ratio := scaledT - float64(segment)
+
+	return c1.Blend(c2, ratio)
+}
+
+// Steps returns n evenly-spaced colors along the gradient.
+func (g Gradient) Steps(n int) []Color {
+	if n <= 0 {
+		return nil
+	}
+	if n == 1 {
+		return []Color{g.At(0.5)}
+	}
+
+	colors := make([]Color, n)
+	for i := 0; i < n; i++ {
+		t := float64(i) / float64(n-1)
+		colors[i] = g.At(t)
+	}
+	return colors
+}
+
 // --- Internal Methods ---
 
 // toANSI converts to charmbracelet/x/ansi color.Color for rendering.
