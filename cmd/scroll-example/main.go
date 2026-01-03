@@ -13,7 +13,11 @@ func init() {
 	}
 }
 
-type ScrollDemo struct{}
+type ScrollDemo struct {
+	scrollListState *t.ScrollState
+	scrollTextState *t.ScrollState
+	noScrollState   *t.ScrollState
+}
 
 func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 	// Generate a list of items that will exceed the viewport
@@ -72,7 +76,9 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 					// Scrollable list with fixed height
 					&t.Scrollable{
 						ID:     "scroll-list",
+						State:  s.scrollListState,
 						Height: t.Cells(15),
+						Width:  t.Fr(1),
 						Style: t.Style{
 							Border:  t.RoundedBorder(t.Cyan, t.BorderTitle("Scrollable List")),
 							Padding: t.EdgeInsetsAll(1),
@@ -85,8 +91,9 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 					// Second scrollable panel with different content
 					&t.Scrollable{
 						ID:     "scroll-text",
+						State:  s.scrollTextState,
 						Height: t.Cells(15),
-						Width:  t.Cells(40),
+						Width:  t.Fr(1),
 						Style: t.Style{
 							Border:  t.RoundedBorder(t.Magenta, t.BorderTitle("Long Text")),
 							Padding: t.EdgeInsetsAll(1),
@@ -129,6 +136,7 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 				Children: []t.Widget{
 					&t.Scrollable{
 						ID:            "no-scroll",
+						State:         s.noScrollState,
 						Height:        t.Cells(5),
 						DisableScroll: true,
 						Style: t.Style{
@@ -165,7 +173,11 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 }
 
 func main() {
-	app := &ScrollDemo{}
+	app := &ScrollDemo{
+		scrollListState: t.NewScrollState(),
+		scrollTextState: t.NewScrollState(),
+		noScrollState:   t.NewScrollState(),
+	}
 	if err := t.Run(app); err != nil {
 		log.Fatal(err)
 	}
