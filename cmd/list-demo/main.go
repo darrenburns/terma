@@ -114,8 +114,7 @@ func (d *ListDemo) buildSelectionSummary(theme t.ThemeData) t.Widget {
 	selection := d.listState.Selection.Get()
 	if len(selection) == 0 {
 		return t.Text{
-			Content: "No items selected",
-			Style:   t.Style{ForegroundColor: theme.TextMuted},
+			Spans: t.ParseMarkup("[$TextMuted]No items selected[/]", theme),
 		}
 	}
 
@@ -134,10 +133,7 @@ func (d *ListDemo) buildSelectionSummary(theme t.ThemeData) t.Widget {
 	}
 
 	return t.Text{
-		Spans: []t.Span{
-			t.BoldSpan(fmt.Sprintf("Selected (%d): ", len(selected)), theme.Secondary),
-			t.PlainSpan(summary),
-		},
+		Spans: t.ParseMarkup(fmt.Sprintf("[b $Secondary]Selected (%d): [/]%s", len(selected), summary), theme),
 	}
 }
 
@@ -167,47 +163,17 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 
 			// Theme indicator
 			t.Text{
-				Spans: []t.Span{
-					t.ColorSpan("Theme: ", theme.TextMuted),
-					t.ColorSpan(currentTheme, theme.Accent),
-					t.ColorSpan(" (press t to change)", theme.TextMuted),
-				},
+				Spans: t.ParseMarkup(fmt.Sprintf("[$TextMuted]Theme: [/][$Accent]%s[/][$TextMuted] (press t to change)[/]", currentTheme), theme),
 			},
 
 			// Instructions - navigation
 			t.Text{
-				Spans: []t.Span{
-					t.PlainSpan("Navigate: "),
-					t.BoldSpan("↑/↓", theme.Info),
-					t.PlainSpan(" or "),
-					t.BoldSpan("j/k", theme.Info),
-					t.PlainSpan(" | Select: "),
-					t.BoldSpan("Shift+↑/↓", theme.Secondary),
-					t.PlainSpan(" to extend"),
-				},
+				Spans: t.ParseMarkup("Navigate: [b $Info]↑/↓[/] or [b $Info]j/k[/] | Select: [b $Secondary]Shift+↑/↓[/] to extend", theme),
 			},
 
 			// Instructions - modifications
 			t.Text{
-				Spans: []t.Span{
-					t.PlainSpan("Modify: "),
-					t.BoldSpan("a", theme.Success),
-					t.PlainSpan("ppend "),
-					t.BoldSpan("A", theme.Success),
-					t.PlainSpan("+10 "),
-					t.BoldSpan("!", theme.Success),
-					t.PlainSpan("+1000 "),
-					t.BoldSpan("p", theme.Success),
-					t.PlainSpan("repend "),
-					t.BoldSpan("i", theme.Success),
-					t.PlainSpan("nsert "),
-					t.BoldSpan("d", theme.Error),
-					t.PlainSpan("elete "),
-					t.BoldSpan("c", theme.Error),
-					t.PlainSpan("lear "),
-					t.BoldSpan("r", theme.Warning),
-					t.PlainSpan("eset"),
-				},
+				Spans: t.ParseMarkup("Modify: [b $Success]a[/]ppend [b $Success]A[/]+10 [b $Success]![/]+1000 [b $Success]p[/]repend [b $Success]i[/]nsert [b $Error]d[/]elete [b $Error]c[/]lear [b $Warning]r[/]eset", theme),
 			},
 
 			// The list with scrolling
@@ -230,15 +196,7 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 
 			// Status showing item count and cursor
 			t.Text{
-				Spans: []t.Span{
-					t.PlainSpan("Items: "),
-					t.BoldSpan(fmt.Sprintf("%d", d.listState.ItemCount()), theme.Warning),
-					t.PlainSpan(" | Cursor: "),
-					t.BoldSpan(fmt.Sprintf("%d", d.listState.CursorIndex.Get()+1), theme.Info),
-					t.PlainSpan(" | Press "),
-					t.BoldSpan("Ctrl+C", theme.Error),
-					t.PlainSpan(" to quit"),
-				},
+				Spans: t.ParseMarkup(fmt.Sprintf("Items: [b $Warning]%d[/] | Cursor: [b $Info]%d[/] | Press [b $Error]Ctrl+C[/] to quit", d.listState.ItemCount(), d.listState.CursorIndex.Get()+1), theme),
 			},
 
 			// Selection summary
