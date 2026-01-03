@@ -21,35 +21,39 @@ func (d *ColorDemo) Build(ctx t.BuildContext) t.Widget {
 				Padding: t.EdgeInsetsXY(2, 1),
 			},
 			Children: []t.Widget{
-			header(),
-			t.Text{Content: ""},
+				header(),
+				t.Text{Content: ""},
 
-			// Color constructors showcase
-			constructorsSection(),
-			t.Text{Content: ""},
+				// Color constructors showcase
+				constructorsSection(),
+				t.Text{Content: ""},
 
-			// Lightness manipulation
-			lightnessSection(),
-			t.Text{Content: ""},
+				// Lightness manipulation
+				lightnessSection(),
+				t.Text{Content: ""},
 
-			// Saturation manipulation
-			saturationSection(),
-			t.Text{Content: ""},
+				// Saturation manipulation
+				saturationSection(),
+				t.Text{Content: ""},
 
-			// Color harmonies
-			harmoniesSection(),
-			t.Text{Content: ""},
+				// Color harmonies
+				harmoniesSection(),
+				t.Text{Content: ""},
 
-			// Blending showcase
-			blendingSection(),
-			t.Text{Content: ""},
+				// Blending showcase
+				blendingSection(),
+				t.Text{Content: ""},
 
-			// AutoText showcase
-			autoTextSection(),
-			t.Text{Content: ""},
+				// AutoText showcase
+				autoTextSection(),
+				t.Text{Content: ""},
 
-			// Contrast & accessibility
-			accessibilitySection(),
+				// Contrast & accessibility
+				accessibilitySection(),
+				t.Text{Content: ""},
+
+				// Alpha transparency showcase
+				transparencySection(),
 			},
 		},
 	}
@@ -404,6 +408,53 @@ func gradientBlock(color t.Color, label string) t.Widget {
 		Content: label + " ",
 		Style: t.Style{
 			ForegroundColor: color.AutoText(),
+			BackgroundColor: color,
+		},
+	}
+}
+
+func transparencySection() t.Widget {
+	pink := t.Hex("#EC4899")
+
+	return t.Column{
+		Children: []t.Widget{
+			sectionHeader("Alpha Transparency", t.Hex("#A78BFA")),
+
+			// Single layer transparency
+			t.Row{
+				Children: []t.Widget{
+					alphaLabel("Single Layer"),
+					alphaBlock(pink.WithAlpha(1.0), "100%"),
+					alphaBlock(pink.WithAlpha(0.75), "75%"),
+					alphaBlock(pink.WithAlpha(0.5), "50%"),
+					alphaBlock(pink.WithAlpha(0.25), "25%"),
+					alphaBlock(pink.WithAlpha(0.1), "10%"),
+				},
+			},
+		},
+	}
+}
+
+func alphaLabel(name string) t.Widget {
+	for len(name) < 14 {
+		name = name + " "
+	}
+	return t.Text{
+		Content: name,
+		Style:   t.Style{ForegroundColor: t.Hex("#94A3B8")},
+	}
+}
+
+func alphaBlock(color t.Color, label string) t.Widget {
+	// Pad label
+	for len(label) < 5 {
+		label = " " + label
+	}
+
+	return t.Text{
+		Content: " " + label + " ",
+		Style: t.Style{
+			ForegroundColor: t.White,
 			BackgroundColor: color,
 		},
 	}

@@ -134,6 +134,11 @@ func (t Text) Render(ctx *RenderContext) {
 
 // renderPlain renders plain text content.
 func (t Text) renderPlain(ctx *RenderContext) {
+	// Create a style without BackgroundColor - the background is already drawn
+	// by RenderChild's FillRect. We only need ForegroundColor here.
+	// Using the inherited background (via ctx.inheritedBgAt) for transparent text.
+	style := Style{ForegroundColor: t.Style.ForegroundColor}
+
 	lines := strings.Split(t.Content, "\n")
 	for i := 0; i < ctx.Height; i++ {
 		var line string
@@ -150,12 +155,16 @@ func (t Text) renderPlain(ctx *RenderContext) {
 		if lineWidth < ctx.Width {
 			line = line + strings.Repeat(" ", ctx.Width-lineWidth)
 		}
-		ctx.DrawStyledText(0, i, line, t.Style)
+		ctx.DrawStyledText(0, i, line, style)
 	}
 }
 
 // renderSpans renders rich text with multiple styled spans.
 func (t Text) renderSpans(ctx *RenderContext) {
+	// Create a base style without BackgroundColor - the background is already drawn
+	// by RenderChild's FillRect. We only need ForegroundColor here.
+	baseStyle := Style{ForegroundColor: t.Style.ForegroundColor}
+
 	x, y := 0, 0
 
 	for _, span := range t.Spans {
@@ -164,11 +173,6 @@ func (t Text) renderSpans(ctx *RenderContext) {
 		for partIdx, part := range parts {
 			// Move to next line if this isn't the first part (after a newline)
 			if partIdx > 0 {
-				// Pad remainder of current line with spaces for background
-				if x < ctx.Width && t.Style.BackgroundColor.IsSet() {
-					padding := strings.Repeat(" ", ctx.Width-x)
-					ctx.DrawStyledText(x, y, padding, t.Style)
-				}
 				x = 0
 				y++
 				if y >= ctx.Height {
@@ -185,23 +189,9 @@ func (t Text) renderSpans(ctx *RenderContext) {
 			if len(part) > 0 {
 				// Create a span for just this part
 				partSpan := Span{Text: part, Style: span.Style}
-				ctx.DrawSpan(x, y, partSpan, t.Style)
+				ctx.DrawSpan(x, y, partSpan, baseStyle)
 				x += ansi.StringWidth(part)
 			}
-		}
-	}
-
-	// Pad remainder of last line with spaces for background
-	if x < ctx.Width && t.Style.BackgroundColor.IsSet() {
-		padding := strings.Repeat(" ", ctx.Width-x)
-		ctx.DrawStyledText(x, y, padding, t.Style)
-	}
-
-	// Fill remaining lines with spaces for background
-	for row := y + 1; row < ctx.Height; row++ {
-		if t.Style.BackgroundColor.IsSet() {
-			padding := strings.Repeat(" ", ctx.Width)
-			ctx.DrawStyledText(0, row, padding, t.Style)
 		}
 	}
 }

@@ -255,10 +255,30 @@ func (ctx *RenderContext) RenderChild(index int, child Widget, xOffset, yOffset,
 		contentXOffset := xOffset + margin.Left + borderWidth + padding.Left
 		contentYOffset := yOffset + margin.Top + borderWidth + padding.Top
 		childCtx := ctx.SubContext(contentXOffset, contentYOffset, contentWidth, contentHeight)
-		// Set inherited background callback for solid backgrounds
+		// Set inherited background callback for this widget's children.
+		// IMPORTANT: We set this to return the blended result AFTER the widget renders.
+		// The widget itself uses ctx.inheritedBgAt (parent's callback) for its own
+		// background blending. The widget's children need to see the blended result.
 		if style.BackgroundColor.IsSet() {
-			bg := style.BackgroundColor
-			childCtx.inheritedBgAt = func(absY int) Color { return bg }
+			widgetBg := style.BackgroundColor
+			parentCallback := ctx.inheritedBgAt
+
+			if widgetBg.IsOpaque() {
+				childCtx.inheritedBgAt = func(absY int) Color { return widgetBg }
+			} else {
+				// For semi-transparent backgrounds, children see the blended result.
+				// The widget's own background was drawn by FillRect using parent's callback.
+				childCtx.inheritedBgAt = func(absY int) Color {
+					inherited := Black
+					if parentCallback != nil {
+						inherited = parentCallback(absY)
+					}
+					if !inherited.IsSet() {
+						inherited = Black
+					}
+					return widgetBg.BlendOver(inherited)
+				}
+			}
 		}
 		renderable.Render(childCtx)
 	}
@@ -267,13 +287,10 @@ func (ctx *RenderContext) RenderChild(index int, child Widget, xOffset, yOffset,
 }
 
 // FillRect fills a rectangular region with a background color.
+// If the color is semi-transparent, it blends with the inherited background.
 func (ctx *RenderContext) FillRect(x, y, width, height int, bgColor Color) {
 	if !bgColor.IsSet() {
 		return
-	}
-
-	cellStyle := uv.Style{
-		Bg: bgColor.toANSI(),
 	}
 
 	// Use viewport bounds for clipping if in a scrolled region
@@ -288,6 +305,25 @@ func (ctx *RenderContext) FillRect(x, y, width, height int, bgColor Color) {
 		if absY < clipY || absY >= clipY+clipHeight {
 			continue
 		}
+
+		// Determine effective background color for this row
+		effectiveBg := bgColor
+		if !bgColor.IsOpaque() {
+			// Semi-transparent: blend over inherited background
+			inherited := Color{}
+			if ctx.inheritedBgAt != nil {
+				inherited = ctx.inheritedBgAt(absY)
+			}
+			if !inherited.IsSet() {
+				inherited = Black
+			}
+			effectiveBg = bgColor.BlendOver(inherited)
+		}
+
+		cellStyle := uv.Style{
+			Bg: effectiveBg.toANSI(),
+		}
+
 		for col := 0; col < width; col++ {
 			absX := ctx.X + x + col
 			if absX < ctx.X || absX >= ctx.X+ctx.Width {
@@ -480,9 +516,20 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 		return
 	}
 
-	// Determine background color: use inherited if no explicit background
+	// Determine background color: use inherited if no explicit background,
+	// or blend if semi-transparent
 	bg := style.BackgroundColor
-	if !bg.IsSet() && ctx.inheritedBgAt != nil {
+	if bg.IsSet() && !bg.IsOpaque() {
+		// Semi-transparent: blend over inherited background
+		inherited := Color{}
+		if ctx.inheritedBgAt != nil {
+			inherited = ctx.inheritedBgAt(absY)
+		}
+		if !inherited.IsSet() {
+			inherited = Black
+		}
+		bg = bg.BlendOver(inherited)
+	} else if !bg.IsSet() && ctx.inheritedBgAt != nil {
 		bg = ctx.inheritedBgAt(absY)
 	}
 
@@ -536,8 +583,18 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 	if !bg.IsSet() {
 		bg = baseStyle.BackgroundColor
 	}
-	// Fall back to inherited background if still not set
-	if !bg.IsSet() && ctx.inheritedBgAt != nil {
+	// Handle semi-transparent backgrounds or fall back to inherited
+	if bg.IsSet() && !bg.IsOpaque() {
+		// Semi-transparent: blend over inherited background
+		inherited := Color{}
+		if ctx.inheritedBgAt != nil {
+			inherited = ctx.inheritedBgAt(absY)
+		}
+		if !inherited.IsSet() {
+			inherited = Black
+		}
+		bg = bg.BlendOver(inherited)
+	} else if !bg.IsSet() && ctx.inheritedBgAt != nil {
 		bg = ctx.inheritedBgAt(absY)
 	}
 
@@ -723,10 +780,26 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 		contentXOffset := margin.Left + borderWidth + padding.Left
 		contentYOffset := margin.Top + borderWidth + padding.Top
 		childCtx := ctx.SubContext(contentXOffset, contentYOffset, contentWidth, contentHeight)
-		// Set inherited background callback for solid backgrounds
+		// Set inherited background callback for this widget's children.
 		if style.BackgroundColor.IsSet() {
-			bg := style.BackgroundColor
-			childCtx.inheritedBgAt = func(absY int) Color { return bg }
+			widgetBg := style.BackgroundColor
+			parentCallback := ctx.inheritedBgAt
+
+			if widgetBg.IsOpaque() {
+				childCtx.inheritedBgAt = func(absY int) Color { return widgetBg }
+			} else {
+				// For semi-transparent backgrounds, children see the blended result.
+				childCtx.inheritedBgAt = func(absY int) Color {
+					inherited := Black
+					if parentCallback != nil {
+						inherited = parentCallback(absY)
+					}
+					if !inherited.IsSet() {
+						inherited = Black
+					}
+					return widgetBg.BlendOver(inherited)
+				}
+			}
 		}
 		renderable.Render(childCtx)
 	}

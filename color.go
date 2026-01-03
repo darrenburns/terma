@@ -9,26 +9,45 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// Color represents a terminal color with full RGB and HSL support.
+// Color represents a terminal color with full RGB, HSL, and alpha support.
 // The zero value (Color{}) is transparent/default - inherits from terminal.
 type Color struct {
 	r, g, b uint8
-	set     bool // distinguishes "not set" from "black" (RGB 0,0,0)
+	a       float64 // 0.0 = fully transparent, 1.0 = fully opaque
+	set     bool    // distinguishes "not set" from "transparent black"
 }
 
 // RGB creates a color from red, green, blue components (0-255).
+// The resulting color is fully opaque (alpha = 1.0).
 func RGB(r, g, b uint8) Color {
-	return Color{r: r, g: g, b: b, set: true}
+	return Color{r: r, g: g, b: b, a: 1.0, set: true}
+}
+
+// RGBA creates a color from red, green, blue components (0-255) and alpha (0.0-1.0).
+// Alpha of 0.0 is fully transparent, 1.0 is fully opaque.
+func RGBA(r, g, b uint8, a float64) Color {
+	return Color{r: r, g: g, b: b, a: clamp01(a), set: true}
 }
 
 // Hex creates a color from a hex string.
-// Accepts formats: "#RRGGBB", "RRGGBB", "#RGB", "RGB".
+// Accepts formats: "#RRGGBB", "RRGGBB", "#RGB", "RGB", "#RRGGBBAA", "RRGGBBAA".
+// For 8-character format, AA is the alpha value (00 = transparent, FF = opaque).
 func Hex(hex string) Color {
 	hex = strings.TrimPrefix(hex, "#")
 
 	// Handle short form (#RGB)
 	if len(hex) == 3 {
 		hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]})
+	}
+
+	// Handle #RRGGBBAA format
+	if len(hex) == 8 {
+		var r, g, b, a uint8
+		_, err := fmt.Sscanf(hex, "%02x%02x%02x%02x", &r, &g, &b, &a)
+		if err != nil {
+			return Color{} // invalid, return default
+		}
+		return RGBA(r, g, b, float64(a)/255.0)
 	}
 
 	if len(hex) != 6 {
@@ -45,9 +64,16 @@ func Hex(hex string) Color {
 }
 
 // HSL creates a color from hue (0-360), saturation (0-1), lightness (0-1).
+// The resulting color is fully opaque (alpha = 1.0).
 func HSL(h, s, l float64) Color {
 	r, g, b := hslToRGB(h, s, l)
 	return RGB(r, g, b)
+}
+
+// HSLA creates a color from hue (0-360), saturation (0-1), lightness (0-1), and alpha (0-1).
+func HSLA(h, s, l, a float64) Color {
+	r, g, b := hslToRGB(h, s, l)
+	return RGBA(r, g, b, a)
 }
 
 // ANSI color constants (backwards compatible names with true color values).
@@ -93,6 +119,21 @@ func (c Color) Hex() string {
 // IsSet returns true if the color was explicitly set.
 func (c Color) IsSet() bool {
 	return c.set
+}
+
+// Alpha returns the alpha value (0.0-1.0).
+func (c Color) Alpha() float64 {
+	return c.a
+}
+
+// IsOpaque returns true if the color is fully opaque (alpha >= 1.0).
+func (c Color) IsOpaque() bool {
+	return c.a >= 1.0
+}
+
+// WithAlpha returns a copy of the color with the specified alpha (0.0-1.0).
+func (c Color) WithAlpha(a float64) Color {
+	return Color{r: c.r, g: c.g, b: c.b, a: clamp01(a), set: c.set}
 }
 
 // IsDark returns true if the color's lightness is less than 0.5.
@@ -220,6 +261,34 @@ func (c Color) Blend(other Color, ratio float64) Color {
 	r := uint8(float64(c.r)*invRatio + float64(other.r)*ratio)
 	g := uint8(float64(c.g)*invRatio + float64(other.g)*ratio)
 	b := uint8(float64(c.b)*invRatio + float64(other.b)*ratio)
+
+	return RGB(r, g, b)
+}
+
+// BlendOver composites this color over a background color using alpha blending.
+// This is the standard "over" operator for alpha compositing.
+// Returns a fully opaque color representing the visual result.
+func (c Color) BlendOver(bg Color) Color {
+	// If background is not set, treat as black
+	if !bg.set {
+		bg = Black
+	}
+
+	// If foreground is fully opaque, it completely covers background
+	if c.a >= 1.0 {
+		return RGB(c.r, c.g, c.b)
+	}
+	// If foreground is fully transparent, background shows through
+	// Always return via RGB to ensure set=true
+	if c.a <= 0.0 {
+		return RGB(bg.r, bg.g, bg.b)
+	}
+
+	invAlpha := 1 - c.a
+
+	r := uint8(float64(c.r)*c.a + float64(bg.r)*invAlpha)
+	g := uint8(float64(c.g)*c.a + float64(bg.g)*invAlpha)
+	b := uint8(float64(c.b)*c.a + float64(bg.b)*invAlpha)
 
 	return RGB(r, g, b)
 }

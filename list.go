@@ -6,8 +6,11 @@ import "fmt"
 // It is the source of truth for items and cursor position, and must be provided to List.
 // Items is a reactive Signal - changes trigger automatic re-renders.
 type ListState[T any] struct {
-	Items       *AnySignal[[]T] // Reactive list data
-	CursorIndex *Signal[int]    // Cursor position
+	Items       *AnySignal[[]T]              // Reactive list data
+	CursorIndex *Signal[int]                 // Cursor position
+	Selection   *AnySignal[map[int]struct{}] // Selected item indices (for multi-select)
+
+	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
 }
 
 // NewListState creates a new ListState with the given initial items.
@@ -18,6 +21,7 @@ func NewListState[T any](initialItems []T) *ListState[T] {
 	return &ListState[T]{
 		Items:       NewAnySignal(initialItems),
 		CursorIndex: NewSignal(0),
+		Selection:   NewAnySignal(make(map[int]struct{})),
 	}
 }
 
@@ -183,6 +187,142 @@ func (s *ListState[T]) clampCursor() {
 	}
 }
 
+// ToggleSelection toggles the selection state of the item at the given index.
+func (s *ListState[T]) ToggleSelection(index int) {
+	s.Selection.Update(func(sel map[int]struct{}) map[int]struct{} {
+		newSel := make(map[int]struct{}, len(sel))
+		for k := range sel {
+			newSel[k] = struct{}{}
+		}
+		if _, exists := newSel[index]; exists {
+			delete(newSel, index)
+		} else {
+			newSel[index] = struct{}{}
+		}
+		return newSel
+	})
+}
+
+// Select adds the item at the given index to the selection.
+func (s *ListState[T]) Select(index int) {
+	s.Selection.Update(func(sel map[int]struct{}) map[int]struct{} {
+		newSel := make(map[int]struct{}, len(sel)+1)
+		for k := range sel {
+			newSel[k] = struct{}{}
+		}
+		newSel[index] = struct{}{}
+		return newSel
+	})
+}
+
+// Deselect removes the item at the given index from the selection.
+func (s *ListState[T]) Deselect(index int) {
+	s.Selection.Update(func(sel map[int]struct{}) map[int]struct{} {
+		newSel := make(map[int]struct{}, len(sel))
+		for k := range sel {
+			if k != index {
+				newSel[k] = struct{}{}
+			}
+		}
+		return newSel
+	})
+}
+
+// IsSelected returns true if the item at the given index is selected.
+func (s *ListState[T]) IsSelected(index int) bool {
+	sel := s.Selection.Peek()
+	_, exists := sel[index]
+	return exists
+}
+
+// ClearSelection removes all items from the selection.
+func (s *ListState[T]) ClearSelection() {
+	s.Selection.Set(make(map[int]struct{}))
+}
+
+// SelectAll selects all items in the list.
+func (s *ListState[T]) SelectAll() {
+	items := s.Items.Peek()
+	sel := make(map[int]struct{}, len(items))
+	for i := range items {
+		sel[i] = struct{}{}
+	}
+	s.Selection.Set(sel)
+}
+
+// SelectedItems returns all currently selected items.
+func (s *ListState[T]) SelectedItems() []T {
+	items := s.Items.Peek()
+	sel := s.Selection.Peek()
+	result := make([]T, 0, len(sel))
+	for i := range items {
+		if _, exists := sel[i]; exists {
+			result = append(result, items[i])
+		}
+	}
+	return result
+}
+
+// SelectedIndices returns the indices of all selected items in ascending order.
+func (s *ListState[T]) SelectedIndices() []int {
+	sel := s.Selection.Peek()
+	result := make([]int, 0, len(sel))
+	for i := range sel {
+		result = append(result, i)
+	}
+	// Sort for consistent ordering
+	for i := 0; i < len(result)-1; i++ {
+		for j := i + 1; j < len(result); j++ {
+			if result[i] > result[j] {
+				result[i], result[j] = result[j], result[i]
+			}
+		}
+	}
+	return result
+}
+
+// SetAnchor sets the anchor point for shift-selection.
+func (s *ListState[T]) SetAnchor(index int) {
+	s.anchorIndex = &index
+}
+
+// ClearAnchor removes the anchor point.
+func (s *ListState[T]) ClearAnchor() {
+	s.anchorIndex = nil
+}
+
+// HasAnchor returns true if an anchor point is set.
+func (s *ListState[T]) HasAnchor() bool {
+	return s.anchorIndex != nil
+}
+
+// GetAnchor returns the anchor index, or -1 if no anchor is set.
+func (s *ListState[T]) GetAnchor() int {
+	if s.anchorIndex == nil {
+		return -1
+	}
+	return *s.anchorIndex
+}
+
+// SelectRange selects all items between from and to (inclusive).
+func (s *ListState[T]) SelectRange(from, to int) {
+	if from > to {
+		from, to = to, from
+	}
+	items := s.Items.Peek()
+	if from < 0 {
+		from = 0
+	}
+	if to >= len(items) {
+		to = len(items) - 1
+	}
+	sel := make(map[int]struct{}, to-from+1)
+	for i := from; i <= to; i++ {
+		sel[i] = struct{}{}
+	}
+	s.Selection.Set(sel)
+}
+
 // List is a generic focusable widget that displays a navigable list of items.
 // It builds a Column of widgets, with the active item (cursor position) highlighted.
 // Use with Scrollable and a shared ScrollState to enable scroll-into-view.
@@ -203,14 +343,15 @@ func (s *ListState[T]) clampCursor() {
 //	// Remove item at runtime:
 //	state.RemoveAt(0)
 type List[T any] struct {
-	ID          string                           // Optional unique identifier
-	State       *ListState[T]                    // Required - holds items and cursor position
-	OnSelect    func(item T)                     // Callback invoked when Enter is pressed on an item
-	ScrollState *ScrollState                     // Optional state for scroll-into-view
-	Width       Dimension                        // Optional width (zero value = auto)
-	Height      Dimension                        // Optional height (zero value = auto)
-	RenderItem  func(item T, active bool) Widget // Function to render each item (uses default if nil)
-	ItemHeight  int                              // Height of each item in cells (default 1, must be uniform)
+	ID          string                                       // Optional unique identifier
+	State       *ListState[T]                                // Required - holds items and cursor position
+	OnSelect    func(item T)                                 // Callback invoked when Enter is pressed on an item
+	ScrollState *ScrollState                                 // Optional state for scroll-into-view
+	Width       Dimension                                    // Optional width (zero value = auto)
+	Height      Dimension                                    // Optional height (zero value = auto)
+	RenderItem  func(item T, active bool, selected bool) Widget // Function to render each item (uses default if nil)
+	ItemHeight  int                                          // Height of each item in cells (default 1, must be uniform)
+	MultiSelect bool                                         // Enable multi-select mode (space to toggle, shift+move to extend)
 }
 
 // WidgetID returns the widget's unique identifier.
@@ -246,6 +387,12 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 	// Get cursor position (subscribes to changes)
 	cursorIdx := l.State.CursorIndex.Get()
 
+	// Get selection state (subscribes to changes)
+	var Selection map[int]struct{}
+	if l.MultiSelect {
+		Selection = l.State.Selection.Get()
+	}
+
 	// Clamp cursor to valid bounds
 	clamped := clampInt(cursorIdx, 0, len(items)-1)
 	if clamped != cursorIdx {
@@ -265,7 +412,8 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 	// Build children
 	children := make([]Widget, len(items))
 	for i, item := range items {
-		children[i] = renderItem(item, i == cursorIdx)
+		_, selected := Selection[i]
+		children[i] = renderItem(item, i == cursorIdx, selected)
 	}
 
 	// Ensure cursor item is visible whenever we rebuild
@@ -280,14 +428,19 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 
 // defaultRenderItem provides a default rendering for list items.
 // Uses magenta foreground and "▶ " prefix for the active (cursor) item.
-func defaultRenderItem[T any](item T, active bool) Widget {
+func defaultRenderItem[T any](item T, active bool, selected bool) Widget {
 	content := fmt.Sprintf("%v", item)
 	prefix := "  "
 	style := Style{}
 
-	if active {
+	if selected && active {
+		prefix = "▶*"
+		style.ForegroundColor = Magenta
+	} else if active {
 		prefix = "▶ "
 		style.ForegroundColor = Magenta
+	} else if selected {
+		prefix = " *"
 	}
 
 	return Text{
@@ -307,6 +460,27 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 	cursorIdx := l.State.CursorIndex.Peek()
 	itemCount := l.State.ItemCount()
 
+	// Handle multi-select specific keys (shift+movement to extend selection)
+	if l.MultiSelect {
+		switch {
+		case event.MatchString("shift+up", "shift+k"):
+			l.handleShiftMove(-1)
+			return true
+
+		case event.MatchString("shift+down", "shift+j"):
+			l.handleShiftMove(1)
+			return true
+
+		case event.MatchString("shift+home"):
+			l.handleShiftMoveTo(0)
+			return true
+
+		case event.MatchString("shift+end"):
+			l.handleShiftMoveTo(itemCount - 1)
+			return true
+		}
+	}
+
 	switch {
 	case event.MatchString("enter"):
 		// Handle selection (Enter key press)
@@ -318,26 +492,46 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 		return true
 
 	case event.MatchString("up", "k"):
+		if l.MultiSelect {
+			l.State.ClearSelection()
+			l.State.ClearAnchor()
+		}
 		l.State.SelectPrevious()
 		l.scrollCursorIntoView()
 		return true
 
 	case event.MatchString("down", "j"):
+		if l.MultiSelect {
+			l.State.ClearSelection()
+			l.State.ClearAnchor()
+		}
 		l.State.SelectNext()
 		l.scrollCursorIntoView()
 		return true
 
 	case event.MatchString("home", "g"):
+		if l.MultiSelect {
+			l.State.ClearSelection()
+			l.State.ClearAnchor()
+		}
 		l.State.SelectFirst()
 		l.scrollCursorIntoView()
 		return true
 
 	case event.MatchString("end", "G"):
+		if l.MultiSelect {
+			l.State.ClearSelection()
+			l.State.ClearAnchor()
+		}
 		l.State.SelectLast()
 		l.scrollCursorIntoView()
 		return true
 
 	case event.MatchString("pgup", "ctrl+u"):
+		if l.MultiSelect {
+			l.State.ClearSelection()
+			l.State.ClearAnchor()
+		}
 		newCursor := cursorIdx - 10
 		if newCursor < 0 {
 			newCursor = 0
@@ -347,6 +541,10 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 		return true
 
 	case event.MatchString("pgdown", "ctrl+d"):
+		if l.MultiSelect {
+			l.State.ClearSelection()
+			l.State.ClearAnchor()
+		}
 		newCursor := cursorIdx + 10
 		if newCursor >= itemCount {
 			newCursor = itemCount - 1
@@ -357,6 +555,48 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 	}
 
 	return false
+}
+
+// handleShiftMove extends selection by moving cursor by delta and selecting the range.
+func (l List[T]) handleShiftMove(delta int) {
+	cursorIdx := l.State.CursorIndex.Peek()
+
+	// Set anchor if not already set
+	if !l.State.HasAnchor() {
+		l.State.SetAnchor(cursorIdx)
+	}
+
+	// Move cursor
+	if delta > 0 {
+		l.State.SelectNext()
+	} else {
+		l.State.SelectPrevious()
+	}
+
+	// Update selection range from anchor to new cursor
+	newCursor := l.State.CursorIndex.Peek()
+	l.State.SelectRange(l.State.GetAnchor(), newCursor)
+
+	l.scrollCursorIntoView()
+}
+
+// handleShiftMoveTo extends selection to a specific index.
+func (l List[T]) handleShiftMoveTo(targetIdx int) {
+	cursorIdx := l.State.CursorIndex.Peek()
+
+	// Set anchor if not already set
+	if !l.State.HasAnchor() {
+		l.State.SetAnchor(cursorIdx)
+	}
+
+	// Move cursor to target
+	l.State.SelectIndex(targetIdx)
+
+	// Update selection range from anchor to new cursor
+	newCursor := l.State.CursorIndex.Peek()
+	l.State.SelectRange(l.State.GetAnchor(), newCursor)
+
+	l.scrollCursorIntoView()
 }
 
 // scrollCursorIntoView uses the ScrollState to ensure
@@ -389,7 +629,7 @@ func (l List[T]) getItemHeight() int {
 		}
 
 		// Render the first item and check its dimensions
-		widget := renderItem(items[0], false)
+		widget := renderItem(items[0], false, false)
 		if dimensioned, ok := widget.(Dimensioned); ok {
 			_, height := dimensioned.GetDimensions()
 			if height.IsCells() {

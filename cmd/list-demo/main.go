@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	t "terma"
 )
@@ -75,6 +76,38 @@ func (d *ListDemo) Keybinds() []t.Keybind {
 	}
 }
 
+func (d *ListDemo) buildSelectionSummary() t.Widget {
+	// Subscribe to selection changes with .Get()
+	selection := d.listState.Selection.Get()
+	if len(selection) == 0 {
+		return t.Text{
+			Content: "No items selected",
+			Style:   t.Style{ForegroundColor: t.BrightBlack},
+		}
+	}
+
+	// Get the actual selected items (also subscribe to item changes)
+	items := d.listState.Items.Get()
+	var selected []string
+	for i, item := range items {
+		if _, ok := selection[i]; ok {
+			selected = append(selected, item)
+		}
+	}
+
+	summary := strings.Join(selected, ", ")
+	if len(summary) > 50 {
+		summary = summary[:47] + "..."
+	}
+
+	return t.Text{
+		Spans: []t.Span{
+			t.BoldSpan(fmt.Sprintf("Selected (%d): ", len(selected)), t.BrightMagenta),
+			t.PlainSpan(summary),
+		},
+	}
+}
+
 func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 	return t.Column{
 		ID:      "list-demo-root",
@@ -100,6 +133,9 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 					t.BoldSpan("↑/↓", t.BrightCyan),
 					t.PlainSpan(" or "),
 					t.BoldSpan("j/k", t.BrightCyan),
+					t.PlainSpan(" | Select: "),
+					t.BoldSpan("Shift+↑/↓", t.BrightMagenta),
+					t.PlainSpan(" to extend"),
 				},
 			},
 
@@ -138,10 +174,11 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 					ID:          "demo-list",
 					State:       d.listState,
 					ScrollState: d.scrollState,
+					MultiSelect: true,
 				},
 			},
 
-			// Status showing item count
+			// Status showing item count and cursor
 			t.Text{
 				Spans: []t.Span{
 					t.PlainSpan("Items: "),
@@ -153,6 +190,9 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 					t.PlainSpan(" to quit"),
 				},
 			},
+
+			// Selection summary
+			d.buildSelectionSummary(),
 		},
 	}
 }

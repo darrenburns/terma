@@ -120,15 +120,19 @@ func (d *EditorSettingsMenu) Build(ctx t.BuildContext) t.Widget {
 							ID:          "demo-list",
 							State:       d.listState,
 							ScrollState: d.scrollState,
+							MultiSelect: true,
 							OnSelect: func(item ListItem) {
 								d.message.Set(fmt.Sprintf("Selected: %s", item.Title))
 							},
 							// Describe how to render each item in the list as a widget
-							RenderItem: func(item ListItem, active bool) t.Widget {
-								// Style the title based on cursor position
+							RenderItem: func(item ListItem, active bool, selected bool) t.Widget {
+								// Style the title based on cursor position and selection
 								var titleStyle t.Style
 								if active {
 									titleStyle.ForegroundColor = t.Magenta
+								}
+								if selected {
+									titleStyle.BackgroundColor = t.Red
 								}
 
 								// Each item is 2 lines tall (title + description)
