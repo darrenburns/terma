@@ -69,11 +69,20 @@ type FocusManager struct {
 
 	// focusedID is the ID of the currently focused widget ("" if none)
 	focusedID string
+
+	// rootWidget is the root widget of the application, used to include
+	// root-level keybinds in ActiveKeybinds() when nothing is focused
+	rootWidget Widget
 }
 
 // NewFocusManager creates a new focus manager.
 func NewFocusManager() *FocusManager {
 	return &FocusManager{}
+}
+
+// SetRootWidget sets the root widget for including root-level keybinds.
+func (fm *FocusManager) SetRootWidget(root Widget) {
+	fm.rootWidget = root
 }
 
 // SetFocusables updates the list of focusable widgets.
@@ -137,7 +146,7 @@ func (fm *FocusManager) FocusedID() string {
 }
 
 // ActiveKeybinds returns all declarative keybindings currently active
-// based on the focused widget and its ancestors.
+// based on the focused widget and its ancestors, plus root widget keybinds.
 // Keybindings are returned in order from focused widget to root,
 // matching the order they would be checked when handling key events.
 func (fm *FocusManager) ActiveKeybinds() []Keybind {
@@ -150,20 +159,25 @@ func (fm *FocusManager) ActiveKeybinds() []Keybind {
 		}
 	}
 
-	if focusedEntry == nil {
-		return nil
-	}
-
 	var keybinds []Keybind
 
-	// Collect from focused widget first
-	if provider, ok := focusedEntry.Focusable.(KeybindProvider); ok {
-		keybinds = append(keybinds, provider.Keybinds()...)
+	if focusedEntry != nil {
+		// Collect from focused widget first
+		if provider, ok := focusedEntry.Focusable.(KeybindProvider); ok {
+			keybinds = append(keybinds, provider.Keybinds()...)
+		}
+
+		// Then collect from ancestors (innermost to outermost/root)
+		for i := len(focusedEntry.Ancestors) - 1; i >= 0; i-- {
+			if provider, ok := focusedEntry.Ancestors[i].(KeybindProvider); ok {
+				keybinds = append(keybinds, provider.Keybinds()...)
+			}
+		}
 	}
 
-	// Then collect from ancestors (innermost to outermost/root)
-	for i := len(focusedEntry.Ancestors) - 1; i >= 0; i-- {
-		if provider, ok := focusedEntry.Ancestors[i].(KeybindProvider); ok {
+	// Always include root widget keybinds (they're the fallback)
+	if fm.rootWidget != nil {
+		if provider, ok := fm.rootWidget.(KeybindProvider); ok {
 			keybinds = append(keybinds, provider.Keybinds()...)
 		}
 	}

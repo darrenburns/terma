@@ -6,6 +6,18 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+// WrapMode defines how text should wrap within available width.
+type WrapMode int
+
+const (
+	// WrapSoft breaks at word boundaries (spaces), only breaking words if necessary (default).
+	WrapSoft WrapMode = iota
+	// WrapHard breaks at exact character boundary when line exceeds width.
+	WrapHard
+	// WrapNone disables wrapping - text is truncated if too long.
+	WrapNone
+)
+
 // Text is a leaf widget that displays text content.
 type Text struct {
 	ID      string     // Optional unique identifier for the widget
@@ -13,6 +25,7 @@ type Text struct {
 	Spans   []Span     // Rich text segments (takes precedence if non-empty)
 	Width   Dimension  // Optional width (zero value = auto)
 	Height  Dimension  // Optional height (zero value = auto)
+	Wrap    WrapMode   // Wrapping mode (default = WrapSoft)
 	Style   Style      // Optional styling (colors, inherited by spans)
 	Click   func()     // Optional callback invoked when clicked
 	Hover   func(bool) // Optional callback invoked when hover state changes
@@ -68,11 +81,70 @@ func (t Text) textContent() string {
 	return t.Content
 }
 
+// wrapText wraps the given text content to fit within maxWidth based on the wrap mode.
+func wrapText(content string, maxWidth int, mode WrapMode) []string {
+	if maxWidth <= 0 || mode == WrapNone {
+		return strings.Split(content, "\n")
+	}
+
+	inputLines := strings.Split(content, "\n")
+	var result []string
+
+	for _, line := range inputLines {
+		lineWidth := ansi.StringWidth(line)
+
+		// If line fits, add as-is
+		if lineWidth <= maxWidth {
+			result = append(result, line)
+			continue
+		}
+
+		var wrapped string
+		switch mode {
+		case WrapHard:
+			wrapped = ansi.Wrap(line, maxWidth, "")
+		case WrapSoft:
+			wrapped = ansi.Wordwrap(line, maxWidth, "")
+			// Check if any resulting line exceeds maxWidth (long word scenario)
+			wrappedLines := strings.Split(wrapped, "\n")
+			var finalLines []string
+			for _, wl := range wrappedLines {
+				if ansi.StringWidth(wl) > maxWidth {
+					// Word longer than maxWidth, hard-break it
+					hardWrapped := ansi.Wrap(wl, maxWidth, "")
+					finalLines = append(finalLines, strings.Split(hardWrapped, "\n")...)
+				} else {
+					finalLines = append(finalLines, wl)
+				}
+			}
+			result = append(result, finalLines...)
+			continue
+		}
+
+		result = append(result, strings.Split(wrapped, "\n")...)
+	}
+
+	return result
+}
+
 // Layout computes the size of the text widget.
 func (t Text) Layout(ctx BuildContext, constraints Constraints) Size {
-	// Calculate natural size from content (spans or plain text)
 	content := t.textContent()
-	lines := strings.Split(content, "\n")
+
+	// Determine the width we'll use for wrapping
+	var wrapWidth int
+	switch {
+	case t.Width.IsCells():
+		wrapWidth = t.Width.CellsValue()
+	case t.Width.IsFr():
+		wrapWidth = constraints.MaxWidth
+	default: // Auto
+		wrapWidth = constraints.MaxWidth
+	}
+
+	// Get lines (wrapped or not based on mode)
+	lines := wrapText(content, wrapWidth, t.Wrap)
+
 	naturalHeight := len(lines)
 	naturalWidth := 0
 	for _, line := range lines {
@@ -88,7 +160,6 @@ func (t Text) Layout(ctx BuildContext, constraints Constraints) Size {
 	case t.Width.IsCells():
 		width = t.Width.CellsValue()
 	case t.Width.IsFr():
-		// Fr dimensions use the constraint max (parent allocates space)
 		width = constraints.MaxWidth
 	default: // Auto
 		width = naturalWidth
@@ -100,7 +171,6 @@ func (t Text) Layout(ctx BuildContext, constraints Constraints) Size {
 	case t.Height.IsCells():
 		height = t.Height.CellsValue()
 	case t.Height.IsFr():
-		// Fr dimensions use the constraint max (parent allocates space)
 		height = constraints.MaxHeight
 	default: // Auto
 		height = naturalHeight
@@ -134,23 +204,21 @@ func (t Text) Render(ctx *RenderContext) {
 
 // renderPlain renders plain text content.
 func (t Text) renderPlain(ctx *RenderContext) {
-	// Create a style without BackgroundColor - the background is already drawn
-	// by RenderChild's FillRect. We only need ForegroundColor here.
-	// Using the inherited background (via ctx.inheritedBgAt) for transparent text.
 	fgColor := t.Style.ForegroundColor
 	if !fgColor.IsSet() {
-		// Use theme text color as default
 		fgColor = ctx.buildContext.Theme().Text
 	}
 	style := Style{ForegroundColor: fgColor}
 
-	lines := strings.Split(t.Content, "\n")
+	// Get lines with wrapping applied
+	lines := wrapText(t.Content, ctx.Width, t.Wrap)
+
 	for i := 0; i < ctx.Height; i++ {
 		var line string
 		if i < len(lines) {
 			line = lines[i]
 		}
-		// Truncate line if it exceeds width (using display width)
+		// Truncate line if it exceeds width (fallback for WrapNone or edge cases)
 		lineWidth := ansi.StringWidth(line)
 		if lineWidth > ctx.Width {
 			line = ansi.Truncate(line, ctx.Width, "")
@@ -166,11 +234,8 @@ func (t Text) renderPlain(ctx *RenderContext) {
 
 // renderSpans renders rich text with multiple styled spans.
 func (t Text) renderSpans(ctx *RenderContext) {
-	// Create a base style without BackgroundColor - the background is already drawn
-	// by RenderChild's FillRect. We only need ForegroundColor here.
 	fgColor := t.Style.ForegroundColor
 	if !fgColor.IsSet() {
-		// Use theme text color as default
 		fgColor = ctx.buildContext.Theme().Text
 	}
 	baseStyle := Style{ForegroundColor: fgColor}
@@ -178,10 +243,9 @@ func (t Text) renderSpans(ctx *RenderContext) {
 	x, y := 0, 0
 
 	for _, span := range t.Spans {
-		// Handle newlines within span text
 		parts := strings.Split(span.Text, "\n")
 		for partIdx, part := range parts {
-			// Move to next line if this isn't the first part (after a newline)
+			// Handle explicit newline
 			if partIdx > 0 {
 				x = 0
 				y++
@@ -190,18 +254,80 @@ func (t Text) renderSpans(ctx *RenderContext) {
 				}
 			}
 
-			// Skip if we've run out of horizontal space
-			if x >= ctx.Width {
+			if len(part) == 0 {
 				continue
 			}
 
-			// Draw this part of the span
-			if len(part) > 0 {
-				// Create a span for just this part
-				partSpan := Span{Text: part, Style: span.Style}
-				ctx.DrawSpan(x, y, partSpan, baseStyle)
-				x += ansi.StringWidth(part)
+			// Process this part with wrapping
+			remaining := part
+			for len(remaining) > 0 {
+				if y >= ctx.Height {
+					return
+				}
+
+				availableWidth := ctx.Width - x
+				if availableWidth <= 0 {
+					x = 0
+					y++
+					availableWidth = ctx.Width
+					if y >= ctx.Height {
+						return
+					}
+				}
+
+				partWidth := ansi.StringWidth(remaining)
+
+				// If it fits or no wrapping, draw and continue
+				if partWidth <= availableWidth || t.Wrap == WrapNone {
+					chunk := remaining
+					if partWidth > availableWidth {
+						chunk = ansi.Truncate(remaining, availableWidth, "")
+					}
+					if len(chunk) > 0 {
+						partSpan := Span{Text: chunk, Style: span.Style}
+						ctx.DrawSpan(x, y, partSpan, baseStyle)
+						x += ansi.StringWidth(chunk)
+					}
+					break
+				}
+
+				// Need to wrap - find break point
+				chunk, rest := t.findWrapPoint(remaining, availableWidth)
+
+				if len(chunk) > 0 {
+					partSpan := Span{Text: chunk, Style: span.Style}
+					ctx.DrawSpan(x, y, partSpan, baseStyle)
+				}
+
+				remaining = rest
+				if len(remaining) > 0 {
+					x = 0
+					y++
+				}
 			}
 		}
 	}
+}
+
+// findWrapPoint finds where to break text for wrapping, returning the chunk to render
+// and the remaining text.
+func (t Text) findWrapPoint(text string, availableWidth int) (chunk, remaining string) {
+	if t.Wrap == WrapHard {
+		chunk = ansi.Truncate(text, availableWidth, "")
+		remaining = text[len(chunk):]
+		return
+	}
+
+	// Soft wrap: find last space within available width
+	chunk = ansi.Truncate(text, availableWidth, "")
+	lastSpace := strings.LastIndex(chunk, " ")
+
+	if lastSpace > 0 {
+		chunk = chunk[:lastSpace]
+		remaining = strings.TrimPrefix(text[lastSpace:], " ")
+	} else {
+		// No space found, must break the word (fallback to hard wrap)
+		remaining = text[len(chunk):]
+	}
+	return
 }

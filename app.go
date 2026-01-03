@@ -64,6 +64,7 @@ func Run(root Widget) error {
 
 	// Create focus manager and focused signal
 	focusManager := NewFocusManager()
+	focusManager.SetRootWidget(root)
 	focusedSignal := NewAnySignal[Focusable](nil)
 
 	// Create hovered widget signal (tracks the currently hovered widget)
