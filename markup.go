@@ -27,6 +27,16 @@ func ParseMarkup(markup string, theme ThemeData) []Span {
 	return p.parse()
 }
 
+// ParseMarkupToText parses a markup string and returns a Text widget.
+// This is a convenience wrapper around ParseMarkup.
+//
+// Example:
+//
+//	ParseMarkupToText("Press [b $Warning]Tab[/] to switch focus", theme)
+func ParseMarkupToText(markup string, theme ThemeData) Text {
+	return Text{Spans: ParseMarkup(markup, theme)}
+}
+
 type markupParser struct {
 	input      string
 	pos        int
