@@ -613,6 +613,9 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 		Fg: fg.toANSI(),
 		Bg: bg.toANSI(),
 	}
+	if style.Reverse {
+		cellStyle.Attrs |= uv.AttrReverse
+	}
 
 	// Draw each grapheme cluster as a cell, advancing by its display width
 	col := 0

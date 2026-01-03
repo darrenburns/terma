@@ -1,5 +1,15 @@
 package terma
 
+// Vertical scrollbar characters for smooth rendering.
+// These are "lower eighths" Unicode block elements (U+2581-U+2587).
+// Index 0 = 1/8 filled from bottom, index 6 = 7/8 filled, index 7 = space.
+var verticalScrollbarChars = []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", " "}
+
+const (
+	scrollbarFullBlock    = "█"
+	scrollbarSubCellCount = 8
+)
+
 // ScrollState holds scroll state for a Scrollable widget.
 // It is the source of truth for scroll position, and must be provided to Scrollable.
 // Share the same state between Scrollable and child widgets that need to
@@ -346,7 +356,66 @@ func (s Scrollable) Render(ctx *RenderContext) {
 	}
 }
 
+// scrollbarThumbMetrics calculates smooth scrollbar thumb position and size.
+// Returns position and size as floats for sub-cell precision.
+func scrollbarThumbMetrics(scrollOffset, maxScroll, viewportHeight, contentHeight int) (position, size float64) {
+	if contentHeight <= 0 || viewportHeight <= 0 {
+		return 0, float64(viewportHeight)
+	}
+
+	// Calculate thumb size proportional to viewport/content ratio
+	sizeRatio := float64(viewportHeight) / float64(contentHeight)
+	size = float64(viewportHeight) * sizeRatio
+	if size < 1.0 {
+		size = 1.0
+	}
+	if size > float64(viewportHeight) {
+		size = float64(viewportHeight)
+	}
+
+	// Calculate thumb position within available track space
+	if maxScroll > 0 {
+		availableTrack := float64(viewportHeight) - size
+		positionRatio := float64(scrollOffset) / float64(maxScroll)
+		position = availableTrack * positionRatio
+	}
+
+	return position, size
+}
+
+// getTopEdgeChar returns the character for the top edge of the scrollbar thumb.
+// startSubOffset indicates how far into the cell the thumb starts (0-7).
+// Since lower-eighth blocks fill from bottom, we return the complementary block.
+func getTopEdgeChar(startSubOffset int) string {
+	if startSubOffset <= 0 {
+		return scrollbarFullBlock
+	}
+	if startSubOffset >= scrollbarSubCellCount {
+		return " "
+	}
+	// Thumb fills from bottom, so invert: offset 2 means 6/8 filled = index 5
+	return verticalScrollbarChars[scrollbarSubCellCount-1-startSubOffset]
+}
+
+// getBottomEdgeChar returns the character for the bottom edge of the scrollbar thumb.
+// endSubOffset indicates how far into the cell the thumb extends from the top (0-8).
+// We draw track color filling from the bottom, so we need the complement.
+func getBottomEdgeChar(endSubOffset int) string {
+	if endSubOffset >= scrollbarSubCellCount {
+		// Thumb fills entire cell - return space (shows background = thumb)
+		return " "
+	}
+	if endSubOffset <= 0 {
+		// Thumb doesn't extend into this cell - return full block (shows foreground = track)
+		return scrollbarFullBlock
+	}
+	// Thumb extends endSubOffset/8 from top, track fills (8-endSubOffset)/8 from bottom
+	trackFill := scrollbarSubCellCount - endSubOffset
+	return verticalScrollbarChars[trackFill-1]
+}
+
 // renderScrollbar draws the scrollbar on the right side of the widget.
+// Uses Unicode lower-eighth block characters for sub-cell precision.
 func (s Scrollable) renderScrollbar(ctx *RenderContext, scrollOffset int, focused bool) {
 	if s.State == nil {
 		return
@@ -358,22 +427,6 @@ func (s Scrollable) renderScrollbar(ctx *RenderContext, scrollOffset int, focuse
 
 	if trackHeight <= 0 || contentHeight <= 0 {
 		return
-	}
-
-	// Calculate thumb size (proportional to viewport/content ratio)
-	thumbHeight := (ctx.Height * ctx.Height) / contentHeight
-	if thumbHeight < 1 {
-		thumbHeight = 1
-	}
-	if thumbHeight > trackHeight {
-		thumbHeight = trackHeight
-	}
-
-	// Calculate thumb position
-	maxScroll := s.maxScrollOffset()
-	thumbY := 0
-	if maxScroll > 0 {
-		thumbY = (scrollOffset * (trackHeight - thumbHeight)) / maxScroll
 	}
 
 	// Determine scrollbar colors based on focus state and custom settings
@@ -391,22 +444,60 @@ func (s Scrollable) renderScrollbar(ctx *RenderContext, scrollOffset int, focuse
 		thumbColor = White
 	}
 
-	// Draw track and thumb
+	// Calculate thumb position and size with floating-point precision
+	maxScroll := s.maxScrollOffset()
+	thumbPos, thumbSize := scrollbarThumbMetrics(scrollOffset, maxScroll, trackHeight, contentHeight)
+
+	// Convert to sub-cell units (multiply by 8)
+	startSubCell := thumbPos * float64(scrollbarSubCellCount)
+	endSubCell := (thumbPos + thumbSize) * float64(scrollbarSubCellCount)
+
+	// Get cell indices and sub-cell offsets
+	startCellIndex := int(startSubCell) / scrollbarSubCellCount
+	startSubOffset := int(startSubCell) % scrollbarSubCellCount
+	endCellIndex := int(endSubCell) / scrollbarSubCellCount
+	endSubOffset := int(endSubCell) % scrollbarSubCellCount
+
+	// Draw each cell of the track
 	for y := 0; y < trackHeight; y++ {
 		var char string
-		var color Color
+		var style Style
 
-		if y >= thumbY && y < thumbY+thumbHeight {
-			// Thumb
-			char = "█"
-			color = thumbColor
+		// Check if this cell is outside the thumb
+		// Note: when endSubOffset=0, thumb ends exactly at cell boundary, so endCellIndex is outside
+		outsideThumb := y < startCellIndex || y > endCellIndex || (y == endCellIndex && endSubOffset == 0)
+
+		if outsideThumb {
+			// Track (outside thumb) - use space with background color for consistent appearance
+			char = " "
+			style = Style{BackgroundColor: trackColor}
+		} else if y == startCellIndex && y == endCellIndex {
+			// Thumb fits within single cell
+			fillAmount := endSubOffset - startSubOffset
+			if fillAmount <= 0 {
+				char = " "
+			} else if fillAmount >= scrollbarSubCellCount {
+				char = scrollbarFullBlock
+			} else {
+				char = verticalScrollbarChars[fillAmount-1]
+			}
+			style = Style{ForegroundColor: thumbColor, BackgroundColor: trackColor}
+		} else if y == startCellIndex {
+			// Top edge of thumb - partial block, thumb fills from bottom
+			char = getTopEdgeChar(startSubOffset)
+			style = Style{ForegroundColor: thumbColor, BackgroundColor: trackColor}
+		} else if y == endCellIndex {
+			// Bottom edge of thumb - partial block, thumb is on top
+			// Use Reverse so terminal swaps fg/bg, matching how track renders
+			char = getBottomEdgeChar(endSubOffset)
+			style = Style{ForegroundColor: thumbColor, BackgroundColor: trackColor, Reverse: true}
 		} else {
-			// Track
-			char = "░"
-			color = trackColor
+			// Middle of thumb - full block
+			char = scrollbarFullBlock
+			style = Style{ForegroundColor: thumbColor}
 		}
 
-		ctx.DrawStyledText(scrollbarX, y, char, Style{ForegroundColor: color})
+		ctx.DrawStyledText(scrollbarX, y, char, style)
 	}
 }
 

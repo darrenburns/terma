@@ -125,6 +125,7 @@ func (b Border) Width() int {
 type Style struct {
 	ForegroundColor Color
 	BackgroundColor Color
+	Reverse         bool // Swap foreground and background colors at terminal level
 	Padding         EdgeInsets
 	Margin          EdgeInsets
 	Border          Border
@@ -134,6 +135,7 @@ type Style struct {
 func (s Style) IsZero() bool {
 	return !s.ForegroundColor.IsSet() &&
 		!s.BackgroundColor.IsSet() &&
+		!s.Reverse &&
 		s.Padding == (EdgeInsets{}) &&
 		s.Margin == (EdgeInsets{}) &&
 		s.Border.IsZero()
