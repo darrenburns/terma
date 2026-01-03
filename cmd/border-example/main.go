@@ -12,23 +12,68 @@ func init() {
 	}
 }
 
-type BorderDemo struct{}
+// Theme names for cycling
+var themeNames = []string{
+	t.ThemeNameRosePine,
+	t.ThemeNameDracula,
+	t.ThemeNameTokyoNight,
+	t.ThemeNameCatppuccin,
+	t.ThemeNameGruvbox,
+	t.ThemeNameNord,
+	t.ThemeNameOneDark,
+	t.ThemeNameSolarized,
+	t.ThemeNameKanagawa,
+	t.ThemeNameMonokai,
+}
+
+type BorderDemo struct {
+	themeIndex *t.Signal[int]
+}
+
+func (b *BorderDemo) cycleTheme() {
+	b.themeIndex.Update(func(i int) int {
+		next := (i + 1) % len(themeNames)
+		t.SetTheme(themeNames[next])
+		return next
+	})
+}
+
+func (b *BorderDemo) Keybinds() []t.Keybind {
+	return []t.Keybind{
+		{Key: "t", Name: "Next theme", Action: b.cycleTheme},
+	}
+}
 
 func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
+	theme := ctx.Theme()
+	themeIdx := b.themeIndex.Get()
+	currentTheme := themeNames[themeIdx]
+
 	return t.Column{
 		ID:      "root",
+		Height:  t.Fr(1),
 		Spacing: 1,
 		Style: t.Style{
-			Padding: t.EdgeInsetsAll(1),
+			BackgroundColor: theme.Background,
+			Padding:         t.EdgeInsetsAll(1),
 		},
 		Children: []t.Widget{
 			// Header
 			t.Text{
 				Content: "Border Demo",
 				Style: t.Style{
-					ForegroundColor: t.BrightWhite,
-					BackgroundColor: t.Blue,
+					ForegroundColor: theme.TextOnPrimary,
+					BackgroundColor: theme.Primary,
 					Padding:         t.EdgeInsetsXY(2, 0),
+				},
+			},
+
+			// Theme indicator
+			t.Text{
+				Spans: []t.Span{
+					t.ColorSpan("Theme: ", theme.TextMuted),
+					t.ColorSpan(currentTheme, theme.Accent),
+					t.ColorSpan(" (press t to change, Ctrl+C to quit)", theme.TextMuted),
 				},
 			},
 
@@ -39,14 +84,14 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 					t.Text{
 						Content: "Square Border",
 						Style: t.Style{
-							Border:  t.SquareBorder(t.Cyan),
+							Border:  t.SquareBorder(theme.Info),
 							Padding: t.EdgeInsetsAll(1),
 						},
 					},
 					t.Text{
 						Content: "Rounded Border",
 						Style: t.Style{
-							Border:  t.RoundedBorder(t.Magenta),
+							Border:  t.RoundedBorder(theme.Secondary),
 							Padding: t.EdgeInsetsAll(1),
 						},
 					},
@@ -59,7 +104,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 				Children: []t.Widget{
 					t.Column{
 						Style: t.Style{
-							Border: t.RoundedBorder(t.Cyan,
+							Border: t.RoundedBorder(theme.Info,
 								t.BorderTitle("Settings"),
 							),
 							Padding: t.EdgeInsetsAll(1),
@@ -71,7 +116,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 					},
 					t.Column{
 						Style: t.Style{
-							Border: t.SquareBorder(t.Yellow,
+							Border: t.SquareBorder(theme.Warning,
 								t.BorderTitle("Info"),
 								t.BorderSubtitle("Press q to quit"),
 							),
@@ -92,7 +137,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 					t.Text{
 						Content: "Center title",
 						Style: t.Style{
-							Border: t.RoundedBorder(t.Green,
+							Border: t.RoundedBorder(theme.Success,
 								t.BorderTitleCenter("Centered"),
 							),
 							Padding: t.EdgeInsetsAll(1),
@@ -101,7 +146,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 					t.Text{
 						Content: "Right aligned",
 						Style: t.Style{
-							Border: t.SquareBorder(t.Magenta,
+							Border: t.SquareBorder(theme.Secondary,
 								t.BorderTitleRight("Right"),
 								t.BorderSubtitleRight("Also Right"),
 							),
@@ -116,11 +161,11 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 				Style: t.Style{
 					Border: t.Border{
 						Style: t.BorderRounded,
-						Color: t.BrightBlack,
+						Color: theme.Border,
 						Decorations: []t.BorderDecoration{
-							{Text: "Status", Position: t.DecorationTopLeft, Color: t.BrightCyan},
-							{Text: "Online", Position: t.DecorationTopRight, Color: t.BrightGreen},
-							{Text: "v1.0.0", Position: t.DecorationBottomRight, Color: t.BrightYellow},
+							{Text: "Status", Position: t.DecorationTopLeft, Color: theme.Info},
+							{Text: "Online", Position: t.DecorationTopRight, Color: theme.Success},
+							{Text: "v1.0.0", Position: t.DecorationBottomRight, Color: theme.Warning},
 						},
 					},
 					Padding: t.EdgeInsetsAll(1),
@@ -135,7 +180,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 			t.Column{
 				ID: "outer-box",
 				Style: t.Style{
-					Border: t.RoundedBorder(t.BrightBlue,
+					Border: t.RoundedBorder(theme.Primary,
 						t.BorderTitle("Outer"),
 					),
 					Padding: t.EdgeInsetsAll(1),
@@ -145,19 +190,16 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 					t.Column{
 						ID: "inner-box",
 						Style: t.Style{
-							Border: t.SquareBorder(t.Red,
+							Border: t.SquareBorder(theme.Error,
 								t.BorderTitle("Inner"),
 								t.BorderSubtitleCenter("Nested!"),
 							),
-							BackgroundColor: t.BrightBlack,
+							BackgroundColor: theme.Surface,
 							Padding:         t.EdgeInsetsAll(1),
 							Margin:          t.EdgeInsetsTRBL(1, 0, 0, 0),
 						},
 						Children: []t.Widget{
-							t.Text{
-								Content: "Nested border with title",
-								Style:   t.Style{ForegroundColor: t.BrightWhite},
-							},
+							t.Text{Content: "Nested border with title"},
 						},
 					},
 				},
@@ -166,7 +208,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 			// Rich text with spans
 			t.Column{
 				Style: t.Style{
-					Border: t.RoundedBorder(t.Cyan,
+					Border: t.RoundedBorder(theme.Info,
 						t.BorderTitle("Rich Text"),
 					),
 					Padding: t.EdgeInsetsAll(1),
@@ -176,20 +218,20 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 					t.Text{
 						Spans: []t.Span{
 							t.PlainSpan("Status: "),
-							t.ColorSpan("Online", t.Green),
+							t.ColorSpan("Online", theme.Success),
 							t.PlainSpan(" | Errors: "),
-							t.ColorSpan("3", t.Red),
+							t.ColorSpan("3", theme.Error),
 						},
 					},
 					// Text with formatting attributes
 					t.Text{
 						Spans: []t.Span{
 							t.PlainSpan("This is "),
-							t.BoldSpan("bold", t.BrightWhite),
+							t.BoldSpan("bold", theme.Text),
 							t.PlainSpan(", "),
-							t.ItalicSpan("italic", t.BrightCyan),
+							t.ItalicSpan("italic", theme.Info),
 							t.PlainSpan(", and "),
-							t.UnderlineSpan("underlined", t.BrightYellow),
+							t.UnderlineSpan("underlined", theme.Warning),
 							t.PlainSpan(" text."),
 						},
 					},
@@ -198,12 +240,12 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 						Spans: []t.Span{
 							t.PlainSpan("Mixed: "),
 							t.StyledSpan("Bold+Color", t.SpanStyle{
-								Foreground: t.Magenta,
+								Foreground: theme.Secondary,
 								Bold:       true,
 							}),
 							t.PlainSpan(" and "),
 							t.StyledSpan("Italic+Underline", t.SpanStyle{
-								Foreground: t.Blue,
+								Foreground: theme.Primary,
 								Italic:     true,
 								Underline:  true,
 							}),
@@ -216,7 +258,10 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 }
 
 func main() {
-	app := &BorderDemo{}
+	t.SetTheme(themeNames[0])
+	app := &BorderDemo{
+		themeIndex: t.NewSignal(0),
+	}
 	if err := t.Run(app); err != nil {
 		log.Fatal(err)
 	}
