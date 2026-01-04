@@ -119,6 +119,29 @@ func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, sc
 	// This ensures nested scrollables start from a screen position, not a virtual position.
 	screenY := ctx.Y + yOffset - ctx.scrollYOffset
 
+	// Calculate new viewport bounds
+	newViewportY := screenY
+	newViewportHeight := height
+
+	// If parent has a viewport, clip to intersection to prevent content bleeding out
+	if ctx.viewportHeight > 0 {
+		parentViewportEnd := ctx.viewportY + ctx.viewportHeight
+		newViewportEnd := newViewportY + newViewportHeight
+
+		// Clip top to parent's top
+		if newViewportY < ctx.viewportY {
+			newViewportY = ctx.viewportY
+		}
+		// Clip bottom to parent's bottom
+		if newViewportEnd > parentViewportEnd {
+			newViewportEnd = parentViewportEnd
+		}
+		newViewportHeight = newViewportEnd - newViewportY
+		if newViewportHeight < 0 {
+			newViewportHeight = 0
+		}
+	}
+
 	// Create sub-context manually to set the corrected Y position
 	sub := &RenderContext{
 		terminal:       ctx.terminal,
@@ -132,8 +155,8 @@ func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, sc
 		widgetRegistry: ctx.widgetRegistry,
 		scrollYOffset:  scrollY,
 		virtualHeight:  virtualHeight,
-		viewportY:      screenY,
-		viewportHeight: height,
+		viewportY:      newViewportY,
+		viewportHeight: newViewportHeight,
 		inheritedBgAt:  ctx.inheritedBgAt,
 	}
 	return sub
