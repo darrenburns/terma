@@ -81,8 +81,8 @@ func (r *WidgetRegistry) ScrollableAt(x, y int) *Scrollable {
 	for i := len(r.entries) - 1; i >= 0; i-- {
 		entry := &r.entries[i]
 		if entry.Bounds.Contains(x, y) {
-			if scrollable, ok := entry.Widget.(*Scrollable); ok {
-				return scrollable
+			if scrollable, ok := entry.Widget.(Scrollable); ok {
+				return &scrollable
 			}
 		}
 	}
