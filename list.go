@@ -343,15 +343,18 @@ func (s *ListState[T]) SelectRange(from, to int) {
 //	// Remove item at runtime:
 //	state.RemoveAt(0)
 type List[T any] struct {
-	ID          string                                       // Optional unique identifier
-	State       *ListState[T]                                // Required - holds items and cursor position
-	OnSelect    func(item T)                                 // Callback invoked when Enter is pressed on an item
-	ScrollState *ScrollState                                 // Optional state for scroll-into-view
-	Width       Dimension                                    // Optional width (zero value = auto)
-	Height      Dimension                                    // Optional height (zero value = auto)
+	ID          string                                          // Optional unique identifier
+	State       *ListState[T]                                   // Required - holds items and cursor position
+	OnSelect    func(item T)                                    // Callback invoked when Enter is pressed on an item
+	ScrollState *ScrollState                                    // Optional state for scroll-into-view
 	RenderItem  func(item T, active bool, selected bool) Widget // Function to render each item (uses default if nil)
-	ItemHeight  int                                          // Height of each item in cells (default 1, must be uniform)
-	MultiSelect bool                                         // Enable multi-select mode (space to toggle, shift+move to extend)
+	ItemHeight  int                                             // Height of each item in cells (default 1, must be uniform)
+	MultiSelect bool                                            // Enable multi-select mode (space to toggle, shift+move to extend)
+	Width       Dimension                                       // Optional width (zero value = auto)
+	Height      Dimension                                       // Optional height (zero value = auto)
+	Style       Style                                           // Optional styling
+	Click       func()                                          // Optional callback invoked when clicked
+	Hover       func(bool)                                      // Optional callback invoked when hover state changes
 }
 
 // WidgetID returns the widget's unique identifier.
@@ -364,6 +367,28 @@ func (l List[T]) WidgetID() string {
 // Implements the Dimensioned interface.
 func (l List[T]) GetDimensions() (width, height Dimension) {
 	return l.Width, l.Height
+}
+
+// GetStyle returns the style of the list widget.
+// Implements the Styled interface.
+func (l List[T]) GetStyle() Style {
+	return l.Style
+}
+
+// OnClick is called when the widget is clicked.
+// Implements the Clickable interface.
+func (l List[T]) OnClick() {
+	if l.Click != nil {
+		l.Click()
+	}
+}
+
+// OnHover is called when the hover state changes.
+// Implements the Hoverable interface.
+func (l List[T]) OnHover(hovered bool) {
+	if l.Hover != nil {
+		l.Hover(hovered)
+	}
 }
 
 // IsFocusable returns true to allow keyboard navigation.

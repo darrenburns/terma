@@ -143,11 +143,13 @@ type Scrollable struct {
 	ID            string       // Optional unique identifier for the widget
 	Child         Widget       // The child widget to scroll
 	State         *ScrollState // Required - holds scroll position
+	DisableScroll bool         // If true, scrolling is disabled and scrollbar hidden (default: false)
+	DisableFocus  bool         // If true, widget cannot receive focus (default: false = focusable)
 	Width         Dimension    // Optional width (zero value = auto)
 	Height        Dimension    // Optional height (zero value = auto)
 	Style         Style        // Optional styling
-	DisableScroll bool         // If true, scrolling is disabled and scrollbar hidden (default: false)
-	DisableFocus  bool         // If true, widget cannot receive focus (default: false = focusable)
+	Click         func()       // Optional callback invoked when clicked
+	Hover         func(bool)   // Optional callback invoked when hover state changes
 
 	// Scrollbar appearance customization
 	ScrollbarThumbColor Color // Custom thumb color (default: White unfocused, BrightCyan focused)
@@ -166,8 +168,25 @@ func (s Scrollable) GetDimensions() (width, height Dimension) {
 }
 
 // GetStyle returns the style of the scrollable widget.
+// Implements the Styled interface.
 func (s Scrollable) GetStyle() Style {
 	return s.Style
+}
+
+// OnClick is called when the widget is clicked.
+// Implements the Clickable interface.
+func (s Scrollable) OnClick() {
+	if s.Click != nil {
+		s.Click()
+	}
+}
+
+// OnHover is called when the hover state changes.
+// Implements the Hoverable interface.
+func (s Scrollable) OnHover(hovered bool) {
+	if s.Hover != nil {
+		s.Hover(hovered)
+	}
 }
 
 // Build returns itself as Scrollable manages its own child.

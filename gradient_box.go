@@ -3,11 +3,14 @@ package terma
 // GradientBox is a container widget that renders a vertical gradient background
 // behind its child. The gradient flows from top to bottom.
 type GradientBox struct {
-	ID       string    // Optional unique identifier for the widget
-	Gradient Gradient  // The gradient to render as background
-	Child    Widget    // The child widget to render on top
-	Width    Dimension // Optional width (zero value = auto)
-	Height   Dimension // Optional height (zero value = auto)
+	ID       string     // Optional unique identifier for the widget
+	Gradient Gradient   // The gradient to render as background
+	Child    Widget     // The child widget to render on top
+	Width    Dimension  // Optional width (zero value = auto)
+	Height   Dimension  // Optional height (zero value = auto)
+	Style    Style      // Optional styling
+	Click    func()     // Optional callback invoked when clicked
+	Hover    func(bool) // Optional callback invoked when hover state changes
 }
 
 // WidgetID returns the widget's unique identifier.
@@ -21,8 +24,31 @@ func (g GradientBox) Build(ctx BuildContext) Widget {
 }
 
 // GetDimensions returns the width and height dimension preferences.
+// Implements the Dimensioned interface.
 func (g GradientBox) GetDimensions() (width, height Dimension) {
 	return g.Width, g.Height
+}
+
+// GetStyle returns the style of the gradient box widget.
+// Implements the Styled interface.
+func (g GradientBox) GetStyle() Style {
+	return g.Style
+}
+
+// OnClick is called when the widget is clicked.
+// Implements the Clickable interface.
+func (g GradientBox) OnClick() {
+	if g.Click != nil {
+		g.Click()
+	}
+}
+
+// OnHover is called when the hover state changes.
+// Implements the Hoverable interface.
+func (g GradientBox) OnHover(hovered bool) {
+	if g.Hover != nil {
+		g.Hover(hovered)
+	}
 }
 
 // Layout computes the size of the gradient box.

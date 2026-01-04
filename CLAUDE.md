@@ -81,6 +81,61 @@ func main() {
 - `Cells(n)` - fixed n terminal cells
 - `Fr(n)` - fractional (proportional to siblings)
 
+## Widget Conventions
+
+### Values-First Pattern
+
+Pass values to widgets, not Signals. The App reads from Signals and passes values to widgets:
+
+```go
+// ✓ Correct: Parent reads signal, passes value
+Text{Content: a.message.Get()}
+Button{Label: "Submit", Disabled: !a.isValid.Get()}  // (future)
+
+// Exception: State objects for complex interactive state
+List[string]{State: a.listState}
+Scrollable{State: a.scrollState}
+```
+
+State objects (`ListState`, `ScrollState`) are used when the widget needs to manage complex internal state like cursor position, selection, or scroll offset.
+
+### Standard Widget Field Order
+
+All widgets should follow this consistent field ordering:
+
+```go
+type WidgetName struct {
+    ID       string      // 1. Identity (optional)
+    // ... widget-specific fields ...  // 2. Core fields (State, Child, Content, etc.)
+    Width    Dimension   // 3. Dimensions (optional)
+    Height   Dimension
+    Style    Style       // 4. Styling (optional)
+    Click    func()      // 5. Callbacks (optional)
+    Hover    func(bool)
+}
+```
+
+### Required Interfaces by Field
+
+| Field | Interface | Methods |
+|-------|-----------|---------|
+| ID | `Identifiable` | `WidgetID() string` |
+| Width/Height | `Dimensioned` | `GetDimensions() (Dimension, Dimension)` |
+| Style | `Styled` | `GetStyle() Style` |
+| Click | `Clickable` | `OnClick()` |
+| Hover | `Hoverable` | `OnHover(bool)` |
+
+### Future: Wrapper Functions for Common Properties
+
+When visibility/disabled/opacity are needed, use wrapper functions (not yet implemented):
+
+```go
+// Future API
+ShowWhen(isLoggedIn, AdminPanel{})
+HideWhen(isLoading, Content{})
+Disable(Button{Label: "Submit"})
+```
+
 ## Examples
 
 Working examples in `cmd/*/main.go`. Start with `cmd/simple-list-example/TUTORIAL.md` for a comprehensive walkthrough.

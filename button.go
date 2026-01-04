@@ -5,12 +5,14 @@ import "fmt"
 // Button is a focusable widget that renders as styled text.
 // It can be pressed with Enter or Space when focused.
 type Button struct {
-	ID      string    // Unique identifier for the button (required for focus management)
-	Label   string    // Display text for the button
-	OnPress func()    // Callback invoked when button is pressed
-	Width   Dimension // Optional width (zero value = auto)
-	Height  Dimension // Optional height (zero value = auto)
-	Style   Style     // Optional styling (colors) applied when not focused
+	ID      string     // Unique identifier for the button (required for focus management)
+	Label   string     // Display text for the button
+	OnPress func()     // Callback invoked when button is pressed
+	Width   Dimension  // Optional width (zero value = auto)
+	Height  Dimension  // Optional height (zero value = auto)
+	Style   Style      // Optional styling (colors) applied when not focused
+	Click   func()     // Optional callback invoked when clicked
+	Hover   func(bool) // Optional callback invoked when hover state changes
 }
 
 // WidgetID returns the button's unique identifier.
@@ -83,4 +85,20 @@ func (b *Button) Build(ctx BuildContext) Widget {
 // Implements the Dimensioned interface.
 func (b *Button) GetDimensions() (width, height Dimension) {
 	return b.Width, b.Height
+}
+
+// OnClick is called when the widget is clicked.
+// Implements the Clickable interface.
+func (b *Button) OnClick() {
+	if b.Click != nil {
+		b.Click()
+	}
+}
+
+// OnHover is called when the hover state changes.
+// Implements the Hoverable interface.
+func (b *Button) OnHover(hovered bool) {
+	if b.Hover != nil {
+		b.Hover(hovered)
+	}
 }
