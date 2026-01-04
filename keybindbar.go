@@ -12,13 +12,29 @@ import "strings"
 // Consecutive keybinds with the same Name are grouped together, displaying
 // their keys joined with "/" (e.g., "enter/space Press").
 type KeybindBar struct {
-	Style Style // Optional styling (background, padding, etc.)
+	Style  Style     // Optional styling (background, padding, etc.)
+	Width  Dimension // Width dimension (default: Fr(1) to fill available width)
+	Height Dimension // Height dimension (default: Cells(1) for single-line bar)
 
 	// FormatKey transforms key strings for display. If nil, uses minimal
 	// normalization (e.g., " " → "space"). Use preset formatters like
 	// FormatKeyCaret, FormatKeyEmacs, FormatKeyVim, or FormatKeyVerbose,
 	// or provide a custom function.
 	FormatKey func(string) string
+}
+
+// GetDimensions returns the width and height dimension preferences.
+// Width defaults to Fr(1) if not explicitly set, as KeybindBar typically fills width.
+// Height defaults to Cells(1) if not explicitly set, as KeybindBar is a single-line widget.
+func (f KeybindBar) GetDimensions() (width, height Dimension) {
+	w, h := f.Width, f.Height
+	if w.IsUnset() {
+		w = Fr(1)
+	}
+	if h.IsUnset() {
+		h = Cells(1)
+	}
+	return w, h
 }
 
 // keybindGroup represents a group of keys that share the same action name.
@@ -31,9 +47,10 @@ type keybindGroup struct {
 func (f KeybindBar) Build(ctx BuildContext) Widget {
 	keybinds := ctx.ActiveKeybinds()
 	theme := ctx.Theme()
+	width, height := f.GetDimensions()
 
 	if len(keybinds) == 0 {
-		return Text{Height: Cells(1), Style: f.Style}
+		return Text{Width: width, Height: height, Style: f.Style}
 	}
 
 	// Filter out hidden keybinds and deduplicate by key
@@ -79,7 +96,8 @@ func (f KeybindBar) Build(ctx BuildContext) Widget {
 	return Text{
 		Spans:  spans,
 		Style:  f.Style,
-		Height: Cells(1),
+		Width:  width,
+		Height: height,
 	}
 }
 

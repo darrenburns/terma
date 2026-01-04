@@ -17,7 +17,8 @@ type Dimension struct {
 }
 
 // Auto represents an auto-sizing dimension that fits content.
-var Auto = Dimension{unit: unitAuto}
+// Note: Auto has value=1 to distinguish it from the zero value (unset).
+var Auto = Dimension{value: 1, unit: unitAuto}
 
 // Cells returns a fixed dimension measured in terminal cells.
 func Cells(n int) Dimension {
@@ -54,4 +55,9 @@ func (d Dimension) CellsValue() int {
 // FrValue returns the fractional value (only valid if IsFr() is true).
 func (d Dimension) FrValue() float64 {
 	return d.value
+}
+
+// IsUnset returns true if this dimension was not explicitly set (zero value).
+func (d Dimension) IsUnset() bool {
+	return d == Dimension{}
 }

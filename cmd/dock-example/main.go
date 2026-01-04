@@ -64,7 +64,7 @@ func (d *DockDemo) Build(ctx t.BuildContext) t.Widget {
 			t.KeybindBar{
 				Style: t.Style{
 					BackgroundColor: t.BrightBlack,
-					Padding:         t.EdgeInsetsXY(1, 0),
+					Padding:         t.EdgeInsetsXY(2, 0),
 				},
 			},
 		},
@@ -99,6 +99,7 @@ func (d *DockDemo) buildSidebar() t.Widget {
 		}
 		children[i] = t.Text{
 			Content: fmt.Sprintf(" %s ", item),
+			Width:   t.Fr(1),
 			Style: t.Style{
 				ForegroundColor: t.White,
 				BackgroundColor: bg,
@@ -110,7 +111,8 @@ func (d *DockDemo) buildSidebar() t.Widget {
 	}
 
 	return t.Column{
-		Width: t.Cells(12),
+		Width:  t.Cells(12),
+		Height: t.Fr(1),
 		Style: t.Style{
 			BackgroundColor: t.Blue,
 		},
@@ -126,7 +128,7 @@ func (d *DockDemo) buildBody() t.Widget {
 	lines = append(lines, "This is the main body area.")
 	lines = append(lines, "It fills the remaining space after docking.")
 	lines = append(lines, "")
-	for i := 1; i <= 20; i++ {
+	for i := 1; i <= 50; i++ {
 		lines = append(lines, fmt.Sprintf("Content line %d", i))
 	}
 

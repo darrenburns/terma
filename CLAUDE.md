@@ -212,6 +212,27 @@ Scrollable{State: a.scrollState}
 
 State objects (`ListState`, `ScrollState`) are used when the widget needs to manage complex internal state like cursor position, selection, or scroll offset.
 
+### Use Theme Variables in Demo Apps
+
+When creating demo apps or examples, always use theme variables from `ctx.Theme()` instead of hardcoding colors:
+
+```go
+// ✓ Correct: Use theme variables
+Style{
+    BackgroundColor: ctx.Theme().Surface,
+    ForegroundColor: ctx.Theme().Text,
+    BorderColor:     ctx.Theme().Primary,
+}
+
+// ✗ Avoid: Hardcoded colors
+Style{
+    BackgroundColor: color.RGB(30, 30, 30),
+    ForegroundColor: color.RGB(255, 255, 255),
+}
+```
+
+Available theme colors: `Primary`, `Accent`, `Text`, `TextMuted`, `Surface`, `Background`, `Error`, `Warning`, `Success`.
+
 ### Standard Widget Field Order
 
 All widgets should follow this consistent field ordering:
