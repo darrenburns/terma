@@ -58,50 +58,50 @@ func (d *DockDemo) Build(ctx t.BuildContext) t.Widget {
 		ID:        "main-dock",
 		DockOrder: dockOrder,
 		Top: []t.Widget{
-			d.buildHeader(),
+			d.buildHeader(ctx),
 		},
 		Bottom: []t.Widget{
 			t.KeybindBar{
 				Style: t.Style{
-					BackgroundColor: t.BrightBlack,
+					BackgroundColor: ctx.Theme().Surface,
 					Padding:         t.EdgeInsetsXY(2, 0),
 				},
 			},
 		},
 		Left: []t.Widget{
-			d.buildSidebar(),
+			d.buildSidebar(ctx),
 		},
 		Body: d.buildBody(),
 	}
 }
 
-func (d *DockDemo) buildHeader() t.Widget {
+func (d *DockDemo) buildHeader(ctx t.BuildContext) t.Widget {
 	return t.Text{
 		Content: " Dock Demo ",
 		Width:   t.Fr(1),
 		Style: t.Style{
-			ForegroundColor: t.Black,
-			BackgroundColor: t.Cyan,
+			ForegroundColor: ctx.Theme().Background,
+			BackgroundColor: ctx.Theme().Primary,
 		},
 	}
 }
 
-func (d *DockDemo) buildSidebar() t.Widget {
+func (d *DockDemo) buildSidebar(ctx t.BuildContext) t.Widget {
 	items := []string{"Home", "Settings", "Profile", "Help"}
 	selected := d.selectedItem.Get()
 
 	children := make([]t.Widget, len(items))
 	for i, item := range items {
 		itemCopy := item
-		bg := t.Blue
+		bg := ctx.Theme().Surface
 		if item == selected {
-			bg = t.BrightBlue
+			bg = ctx.Theme().Primary
 		}
 		children[i] = t.Text{
 			Content: fmt.Sprintf(" %s ", item),
 			Width:   t.Fr(1),
 			Style: t.Style{
-				ForegroundColor: t.White,
+				ForegroundColor: ctx.Theme().Text,
 				BackgroundColor: bg,
 			},
 			Click: func() {
@@ -114,7 +114,7 @@ func (d *DockDemo) buildSidebar() t.Widget {
 		Width:  t.Cells(12),
 		Height: t.Fr(1),
 		Style: t.Style{
-			BackgroundColor: t.Blue,
+			BackgroundColor: ctx.Theme().Surface,
 		},
 		Children: children,
 	}

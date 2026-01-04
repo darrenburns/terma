@@ -26,42 +26,19 @@ func (d *ColorDemo) Build(ctx t.BuildContext) t.Widget {
 			ScrollbarThumbColor: t.Hex("#475569"), // Slate 600
 			ScrollbarTrackColor: t.Hex("#1E293B"), // Slate 800 (matches gradient)
 			Child: t.Column{
+				Spacing: 1,
 				Style: t.Style{
 					Padding: t.EdgeInsetsXY(2, 1),
 				},
 				Children: []t.Widget{
 					header(),
-					t.Text{Content: ""},
-
-					// Color constructors showcase
 					constructorsSection(),
-					t.Text{Content: ""},
-
-					// Lightness manipulation
 					lightnessSection(),
-					t.Text{Content: ""},
-
-					// Saturation manipulation
 					saturationSection(),
-					t.Text{Content: ""},
-
-					// Color harmonies
 					harmoniesSection(),
-					t.Text{Content: ""},
-
-					// Blending showcase
 					blendingSection(),
-					t.Text{Content: ""},
-
-					// AutoText showcase
 					autoTextSection(),
-					t.Text{Content: ""},
-
-					// Contrast & accessibility
 					accessibilitySection(),
-					t.Text{Content: ""},
-
-					// Alpha transparency showcase
 					transparencySection(),
 				},
 			},
@@ -90,10 +67,11 @@ func header() t.Widget {
 
 	return t.Column{
 		Children: []t.Widget{
-			t.Text{Spans: spans},
+			t.Text{Spans: spans, Wrap: t.WrapNone},
 			t.Text{
 				Content: "A beautiful, fluent color manipulation API",
 				Style:   t.Style{ForegroundColor: t.Hex("#94A3B8")},
+				Wrap:    t.WrapNone,
 			},
 		},
 	}
@@ -104,11 +82,10 @@ func constructorsSection() t.Widget {
 		Children: []t.Widget{
 			sectionHeader("Color Constructors", t.Hex("#60A5FA")),
 			t.Row{
+				Spacing: 1,
 				Children: []t.Widget{
 					constructorCard("RGB()", "RGB(251, 146, 60)", t.RGB(251, 146, 60)),
-					t.Text{Content: " "},
 					constructorCard("Hex()", "Hex(\"#A78BFA\")", t.Hex("#A78BFA")),
-					t.Text{Content: " "},
 					constructorCard("HSL()", "HSL(160, 0.84, 0.39)", t.HSL(160, 0.84, 0.39)),
 				},
 			},
@@ -132,6 +109,7 @@ func constructorCard(name, code string, color t.Color) t.Widget {
 			t.Text{
 				Content: " " + code + " ",
 				Style:   t.Style{ForegroundColor: t.Hex("#CBD5E1")},
+				Wrap:    t.WrapNone,
 			},
 		},
 	}
@@ -254,6 +232,7 @@ func harmonyLabel(name string) t.Widget {
 	return t.Text{
 		Content: name,
 		Style:   t.Style{ForegroundColor: t.Hex("#94A3B8")},
+		Wrap:    t.WrapNone,
 	}
 }
 
@@ -272,6 +251,7 @@ func harmonyBlock(color t.Color, label string) t.Widget {
 			ForegroundColor: textColor,
 			BackgroundColor: color,
 		},
+		Wrap: t.WrapNone,
 	}
 }
 
@@ -299,6 +279,7 @@ func blendingSection() t.Widget {
 			blocks = append(blocks, t.Text{
 				Content: "██",
 				Style:   t.Style{ForegroundColor: color},
+				Wrap:    t.WrapNone,
 			})
 		}
 		rows = append(rows, t.Row{Children: blocks})
@@ -314,6 +295,7 @@ func blendLabel(name string) t.Widget {
 	return t.Text{
 		Content: name,
 		Style:   t.Style{ForegroundColor: t.Hex("#94A3B8")},
+		Wrap:    t.WrapNone,
 	}
 }
 
@@ -347,6 +329,7 @@ func autoTextSection() t.Widget {
 				ForegroundColor: c.color.AutoText(),
 				BackgroundColor: c.color,
 			},
+			Wrap: t.WrapNone,
 		})
 	}
 
@@ -388,6 +371,7 @@ func accessibilitySection() t.Widget {
 				ForegroundColor: textColor,
 				BackgroundColor: bg,
 			},
+			Wrap: t.WrapNone,
 		})
 	}
 
@@ -405,6 +389,7 @@ func sectionHeader(title string, accentColor t.Color) t.Widget {
 			t.StyledSpan("▌", t.SpanStyle{Foreground: accentColor}),
 			t.StyledSpan(" "+title, t.SpanStyle{Foreground: t.White, Bold: true}),
 		},
+		Wrap: t.WrapNone,
 	}
 }
 
@@ -420,6 +405,7 @@ func gradientBlock(color t.Color, label string) t.Widget {
 			ForegroundColor: color.AutoText(),
 			BackgroundColor: color,
 		},
+		Wrap: t.WrapNone,
 	}
 }
 
@@ -464,6 +450,7 @@ func alphaLabel(name string) t.Widget {
 	return t.Text{
 		Content: name,
 		Style:   t.Style{ForegroundColor: t.Hex("#94A3B8")},
+		Wrap:    t.WrapNone,
 	}
 }
 
@@ -479,6 +466,7 @@ func alphaBlock(color t.Color, label string) t.Widget {
 			ForegroundColor: t.White,
 			BackgroundColor: color,
 		},
+		Wrap: t.WrapNone,
 	}
 }
 
@@ -492,6 +480,7 @@ func fgAlphaBlock(color t.Color, alpha float64, label string) t.Widget {
 			ForegroundColor: color.WithAlpha(alpha),
 			BackgroundColor: t.Hex("#1E293B"), // Dark slate background
 		},
+		Wrap: t.WrapNone,
 	}
 }
 

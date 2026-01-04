@@ -287,15 +287,38 @@ func (ctx *RenderContext) RenderChild(index int, child Widget, xOffset, yOffset,
 		// Calculate absolute position of the bordered area (excludes margin).
 		// Margin is space outside the widget, so clicks on margin should not
 		// register as clicks on the widget.
+		// Subtract scrollYOffset to get screen position for scrolled content.
 		absX := ctx.X + borderedXOffset
-		absY := ctx.Y + borderedYOffset
+		absY := ctx.Y + borderedYOffset - ctx.scrollYOffset
+		recordHeight := borderedHeight
+
+		// Clip bounds to viewport if we're inside a scrolled context
+		if ctx.viewportHeight > 0 {
+			viewportEnd := ctx.viewportY + ctx.viewportHeight
+			widgetEnd := absY + borderedHeight
+
+			// Clip top to viewport
+			if absY < ctx.viewportY {
+				recordHeight -= ctx.viewportY - absY
+				absY = ctx.viewportY
+			}
+			// Clip bottom to viewport
+			if widgetEnd > viewportEnd {
+				recordHeight -= widgetEnd - viewportEnd
+			}
+			// Skip recording if widget is completely outside viewport
+			if recordHeight <= 0 {
+				goto skipRecord
+			}
+		}
 
 		ctx.widgetRegistry.Record(child, id, Rect{
 			X:      absX,
 			Y:      absY,
 			Width:  borderedWidth,
-			Height: borderedHeight,
+			Height: recordHeight,
 		})
+	skipRecord:
 	}
 
 	// Render the child in its content region, offset by margin, border, and padding
