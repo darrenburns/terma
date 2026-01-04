@@ -145,7 +145,7 @@ type Floating struct {
 // Returns an empty widget since the actual rendering happens in the overlay phase.
 func (f Floating) Build(ctx BuildContext) Widget {
 	if !f.Visible || f.Child == nil {
-		return emptyWidget{}
+		return EmptyWidget{}
 	}
 
 	// Register with the float collector for deferred rendering
@@ -156,22 +156,7 @@ func (f Floating) Build(ctx BuildContext) Widget {
 		})
 	}
 
-	return emptyWidget{}
-}
-
-// emptyWidget is a placeholder widget that renders nothing.
-type emptyWidget struct{}
-
-func (e emptyWidget) Build(ctx BuildContext) Widget {
-	return e
-}
-
-func (e emptyWidget) Layout(ctx BuildContext, constraints Constraints) Size {
-	return Size{Width: 0, Height: 0}
-}
-
-func (e emptyWidget) Render(ctx *RenderContext) {
-	// Renders nothing
+	return EmptyWidget{}
 }
 
 // FloatEntry stores a registered floating widget for deferred rendering.

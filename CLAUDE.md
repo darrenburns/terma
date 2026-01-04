@@ -46,6 +46,8 @@ go mod tidy
 | `scroll.go` | `Scrollable` widget and `ScrollController` |
 | `style.go` | Styling: colors, padding, margins |
 | `keybind.go` | Declarative keybinding system |
+| `conditional.go` | Visibility wrappers: `ShowWhen`, `HideWhen`, etc. |
+| `switcher.go` | `Switcher` widget for content switching |
 
 ### Widget Pattern
 
@@ -93,6 +95,7 @@ func main() {
 | `Scrollable` | Scrolling container with scrollbar | `Child`, `State` (required), `DisableScroll` |
 | `Floating` | Overlay/modal positioning | `Visible`, `Config`, `Child` |
 | `GradientBox` | Container with gradient background | `Gradient`, `Child` |
+| `Switcher` | Shows one keyed child at a time | `Active`, `Children` |
 
 ### Content Widgets
 
@@ -259,16 +262,41 @@ type WidgetName struct {
 | Click | `Clickable` | `OnClick()` |
 | Hover | `Hoverable` | `OnHover(bool)` |
 
-### Future: Wrapper Functions for Common Properties
+### Conditional Rendering
 
-When visibility/disabled/opacity are needed, use wrapper functions (not yet implemented):
+Use wrapper functions for visibility control:
+
+| Function | Behavior |
+|----------|----------|
+| `ShowWhen(cond, child)` | Shows child when true, gone when false (no space) |
+| `HideWhen(cond, child)` | Gone when true (no space), shows child when false |
+| `VisibleWhen(cond, child)` | Always reserves space, renders only when true |
+| `InvisibleWhen(cond, child)` | Always reserves space, renders only when false |
 
 ```go
-// Future API
-ShowWhen(isLoggedIn, AdminPanel{})
-HideWhen(isLoading, Content{})
-Disable(Button{Label: "Submit"})
+// Conditional presence (like CSS display: none)
+ShowWhen(user.IsAdmin(), AdminPanel{})
+HideWhen(isLoading.Get(), Content{})
+
+// Invisible but reserves space (like CSS visibility: hidden)
+VisibleWhen(hasData.Get(), Chart{})  // placeholder space when no data
 ```
+
+### Content Switching
+
+Use `Switcher` to show one widget at a time based on a string key:
+
+```go
+Switcher{
+    Active: a.activeTab.Get(),
+    Children: map[string]Widget{
+        "home":     HomeTab{listState: a.homeListState},
+        "settings": SettingsTab{},
+    },
+}
+```
+
+State is preserved across switches via Signals and State objects held by the App.
 
 ## Examples
 
