@@ -282,25 +282,24 @@ func (r Row) Render(ctx *RenderContext) {
 		} else {
 			// Fixed or auto - measure now
 			if layoutable, ok := built.(Layoutable); ok {
-				childConstraints := Constraints{
-					MinWidth:  0,
-					MaxWidth:  availableWidth - totalFixedWidth,
-					MinHeight: 0,
-					MaxHeight: ctx.Height,
-				}
-				size := layoutable.Layout(ctx.buildContext, childConstraints)
-				childWidth := size.Width
-				childHeight := size.Height
-				// Add padding, margin, and border to get total space needed
+				// Get padding, margin, and border insets BEFORE layout
+				var hInset, vInset int
 				if styled, ok := built.(Styled); ok {
 					style := styled.GetStyle()
 					borderWidth := style.Border.Width()
-					childWidth += style.Padding.Horizontal() + style.Margin.Horizontal() + borderWidth*2
-					childHeight += style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
+					hInset = style.Padding.Horizontal() + style.Margin.Horizontal() + borderWidth*2
+					vInset = style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
 				}
-				children[i].width = childWidth
-				children[i].height = childHeight
-				totalFixedWidth += childWidth
+				childConstraints := Constraints{
+					MinWidth:  0,
+					MaxWidth:  availableWidth - totalFixedWidth - hInset,
+					MinHeight: 0,
+					MaxHeight: ctx.Height - vInset,
+				}
+				size := layoutable.Layout(ctx.buildContext, childConstraints)
+				children[i].width = size.Width + hInset
+				children[i].height = size.Height + vInset
+				totalFixedWidth += children[i].width
 			}
 		}
 	}
@@ -647,25 +646,24 @@ func (c Column) Render(ctx *RenderContext) {
 		} else {
 			// Fixed or auto - measure now
 			if layoutable, ok := built.(Layoutable); ok {
-				childConstraints := Constraints{
-					MinWidth:  0,
-					MaxWidth:  ctx.Width,
-					MinHeight: 0,
-					MaxHeight: availableHeight - totalFixedHeight,
-				}
-				size := layoutable.Layout(ctx.buildContext, childConstraints)
-				childHeight := size.Height
-				childWidth := size.Width
-				// Add padding, margin, and border to get total space needed
+				// Get padding, margin, and border insets BEFORE layout
+				var hInset, vInset int
 				if styled, ok := built.(Styled); ok {
 					style := styled.GetStyle()
 					borderWidth := style.Border.Width()
-					childHeight += style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
-					childWidth += style.Padding.Horizontal() + style.Margin.Horizontal() + borderWidth*2
+					hInset = style.Padding.Horizontal() + style.Margin.Horizontal() + borderWidth*2
+					vInset = style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
 				}
-				children[i].height = childHeight
-				children[i].width = childWidth
-				totalFixedHeight += childHeight
+				childConstraints := Constraints{
+					MinWidth:  0,
+					MaxWidth:  ctx.Width - hInset,
+					MinHeight: 0,
+					MaxHeight: availableHeight - totalFixedHeight - vInset,
+				}
+				size := layoutable.Layout(ctx.buildContext, childConstraints)
+				children[i].height = size.Height + vInset
+				children[i].width = size.Width + hInset
+				totalFixedHeight += children[i].height
 			}
 		}
 	}
