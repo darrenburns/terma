@@ -14,9 +14,9 @@ func init() {
 
 // FloatingDemo demonstrates the Floating widget for popups and modals.
 type FloatingDemo struct {
-	showDropdown *t.Signal[bool]
-	showModal    *t.Signal[bool]
-	statusMsg    *t.Signal[string]
+	showDropdown t.Signal[bool]
+	showModal    t.Signal[bool]
+	statusMsg    t.Signal[string]
 }
 
 func NewFloatingDemo() *FloatingDemo {

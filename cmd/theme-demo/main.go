@@ -9,7 +9,7 @@ import (
 // App demonstrates the theme system with interactive theme switching.
 type App struct {
 	listState  *t.ListState[string]
-	themeIndex *t.Signal[int]
+	themeIndex t.Signal[int]
 	themeNames []string
 }
 

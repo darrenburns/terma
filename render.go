@@ -787,8 +787,8 @@ type Renderer struct {
 	height         int
 	focusCollector *FocusCollector
 	focusManager   *FocusManager
-	focusedSignal  *AnySignal[Focusable]
-	hoveredSignal  *AnySignal[Widget]
+	focusedSignal  AnySignal[Focusable]
+	hoveredSignal  AnySignal[Widget]
 	widgetRegistry *WidgetRegistry
 	floatCollector *FloatCollector
 	// modalFocusTarget is the ID of the first focusable in a modal float.
@@ -797,7 +797,7 @@ type Renderer struct {
 }
 
 // NewRenderer creates a new renderer for the given terminal.
-func NewRenderer(terminal *uv.Terminal, width, height int, fm *FocusManager, focusedSignal *AnySignal[Focusable], hoveredSignal *AnySignal[Widget]) *Renderer {
+func NewRenderer(terminal *uv.Terminal, width, height int, fm *FocusManager, focusedSignal AnySignal[Focusable], hoveredSignal AnySignal[Widget]) *Renderer {
 	return &Renderer{
 		terminal:       terminal,
 		width:          width,

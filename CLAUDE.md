@@ -53,7 +53,7 @@ go mod tidy
 
 ```go
 type App struct {
-    counter *Signal[int]
+    counter Signal[int]
 }
 
 func (a *App) Build(ctx BuildContext) Widget {

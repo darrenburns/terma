@@ -13,11 +13,11 @@ var crossAxisNames = []string{"Start", "Center", "End"}
 
 // App demonstrates MainAlign and CrossAlign on Row and Column containers.
 type App struct {
-	rowMainAlign    *t.Signal[t.MainAxisAlign]
-	rowCrossAlign   *t.Signal[t.CrossAxisAlign]
-	colMainAlign    *t.Signal[t.MainAxisAlign]
-	colCrossAlign   *t.Signal[t.CrossAxisAlign]
-	activeContainer *t.Signal[int] // 0 = Row, 1 = Column
+	rowMainAlign    t.Signal[t.MainAxisAlign]
+	rowCrossAlign   t.Signal[t.CrossAxisAlign]
+	colMainAlign    t.Signal[t.MainAxisAlign]
+	colCrossAlign   t.Signal[t.CrossAxisAlign]
+	activeContainer t.Signal[int] // 0 = Row, 1 = Column
 }
 
 func (a *App) IsFocusable() bool { return true }

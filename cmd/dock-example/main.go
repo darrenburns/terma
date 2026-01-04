@@ -17,8 +17,8 @@ func init() {
 // DockDemo demonstrates the Dock widget with header, footer, sidebar, and scrollable body.
 type DockDemo struct {
 	scrollState  *t.ScrollState
-	sidebarFirst *t.Signal[bool]
-	selectedItem *t.Signal[string]
+	sidebarFirst t.Signal[bool]
+	selectedItem t.Signal[string]
 }
 
 func NewDockDemo() *DockDemo {

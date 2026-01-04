@@ -43,7 +43,7 @@ type ListDemo struct {
 	listState   *t.ListState[string]
 	scrollState *t.ScrollState
 	counter     int // For generating unique item names
-	themeIndex  *t.Signal[int]
+	themeIndex  t.Signal[int]
 }
 
 func NewListDemo() *ListDemo {

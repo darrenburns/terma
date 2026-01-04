@@ -6,9 +6,9 @@ import "fmt"
 // It is the source of truth for items and cursor position, and must be provided to List.
 // Items is a reactive Signal - changes trigger automatic re-renders.
 type ListState[T any] struct {
-	Items       *AnySignal[[]T]              // Reactive list data
-	CursorIndex *Signal[int]                 // Cursor position
-	Selection   *AnySignal[map[int]struct{}] // Selected item indices (for multi-select)
+	Items       AnySignal[[]T]              // Reactive list data
+	CursorIndex Signal[int]                 // Cursor position
+	Selection   AnySignal[map[int]struct{}] // Selected item indices (for multi-select)
 
 	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
 }

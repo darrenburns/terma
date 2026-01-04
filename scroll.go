@@ -21,9 +21,9 @@ const (
 //	scrollable := terma.Scrollable{State: scrollState, ...}
 //	list := terma.List[string]{ScrollState: scrollState, ...}
 type ScrollState struct {
-	Offset         *Signal[int] // Current scroll offset
-	viewportHeight int          // Set by Scrollable during layout
-	contentHeight  int          // Set by Scrollable during layout
+	Offset         Signal[int] // Current scroll offset
+	viewportHeight int         // Set by Scrollable during layout
+	contentHeight  int         // Set by Scrollable during layout
 
 	// OnScrollUp is called when ScrollUp is invoked with the number of lines.
 	// If it returns true, the default viewport scrolling is suppressed.

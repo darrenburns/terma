@@ -28,7 +28,7 @@ var themeNames = []string{
 }
 
 type BorderDemo struct {
-	themeIndex *t.Signal[int]
+	themeIndex t.Signal[int]
 }
 
 func (b *BorderDemo) cycleTheme() {

@@ -8,9 +8,9 @@ import "fmt"
 type BuildContext struct {
 	focusManager *FocusManager
 	// Signal that holds the currently focused widget (nil if none)
-	focusedSignal *AnySignal[Focusable]
+	focusedSignal AnySignal[Focusable]
 	// Signal that holds the currently hovered widget (nil if none)
-	hoveredSignal *AnySignal[Widget]
+	hoveredSignal AnySignal[Widget]
 	// path tracks the current position in the widget tree for auto-ID generation
 	path []int
 	// floatCollector gathers Floating widgets for deferred rendering
@@ -18,7 +18,7 @@ type BuildContext struct {
 }
 
 // NewBuildContext creates a new build context.
-func NewBuildContext(fm *FocusManager, focusedSignal *AnySignal[Focusable], hoveredSignal *AnySignal[Widget], fc *FloatCollector) BuildContext {
+func NewBuildContext(fm *FocusManager, focusedSignal AnySignal[Focusable], hoveredSignal AnySignal[Widget], fc *FloatCollector) BuildContext {
 	return BuildContext{
 		focusManager:   fm,
 		focusedSignal:  focusedSignal,
@@ -88,7 +88,7 @@ func (ctx BuildContext) IsFocused(widget Widget) bool {
 // This is a reactive value - reading it during Build() will cause
 // the widget to rebuild when focus changes.
 func (ctx BuildContext) Focused() Focusable {
-	if ctx.focusedSignal == nil {
+	if !ctx.focusedSignal.IsValid() {
 		return nil
 	}
 	return ctx.focusedSignal.Get()
@@ -96,7 +96,7 @@ func (ctx BuildContext) Focused() Focusable {
 
 // FocusedSignal returns the signal holding the focused widget.
 // Useful for more advanced reactive patterns.
-func (ctx BuildContext) FocusedSignal() *AnySignal[Focusable] {
+func (ctx BuildContext) FocusedSignal() AnySignal[Focusable] {
 	return ctx.focusedSignal
 }
 
@@ -130,7 +130,7 @@ func (ctx BuildContext) IsHovered(widget Widget) bool {
 // This is a reactive value - reading it during Build() will cause
 // the widget to rebuild when hover changes.
 func (ctx BuildContext) Hovered() Widget {
-	if ctx.hoveredSignal == nil {
+	if !ctx.hoveredSignal.IsValid() {
 		return nil
 	}
 	return ctx.hoveredSignal.Get()
@@ -140,7 +140,7 @@ func (ctx BuildContext) Hovered() Widget {
 // This is a reactive value - reading it during Build() will cause
 // the widget to rebuild when hover changes.
 func (ctx BuildContext) HoveredID() string {
-	if ctx.hoveredSignal == nil {
+	if !ctx.hoveredSignal.IsValid() {
 		return ""
 	}
 	hovered := ctx.hoveredSignal.Get()

@@ -7,7 +7,7 @@ import (
 )
 
 type App struct {
-	themeIndex  *t.Signal[int]
+	themeIndex  t.Signal[int]
 	themeNames  []string
 	scrollState *t.ScrollState
 }

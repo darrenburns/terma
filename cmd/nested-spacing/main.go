@@ -21,7 +21,7 @@ type HoverText struct {
 	Content         string
 	Click           func()
 	BaseColor       t.Color
-	backgroundColor *t.Signal[t.Color]
+	backgroundColor t.Signal[t.Color]
 }
 
 func NewHoverText(id, content string, baseColor t.Color, click func()) *HoverText {
@@ -68,7 +68,7 @@ func (h *HoverText) OnClick() {
 }
 
 type NestedSpacing struct {
-	clickedKey *t.Signal[string]
+	clickedKey t.Signal[string]
 	text1      *HoverText
 	text2      *HoverText
 	text3      *HoverText

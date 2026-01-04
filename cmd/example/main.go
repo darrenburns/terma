@@ -8,8 +8,8 @@ import (
 
 // App is the root widget for this application.
 type App struct {
-	count *t.Signal[int]
-	name  *t.Signal[string]
+	count t.Signal[int]
+	name  t.Signal[string]
 }
 
 // Build returns the widget tree for this app.

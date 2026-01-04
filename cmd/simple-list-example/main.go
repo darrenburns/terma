@@ -17,7 +17,7 @@ func init() {
 // without custom rendering logic or scrollable wrapper.
 type SimpleListDemo struct {
 	listState   *t.ListState[string]
-	selectedMsg *t.Signal[string]
+	selectedMsg t.Signal[string]
 }
 
 func NewSimpleListDemo() *SimpleListDemo {

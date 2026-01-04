@@ -32,7 +32,7 @@ type ScrollDemo struct {
 	scrollListState *t.ScrollState
 	scrollTextState *t.ScrollState
 	noScrollState   *t.ScrollState
-	themeIndex      *t.Signal[int]
+	themeIndex      t.Signal[int]
 }
 
 func (s *ScrollDemo) cycleTheme() {

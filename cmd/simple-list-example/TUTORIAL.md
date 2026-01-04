@@ -14,8 +14,8 @@ The `Build` method returns a tree of widgets that describes your UI. When you ca
 
 ```go
 type SimpleListDemo struct {
-    cursorIndex *t.Signal[int]
-    selectedMsg *t.Signal[string]
+    cursorIndex t.Signal[int]
+    selectedMsg t.Signal[string]
 }
 ```
 

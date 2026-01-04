@@ -16,18 +16,18 @@ func init() {
 // SwitcherDemo demonstrates the Switcher widget with three tabs.
 // Each tab preserves its state when switching between them.
 type SwitcherDemo struct {
-	activeTab *t.Signal[string]
+	activeTab t.Signal[string]
 
 	// State for the "Fruits" tab - preserved across switches
 	fruitsListState *t.ListState[string]
-	fruitsSelected  *t.Signal[string]
+	fruitsSelected  t.Signal[string]
 
 	// State for the "Colors" tab - preserved across switches
 	colorsListState *t.ListState[string]
-	colorsSelected  *t.Signal[string]
+	colorsSelected  t.Signal[string]
 
 	// Counter for the "Counter" tab - preserved across switches
-	counter *t.Signal[int]
+	counter t.Signal[int]
 }
 
 func NewSwitcherDemo() *SwitcherDemo {

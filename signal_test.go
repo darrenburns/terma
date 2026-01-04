@@ -5,8 +5,8 @@ import "testing"
 func TestNewSignal_InitialValue(t *testing.T) {
 	s := NewSignal(42)
 
-	if s.value != 42 {
-		t.Errorf("expected initial value 42, got %d", s.value)
+	if s.core.value != 42 {
+		t.Errorf("expected initial value 42, got %d", s.core.value)
 	}
 }
 
@@ -67,8 +67,8 @@ func TestSignal_Peek_DoesNotSubscribe(t *testing.T) {
 	// Peek should not subscribe
 	_ = s.Peek()
 
-	if len(s.listeners) != 0 {
-		t.Errorf("expected no listeners after Peek, got %d", len(s.listeners))
+	if len(s.core.listeners) != 0 {
+		t.Errorf("expected no listeners after Peek, got %d", len(s.core.listeners))
 	}
 }
 
@@ -84,10 +84,10 @@ func TestSignal_Get_DuringBuild_Subscribes(t *testing.T) {
 	// Get should subscribe
 	_ = s.Get()
 
-	if len(s.listeners) != 1 {
-		t.Errorf("expected 1 listener after Get during build, got %d", len(s.listeners))
+	if len(s.core.listeners) != 1 {
+		t.Errorf("expected 1 listener after Get during build, got %d", len(s.core.listeners))
 	}
-	if _, ok := s.listeners[node]; !ok {
+	if _, ok := s.core.listeners[node]; !ok {
 		t.Error("expected node to be in listeners")
 	}
 }
@@ -102,8 +102,8 @@ func TestSignal_Get_OutsideBuild_NoSubscription(t *testing.T) {
 
 	_ = s.Get()
 
-	if len(s.listeners) != 0 {
-		t.Errorf("expected no listeners when not in build context, got %d", len(s.listeners))
+	if len(s.core.listeners) != 0 {
+		t.Errorf("expected no listeners when not in build context, got %d", len(s.core.listeners))
 	}
 }
 
@@ -113,7 +113,7 @@ func TestSignal_Set_SameValue_NoRebuild(t *testing.T) {
 	// Subscribe a node
 	node := newWidgetNode(nil)
 	node.dirty = false // Start clean
-	s.listeners[node] = struct{}{}
+	s.core.listeners[node] = struct{}{}
 
 	// Set same value
 	s.Set(42)
@@ -130,7 +130,7 @@ func TestSignal_Set_DifferentValue_MarksDirty(t *testing.T) {
 	// Subscribe a node
 	node := newWidgetNode(nil)
 	node.dirty = false // Start clean
-	s.listeners[node] = struct{}{}
+	s.core.listeners[node] = struct{}{}
 
 	// Set different value
 	s.Set(100)
@@ -159,8 +159,8 @@ func TestSignal_MultipleSubscribers(t *testing.T) {
 	currentBuildingNode = node3
 	_ = s.Get()
 
-	if len(s.listeners) != 3 {
-		t.Errorf("expected 3 listeners, got %d", len(s.listeners))
+	if len(s.core.listeners) != 3 {
+		t.Errorf("expected 3 listeners, got %d", len(s.core.listeners))
 	}
 }
 
@@ -175,9 +175,9 @@ func TestSignal_Set_NotifiesAllSubscribers(t *testing.T) {
 	node3 := newWidgetNode(nil)
 	node3.dirty = false
 
-	s.listeners[node1] = struct{}{}
-	s.listeners[node2] = struct{}{}
-	s.listeners[node3] = struct{}{}
+	s.core.listeners[node1] = struct{}{}
+	s.core.listeners[node2] = struct{}{}
+	s.core.listeners[node3] = struct{}{}
 
 	// Change value
 	s.Set(1)
@@ -198,16 +198,16 @@ func TestSignal_Unsubscribe(t *testing.T) {
 	s := NewSignal(42)
 
 	node := newWidgetNode(nil)
-	s.listeners[node] = struct{}{}
+	s.core.listeners[node] = struct{}{}
 
-	if len(s.listeners) != 1 {
-		t.Fatalf("expected 1 listener, got %d", len(s.listeners))
+	if len(s.core.listeners) != 1 {
+		t.Fatalf("expected 1 listener, got %d", len(s.core.listeners))
 	}
 
 	s.unsubscribe(node)
 
-	if len(s.listeners) != 0 {
-		t.Errorf("expected 0 listeners after unsubscribe, got %d", len(s.listeners))
+	if len(s.core.listeners) != 0 {
+		t.Errorf("expected 0 listeners after unsubscribe, got %d", len(s.core.listeners))
 	}
 }
 
@@ -218,8 +218,8 @@ func TestSignal_Unsubscribe_NonExistent(t *testing.T) {
 	// Should not panic when unsubscribing non-existent node
 	s.unsubscribe(node)
 
-	if len(s.listeners) != 0 {
-		t.Errorf("expected 0 listeners, got %d", len(s.listeners))
+	if len(s.core.listeners) != 0 {
+		t.Errorf("expected 0 listeners, got %d", len(s.core.listeners))
 	}
 }
 
@@ -228,8 +228,8 @@ func TestSignal_Unsubscribe_NonExistent(t *testing.T) {
 func TestNewAnySignal_InitialValue(t *testing.T) {
 	s := NewAnySignal([]int{1, 2, 3})
 
-	if len(s.value) != 3 {
-		t.Errorf("expected slice of length 3, got %d", len(s.value))
+	if len(s.core.value) != 3 {
+		t.Errorf("expected slice of length 3, got %d", len(s.core.value))
 	}
 }
 
@@ -276,7 +276,7 @@ func TestAnySignal_Set_AlwaysNotifies(t *testing.T) {
 
 	node := newWidgetNode(nil)
 	node.dirty = false
-	s.listeners[node] = struct{}{}
+	s.core.listeners[node] = struct{}{}
 
 	// Set same content (but AnySignal can't compare, so it always notifies)
 	s.Set([]int{1, 2, 3})
@@ -296,8 +296,8 @@ func TestAnySignal_Peek_DoesNotSubscribe(t *testing.T) {
 
 	_ = s.Peek()
 
-	if len(s.listeners) != 0 {
-		t.Errorf("expected no listeners after Peek, got %d", len(s.listeners))
+	if len(s.core.listeners) != 0 {
+		t.Errorf("expected no listeners after Peek, got %d", len(s.core.listeners))
 	}
 }
 
@@ -311,8 +311,8 @@ func TestAnySignal_Get_DuringBuild_Subscribes(t *testing.T) {
 
 	_ = s.Get()
 
-	if len(s.listeners) != 1 {
-		t.Errorf("expected 1 listener after Get during build, got %d", len(s.listeners))
+	if len(s.core.listeners) != 1 {
+		t.Errorf("expected 1 listener after Get during build, got %d", len(s.core.listeners))
 	}
 }
 

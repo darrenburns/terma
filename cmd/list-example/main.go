@@ -26,7 +26,7 @@ type ListItem struct {
 type EditorSettingsMenu struct {
 	scrollState *t.ScrollState
 	listState   *t.ListState[ListItem] // ListState holds both items and cursor position
-	message     *t.Signal[string]
+	message     t.Signal[string]
 }
 
 func NewEditorSettingsMenu() *EditorSettingsMenu {

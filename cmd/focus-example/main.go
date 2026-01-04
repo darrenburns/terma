@@ -28,7 +28,7 @@ func (f FocusedLabel) Build(ctx t.BuildContext) t.Widget {
 // When a child inside this panel is focused, the panel's keybinds
 // bubble up and appear in the footer alongside the child's keybinds.
 type EditorPanel struct {
-	message *t.Signal[string]
+	message t.Signal[string]
 }
 
 // Keybinds returns panel-level keybindings available to all children.
@@ -68,7 +68,7 @@ func (p *EditorPanel) Build(ctx t.BuildContext) t.Widget {
 // DeleteButton is a focusable widget that overrides the parent's "d" keybind.
 // When focused, pressing "d" triggers this button's action, not the panel's.
 type DeleteButton struct {
-	message *t.Signal[string]
+	message t.Signal[string]
 }
 
 func (b *DeleteButton) WidgetID() string { return "btn-delete" }
@@ -104,7 +104,7 @@ func (b *DeleteButton) Build(ctx t.BuildContext) t.Widget {
 // App is the root widget for this application.
 // It demonstrates app-level declarative keybindings that apply globally.
 type App struct {
-	message *t.Signal[string]
+	message t.Signal[string]
 }
 
 // Keybinds returns app-level keybindings.
