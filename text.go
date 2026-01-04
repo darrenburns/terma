@@ -99,29 +99,41 @@ func wrapText(content string, maxWidth int, mode WrapMode) []string {
 			continue
 		}
 
-		var wrapped string
 		switch mode {
 		case WrapHard:
-			wrapped = ansi.Wrap(line, maxWidth, "")
+			// Hard wrap: break at exact character boundary using Truncate
+			remaining := line
+			for len(remaining) > 0 {
+				if ansi.StringWidth(remaining) <= maxWidth {
+					result = append(result, remaining)
+					break
+				}
+				chunk := ansi.Truncate(remaining, maxWidth, "")
+				result = append(result, chunk)
+				remaining = remaining[len(chunk):]
+			}
 		case WrapSoft:
-			wrapped = ansi.Wordwrap(line, maxWidth, "")
-			// Check if any resulting line exceeds maxWidth (long word scenario)
+			// Soft wrap: break at word boundaries
+			wrapped := ansi.Wordwrap(line, maxWidth, "")
 			wrappedLines := strings.Split(wrapped, "\n")
-			var finalLines []string
 			for _, wl := range wrappedLines {
 				if ansi.StringWidth(wl) > maxWidth {
 					// Word longer than maxWidth, hard-break it
-					hardWrapped := ansi.Wrap(wl, maxWidth, "")
-					finalLines = append(finalLines, strings.Split(hardWrapped, "\n")...)
+					remaining := wl
+					for len(remaining) > 0 {
+						if ansi.StringWidth(remaining) <= maxWidth {
+							result = append(result, remaining)
+							break
+						}
+						chunk := ansi.Truncate(remaining, maxWidth, "")
+						result = append(result, chunk)
+						remaining = remaining[len(chunk):]
+					}
 				} else {
-					finalLines = append(finalLines, wl)
+					result = append(result, wl)
 				}
 			}
-			result = append(result, finalLines...)
-			continue
 		}
-
-		result = append(result, strings.Split(wrapped, "\n")...)
 	}
 
 	return result

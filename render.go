@@ -115,13 +115,27 @@ func (ctx *RenderContext) SubContext(xOffset, yOffset, width, height int) *Rende
 // with content outside the viewport being clipped.
 // virtualHeight is the total content height (may exceed viewport height).
 func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, scrollY, virtualHeight int) *RenderContext {
-	sub := ctx.SubContext(xOffset, yOffset, width, height)
-	sub.scrollYOffset = scrollY
-	sub.virtualHeight = virtualHeight
-	// Set viewport bounds for clipping - these stay constant within the scrolled region
-	// while Y changes as we descend into nested widgets at virtual positions
-	sub.viewportY = ctx.Y + yOffset
-	sub.viewportHeight = height
+	// Convert current virtual Y to screen Y by subtracting parent's scroll offset.
+	// This ensures nested scrollables start from a screen position, not a virtual position.
+	screenY := ctx.Y + yOffset - ctx.scrollYOffset
+
+	// Create sub-context manually to set the corrected Y position
+	sub := &RenderContext{
+		terminal:       ctx.terminal,
+		X:              ctx.X + xOffset,
+		Y:              screenY,
+		Width:          width,
+		Height:         height,
+		focusCollector: ctx.focusCollector,
+		focusManager:   ctx.focusManager,
+		buildContext:   ctx.buildContext,
+		widgetRegistry: ctx.widgetRegistry,
+		scrollYOffset:  scrollY,
+		virtualHeight:  virtualHeight,
+		viewportY:      screenY,
+		viewportHeight: height,
+		inheritedBgAt:  ctx.inheritedBgAt,
+	}
 	return sub
 }
 

@@ -28,6 +28,7 @@ var themeNames = []string{
 }
 
 type ScrollDemo struct {
+	bodyState       *t.ScrollState
 	scrollListState *t.ScrollState
 	scrollTextState *t.ScrollState
 	noScrollState   *t.ScrollState
@@ -95,89 +96,68 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 				Spans: t.ParseMarkup("Use [b $Info]↑/↓[/] or [b $Info]j/k[/] to scroll • [b $Info]PgUp/PgDn[/] or [b $Info]Ctrl+U/D[/] for half-page • [b $Info]Home/End[/] or [b $Info]g/G[/] for top/bottom", theme),
 			},
 
-			// Side by side: scrollable list and non-scrollable content
-			t.Row{
-				Spacing: 2,
-				Children: []t.Widget{
-					// Scrollable list with fixed height
-					&t.Scrollable{
-						ID:     "scroll-list",
-						State:  s.scrollListState,
-						Height: t.Cells(15),
-						Width:  t.Fr(1),
-						Style: t.Style{
-							Border:  t.RoundedBorder(theme.Info, t.BorderTitle("Scrollable List")),
-							Padding: t.EdgeInsetsAll(1),
-						},
-						Child: t.Column{
-							Children: items,
-						},
-					},
-
-					// Second scrollable panel with different content
-					&t.Scrollable{
-						ID:     "scroll-text",
-						State:  s.scrollTextState,
-						Height: t.Cells(15),
-						Width:  t.Fr(1),
-						Style: t.Style{
-							Border:  t.RoundedBorder(theme.Secondary, t.BorderTitle("Long Text")),
-							Padding: t.EdgeInsetsAll(1),
-						},
-						Child: t.Column{
+			// Body: scrollable container with all the panels
+			&t.Scrollable{
+				ID:     "body",
+				State:  s.bodyState,
+				Height: t.Fr(1),
+				Child: t.Column{
+					Spacing: 1,
+					Children: []t.Widget{
+						// Side by side: scrollable list and long text
+						t.Row{
+							Spacing: 2,
 							Children: []t.Widget{
-								t.Text{Content: "Lorem ipsum dolor sit amet, consectetur"},
-								t.Text{Content: "adipiscing elit. Sed do eiusmod tempor"},
-								t.Text{Content: "incididunt ut labore et dolore magna"},
-								t.Text{Content: "aliqua. Ut enim ad minim veniam, quis"},
-								t.Text{Content: "nostrud exercitation ullamco laboris"},
-								t.Text{Content: "nisi ut aliquip ex ea commodo consequat."},
-								t.Text{Content: ""},
-								t.Text{Content: "Duis aute irure dolor in reprehenderit"},
-								t.Text{Content: "in voluptate velit esse cillum dolore"},
-								t.Text{Content: "eu fugiat nulla pariatur. Excepteur sint"},
-								t.Text{Content: "occaecat cupidatat non proident, sunt in"},
-								t.Text{Content: "culpa qui officia deserunt mollit anim"},
-								t.Text{Content: "id est laborum."},
-								t.Text{Content: ""},
-								t.Text{Content: "Sed ut perspiciatis unde omnis iste"},
-								t.Text{Content: "natus error sit voluptatem accusantium"},
-								t.Text{Content: "doloremque laudantium, totam rem aperiam"},
-								t.Text{Content: "eaque ipsa quae ab illo inventore"},
-								t.Text{Content: "veritatis et quasi architecto beatae"},
-								t.Text{Content: "vitae dicta sunt explicabo."},
-								t.Text{Content: ""},
-								t.Text{Content: "Nemo enim ipsam voluptatem quia voluptas"},
-								t.Text{Content: "sit aspernatur aut odit aut fugit, sed"},
-								t.Text{Content: "quia consequuntur magni dolores eos qui"},
-								t.Text{Content: "ratione voluptatem sequi nesciunt."},
+								// Scrollable list with fixed height
+								&t.Scrollable{
+									ID:     "scroll-list",
+									State:  s.scrollListState,
+									Height: t.Cells(15),
+									Width:  t.Fr(1),
+									Style: t.Style{
+										Border:  t.RoundedBorder(theme.Info, t.BorderTitle("Scrollable List")),
+										Padding: t.EdgeInsetsAll(1),
+									},
+									Child: t.Column{
+										Children: items,
+									},
+								},
+
+								// Second scrollable panel with different content
+								&t.Scrollable{
+									ID:     "scroll-text",
+									State:  s.scrollTextState,
+									Height: t.Cells(15),
+									Width:  t.Fr(1),
+									Style: t.Style{
+										Border:  t.RoundedBorder(theme.Secondary, t.BorderTitle("Long Text")),
+										Padding: t.EdgeInsetsAll(1),
+									},
+									Child: t.Text{
+										Content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\nSed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.\n\nNemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.",
+										Width:   t.Fr(1),
+									},
+								},
 							},
 						},
-					},
-				},
-			},
 
-			// Example of disabled scrolling
-			t.Row{
-				Children: []t.Widget{
-					&t.Scrollable{
-						ID:            "no-scroll",
-						State:         s.noScrollState,
-						Height:        t.Cells(5),
-						DisableScroll: true,
-						Style: t.Style{
-							Border:  t.SquareBorder(theme.Warning, t.BorderTitle("Scrolling Disabled")),
-							Padding: t.EdgeInsetsAll(1),
-						},
-						Child: t.Column{
+						// Example of disabled scrolling
+						t.Row{
 							Children: []t.Widget{
-								t.Text{Content: "This panel has scrolling disabled."},
-								t.Text{Content: "Content that overflows is hidden."},
-								t.Text{Content: "Line 3 - might be visible"},
-								t.Text{Content: "Line 4 - might be cut off"},
-								t.Text{Content: "Line 5 - probably hidden"},
-								t.Text{Content: "Line 6 - definitely hidden"},
-								t.Text{Content: "Line 7 - not visible"},
+								&t.Scrollable{
+									ID:            "no-scroll",
+									State:         s.noScrollState,
+									Height:        t.Cells(5),
+									DisableScroll: true,
+									Style: t.Style{
+										Border:  t.SquareBorder(theme.Warning, t.BorderTitle("Scrolling Disabled")),
+										Padding: t.EdgeInsetsAll(1),
+									},
+									Child: t.Text{
+										Content: "This panel has scrolling disabled. Content that overflows is hidden. This demonstrates what happens when you have more text than fits in the available space but scrolling is not enabled.",
+										Width:   t.Fr(1),
+									},
+								},
 							},
 						},
 					},
@@ -195,6 +175,7 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 func main() {
 	t.SetTheme(themeNames[0])
 	app := &ScrollDemo{
+		bodyState:       t.NewScrollState(),
 		scrollListState: t.NewScrollState(),
 		scrollTextState: t.NewScrollState(),
 		noScrollState:   t.NewScrollState(),
