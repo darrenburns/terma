@@ -18,6 +18,13 @@ func (k KeyEvent) Key() string {
 	return k.event.String()
 }
 
+// Text returns the actual text input from the key event.
+// This returns the literal characters typed, including space as " ".
+// Returns empty string for non-text keys like arrows, function keys, etc.
+func (k KeyEvent) Text() string {
+	return uv.Key(k.event).Text
+}
+
 // Identifiable is implemented by widgets that provide a stable identity.
 // The ID must be unique among siblings and persist across rebuilds.
 type Identifiable interface {

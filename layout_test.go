@@ -4,12 +4,15 @@ import (
 	"testing"
 )
 
-// Mock widget for testing layout behavior
+// Mock widget for testing layout behavior.
+// IMPORTANT: When layoutSize is set, it represents the widget's CONTENT size
+// (the size inside padding/margin/border). The parent layout container
+// (Row/Column/Dock) will add the style insets when calculating total space.
 type mockWidget struct {
 	width      Dimension
 	height     Dimension
 	style      Style
-	layoutSize Size // Size returned by Layout()
+	layoutSize Size // Content size returned by Layout() (excluding padding/margin/border)
 }
 
 func (m mockWidget) Build(ctx BuildContext) Widget {
@@ -236,7 +239,7 @@ func TestRow_WithPadding(t *testing.T) {
 	child := mockWidget{
 		width:      Auto,
 		height:     Auto,
-		layoutSize: Size{Width: 20, Height: 10},
+		layoutSize: Size{Width: 20, Height: 10}, // Content size (inside padding)
 		style:      Style{Padding: EdgeInsetsAll(5)},
 	}
 	row := Row{Children: []Widget{child}}
@@ -244,14 +247,14 @@ func TestRow_WithPadding(t *testing.T) {
 
 	size := row.Layout(testContext(), constraints)
 
-	// Child has 10 horizontal padding (5 left + 5 right), 10 vertical padding
-	// Total width = 20 (content) + 10 (padding) = 30
-	// Total height = 10 (content) + 10 (padding) = 20
+	// layoutSize {20, 10} is the content size (inside padding)
+	// Padding adds 10 horizontal (5 left + 5 right), 10 vertical (5 top + 5 bottom)
+	// Row adds insets to child size: Total width = 20 + 10 = 30, height = 10 + 10 = 20
 	if size.Width != 30 {
-		t.Errorf("expected Width = 30 (child + padding), got %d", size.Width)
+		t.Errorf("expected Width = 30 (content + padding), got %d", size.Width)
 	}
 	if size.Height != 20 {
-		t.Errorf("expected Height = 20 (child + padding), got %d", size.Height)
+		t.Errorf("expected Height = 20 (content + padding), got %d", size.Height)
 	}
 }
 
@@ -259,7 +262,7 @@ func TestRow_WithMargin(t *testing.T) {
 	child := mockWidget{
 		width:      Auto,
 		height:     Auto,
-		layoutSize: Size{Width: 20, Height: 10},
+		layoutSize: Size{Width: 20, Height: 10}, // Content size (inside margin)
 		style:      Style{Margin: EdgeInsetsAll(5)},
 	}
 	row := Row{Children: []Widget{child}}
@@ -267,14 +270,14 @@ func TestRow_WithMargin(t *testing.T) {
 
 	size := row.Layout(testContext(), constraints)
 
-	// Child has 10 horizontal margin, 10 vertical margin
-	// Total width = 20 + 10 = 30
-	// Total height = 10 + 10 = 20
+	// layoutSize {20, 10} is the content size (inside margin)
+	// Margin adds 10 horizontal (5 left + 5 right), 10 vertical (5 top + 5 bottom)
+	// Row adds insets to child size: Total width = 20 + 10 = 30, height = 10 + 10 = 20
 	if size.Width != 30 {
-		t.Errorf("expected Width = 30 (child + margin), got %d", size.Width)
+		t.Errorf("expected Width = 30 (content + margin), got %d", size.Width)
 	}
 	if size.Height != 20 {
-		t.Errorf("expected Height = 20 (child + margin), got %d", size.Height)
+		t.Errorf("expected Height = 20 (content + margin), got %d", size.Height)
 	}
 }
 
@@ -282,7 +285,7 @@ func TestRow_WithBorder(t *testing.T) {
 	child := mockWidget{
 		width:      Auto,
 		height:     Auto,
-		layoutSize: Size{Width: 20, Height: 10},
+		layoutSize: Size{Width: 20, Height: 10}, // Content size (inside border)
 		style:      Style{Border: SquareBorder(RGB(255, 255, 255))},
 	}
 	row := Row{Children: []Widget{child}}
@@ -290,14 +293,14 @@ func TestRow_WithBorder(t *testing.T) {
 
 	size := row.Layout(testContext(), constraints)
 
-	// Border adds 1 cell on each side (2 total horizontal, 2 total vertical)
-	// Total width = 20 + 2 = 22
-	// Total height = 10 + 2 = 12
+	// layoutSize {20, 10} is the content size (inside border)
+	// Border adds 1 cell on each side: 2 horizontal (left + right), 2 vertical (top + bottom)
+	// Row adds border to child size: Total width = 20 + 2 = 22, height = 10 + 2 = 12
 	if size.Width != 22 {
-		t.Errorf("expected Width = 22 (child + border), got %d", size.Width)
+		t.Errorf("expected Width = 22 (content + border), got %d", size.Width)
 	}
 	if size.Height != 12 {
-		t.Errorf("expected Height = 12 (child + border), got %d", size.Height)
+		t.Errorf("expected Height = 12 (content + border), got %d", size.Height)
 	}
 }
 
@@ -336,9 +339,14 @@ func TestRow_FrWithSpacing(t *testing.T) {
 	size := row.Layout(testContext(), constraints)
 
 	// Available width = 100 - 10 (spacing) = 90
-	// Each child gets 45
+	// Each Fr(1) child gets 45 width (90 / 2)
+	// Total width = 45 + 45 + 10 (spacing) = 100
+	// Height = max of children = 10
 	if size.Width != 100 {
 		t.Errorf("expected Width = 100, got %d", size.Width)
+	}
+	if size.Height != 10 {
+		t.Errorf("expected Height = 10 (max child height), got %d", size.Height)
 	}
 }
 
@@ -505,7 +513,7 @@ func TestColumn_WithPadding(t *testing.T) {
 	child := mockWidget{
 		width:      Auto,
 		height:     Auto,
-		layoutSize: Size{Width: 20, Height: 10},
+		layoutSize: Size{Width: 20, Height: 10}, // Content size (inside padding)
 		style:      Style{Padding: EdgeInsetsAll(5)},
 	}
 	col := Column{Children: []Widget{child}}
@@ -513,14 +521,14 @@ func TestColumn_WithPadding(t *testing.T) {
 
 	size := col.Layout(testContext(), constraints)
 
-	// Child has 10 horizontal padding, 10 vertical padding
-	// Total width = 20 + 10 = 30
-	// Total height = 10 + 10 = 20
+	// layoutSize {20, 10} is the content size (inside padding)
+	// Padding adds 10 horizontal (5 left + 5 right), 10 vertical (5 top + 5 bottom)
+	// Column adds insets to child size: Total width = 20 + 10 = 30, height = 10 + 10 = 20
 	if size.Width != 30 {
-		t.Errorf("expected Width = 30 (child + padding), got %d", size.Width)
+		t.Errorf("expected Width = 30 (content + padding), got %d", size.Width)
 	}
 	if size.Height != 20 {
-		t.Errorf("expected Height = 20 (child + padding), got %d", size.Height)
+		t.Errorf("expected Height = 20 (content + padding), got %d", size.Height)
 	}
 }
 
@@ -528,7 +536,7 @@ func TestColumn_WithMargin(t *testing.T) {
 	child := mockWidget{
 		width:      Auto,
 		height:     Auto,
-		layoutSize: Size{Width: 20, Height: 10},
+		layoutSize: Size{Width: 20, Height: 10}, // Content size (inside margin)
 		style:      Style{Margin: EdgeInsetsAll(5)},
 	}
 	col := Column{Children: []Widget{child}}
@@ -536,14 +544,14 @@ func TestColumn_WithMargin(t *testing.T) {
 
 	size := col.Layout(testContext(), constraints)
 
-	// Child has 10 horizontal margin, 10 vertical margin
-	// Total width = 20 + 10 = 30
-	// Total height = 10 + 10 = 20
+	// layoutSize {20, 10} is the content size (inside margin)
+	// Margin adds 10 horizontal (5 left + 5 right), 10 vertical (5 top + 5 bottom)
+	// Column adds insets to child size: Total width = 20 + 10 = 30, height = 10 + 10 = 20
 	if size.Width != 30 {
-		t.Errorf("expected Width = 30 (child + margin), got %d", size.Width)
+		t.Errorf("expected Width = 30 (content + margin), got %d", size.Width)
 	}
 	if size.Height != 20 {
-		t.Errorf("expected Height = 20 (child + margin), got %d", size.Height)
+		t.Errorf("expected Height = 20 (content + margin), got %d", size.Height)
 	}
 }
 
@@ -551,7 +559,7 @@ func TestColumn_WithBorder(t *testing.T) {
 	child := mockWidget{
 		width:      Auto,
 		height:     Auto,
-		layoutSize: Size{Width: 20, Height: 10},
+		layoutSize: Size{Width: 20, Height: 10}, // Content size (inside border)
 		style:      Style{Border: SquareBorder(RGB(255, 255, 255))},
 	}
 	col := Column{Children: []Widget{child}}
@@ -559,14 +567,14 @@ func TestColumn_WithBorder(t *testing.T) {
 
 	size := col.Layout(testContext(), constraints)
 
-	// Border adds 1 cell on each side (2 total horizontal, 2 total vertical)
-	// Total width = 20 + 2 = 22
-	// Total height = 10 + 2 = 12
+	// layoutSize {20, 10} is the content size (inside border)
+	// Border adds 1 cell on each side: 2 horizontal (left + right), 2 vertical (top + bottom)
+	// Column adds border to child size: Total width = 20 + 2 = 22, height = 10 + 2 = 12
 	if size.Width != 22 {
-		t.Errorf("expected Width = 22 (child + border), got %d", size.Width)
+		t.Errorf("expected Width = 22 (content + border), got %d", size.Width)
 	}
 	if size.Height != 12 {
-		t.Errorf("expected Height = 12 (child + border), got %d", size.Height)
+		t.Errorf("expected Height = 12 (content + border), got %d", size.Height)
 	}
 }
 
@@ -605,9 +613,14 @@ func TestColumn_FrWithSpacing(t *testing.T) {
 	size := col.Layout(testContext(), constraints)
 
 	// Available height = 100 - 10 (spacing) = 90
-	// Each child gets 45
+	// Each Fr(1) child gets 45 height (90 / 2)
+	// Total height = 45 + 45 + 10 (spacing) = 100
+	// Width = max of children = 10
 	if size.Height != 100 {
 		t.Errorf("expected Height = 100, got %d", size.Height)
+	}
+	if size.Width != 10 {
+		t.Errorf("expected Width = 10 (max child width), got %d", size.Width)
 	}
 }
 
@@ -695,5 +708,131 @@ func TestColumn_GetDimensions(t *testing.T) {
 	}
 	if !height.IsCells() || height.CellsValue() != 100 {
 		t.Errorf("expected height = Cells(100), got %v", height)
+	}
+}
+
+// EDGE CASE TESTS
+
+func TestRow_ZeroSizeConstraints(t *testing.T) {
+	child := mockWidget{width: Auto, height: Auto, layoutSize: Size{Width: 20, Height: 10}}
+	row := Row{Children: []Widget{child}}
+	constraints := Constraints{MaxWidth: 0, MaxHeight: 0}
+
+	size := row.Layout(testContext(), constraints)
+
+	// With zero constraints, children get clamped to 0
+	// Row wraps content, which is also 0
+	if size.Width != 0 {
+		t.Errorf("expected Width = 0 with zero constraints, got %d", size.Width)
+	}
+	if size.Height != 0 {
+		t.Errorf("expected Height = 0 with zero constraints, got %d", size.Height)
+	}
+}
+
+func TestColumn_ZeroSizeConstraints(t *testing.T) {
+	child := mockWidget{width: Auto, height: Auto, layoutSize: Size{Width: 20, Height: 10}}
+	col := Column{Children: []Widget{child}}
+	constraints := Constraints{MaxWidth: 0, MaxHeight: 0}
+
+	size := col.Layout(testContext(), constraints)
+
+	// With zero constraints, children get clamped to 0
+	// Column wraps content, which is also 0
+	if size.Width != 0 {
+		t.Errorf("expected Width = 0 with zero constraints, got %d", size.Width)
+	}
+	if size.Height != 0 {
+		t.Errorf("expected Height = 0 with zero constraints, got %d", size.Height)
+	}
+}
+
+func TestRow_ChildrenExceedMaxWidth(t *testing.T) {
+	// Test what happens when fixed-size children exceed available width
+	child1 := mockWidget{width: Cells(60), height: Cells(10)}
+	child2 := mockWidget{width: Cells(60), height: Cells(10)}
+	row := Row{Children: []Widget{child1, child2}}
+	constraints := Constraints{MaxWidth: 100, MaxHeight: 50}
+
+	size := row.Layout(testContext(), constraints)
+
+	// Each child is clamped to fit available space
+	// After child1 (60), only 40 remains for child2, so child2 gets clamped to 40
+	// Total = 60 + 40 = 100
+	if size.Width != 100 {
+		t.Errorf("expected Width = 100 (children clamped to fit), got %d", size.Width)
+	}
+}
+
+func TestColumn_ChildrenExceedMaxHeight(t *testing.T) {
+	// Test what happens when fixed-size children exceed available height
+	child1 := mockWidget{width: Cells(10), height: Cells(60)}
+	child2 := mockWidget{width: Cells(10), height: Cells(60)}
+	col := Column{Children: []Widget{child1, child2}}
+	constraints := Constraints{MaxWidth: 100, MaxHeight: 100}
+
+	size := col.Layout(testContext(), constraints)
+
+	// Each child is clamped to fit available space
+	// After child1 (60), only 40 remains for child2, so child2 gets clamped to 40
+	// Total = 60 + 40 = 100
+	if size.Height != 100 {
+		t.Errorf("expected Height = 100 (children clamped to fit), got %d", size.Height)
+	}
+}
+
+func TestRow_FrChildrenWithPaddingDistribution(t *testing.T) {
+	// Test that Fr distribution correctly accounts for padding
+	child1 := mockWidget{
+		width:      Fr(1),
+		height:     Cells(10),
+		style:      Style{Padding: EdgeInsetsXY(5, 0)}, // 10 horizontal padding
+	}
+	child2 := mockWidget{
+		width:  Fr(1),
+		height: Cells(10),
+		// No padding
+	}
+	row := Row{Children: []Widget{child1, child2}}
+	constraints := Constraints{MaxWidth: 100, MaxHeight: 50}
+
+	size := row.Layout(testContext(), constraints)
+
+	// child1: Fr(1) with 10 horizontal padding
+	// child2: Fr(1) with 0 padding
+	// Available width for Fr distribution = 100
+	// child1 content gets: ~50 - 10 = ~40, total space: 50
+	// child2 content gets: ~50, total space: 50
+	// Row total: 100
+	if size.Width != 100 {
+		t.Errorf("expected Width = 100, got %d", size.Width)
+	}
+}
+
+func TestColumn_FrChildrenWithMarginDistribution(t *testing.T) {
+	// Test that Fr distribution correctly accounts for margin
+	child1 := mockWidget{
+		width:  Cells(10),
+		height: Fr(1),
+		style:  Style{Margin: EdgeInsetsXY(0, 5)}, // 10 vertical margin
+	}
+	child2 := mockWidget{
+		width:  Cells(10),
+		height: Fr(1),
+		// No margin
+	}
+	col := Column{Children: []Widget{child1, child2}}
+	constraints := Constraints{MaxWidth: 100, MaxHeight: 100}
+
+	size := col.Layout(testContext(), constraints)
+
+	// child1: Fr(1) with 10 vertical margin
+	// child2: Fr(1) with 0 margin
+	// Available height for Fr distribution = 100
+	// child1 content gets: ~50 - 10 = ~40, total space: 50
+	// child2 content gets: ~50, total space: 50
+	// Column total: 100
+	if size.Height != 100 {
+		t.Errorf("expected Height = 100, got %d", size.Height)
 	}
 }
