@@ -85,38 +85,41 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 	height := a.height.Get()
 	wrapMode := a.wrapMode.Get()
 
-	return t.Column{
-		Spacing: 1,
-		Style: t.Style{
-			Padding: t.EdgeInsetsXY(2, 1),
-		},
-		Children: []t.Widget{
-			t.Text{
-				Content: "Text Wrapping Demo",
-				Wrap:    t.WrapNone,
-				Style: t.Style{
-					ForegroundColor: t.Black,
-					BackgroundColor: t.Cyan,
-					Padding:         t.EdgeInsetsXY(1, 0),
-				},
-			},
-
+	return t.Dock{
+		Bottom: []t.Widget{
 			t.KeybindBar{},
-
-			t.Text{
-				Content: fmt.Sprintf("Width: %d cells  |  Height: %d lines  |  Wrap: %s", width, height, wrapModeName(wrapMode)),
-				Wrap:    t.WrapNone,
+		},
+		Body: t.Column{
+			Spacing: 1,
+			Style: t.Style{
+				Padding: t.EdgeInsetsXY(2, 1),
 			},
+			Children: []t.Widget{
+				t.Text{
+					Content: "Text Wrapping Demo",
+					Wrap:    t.WrapNone,
+					Style: t.Style{
+						ForegroundColor: t.Black,
+						BackgroundColor: t.Cyan,
+						Padding:         t.EdgeInsetsXY(1, 0),
+					},
+				},
 
-			// The text box with configurable dimensions and wrap mode
-			t.Text{
-				Content: sampleText,
-				Width:   t.Cells(width),
-				Height:  t.Cells(height),
-				Wrap:    wrapMode,
-				Style: t.Style{
-					BackgroundColor: t.Hex("#2a2a3a"),
-					Padding:         t.EdgeInsetsXY(1, 0),
+				t.Text{
+					Content: fmt.Sprintf("Width: %d cells  |  Height: %d lines  |  Wrap: %s", width, height, wrapModeName(wrapMode)),
+					Wrap:    t.WrapNone,
+				},
+
+				// The text box with configurable dimensions and wrap mode
+				t.Text{
+					Content: sampleText,
+					Width:   t.Cells(width),
+					Height:  t.Cells(height),
+					Wrap:    wrapMode,
+					Style: t.Style{
+						BackgroundColor: t.Hex("#2a2a3a"),
+						Padding:         t.EdgeInsetsXY(1, 0),
+					},
 				},
 			},
 		},

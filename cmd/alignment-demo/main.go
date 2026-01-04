@@ -88,52 +88,54 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 		crossName = crossAxisNames[colCross-1] // -1 because we skip Stretch(0)
 	}
 
-	return t.Column{
-		Height: t.Fr(1),
-		Children: []t.Widget{
-			// Keybind bar at top
+	return t.Dock{
+		Bottom: []t.Widget{
 			t.KeybindBar{
 				Style: t.Style{
 					BackgroundColor: t.Hex("#1a1a2e"),
 					Padding:         t.EdgeInsets{Left: 1, Right: 1},
 				},
 			},
-
-			// Title
-			t.Text{
-				Content: "=== Alignment Demo ===",
-				Style:   t.Style{Padding: t.EdgeInsets{Top: 1, Bottom: 1, Left: 1}},
-			},
-
-			// Status line
-			t.Text{
-				Content: fmt.Sprintf("Active: %s | MainAlign: %s | CrossAlign: %s",
-					containerName, mainName, crossName),
-				Style: t.Style{
-					ForegroundColor: t.Cyan,
-					Padding:         t.EdgeInsets{Left: 1, Bottom: 1},
+		},
+		Body: t.Column{
+			Height: t.Fr(1),
+			Children: []t.Widget{
+				// Title
+				t.Text{
+					Content: "=== Alignment Demo ===",
+					Style:   t.Style{Padding: t.EdgeInsets{Top: 1, Bottom: 1, Left: 1}},
 				},
-			},
 
-			// Demo containers side by side
-			t.Row{
-				Height:  t.Fr(1),
-				Spacing: 2,
-				Style:   t.Style{Padding: t.EdgeInsets{Left: 1, Right: 1}},
-				Children: []t.Widget{
-					// Row demo
-					a.buildRowDemo(ctx, rowMain, rowCross, active == 0),
-					// Column demo
-					a.buildColumnDemo(ctx, colMain, colCross, active == 1),
+				// Status line
+				t.Text{
+					Content: fmt.Sprintf("Active: %s | MainAlign: %s | CrossAlign: %s",
+						containerName, mainName, crossName),
+					Style: t.Style{
+						ForegroundColor: t.Cyan,
+						Padding:         t.EdgeInsets{Left: 1, Bottom: 1},
+					},
 				},
-			},
 
-			// Instructions
-			t.Text{
-				Content: "Press 'm' to cycle main axis, 'c' to cycle cross axis, 'space' to switch container",
-				Style: t.Style{
-					ForegroundColor: t.BrightBlack,
-					Padding:         t.EdgeInsets{Left: 1, Top: 1, Bottom: 1},
+				// Demo containers side by side
+				t.Row{
+					Height:  t.Fr(1),
+					Spacing: 2,
+					Style:   t.Style{Padding: t.EdgeInsets{Left: 1, Right: 1}},
+					Children: []t.Widget{
+						// Row demo
+						a.buildRowDemo(ctx, rowMain, rowCross, active == 0),
+						// Column demo
+						a.buildColumnDemo(ctx, colMain, colCross, active == 1),
+					},
+				},
+
+				// Instructions
+				t.Text{
+					Content: "Press 'm' to cycle main axis, 'c' to cycle cross axis, 'space' to switch container",
+					Style: t.Style{
+						ForegroundColor: t.BrightBlack,
+						Padding:         t.EdgeInsets{Left: 1, Top: 1, Bottom: 1},
+					},
 				},
 			},
 		},

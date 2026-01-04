@@ -123,28 +123,31 @@ func (a *App) Keybinds() []t.Keybind {
 func (a *App) Build(ctx t.BuildContext) t.Widget {
 	msg := a.message.Get()
 
-	return t.Column{
-		Children: []t.Widget{
-			t.Text{Content: "=== Focus Demo (Keybind Bubbling) ==="},
-			t.Text{Content: ""},
-			FocusedLabel{},
-			t.Text{Content: ""},
-			t.Text{Content: msg, Style: t.Style{ForegroundColor: t.Green}},
-			t.Text{Content: ""},
-			t.Text{Content: "Use Tab/Shift+Tab to navigate. Watch footer change!"},
-			t.Text{Content: ""},
-			// Standalone button - only has app-level keybinds (?, r)
-			&t.Button{ID: "btn-standalone", Label: "Standalone Button", OnPress: func() {
-				a.message.Set("Standalone button pressed!")
-			}},
-			t.Text{Content: ""},
-			// EditorPanel has its own keybinds that bubble to children
-			&EditorPanel{message: a.message},
-			t.Text{Content: ""},
-			t.Text{Content: "Try: Tab to 'New File' shows panel keybinds (ctrl+s, ctrl+z, d)"},
-			t.Text{Content: "     Tab to 'Delete' shows 'd' as 'Delete Forever' (overrides panel)"},
-			t.Text{Content: ""},
+	return t.Dock{
+		Bottom: []t.Widget{
 			t.KeybindBar{},
+		},
+		Body: t.Column{
+			Children: []t.Widget{
+				t.Text{Content: "=== Focus Demo (Keybind Bubbling) ==="},
+				t.Text{Content: ""},
+				FocusedLabel{},
+				t.Text{Content: ""},
+				t.Text{Content: msg, Style: t.Style{ForegroundColor: t.Green}},
+				t.Text{Content: ""},
+				t.Text{Content: "Use Tab/Shift+Tab to navigate. Watch footer change!"},
+				t.Text{Content: ""},
+				// Standalone button - only has app-level keybinds (?, r)
+				&t.Button{ID: "btn-standalone", Label: "Standalone Button", OnPress: func() {
+					a.message.Set("Standalone button pressed!")
+				}},
+				t.Text{Content: ""},
+				// EditorPanel has its own keybinds that bubble to children
+				&EditorPanel{message: a.message},
+				t.Text{Content: ""},
+				t.Text{Content: "Try: Tab to 'New File' shows panel keybinds (ctrl+s, ctrl+z, d)"},
+				t.Text{Content: "     Tab to 'Delete' shows 'd' as 'Delete Forever' (overrides panel)"},
+			},
 		},
 	}
 }
