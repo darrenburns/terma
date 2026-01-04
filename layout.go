@@ -1,15 +1,46 @@
 package terma
 
+// MainAxisAlign specifies how children are aligned along the main axis.
+// For Row, main axis is horizontal. For Column, main axis is vertical.
+type MainAxisAlign int
+
+const (
+	// MainAxisStart aligns children at the start (default).
+	MainAxisStart MainAxisAlign = iota
+	// MainAxisCenter centers children along the main axis.
+	MainAxisCenter
+	// MainAxisEnd aligns children at the end.
+	MainAxisEnd
+	// Future: MainAxisSpaceBetween, MainAxisSpaceAround, MainAxisSpaceEvenly
+)
+
+// CrossAxisAlign specifies how children are aligned along the cross axis.
+// For Row, cross axis is vertical. For Column, cross axis is horizontal.
+type CrossAxisAlign int
+
+const (
+	// CrossAxisStretch stretches children to fill the cross axis (default).
+	CrossAxisStretch CrossAxisAlign = iota
+	// CrossAxisStart aligns children at the start of the cross axis.
+	CrossAxisStart
+	// CrossAxisCenter centers children along the cross axis.
+	CrossAxisCenter
+	// CrossAxisEnd aligns children at the end of the cross axis.
+	CrossAxisEnd
+)
+
 // Row arranges its children horizontally.
 type Row struct {
-	ID       string    // Optional unique identifier for the widget
-	Width    Dimension // Optional width (zero value = auto)
-	Height   Dimension // Optional height (zero value = auto)
-	Style    Style     // Optional styling (background color)
-	Spacing  int       // Space between children
-	Children []Widget
-	Click    func()     // Optional callback invoked when clicked
-	Hover    func(bool) // Optional callback invoked when hover state changes
+	ID         string         // Optional unique identifier for the widget
+	Width      Dimension      // Optional width (zero value = auto)
+	Height     Dimension      // Optional height (zero value = auto)
+	Style      Style          // Optional styling (background color)
+	Spacing    int            // Space between children
+	MainAlign  MainAxisAlign  // Main axis (horizontal) alignment
+	CrossAlign CrossAxisAlign // Cross axis (vertical) alignment
+	Children   []Widget
+	Click      func()     // Optional callback invoked when clicked
+	Hover      func(bool) // Optional callback invoked when hover state changes
 }
 
 // GetDimensions returns the width and height dimension preferences.
@@ -108,10 +139,15 @@ func (r Row) Layout(ctx BuildContext, constraints Constraints) Size {
 			totalFr += widthDim.FrValue()
 		} else {
 			// Fixed or auto - measure now
+			// For non-stretch cross-axis alignment, let children size naturally
+			childMinHeight := constraints.MinHeight
+			if r.CrossAlign != CrossAxisStretch {
+				childMinHeight = 0
+			}
 			childConstraints := Constraints{
 				MinWidth:  0,
 				MaxWidth:  availableWidth - totalFixedWidth - children[i].hInset,
-				MinHeight: constraints.MinHeight,
+				MinHeight: childMinHeight,
 				MaxHeight: constraints.MaxHeight - children[i].vInset,
 			}
 			size := layoutable.Layout(ctx, childConstraints)
@@ -142,10 +178,15 @@ func (r Row) Layout(ctx BuildContext, constraints Constraints) Size {
 			childWidth = int(float64(remainingWidth) * frValue / totalFr)
 		}
 
+		// For non-stretch cross-axis alignment, let children size naturally
+		childMinHeight := constraints.MinHeight
+		if r.CrossAlign != CrossAxisStretch {
+			childMinHeight = 0
+		}
 		childConstraints := Constraints{
 			MinWidth:  childWidth - children[i].hInset,
 			MaxWidth:  childWidth - children[i].hInset,
-			MinHeight: constraints.MinHeight,
+			MinHeight: childMinHeight,
 			MaxHeight: constraints.MaxHeight - children[i].vInset,
 		}
 		size := children[i].layoutable.Layout(ctx, childConstraints)
@@ -210,6 +251,7 @@ func (r Row) Render(ctx *RenderContext) {
 	type childInfo struct {
 		widthDim Dimension
 		width    int
+		height   int
 		isFr     bool
 	}
 
@@ -248,25 +290,28 @@ func (r Row) Render(ctx *RenderContext) {
 				}
 				size := layoutable.Layout(ctx.buildContext, childConstraints)
 				childWidth := size.Width
+				childHeight := size.Height
 				// Add padding, margin, and border to get total space needed
 				if styled, ok := built.(Styled); ok {
 					style := styled.GetStyle()
 					borderWidth := style.Border.Width()
 					childWidth += style.Padding.Horizontal() + style.Margin.Horizontal() + borderWidth*2
+					childHeight += style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
 				}
 				children[i].width = childWidth
+				children[i].height = childHeight
 				totalFixedWidth += childWidth
 			}
 		}
 	}
 
-	// Pass 2: Calculate fr widths
+	// Pass 2: Calculate fr widths and measure fr children heights
 	remainingWidth := availableWidth - totalFixedWidth
 	if remainingWidth < 0 {
 		remainingWidth = 0
 	}
 
-	for i := range children {
+	for i, child := range r.Children {
 		if !children[i].isFr {
 			continue
 		}
@@ -274,13 +319,73 @@ func (r Row) Render(ctx *RenderContext) {
 		if totalFr > 0 {
 			children[i].width = int(float64(remainingWidth) * frValue / totalFr)
 		}
+		// Measure height for Fr children
+		built := child.Build(ctx.buildContext)
+		if layoutable, ok := built.(Layoutable); ok {
+			childConstraints := Constraints{
+				MinWidth:  children[i].width,
+				MaxWidth:  children[i].width,
+				MinHeight: 0,
+				MaxHeight: ctx.Height,
+			}
+			size := layoutable.Layout(ctx.buildContext, childConstraints)
+			childHeight := size.Height
+			if styled, ok := built.(Styled); ok {
+				style := styled.GetStyle()
+				borderWidth := style.Border.Width()
+				childHeight += style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
+			}
+			children[i].height = childHeight
+		}
 	}
 
-	// Render children with calculated widths
+	// Calculate total content width for main axis alignment
+	totalContentWidth := 0
+	for _, child := range children {
+		totalContentWidth += child.width
+	}
+	if len(r.Children) > 1 {
+		totalContentWidth += r.Spacing * (len(r.Children) - 1)
+	}
+
+	// Calculate main axis starting offset
 	xOffset := 0
+	switch r.MainAlign {
+	case MainAxisStart:
+		xOffset = 0
+	case MainAxisCenter:
+		xOffset = (ctx.Width - totalContentWidth) / 2
+	case MainAxisEnd:
+		xOffset = ctx.Width - totalContentWidth
+	}
+	if xOffset < 0 {
+		xOffset = 0
+	}
+
+	// Render children with calculated widths and alignment
 	for i, child := range r.Children {
 		childWidth := children[i].width
-		ctx.RenderChild(i, child, xOffset, 0, childWidth, ctx.Height)
+		childHeight := children[i].height
+		renderHeight := childHeight
+
+		// Calculate cross-axis (vertical) offset for this child
+		yOffset := 0
+		switch r.CrossAlign {
+		case CrossAxisStretch:
+			yOffset = 0
+			renderHeight = ctx.Height
+		case CrossAxisStart:
+			yOffset = 0
+		case CrossAxisCenter:
+			yOffset = (ctx.Height - childHeight) / 2
+		case CrossAxisEnd:
+			yOffset = ctx.Height - childHeight
+		}
+		if yOffset < 0 {
+			yOffset = 0
+		}
+
+		ctx.RenderChild(i, child, xOffset, yOffset, childWidth, renderHeight)
 		xOffset += childWidth
 		// Add spacing after each child except the last
 		if i < len(r.Children)-1 {
@@ -291,14 +396,16 @@ func (r Row) Render(ctx *RenderContext) {
 
 // Column arranges its children vertically.
 type Column struct {
-	ID       string    // Optional unique identifier for the widget
-	Width    Dimension // Optional width (zero value = auto)
-	Height   Dimension // Optional height (zero value = auto)
-	Style    Style     // Optional styling (background color)
-	Spacing  int       // Space between children
-	Children []Widget
-	Click    func()     // Optional callback invoked when clicked
-	Hover    func(bool) // Optional callback invoked when hover state changes
+	ID         string         // Optional unique identifier for the widget
+	Width      Dimension      // Optional width (zero value = auto)
+	Height     Dimension      // Optional height (zero value = auto)
+	Style      Style          // Optional styling (background color)
+	Spacing    int            // Space between children
+	MainAlign  MainAxisAlign  // Main axis (vertical) alignment
+	CrossAlign CrossAxisAlign // Cross axis (horizontal) alignment
+	Children   []Widget
+	Click      func()     // Optional callback invoked when clicked
+	Hover      func(bool) // Optional callback invoked when hover state changes
 }
 
 // GetDimensions returns the width and height dimension preferences.
@@ -397,8 +504,13 @@ func (c Column) Layout(ctx BuildContext, constraints Constraints) Size {
 			totalFr += heightDim.FrValue()
 		} else {
 			// Fixed or auto - measure now
+			// For non-stretch cross-axis alignment, let children size naturally
+			childMinWidth := constraints.MinWidth
+			if c.CrossAlign != CrossAxisStretch {
+				childMinWidth = 0
+			}
 			childConstraints := Constraints{
-				MinWidth:  constraints.MinWidth,
+				MinWidth:  childMinWidth,
 				MaxWidth:  constraints.MaxWidth - children[i].hInset,
 				MinHeight: 0,
 				MaxHeight: availableHeight - totalFixedHeight - children[i].vInset,
@@ -431,8 +543,13 @@ func (c Column) Layout(ctx BuildContext, constraints Constraints) Size {
 			childHeight = int(float64(remainingHeight) * frValue / totalFr)
 		}
 
+		// For non-stretch cross-axis alignment, let children size naturally
+		childMinWidth := constraints.MinWidth
+		if c.CrossAlign != CrossAxisStretch {
+			childMinWidth = 0
+		}
 		childConstraints := Constraints{
-			MinWidth:  constraints.MinWidth,
+			MinWidth:  childMinWidth,
 			MaxWidth:  constraints.MaxWidth - children[i].hInset,
 			MinHeight: childHeight - children[i].vInset,
 			MaxHeight: childHeight - children[i].vInset,
@@ -499,6 +616,7 @@ func (c Column) Render(ctx *RenderContext) {
 	type childInfo struct {
 		heightDim Dimension
 		height    int
+		width     int
 		isFr      bool
 	}
 
@@ -537,25 +655,28 @@ func (c Column) Render(ctx *RenderContext) {
 				}
 				size := layoutable.Layout(ctx.buildContext, childConstraints)
 				childHeight := size.Height
+				childWidth := size.Width
 				// Add padding, margin, and border to get total space needed
 				if styled, ok := built.(Styled); ok {
 					style := styled.GetStyle()
 					borderWidth := style.Border.Width()
 					childHeight += style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
+					childWidth += style.Padding.Horizontal() + style.Margin.Horizontal() + borderWidth*2
 				}
 				children[i].height = childHeight
+				children[i].width = childWidth
 				totalFixedHeight += childHeight
 			}
 		}
 	}
 
-	// Pass 2: Calculate fr heights
+	// Pass 2: Calculate fr heights and measure fr children widths
 	remainingHeight := availableHeight - totalFixedHeight
 	if remainingHeight < 0 {
 		remainingHeight = 0
 	}
 
-	for i := range children {
+	for i, child := range c.Children {
 		if !children[i].isFr {
 			continue
 		}
@@ -563,13 +684,73 @@ func (c Column) Render(ctx *RenderContext) {
 		if totalFr > 0 {
 			children[i].height = int(float64(remainingHeight) * frValue / totalFr)
 		}
+		// Measure width for Fr children
+		built := child.Build(ctx.buildContext)
+		if layoutable, ok := built.(Layoutable); ok {
+			childConstraints := Constraints{
+				MinWidth:  0,
+				MaxWidth:  ctx.Width,
+				MinHeight: children[i].height,
+				MaxHeight: children[i].height,
+			}
+			size := layoutable.Layout(ctx.buildContext, childConstraints)
+			childWidth := size.Width
+			if styled, ok := built.(Styled); ok {
+				style := styled.GetStyle()
+				borderWidth := style.Border.Width()
+				childWidth += style.Padding.Horizontal() + style.Margin.Horizontal() + borderWidth*2
+			}
+			children[i].width = childWidth
+		}
 	}
 
-	// Render children with calculated heights
+	// Calculate total content height for main axis alignment
+	totalContentHeight := 0
+	for _, child := range children {
+		totalContentHeight += child.height
+	}
+	if len(c.Children) > 1 {
+		totalContentHeight += c.Spacing * (len(c.Children) - 1)
+	}
+
+	// Calculate main axis starting offset
 	yOffset := 0
+	switch c.MainAlign {
+	case MainAxisStart:
+		yOffset = 0
+	case MainAxisCenter:
+		yOffset = (ctx.Height - totalContentHeight) / 2
+	case MainAxisEnd:
+		yOffset = ctx.Height - totalContentHeight
+	}
+	if yOffset < 0 {
+		yOffset = 0
+	}
+
+	// Render children with calculated heights and alignment
 	for i, child := range c.Children {
 		childHeight := children[i].height
-		ctx.RenderChild(i, child, 0, yOffset, ctx.Width, childHeight)
+		childWidth := children[i].width
+		renderWidth := childWidth
+
+		// Calculate cross-axis (horizontal) offset for this child
+		xOffset := 0
+		switch c.CrossAlign {
+		case CrossAxisStretch:
+			xOffset = 0
+			renderWidth = ctx.Width
+		case CrossAxisStart:
+			xOffset = 0
+		case CrossAxisCenter:
+			xOffset = (ctx.Width - childWidth) / 2
+		case CrossAxisEnd:
+			xOffset = ctx.Width - childWidth
+		}
+		if xOffset < 0 {
+			xOffset = 0
+		}
+
+		ctx.RenderChild(i, child, xOffset, yOffset, renderWidth, childHeight)
 		yOffset += childHeight
 		// Add spacing after each child except the last
 		if i < len(c.Children)-1 {
