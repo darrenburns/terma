@@ -1,0 +1,24 @@
+site_name: Terma
+site_description: A declarative terminal UI framework for Go
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: indigo
+    accent: cyan
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Widgets: widgets.md
+  - Signals: signals.md
+  - Layout: layout.md
+  - Styling: styling.md
+  - Focus & Keyboard: focus-keyboard.md
+  - Examples: examples.md

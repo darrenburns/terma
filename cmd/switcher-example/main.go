@@ -230,6 +230,7 @@ func (d *SwitcherDemo) Keybinds() []t.Keybind {
 
 func main() {
 	app := NewSwitcherDemo()
+	t.SetDebugLogging(true)
 	if err := t.Run(app); err != nil {
 		log.Fatal(err)
 	}

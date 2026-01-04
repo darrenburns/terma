@@ -24,8 +24,20 @@ type KeybindProvider interface {
 // matchKeybind checks if the event matches any keybind and executes its action.
 // Returns true if a keybind was matched and executed.
 func matchKeybind(event KeyEvent, keybinds []Keybind) bool {
+	eventKey := event.Key()
+
 	for _, kb := range keybinds {
-		if event.MatchString(kb.Key) {
+		matches := event.MatchString(kb.Key)
+
+		// WORKAROUND: ultraviolet's MatchString has a bug with "+" character.
+		// It uses "+" as a delimiter for modifiers (e.g., "ctrl+a"), so a literal
+		// "+" gets split into empty strings and fails to match.
+		// Fall back to direct string comparison when MatchString fails.
+		if !matches && eventKey == kb.Key {
+			matches = true
+		}
+
+		if matches {
 			if kb.Action != nil {
 				kb.Action()
 			}
