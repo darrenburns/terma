@@ -44,8 +44,13 @@ type Row struct {
 }
 
 // GetDimensions returns the width and height dimension preferences.
+// Row defaults to Fr(1) width if not explicitly set.
 func (r Row) GetDimensions() (width, height Dimension) {
-	return r.Width, r.Height
+	w := r.Width
+	if w.IsUnset() {
+		w = Fr(1)
+	}
+	return w, r.Height
 }
 
 // GetStyle returns the style of the row.
@@ -408,8 +413,13 @@ type Column struct {
 }
 
 // GetDimensions returns the width and height dimension preferences.
+// Column defaults to Fr(1) height if not explicitly set.
 func (c Column) GetDimensions() (width, height Dimension) {
-	return c.Width, c.Height
+	h := c.Height
+	if h.IsUnset() {
+		h = Fr(1)
+	}
+	return c.Width, h
 }
 
 // GetStyle returns the style of the column.
