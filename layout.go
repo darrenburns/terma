@@ -146,7 +146,7 @@ func (r Row) Layout(ctx BuildContext, constraints Constraints) Size {
 			}
 			childConstraints := Constraints{
 				MinWidth:  0,
-				MaxWidth:  availableWidth - totalFixedWidth - children[i].hInset,
+				MaxWidth:  100000, // Unconstrained width - let children take natural size
 				MinHeight: childMinHeight,
 				MaxHeight: constraints.MaxHeight - children[i].vInset,
 			}
@@ -292,7 +292,7 @@ func (r Row) Render(ctx *RenderContext) {
 				}
 				childConstraints := Constraints{
 					MinWidth:  0,
-					MaxWidth:  availableWidth - totalFixedWidth - hInset,
+					MaxWidth:  100000, // Unconstrained width - let children take natural size
 					MinHeight: 0,
 					MaxHeight: ctx.Height - vInset,
 				}
@@ -512,7 +512,7 @@ func (c Column) Layout(ctx BuildContext, constraints Constraints) Size {
 				MinWidth:  childMinWidth,
 				MaxWidth:  constraints.MaxWidth - children[i].hInset,
 				MinHeight: 0,
-				MaxHeight: availableHeight - totalFixedHeight - children[i].vInset,
+				MaxHeight: 100000, // Unconstrained height - let children take natural size
 			}
 			size := layoutable.Layout(ctx, childConstraints)
 			children[i].size = size
@@ -658,7 +658,7 @@ func (c Column) Render(ctx *RenderContext) {
 					MinWidth:  0,
 					MaxWidth:  ctx.Width - hInset,
 					MinHeight: 0,
-					MaxHeight: availableHeight - totalFixedHeight - vInset,
+					MaxHeight: 100000, // Unconstrained height - let children take natural size
 				}
 				size := layoutable.Layout(ctx.buildContext, childConstraints)
 				children[i].height = size.Height + vInset

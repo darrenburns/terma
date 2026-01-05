@@ -54,6 +54,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 	return t.Column{
 		ID:      "root",
 		Height:  t.Fr(1),
+		Width:   t.Fr(1),
 		Spacing: 1,
 		Style: t.Style{
 			BackgroundColor: theme.Background,
@@ -80,6 +81,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 				Spacing: 2,
 				Children: []t.Widget{
 					t.Text{
+						Width:   t.Cells(10),
 						Content: "Square Border",
 						Style: t.Style{
 							Border:  t.SquareBorder(theme.Info),
@@ -87,6 +89,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 						},
 					},
 					t.Text{
+						Width:   t.Cells(10),
 						Content: "Rounded Border",
 						Style: t.Style{
 							Border:  t.RoundedBorder(theme.Secondary),

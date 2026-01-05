@@ -84,30 +84,50 @@ func NewRenderContext(terminal *uv.Terminal, width, height int, fc *FocusCollect
 }
 
 // SubContext creates a child context offset from this one.
-// The child context is clipped to not exceed the parent's bounds.
+// Dimensions are preserved for layout; clipping is handled via viewport bounds.
 func (ctx *RenderContext) SubContext(xOffset, yOffset, width, height int) *RenderContext {
-	// Calculate remaining space in parent
-	remainingWidth := ctx.Width - xOffset
-	// For scrolled contexts, use virtualHeight to allow rendering at virtual positions
-	// The actual viewport clipping is handled by draw functions using viewportY/viewportHeight
-	parentHeight := ctx.Height
-	if ctx.virtualHeight > 0 {
-		parentHeight = ctx.virtualHeight
-	}
-	remainingHeight := parentHeight - yOffset
-
-	// Clamp dimensions to parent bounds
-	if width > remainingWidth {
-		width = remainingWidth
-	}
-	if height > remainingHeight {
-		height = remainingHeight
-	}
+	// Ensure non-negative dimensions
 	if width < 0 {
 		width = 0
 	}
 	if height < 0 {
 		height = 0
+	}
+
+	// Calculate screen position of this sub-context
+	screenY := ctx.Y + yOffset
+
+	// Determine the clipping bounds from parent (viewport if set, otherwise full bounds)
+	var clipTop, clipBottom int
+	if ctx.viewportHeight > 0 {
+		clipTop = ctx.viewportY
+		clipBottom = ctx.viewportY + ctx.viewportHeight
+	} else {
+		clipTop = ctx.Y
+		clipBottom = ctx.Y + ctx.Height
+	}
+
+	// Calculate this context's area
+	contextTop := screenY
+	contextBottom := screenY + height
+
+	// Determine viewport for this context
+	var viewportY, viewportHeight int
+	if contextBottom <= clipTop || contextTop >= clipBottom {
+		// Content entirely outside visible area
+		viewportY = clipTop
+		viewportHeight = 0
+	} else {
+		// Content at least partially visible - extend viewport to clip boundary
+		// This allows overflow to render up to the terminal/parent edge
+		viewportY = contextTop
+		if viewportY < clipTop {
+			viewportY = clipTop
+		}
+		viewportHeight = clipBottom - viewportY
+		if viewportHeight < 0 {
+			viewportHeight = 0
+		}
 	}
 
 	return &RenderContext{
@@ -122,8 +142,8 @@ func (ctx *RenderContext) SubContext(xOffset, yOffset, width, height int) *Rende
 		widgetRegistry: ctx.widgetRegistry,
 		scrollYOffset:  ctx.scrollYOffset,
 		virtualHeight:  ctx.virtualHeight,
-		viewportY:      ctx.viewportY,
-		viewportHeight: ctx.viewportHeight,
+		viewportY:      viewportY,
+		viewportHeight: viewportHeight,
 		inheritedBgAt:  ctx.inheritedBgAt,
 	}
 }
