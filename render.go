@@ -1205,6 +1205,12 @@ func (r *Renderer) ScrollableAt(x, y int) *Scrollable {
 	return r.widgetRegistry.ScrollableAt(x, y)
 }
 
+// ScrollablesAt returns all Scrollable widgets at the given coordinates,
+// ordered from innermost to outermost.
+func (r *Renderer) ScrollablesAt(x, y int) []*Scrollable {
+	return r.widgetRegistry.ScrollablesAt(x, y)
+}
+
 // HasFloats returns true if there are any floating widgets.
 func (r *Renderer) HasFloats() bool {
 	return r.floatCollector.Len() > 0

@@ -286,21 +286,21 @@ func Run(root Widget) error {
 				}
 
 			case uv.MouseWheelEvent:
-				// Find the scrollable widget under the cursor (may not be focused)
-				scrollable := renderer.ScrollableAt(ev.X, ev.Y)
-				if scrollable != nil {
-					Log("MouseWheelEvent %v at X=%d Y=%d on Scrollable[%s]", ev.Button, ev.X, ev.Y, scrollable.ID)
+				// Find all scrollable widgets under the cursor (innermost to outermost)
+				// and try each until one handles the scroll (bubble up if at limit)
+				for _, scrollable := range renderer.ScrollablesAt(ev.X, ev.Y) {
+					var handled bool
 					switch ev.Button {
 					case uv.MouseWheelUp:
-						scrollable.ScrollUp(1)
+						handled = scrollable.ScrollUp(1)
 					case uv.MouseWheelDown:
-						scrollable.ScrollDown(1)
+						handled = scrollable.ScrollDown(1)
 					}
-					// Re-render after scroll
-					display()
-				} else {
-					Log("MouseWheelEvent %v at X=%d Y=%d (no scrollable)", ev.Button, ev.X, ev.Y)
+					if handled {
+						break
+					}
 				}
+				display()
 
 			default:
 				// Log other event types for debugging

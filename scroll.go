@@ -88,21 +88,29 @@ func (s *ScrollState) ScrollToView(y, height int) {
 }
 
 // ScrollUp scrolls up by the given number of lines.
+// Returns true if scrolling was handled (callback handled it or offset changed).
+// Returns false if already at the top and no callback handled it.
 // If OnScrollUp is set and returns true, viewport scrolling is suppressed.
-func (s *ScrollState) ScrollUp(lines int) {
+func (s *ScrollState) ScrollUp(lines int) bool {
 	if s.OnScrollUp != nil && s.OnScrollUp(lines) {
-		return // Callback handled scrolling
+		return true // Callback handled scrolling
 	}
-	s.SetOffset(s.Offset.Peek() - lines)
+	oldOffset := s.Offset.Peek()
+	s.SetOffset(oldOffset - lines)
+	return s.Offset.Peek() != oldOffset
 }
 
 // ScrollDown scrolls down by the given number of lines.
+// Returns true if scrolling was handled (callback handled it or offset changed).
+// Returns false if already at the bottom and no callback handled it.
 // If OnScrollDown is set and returns true, viewport scrolling is suppressed.
-func (s *ScrollState) ScrollDown(lines int) {
+func (s *ScrollState) ScrollDown(lines int) bool {
 	if s.OnScrollDown != nil && s.OnScrollDown(lines) {
-		return // Callback handled scrolling
+		return true // Callback handled scrolling
 	}
-	s.SetOffset(s.Offset.Peek() + lines)
+	oldOffset := s.Offset.Peek()
+	s.SetOffset(oldOffset + lines)
+	return s.Offset.Peek() != oldOffset
 }
 
 // maxOffset returns the maximum valid scroll offset.
@@ -234,19 +242,21 @@ func (s Scrollable) clampScrollOffset() {
 }
 
 // ScrollUp scrolls the content up by the given number of lines.
-func (s Scrollable) ScrollUp(lines int) {
+// Returns true if scrolling was handled, false if scroll is disabled or at limit.
+func (s Scrollable) ScrollUp(lines int) bool {
 	if !s.canScroll() {
-		return
+		return false
 	}
-	s.State.ScrollUp(lines)
+	return s.State.ScrollUp(lines)
 }
 
 // ScrollDown scrolls the content down by the given number of lines.
-func (s Scrollable) ScrollDown(lines int) {
+// Returns true if scrolling was handled, false if scroll is disabled or at limit.
+func (s Scrollable) ScrollDown(lines int) bool {
 	if !s.canScroll() {
-		return
+		return false
 	}
-	s.State.ScrollDown(lines)
+	return s.State.ScrollDown(lines)
 }
 
 // Layout computes the size of the scrollable widget.

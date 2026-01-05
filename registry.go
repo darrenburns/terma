@@ -95,6 +95,28 @@ func (r *WidgetRegistry) ScrollableAt(x, y int) *Scrollable {
 	return nil
 }
 
+// ScrollablesAt returns all Scrollable widgets containing the point (x, y),
+// ordered from innermost to outermost.
+// Since widgets are recorded in render order (parents before children),
+// we search back-to-front and collect all matching scrollables.
+func (r *WidgetRegistry) ScrollablesAt(x, y int) []*Scrollable {
+	var scrollables []*Scrollable
+	for i := len(r.entries) - 1; i >= 0; i-- {
+		entry := &r.entries[i]
+		if entry.Bounds.Contains(x, y) {
+			// Check for pointer first (e.g., &Scrollable{...})
+			if scrollable, ok := entry.Widget.(*Scrollable); ok {
+				scrollables = append(scrollables, scrollable)
+			}
+			// Then check for value (e.g., Scrollable{...})
+			if scrollable, ok := entry.Widget.(Scrollable); ok {
+				scrollables = append(scrollables, &scrollable)
+			}
+		}
+	}
+	return scrollables
+}
+
 // Reset clears all entries for a new render pass.
 func (r *WidgetRegistry) Reset() {
 	r.entries = r.entries[:0]
