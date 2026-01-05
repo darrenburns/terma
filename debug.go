@@ -171,18 +171,20 @@ func (d *DebugOverlay) Build(ctx BuildContext) Widget {
 		focusedType = focusedType[:37] + "..."
 	}
 
+	theme := ctx.Theme()
+
 	return Floating{
 		Visible: true,
 		Config: FloatConfig{
-			Position: FloatPositionTopCenter,
-			Offset:   Offset{Y: 1},
+			Position: FloatPositionBottomRight,
+			Offset:   Offset{X: -1, Y: -1},
 			Modal:    false,
 		},
 		Child: Column{
 			Style: Style{
-				BackgroundColor: RGB(40, 40, 40),
-				ForegroundColor: RGB(255, 255, 255),
-				Border:          Border{Style: BorderRounded, Color: RGB(0, 255, 255)},
+				BackgroundColor: theme.Surface,
+				ForegroundColor: theme.Text,
+				Border:          Border{Style: BorderRounded, Color: theme.Primary},
 				Padding:         EdgeInsetsAll(1),
 			},
 			Spacing: 0,
@@ -190,7 +192,7 @@ func (d *DebugOverlay) Build(ctx BuildContext) Widget {
 				Text{
 					Content: "DEBUG METRICS",
 					Style: Style{
-						ForegroundColor: ctx.Theme().Accent,
+						ForegroundColor: theme.Accent,
 					},
 				},
 				Text{Content: fmt.Sprintf("Build: %.2fms", buildTimeMs)},
@@ -200,7 +202,7 @@ func (d *DebugOverlay) Build(ctx BuildContext) Widget {
 				Text{
 					Content: fmt.Sprintf("Type: %s", focusedType),
 					Style: Style{
-						ForegroundColor: ctx.Theme().TextMuted,
+						ForegroundColor: theme.TextMuted,
 					},
 				},
 			},

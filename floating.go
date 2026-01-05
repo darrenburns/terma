@@ -13,10 +13,18 @@ const (
 	FloatPositionAbsolute FloatPosition = iota
 	// FloatPositionCenter centers the float on the screen.
 	FloatPositionCenter
+	// FloatPositionTopLeft positions the float at the top left of the screen.
+	FloatPositionTopLeft
 	// FloatPositionTopCenter positions the float at the top center of the screen.
 	FloatPositionTopCenter
+	// FloatPositionTopRight positions the float at the top right of the screen.
+	FloatPositionTopRight
+	// FloatPositionBottomLeft positions the float at the bottom left of the screen.
+	FloatPositionBottomLeft
 	// FloatPositionBottomCenter positions the float at the bottom center of the screen.
 	FloatPositionBottomCenter
+	// FloatPositionBottomRight positions the float at the bottom right of the screen.
+	FloatPositionBottomRight
 )
 
 // AnchorPoint specifies where on an anchor widget to attach a floating widget.
@@ -275,11 +283,23 @@ func calculateAbsolutePosition(position FloatPosition, screenWidth, screenHeight
 	case FloatPositionCenter:
 		x = (screenWidth - floatWidth) / 2
 		y = (screenHeight - floatHeight) / 2
+	case FloatPositionTopLeft:
+		x = 0
+		y = 0
 	case FloatPositionTopCenter:
 		x = (screenWidth - floatWidth) / 2
 		y = 0
+	case FloatPositionTopRight:
+		x = screenWidth - floatWidth
+		y = 0
+	case FloatPositionBottomLeft:
+		x = 0
+		y = screenHeight - floatHeight
 	case FloatPositionBottomCenter:
 		x = (screenWidth - floatWidth) / 2
+		y = screenHeight - floatHeight
+	case FloatPositionBottomRight:
+		x = screenWidth - floatWidth
 		y = screenHeight - floatHeight
 	case FloatPositionAbsolute:
 		x = 0
