@@ -96,6 +96,18 @@ func Run(root Widget) error {
 			renderer.Render(root)
 		}
 
+		// Position terminal cursor for IME support (emoji picker, input methods)
+		// Must be before Display() since MoveTo only takes effect on next Display call
+		if focusedID := focusManager.FocusedID(); focusedID != "" {
+			if entry := renderer.WidgetByID(focusedID); entry != nil {
+				if textInput, ok := entry.Widget.(TextInput); ok {
+					cursorX := textInput.CursorScreenPosition(entry.Bounds.X)
+					cursorY := entry.Bounds.Y
+					t.MoveTo(cursorX, cursorY)
+				}
+			}
+		}
+
 		t.Display()
 
 		elapsed := time.Since(startTime)

@@ -616,3 +616,14 @@ func (t TextInput) OnHover(hovered bool) {
 		t.Hover(hovered)
 	}
 }
+
+// CursorScreenPosition returns the screen X position of the cursor
+// given the widget's screen X position. Used for IME positioning.
+func (t TextInput) CursorScreenPosition(widgetX int) int {
+	if t.State == nil {
+		return widgetX
+	}
+	cursorX := t.State.cursorDisplayX()
+	scrollOffset := t.State.scrollOffset
+	return widgetX + cursorX - scrollOffset
+}
