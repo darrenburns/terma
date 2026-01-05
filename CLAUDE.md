@@ -11,7 +11,10 @@ This project is not currently in use by any developers, so maintaining backwards
 ## Build Commands
 
 ```bash
-# Run an example
+# Run an example.
+# IMPORTANT: You (Claude) CANNOT run the examples in this way.
+# Where you want to run an example, you should instead provide the user with the command you wish
+# to run, and instructions you want them to follow. The user can supply any required log lines to you.
 go run ./cmd/example/main.go
 go run ./cmd/simple-list-example/main.go
 

@@ -120,11 +120,12 @@ func (s *ScrollState) canScroll() bool {
 }
 
 // updateLayout is called by Scrollable to update viewport/content dimensions.
+// Note: Does not clamp offset here because Layout may be called multiple times
+// with different constraints (e.g., by floating widgets). Clamping is deferred
+// to Render where we have the final dimensions.
 func (s *ScrollState) updateLayout(viewportHeight, contentHeight int) {
 	s.viewportHeight = viewportHeight
 	s.contentHeight = contentHeight
-	// Clamp offset in case content shrunk
-	s.SetOffset(s.Offset.Peek())
 }
 
 // Scrollable is a container widget that enables vertical scrolling of its child
@@ -257,6 +258,14 @@ func (s Scrollable) Layout(ctx BuildContext, constraints Constraints) Size {
 	// Build the child first
 	built := s.Child.Build(ctx)
 
+	// Calculate Scrollable's own style insets (border, padding, margin)
+	// These will be applied by RenderChild when rendering this Scrollable,
+	// reducing the viewport available for scrolling
+	selfStyle := s.GetStyle()
+	selfBorderWidth := selfStyle.Border.Width()
+	selfHInset := selfStyle.Padding.Horizontal() + selfStyle.Margin.Horizontal() + selfBorderWidth*2
+	selfVInset := selfStyle.Padding.Vertical() + selfStyle.Margin.Vertical() + selfBorderWidth*2
+
 	// Determine if we need space for scrollbar
 	scrollbarWidth := 0
 	if !s.DisableScroll {
@@ -293,15 +302,23 @@ func (s Scrollable) Layout(ctx BuildContext, constraints Constraints) Size {
 		childWidth = size.Width
 		// Add child's vertical insets since RenderChild will apply them
 		contentHeight = size.Height + childVInset
+		Log("Scrollable[%s].Layout child: contentMaxWidth=%d, size.Height=%d, childVInset=%d, contentHeight=%d",
+			s.ID, contentMaxWidth, size.Height, childVInset, contentHeight)
 	} else {
 		contentHeight = constraints.MaxHeight
 	}
 
-	// Determine viewport dimensions
+	// Determine content dimensions (what RenderChild will use for the sub-context)
+	// For Cells(n), n is the OUTER size, so content size = n - selfInsets
+	// For Fr, constraints are already reduced by parent for our insets
+	// For Auto, use the natural content size
 	var width int
 	switch {
 	case s.Width.IsCells():
-		width = s.Width.CellsValue()
+		width = s.Width.CellsValue() - selfHInset
+		if width < 0 {
+			width = 0
+		}
 	case s.Width.IsFr():
 		width = constraints.MaxWidth
 	default: // Auto
@@ -312,7 +329,10 @@ func (s Scrollable) Layout(ctx BuildContext, constraints Constraints) Size {
 	var height int
 	switch {
 	case s.Height.IsCells():
-		height = s.Height.CellsValue()
+		height = s.Height.CellsValue() - selfVInset
+		if height < 0 {
+			height = 0
+		}
 	case s.Height.IsFr():
 		height = constraints.MaxHeight
 	default: // Auto
@@ -334,11 +354,11 @@ func (s Scrollable) Layout(ctx BuildContext, constraints Constraints) Size {
 		height = constraints.MaxHeight
 	}
 
-	// Update state with layout info
+	// Update state with layout info (clamping is deferred to Render)
+	// height is now the content/viewport height (already accounts for our insets)
+	Log("Scrollable[%s].Layout: viewportHeight=%d, contentHeight=%d, maxOffset=%d",
+		s.ID, height, contentHeight, contentHeight-height)
 	s.State.updateLayout(height, contentHeight)
-
-	// Clamp scroll offset after layout in case content shrunk
-	s.clampScrollOffset()
 
 	return Size{Width: width, Height: height}
 }
@@ -349,18 +369,48 @@ func (s Scrollable) Render(ctx *RenderContext) {
 		return
 	}
 
-	scrollOffset := s.getScrollOffset()
-	contentHeight := s.State.contentHeight
-
-	// Determine if we need to show scrollbar
-	needsScrollbar := s.canScroll()
+	// Determine scrollbar width for content area calculation
 	scrollbarWidth := 0
-	if needsScrollbar {
+	if !s.DisableScroll {
 		scrollbarWidth = 1
 	}
 
 	// Content area width (excluding scrollbar)
 	contentWidth := ctx.Width - scrollbarWidth
+
+	// Calculate content height based on actual render dimensions.
+	// This is necessary because Layout may have been called multiple times
+	// with different constraints (e.g., by floating widgets).
+	built := s.Child.Build(ctx.buildContext)
+	var childVInset int
+	if styled, ok := built.(Styled); ok {
+		style := styled.GetStyle()
+		borderWidth := style.Border.Width()
+		childVInset = style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
+	}
+
+	contentHeight := ctx.Height // fallback
+	if layoutable, ok := built.(Layoutable); ok {
+		childConstraints := Constraints{
+			MinWidth:  0,
+			MaxWidth:  contentWidth,
+			MinHeight: 0,
+			MaxHeight: 100000, // Large value to allow natural height
+		}
+		size := layoutable.Layout(ctx.buildContext, childConstraints)
+		contentHeight = size.Height + childVInset
+	}
+
+	// Update state with actual render dimensions and clamp offset
+	s.State.updateLayout(ctx.Height, contentHeight)
+	s.clampScrollOffset()
+
+	scrollOffset := s.getScrollOffset()
+	Log("Scrollable[%s].Render: ctx.Width=%d, ctx.Height=%d, state.viewportHeight=%d, state.contentHeight=%d, scrollOffset=%d, maxOffset=%d",
+		s.ID, ctx.Width, ctx.Height, s.State.viewportHeight, s.State.contentHeight, scrollOffset, s.State.maxOffset())
+
+	// Determine if we need to show scrollbar (after updating state)
+	needsScrollbar := s.canScroll()
 
 	// Create a scrolled sub-context for the child
 	childCtx := ctx.ScrolledSubContext(0, 0, contentWidth, ctx.Height, scrollOffset, contentHeight)
@@ -560,8 +610,11 @@ func (s Scrollable) OnKey(event KeyEvent) bool {
 		Log("Scrollable[%s].OnKey: home, offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
 		return true
 	case event.MatchString("end", "G"):
-		s.setScrollOffset(s.maxScrollOffset())
-		Log("Scrollable[%s].OnKey: end, offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
+		maxOff := s.maxScrollOffset()
+		Log("Scrollable[%s].OnKey: end BEFORE - stateViewport=%d, stateContent=%d, maxOffset=%d",
+			s.ID, s.State.viewportHeight, s.State.contentHeight, maxOff)
+		s.setScrollOffset(maxOff)
+		Log("Scrollable[%s].OnKey: end AFTER - offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
 		return true
 	}
 

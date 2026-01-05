@@ -224,6 +224,7 @@ func (t Text) renderPlain(ctx *RenderContext) {
 
 	// Get lines with wrapping applied
 	lines := wrapText(t.Content, ctx.Width, t.Wrap)
+	Log("Text.renderPlain: ctx.Width=%d, ctx.Height=%d, numLines=%d", ctx.Width, ctx.Height, len(lines))
 
 	for i := 0; i < ctx.Height; i++ {
 		var line string
