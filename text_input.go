@@ -295,16 +295,17 @@ func (s *TextInputState) clampCursor() {
 
 // TextInput is a single-line focusable text entry widget.
 type TextInput struct {
-	ID          string           // Required for focus management
-	State       *TextInputState  // Required - holds text and cursor position
-	Placeholder string           // Text shown when empty and unfocused
-	Width       Dimension        // Optional width
-	Height      Dimension        // Ignored (always 1 for single-line)
-	Style       Style            // Optional styling
-	OnChange    func(text string) // Callback when text changes
-	OnSubmit    func(text string) // Callback when Enter pressed
-	Click       func()           // Optional click callback
-	Hover       func(bool)       // Optional hover callback
+	ID             string           // Required for focus management
+	State          *TextInputState  // Required - holds text and cursor position
+	Placeholder    string           // Text shown when empty and unfocused
+	Width          Dimension        // Optional width
+	Height         Dimension        // Ignored (always 1 for single-line)
+	Style          Style            // Optional styling
+	OnChange       func(text string) // Callback when text changes
+	OnSubmit       func(text string) // Callback when Enter pressed
+	Click          func()           // Optional click callback
+	Hover          func(bool)       // Optional hover callback
+	ExtraKeybinds  []Keybind        // Optional additional keybinds (checked before defaults)
 }
 
 // WidgetID returns the text input's unique identifier.
@@ -318,8 +319,9 @@ func (t TextInput) IsFocusable() bool {
 }
 
 // Keybinds returns the declarative keybindings for this text input.
+// ExtraKeybinds are checked first, allowing custom behavior to override defaults.
 func (t TextInput) Keybinds() []Keybind {
-	return []Keybind{
+	defaults := []Keybind{
 		{Key: "enter", Name: "Submit", Action: t.submit},
 		// Cursor movement
 		{Key: "left", Action: t.cursorLeft, Hidden: true},
@@ -341,6 +343,11 @@ func (t TextInput) Keybinds() []Keybind {
 		{Key: "ctrl+w", Action: t.deleteWordBackward, Hidden: true},
 		{Key: "alt+backspace", Action: t.deleteWordBackward, Hidden: true},
 	}
+	// Prepend extra keybinds so they're checked first
+	if len(t.ExtraKeybinds) > 0 {
+		return append(t.ExtraKeybinds, defaults...)
+	}
+	return defaults
 }
 
 // Keybind action methods

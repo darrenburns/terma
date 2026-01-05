@@ -2,6 +2,17 @@ package terma
 
 import "fmt"
 
+// pendingFocusID holds the ID of a widget that should receive focus after the next render.
+// Set via RequestFocus() and consumed by the app loop.
+var pendingFocusID string
+
+// RequestFocus requests that the widget with the given ID receive focus
+// after the current render cycle completes. This can be called from anywhere,
+// such as keybind actions or callbacks.
+func RequestFocus(id string) {
+	pendingFocusID = id
+}
+
 // BuildContext provides access to framework state during widget building.
 // It is passed to Widget.Build() to allow widgets to access focus state,
 // hover state, and other framework features in a declarative way.
@@ -171,4 +182,25 @@ func (ctx BuildContext) HoveredID() string {
 //	}
 func (ctx BuildContext) Theme() ThemeData {
 	return getTheme()
+}
+
+// RequestFocus requests that the widget with the given ID receive focus
+// after the current render cycle completes. This is useful for programmatically
+// moving focus, such as when showing inline edit fields.
+//
+// Example:
+//
+//	func (a *App) startEdit() {
+//	    a.editingIndex.Set(currentIndex)
+//	    // Focus will be applied after the next render
+//	}
+//
+//	func (a *App) Build(ctx BuildContext) Widget {
+//	    if a.editingIndex.Get() >= 0 {
+//	        ctx.RequestFocus("edit-input")
+//	    }
+//	    // ...
+//	}
+func (ctx BuildContext) RequestFocus(id string) {
+	pendingFocusID = id
 }

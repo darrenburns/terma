@@ -343,18 +343,19 @@ func (s *ListState[T]) SelectRange(from, to int) {
 //	// Remove item at runtime:
 //	state.RemoveAt(0)
 type List[T any] struct {
-	ID          string                                          // Optional unique identifier
-	State       *ListState[T]                                   // Required - holds items and cursor position
-	OnSelect    func(item T)                                    // Callback invoked when Enter is pressed on an item
-	ScrollState *ScrollState                                    // Optional state for scroll-into-view
-	RenderItem  func(item T, active bool, selected bool) Widget // Function to render each item (uses default if nil)
-	ItemHeight  int                                             // Height of each item in cells (default 1, must be uniform)
-	MultiSelect bool                                            // Enable multi-select mode (space to toggle, shift+move to extend)
-	Width       Dimension                                       // Optional width (zero value = auto)
-	Height      Dimension                                       // Optional height (zero value = auto)
-	Style       Style                                           // Optional styling
-	Click       func()                                          // Optional callback invoked when clicked
-	Hover       func(bool)                                      // Optional callback invoked when hover state changes
+	ID             string                                          // Optional unique identifier
+	State          *ListState[T]                                   // Required - holds items and cursor position
+	OnSelect       func(item T)                                    // Callback invoked when Enter is pressed on an item
+	OnCursorChange func(item T)                                    // Callback invoked when cursor moves to a different item
+	ScrollState    *ScrollState                                    // Optional state for scroll-into-view
+	RenderItem     func(item T, active bool, selected bool) Widget // Function to render each item (uses default if nil)
+	ItemHeight     int                                             // Height of each item in cells (default 1, must be uniform)
+	MultiSelect    bool                                            // Enable multi-select mode (space to toggle, shift+move to extend)
+	Width          Dimension                                       // Optional width (zero value = auto)
+	Height         Dimension                                       // Optional height (zero value = auto)
+	Style          Style                                           // Optional styling
+	Click          func()                                          // Optional callback invoked when clicked
+	Hover          func(bool)                                      // Optional callback invoked when hover state changes
 }
 
 // WidgetID returns the widget's unique identifier.
@@ -544,21 +545,31 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 		return true
 
 	case event.MatchString("up", "k"):
+		// If at top, don't handle - let it bubble for cross-widget navigation
+		if cursorIdx == 0 {
+			return false
+		}
 		if l.MultiSelect {
 			l.State.ClearSelection()
 			l.State.ClearAnchor()
 		}
 		l.State.SelectPrevious()
 		l.scrollCursorIntoView()
+		l.notifyCursorChange()
 		return true
 
 	case event.MatchString("down", "j"):
+		// If at bottom, don't handle - let it bubble for cross-widget navigation
+		if cursorIdx >= itemCount-1 {
+			return false
+		}
 		if l.MultiSelect {
 			l.State.ClearSelection()
 			l.State.ClearAnchor()
 		}
 		l.State.SelectNext()
 		l.scrollCursorIntoView()
+		l.notifyCursorChange()
 		return true
 
 	case event.MatchString("home", "g"):
@@ -568,6 +579,7 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 		}
 		l.State.SelectFirst()
 		l.scrollCursorIntoView()
+		l.notifyCursorChange()
 		return true
 
 	case event.MatchString("end", "G"):
@@ -577,6 +589,7 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 		}
 		l.State.SelectLast()
 		l.scrollCursorIntoView()
+		l.notifyCursorChange()
 		return true
 
 	case event.MatchString("pgup", "ctrl+u"):
@@ -590,6 +603,7 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 		}
 		l.State.SelectIndex(newCursor)
 		l.scrollCursorIntoView()
+		l.notifyCursorChange()
 		return true
 
 	case event.MatchString("pgdown", "ctrl+d"):
@@ -603,6 +617,7 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 		}
 		l.State.SelectIndex(newCursor)
 		l.scrollCursorIntoView()
+		l.notifyCursorChange()
 		return true
 	}
 
@@ -709,11 +724,13 @@ func (l List[T]) registerScrollCallbacks() {
 	l.ScrollState.OnScrollUp = func(lines int) bool {
 		l.moveCursorUp(lines)
 		l.scrollCursorIntoView()
+		l.notifyCursorChange()
 		return true // We handle scrolling via scrollCursorIntoView
 	}
 	l.ScrollState.OnScrollDown = func(lines int) bool {
 		l.moveCursorDown(lines)
 		l.scrollCursorIntoView()
+		l.notifyCursorChange()
 		return true // We handle scrolling via scrollCursorIntoView
 	}
 }
@@ -743,6 +760,16 @@ func (l List[T]) moveCursorDown(count int) {
 		newCursor = itemCount - 1
 	}
 	l.State.SelectIndex(newCursor)
+}
+
+// notifyCursorChange calls OnCursorChange with the current item if the callback is set.
+func (l List[T]) notifyCursorChange() {
+	if l.OnCursorChange == nil || l.State == nil {
+		return
+	}
+	if item, ok := l.State.SelectedItem(); ok {
+		l.OnCursorChange(item)
+	}
 }
 
 // clampInt clamps value to the range [min, max].

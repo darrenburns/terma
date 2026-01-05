@@ -88,6 +88,16 @@ func Run(root Widget) error {
 
 		focusables := renderer.Render(root)
 		focusManager.SetFocusables(focusables)
+
+		// Apply pending focus request from ctx.RequestFocus()
+		if pendingFocusID != "" {
+			focusManager.FocusByID(pendingFocusID)
+			pendingFocusID = ""
+			// Update the signal and re-render so the focused widget shows focus style
+			focusedSignal.Set(focusManager.Focused())
+			renderer.Render(root)
+		}
+
 		// Auto-focus into modal floats when they open
 		if modalTarget := renderer.ModalFocusTarget(); modalTarget != "" {
 			focusManager.FocusByID(modalTarget)
