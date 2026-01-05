@@ -165,7 +165,7 @@ func (p *markupParser) parseTagContent(content string) SpanStyle {
 			style.Italic = true
 			continue
 		case "underline", "u":
-			style.Underline = true
+			style.Underline = UnderlineSingle
 			continue
 		}
 

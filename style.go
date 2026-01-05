@@ -121,21 +121,54 @@ func (b Border) Width() int {
 	return 1
 }
 
+// UnderlineStyle defines the visual style of underlined text.
+type UnderlineStyle int
+
+// Underline style constants.
+const (
+	UnderlineNone UnderlineStyle = iota
+	UnderlineSingle
+	UnderlineDouble
+	UnderlineCurly
+	UnderlineDotted
+	UnderlineDashed
+)
+
 // Style defines the visual appearance of a widget.
 type Style struct {
 	ForegroundColor Color
 	BackgroundColor Color
-	Reverse         bool // Swap foreground and background colors at terminal level
-	Padding         EdgeInsets
-	Margin          EdgeInsets
-	Border          Border
+
+	// Text attributes
+	Bold           bool
+	Faint          bool
+	Italic         bool
+	Underline      UnderlineStyle
+	UnderlineColor Color
+	Blink          bool
+	Reverse        bool
+	Conceal        bool
+	Strikethrough  bool
+
+	// Layout
+	Padding EdgeInsets
+	Margin  EdgeInsets
+	Border  Border
 }
 
 // IsZero returns true if the style has no values set.
 func (s Style) IsZero() bool {
 	return !s.ForegroundColor.IsSet() &&
 		!s.BackgroundColor.IsSet() &&
+		!s.Bold &&
+		!s.Faint &&
+		!s.Italic &&
+		s.Underline == UnderlineNone &&
+		!s.UnderlineColor.IsSet() &&
+		!s.Blink &&
 		!s.Reverse &&
+		!s.Conceal &&
+		!s.Strikethrough &&
 		s.Padding == (EdgeInsets{}) &&
 		s.Margin == (EdgeInsets{}) &&
 		s.Border.IsZero()
@@ -143,11 +176,17 @@ func (s Style) IsZero() bool {
 
 // SpanStyle defines text attributes for a span (colors + formatting).
 type SpanStyle struct {
-	Foreground Color
-	Background Color
-	Bold       bool
-	Italic     bool
-	Underline  bool
+	Foreground     Color
+	Background     Color
+	Bold           bool
+	Faint          bool
+	Italic         bool
+	Underline      UnderlineStyle
+	UnderlineColor Color
+	Blink          bool
+	Reverse        bool
+	Conceal        bool
+	Strikethrough  bool
 }
 
 // Span represents a segment of text with its own styling.
@@ -186,7 +225,25 @@ func ItalicSpan(text string, fg ...Color) Span {
 
 // UnderlineSpan creates an underlined span with optional foreground color.
 func UnderlineSpan(text string, fg ...Color) Span {
-	s := SpanStyle{Underline: true}
+	s := SpanStyle{Underline: UnderlineSingle}
+	if len(fg) > 0 {
+		s.Foreground = fg[0]
+	}
+	return Span{Text: text, Style: s}
+}
+
+// FaintSpan creates a faint/dim span with optional foreground color.
+func FaintSpan(text string, fg ...Color) Span {
+	s := SpanStyle{Faint: true}
+	if len(fg) > 0 {
+		s.Foreground = fg[0]
+	}
+	return Span{Text: text, Style: s}
+}
+
+// StrikethroughSpan creates a strikethrough span with optional foreground color.
+func StrikethroughSpan(text string, fg ...Color) Span {
+	s := SpanStyle{Strikethrough: true}
 	if len(fg) > 0 {
 		s.Foreground = fg[0]
 	}

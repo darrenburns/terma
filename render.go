@@ -20,6 +20,24 @@ func blendForeground(fg, bg Color) Color {
 	return fg.BlendOver(blendTarget)
 }
 
+// toUVUnderline converts a terma UnderlineStyle to an ultraviolet Underline.
+func toUVUnderline(u UnderlineStyle) uv.Underline {
+	switch u {
+	case UnderlineSingle:
+		return uv.UnderlineSingle
+	case UnderlineDouble:
+		return uv.UnderlineDouble
+	case UnderlineCurly:
+		return uv.UnderlineCurly
+	case UnderlineDotted:
+		return uv.UnderlineDotted
+	case UnderlineDashed:
+		return uv.UnderlineDashed
+	default:
+		return uv.UnderlineNone
+	}
+}
+
 // RenderContext provides drawing primitives for widgets.
 // It tracks the current region where the widget should render.
 type RenderContext struct {
@@ -673,13 +691,39 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 	// Blend foreground if semi-transparent
 	fg := blendForeground(style.ForegroundColor, bg)
 
-	// Build the cell style
-	cellStyle := uv.Style{
-		Fg: fg.toANSI(),
-		Bg: bg.toANSI(),
+	// Build text attributes bitmask
+	var attrs uint8
+	if style.Bold {
+		attrs |= uv.AttrBold
+	}
+	if style.Faint {
+		attrs |= uv.AttrFaint
+	}
+	if style.Italic {
+		attrs |= uv.AttrItalic
+	}
+	if style.Blink {
+		attrs |= uv.AttrBlink
 	}
 	if style.Reverse {
-		cellStyle.Attrs |= uv.AttrReverse
+		attrs |= uv.AttrReverse
+	}
+	if style.Conceal {
+		attrs |= uv.AttrConceal
+	}
+	if style.Strikethrough {
+		attrs |= uv.AttrStrikethrough
+	}
+
+	// Build the cell style
+	cellStyle := uv.Style{
+		Fg:        fg.toANSI(),
+		Bg:        bg.toANSI(),
+		Attrs:     attrs,
+		Underline: toUVUnderline(style.Underline),
+	}
+	if style.UnderlineColor.IsSet() {
+		cellStyle.UnderlineColor = style.UnderlineColor.toANSI()
 	}
 
 	// Draw each grapheme cluster as a cell, advancing by its display width
@@ -749,14 +793,23 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 	if span.Style.Bold {
 		attrs |= uv.AttrBold
 	}
+	if span.Style.Faint {
+		attrs |= uv.AttrFaint
+	}
 	if span.Style.Italic {
 		attrs |= uv.AttrItalic
 	}
-
-	// Build underline style
-	var underline uv.Underline
-	if span.Style.Underline {
-		underline = uv.UnderlineSingle
+	if span.Style.Blink {
+		attrs |= uv.AttrBlink
+	}
+	if span.Style.Reverse {
+		attrs |= uv.AttrReverse
+	}
+	if span.Style.Conceal {
+		attrs |= uv.AttrConceal
+	}
+	if span.Style.Strikethrough {
+		attrs |= uv.AttrStrikethrough
 	}
 
 	// Build the cell style with text attributes
@@ -764,7 +817,10 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 		Fg:        fg.toANSI(),
 		Bg:        bg.toANSI(),
 		Attrs:     attrs,
-		Underline: underline,
+		Underline: toUVUnderline(span.Style.Underline),
+	}
+	if span.Style.UnderlineColor.IsSet() {
+		cellStyle.UnderlineColor = span.Style.UnderlineColor.toANSI()
 	}
 
 	// Draw each grapheme cluster as a cell, advancing by its display width
@@ -882,6 +938,12 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 	// Build the root widget
 	built := root.Build(buildCtx)
 
+	// Also collect focusable for the built widget (in case root.Build returns
+	// a different focusable widget, e.g., App.Build returning a Scrollable)
+	if built != root {
+		ctx.collectFocusable(built)
+	}
+
 	// Extract style for padding, margin, and border
 	var style Style
 	if styled, ok := built.(Styled); ok {
@@ -958,6 +1020,20 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 		Width:  borderedWidth,
 		Height: borderedHeight,
 	})
+
+	// Also record the built widget if different from root (e.g., App.Build returns Scrollable)
+	if built != root {
+		var builtID string
+		if identifiable, ok := built.(Identifiable); ok {
+			builtID = identifiable.WidgetID()
+		}
+		r.widgetRegistry.Record(built, builtID, Rect{
+			X:      borderedXOffset,
+			Y:      borderedYOffset,
+			Width:  borderedWidth,
+			Height: borderedHeight,
+		})
+	}
 
 	// Render the widget offset by margin, border, and padding
 	// This happens AFTER recording so children are recorded after root

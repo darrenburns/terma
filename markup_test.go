@@ -32,7 +32,7 @@ func TestParseMarkup_PlainText(t *testing.T) {
 	if spans[0].Text != "Hello World" {
 		t.Errorf("expected 'Hello World', got '%s'", spans[0].Text)
 	}
-	if spans[0].Style.Bold || spans[0].Style.Italic || spans[0].Style.Underline {
+	if spans[0].Style.Bold || spans[0].Style.Italic || spans[0].Style.Underline != UnderlineNone {
 		t.Error("expected no styling")
 	}
 }
@@ -90,7 +90,7 @@ func TestParseMarkup_Underline(t *testing.T) {
 	if len(spans) != 1 {
 		t.Fatalf("expected 1 span, got %d", len(spans))
 	}
-	if !spans[0].Style.Underline {
+	if spans[0].Style.Underline != UnderlineSingle {
 		t.Error("expected underline")
 	}
 }
@@ -101,7 +101,7 @@ func TestParseMarkup_UnderlineShorthand(t *testing.T) {
 	if len(spans) != 1 {
 		t.Fatalf("expected 1 span, got %d", len(spans))
 	}
-	if !spans[0].Style.Underline {
+	if spans[0].Style.Underline != UnderlineSingle {
 		t.Error("expected underline")
 	}
 }
@@ -118,7 +118,7 @@ func TestParseMarkup_CombinedStyles(t *testing.T) {
 	if !spans[0].Style.Italic {
 		t.Error("expected italic")
 	}
-	if !spans[0].Style.Underline {
+	if spans[0].Style.Underline != UnderlineSingle {
 		t.Error("expected underline")
 	}
 }
@@ -471,15 +471,15 @@ func TestParseMarkup_ComplexNesting(t *testing.T) {
 		text      string
 		bold      bool
 		italic    bool
-		underline bool
+		underline UnderlineStyle
 	}{
-		{"A", false, false, false},
-		{"B", true, false, false},
-		{"C", true, true, false},
-		{"D", true, true, true},
-		{"E", true, true, false},
-		{"F", true, false, false},
-		{"G", false, false, false},
+		{"A", false, false, UnderlineNone},
+		{"B", true, false, UnderlineNone},
+		{"C", true, true, UnderlineNone},
+		{"D", true, true, UnderlineSingle},
+		{"E", true, true, UnderlineNone},
+		{"F", true, false, UnderlineNone},
+		{"G", false, false, UnderlineNone},
 	}
 
 	for i, exp := range expectations {

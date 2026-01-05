@@ -216,11 +216,11 @@ func (t Text) Render(ctx *RenderContext) {
 
 // renderPlain renders plain text content.
 func (t Text) renderPlain(ctx *RenderContext) {
-	fgColor := t.Style.ForegroundColor
-	if !fgColor.IsSet() {
-		fgColor = ctx.buildContext.Theme().Text
+	// Start with the full style, then ensure foreground color has a default
+	style := t.Style
+	if !style.ForegroundColor.IsSet() {
+		style.ForegroundColor = ctx.buildContext.Theme().Text
 	}
-	style := Style{ForegroundColor: fgColor}
 
 	// Get lines with wrapping applied
 	lines := wrapText(t.Content, ctx.Width, t.Wrap)
@@ -246,11 +246,11 @@ func (t Text) renderPlain(ctx *RenderContext) {
 
 // renderSpans renders rich text with multiple styled spans.
 func (t Text) renderSpans(ctx *RenderContext) {
-	fgColor := t.Style.ForegroundColor
-	if !fgColor.IsSet() {
-		fgColor = ctx.buildContext.Theme().Text
+	// Start with the full style, then ensure foreground color has a default
+	baseStyle := t.Style
+	if !baseStyle.ForegroundColor.IsSet() {
+		baseStyle.ForegroundColor = ctx.buildContext.Theme().Text
 	}
-	baseStyle := Style{ForegroundColor: fgColor}
 
 	x, y := 0, 0
 
