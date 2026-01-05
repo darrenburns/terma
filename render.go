@@ -290,6 +290,11 @@ func (ctx *RenderContext) RenderChild(index int, child Widget, xOffset, yOffset,
 	// Draw border if set (on top of the background)
 	if !border.IsZero() {
 		borderCtx := ctx.SubContext(borderedXOffset, borderedYOffset, borderedWidth, borderedHeight)
+		// Border cells use the widget's own background color
+		if style.BackgroundColor.IsSet() {
+			widgetBg := style.BackgroundColor
+			borderCtx.inheritedBgAt = func(absY int) Color { return widgetBg }
+		}
 		borderCtx.DrawBorder(0, 0, borderedWidth, borderedHeight, border)
 	}
 
@@ -1003,6 +1008,11 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 	// Draw border if set (on top of the background)
 	if !border.IsZero() {
 		borderCtx := ctx.SubContext(borderedXOffset, borderedYOffset, borderedWidth, borderedHeight)
+		// Border cells use the widget's own background color
+		if style.BackgroundColor.IsSet() {
+			widgetBg := style.BackgroundColor
+			borderCtx.inheritedBgAt = func(absY int) Color { return widgetBg }
+		}
 		borderCtx.DrawBorder(0, 0, borderedWidth, borderedHeight, border)
 	}
 
