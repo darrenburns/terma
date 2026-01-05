@@ -6,6 +6,10 @@ import (
 	t "terma"
 )
 
+func init() {
+	t.InitDebug()
+}
+
 // App demonstrates padding, margin, and spacing.
 type App struct{}
 

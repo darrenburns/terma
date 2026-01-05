@@ -7,6 +7,10 @@ import (
 	t "terma"
 )
 
+func init() {
+	t.InitDebug()
+}
+
 // Alignment name helpers
 var mainAxisNames = []string{"Start", "Center", "End"}
 var crossAxisNames = []string{"Start", "Center", "End"}

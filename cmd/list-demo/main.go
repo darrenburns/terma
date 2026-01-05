@@ -12,6 +12,7 @@ func init() {
 	if err := t.InitLogger(); err != nil {
 		log.Printf("Warning: could not initialize logger: %v", err)
 	}
+	t.InitDebug()
 }
 
 // Theme names for cycling
@@ -208,6 +209,8 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 func main() {
 	t.SetTheme(themeNames[0])
 	app := NewListDemo()
+	//t.InitDebug()
+	t.InitLogger()
 	if err := t.Run(app); err != nil {
 		log.Fatal(err)
 	}

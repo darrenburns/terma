@@ -11,6 +11,7 @@ func init() {
 	if err := t.InitLogger(); err != nil {
 		log.Printf("Warning: could not initialize logger: %v", err)
 	}
+	t.InitDebug()
 }
 
 // SimpleListDemo demonstrates the most basic usage of List[string]

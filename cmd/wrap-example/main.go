@@ -130,6 +130,7 @@ func main() {
 	if err := t.InitLogger(); err != nil {
 		log.Printf("Warning: could not initialize logger: %v", err)
 	}
+	t.InitDebug()
 
 	app := NewApp()
 	if err := t.Run(app); err != nil {

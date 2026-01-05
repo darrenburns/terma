@@ -23,7 +23,8 @@ type WidgetEntry struct {
 // Widgets are recorded in render order (depth-first), so later entries
 // are "on top" visually and should receive events first.
 type WidgetRegistry struct {
-	entries []WidgetEntry
+	entries    []WidgetEntry
+	totalCount int // All widgets including those scrolled out of view
 }
 
 // NewWidgetRegistry creates a new widget registry.
@@ -97,5 +98,17 @@ func (r *WidgetRegistry) ScrollableAt(x, y int) *Scrollable {
 // Reset clears all entries for a new render pass.
 func (r *WidgetRegistry) Reset() {
 	r.entries = r.entries[:0]
+	r.totalCount = 0
+}
+
+// IncrementTotal increments the total widget count (including non-visible widgets).
+func (r *WidgetRegistry) IncrementTotal() {
+	r.totalCount++
+}
+
+// TotalCount returns the total number of widgets rendered, including those
+// scrolled out of view that aren't in the entries list.
+func (r *WidgetRegistry) TotalCount() int {
+	return r.totalCount
 }
 

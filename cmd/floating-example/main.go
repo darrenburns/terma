@@ -10,6 +10,7 @@ func init() {
 	if err := t.InitLogger(); err != nil {
 		log.Printf("Warning: could not initialize logger: %v", err)
 	}
+	t.InitDebug()
 }
 
 // FloatingDemo demonstrates the Floating widget for popups and modals.

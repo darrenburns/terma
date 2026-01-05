@@ -195,6 +195,11 @@ func (ctx *RenderContext) IsFocused(widget Widget) bool {
 // Automatically applies padding, margin, and border from the widget's style.
 // Returns the size of the rendered child including padding, margin, and border.
 func (ctx *RenderContext) RenderChild(index int, child Widget, xOffset, yOffset, maxWidth, maxHeight int) Size {
+	// Count all widgets including those that may be clipped/scrolled out of view
+	if ctx.widgetRegistry != nil {
+		ctx.widgetRegistry.IncrementTotal()
+	}
+
 	// Update build context with child path
 	parentBuildContext := ctx.buildContext
 	ctx.buildContext = ctx.buildContext.PushChild(index)
@@ -858,6 +863,7 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 	r.widgetRegistry.Reset()
 	r.floatCollector.Reset()
 	r.modalFocusTarget = ""
+	r.widgetRegistry.IncrementTotal() // Count root widget
 
 	// Create build context
 	buildCtx := NewBuildContext(r.focusManager, r.focusedSignal, r.hoveredSignal, r.floatCollector)

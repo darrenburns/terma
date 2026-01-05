@@ -13,6 +13,7 @@ func init() {
 	if err := t.InitLogger(); err != nil {
 		log.Printf("Warning: could not initialize logger: %v", err)
 	}
+	t.InitDebug()
 }
 
 // HoverText is a Text widget that changes its background color on hover.

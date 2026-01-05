@@ -6,6 +6,10 @@ import (
 	t "terma"
 )
 
+func init() {
+	t.InitDebug()
+}
+
 type App struct {
 	themeIndex  t.Signal[int]
 	themeNames  []string

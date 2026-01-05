@@ -62,6 +62,11 @@ func Run(root Widget) error {
 	size := t.Size()
 	width, height := size.Width, size.Height
 
+	// Wrap root with debug overlay if enabled
+	if globalDebugger != nil {
+		root = globalDebugger.WrapRoot(root)
+	}
+
 	// Create focus manager and focused signal
 	focusManager := NewFocusManager()
 	focusManager.SetRootWidget(root)
@@ -94,6 +99,16 @@ func Run(root Widget) error {
 		t.Display()
 
 		elapsed := time.Since(startTime)
+
+		// Record debug metrics
+		if globalDebugger != nil {
+			visibleWidgetCount := len(renderer.widgetRegistry.entries)
+			totalWidgetCount := renderer.widgetRegistry.TotalCount()
+			focusedID := focusManager.FocusedID()
+			focusedWidget := focusManager.Focused()
+			globalDebugger.RecordFrame(elapsed, visibleWidgetCount, totalWidgetCount, focusedID, focusedWidget)
+		}
+
 		Log("Render complete in %.3fms, %d widgets registered", float64(elapsed.Microseconds())/1000.0, len(renderer.widgetRegistry.entries))
 	}
 
@@ -118,6 +133,15 @@ func Run(root Widget) error {
 				if ev.MatchString("ctrl+c") {
 					cancel()
 					return
+				}
+
+				// Debug toggle
+				if ev.MatchString("ctrl+`") {
+					if globalDebugger != nil {
+						globalDebugger.Toggle()
+						display()
+					}
+					continue
 				}
 
 				// Screen export keybind

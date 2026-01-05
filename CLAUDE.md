@@ -304,4 +304,30 @@ Working examples in `cmd/*/main.go`. Start with `cmd/simple-list-example/TUTORIA
 
 ## Debugging
 
+### Logging
+
 Initialize logging with `InitLogger()`, then use `Log(format, args...)`. Logs write to `terma.log`.
+
+### Debug Widget
+
+Terma provides a debug overlay for development that shows real-time performance metrics.
+
+**Enabling Debug Mode:**
+
+```go
+func main() {
+    terma.InitDebug()  // Enable debug overlay
+    terma.Run(&MyApp{})
+}
+```
+
+**Using the Debug Overlay:**
+
+- **Toggle**: Press `ctrl+backtick` to show/hide the debug overlay
+- **Metrics displayed**:
+  - Build time (milliseconds per render)
+  - Widget count (total widgets in current render)
+  - Focused widget (ID and type)
+  - Frame rate (FPS)
+
+The debug overlay is non-modal and doesn't interfere with app interaction. It appears as a floating panel at the top-center of the screen when toggled on.

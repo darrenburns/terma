@@ -11,6 +11,7 @@ func init() {
 	if err := t.InitLogger(); err != nil {
 		log.Printf("Warning: could not initialize logger: %v", err)
 	}
+	t.InitDebug()
 }
 
 // SwitcherDemo demonstrates the Switcher widget with three tabs.

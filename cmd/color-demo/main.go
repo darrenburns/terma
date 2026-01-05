@@ -6,6 +6,10 @@ import (
 	t "terma"
 )
 
+func init() {
+	t.InitDebug()
+}
+
 type ColorDemo struct {
 	scrollState *t.ScrollState
 }
