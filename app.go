@@ -172,6 +172,34 @@ func Run(root Widget) error {
 					continue
 				}
 
+				// Suspend on Ctrl+Z
+				if ev.MatchString("ctrl+z") {
+					// Disable mouse tracking before suspending
+					t.WriteString(ansi.ResetModeMouseAnyEvent)
+					t.WriteString(ansi.ResetModeMouseExtSgr)
+
+					// Exit alternate screen to show shell
+					t.ExitAltScreen()
+
+					// Pause input reading and suspend process
+					t.Pause()
+					uv.Suspend() // Blocks until resumed via `fg`
+
+					// Resume input reading
+					t.Resume()
+
+					// Re-enter alternate screen
+					t.EnterAltScreen()
+
+					// Re-enable mouse tracking
+					t.WriteString(ansi.SetModeMouseAnyEvent)
+					t.WriteString(ansi.SetModeMouseExtSgr)
+
+					// Redraw the screen
+					display()
+					continue
+				}
+
 				// Check for Escape to dismiss floats
 				if ev.MatchString("escape") {
 					if topFloat := renderer.TopFloat(); topFloat != nil {
