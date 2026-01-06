@@ -86,7 +86,7 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 				Height: t.Fr(1),
 				Child: t.Dock{
 					Style: t.Style{
-						Padding: t.EdgeInsetsXY(2, 1), // Horizontal and vertical padding
+						Padding: t.EdgeInsetsXY(2, 4),
 					},
 					Top: []t.Widget{
 						a.buildHeader(theme),
@@ -97,7 +97,11 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 					Bottom: []t.Widget{
 						t.Text{Content: ""}, // Spacer
 						a.buildStatusBar(theme),
-						t.KeybindBar{},
+						t.Row{
+							Width:     t.Fr(1),
+							MainAlign: t.MainAxisCenter,
+							Children:  []t.Widget{t.KeybindBar{}},
+						},
 					},
 					Body: a.buildTaskList(ctx),
 				},
@@ -266,7 +270,7 @@ func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 		Visible: a.showThemePicker.Get(),
 		Config: t.FloatConfig{
 			Position:  t.FloatPositionCenter,
-			Modal:     true,
+			Modal:     false,
 			OnDismiss: a.dismissThemePicker,
 		},
 		Child: t.Column{

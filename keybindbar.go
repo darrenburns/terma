@@ -24,12 +24,12 @@ type KeybindBar struct {
 }
 
 // GetDimensions returns the width and height dimension preferences.
-// Width defaults to Fr(1) if not explicitly set, as KeybindBar typically fills width.
+// Width defaults to Auto if not explicitly set, sizing to content.
 // Height defaults to Cells(1) if not explicitly set, as KeybindBar is a single-line widget.
 func (f KeybindBar) GetDimensions() (width, height Dimension) {
 	w, h := f.Width, f.Height
 	if w.IsUnset() {
-		w = Fr(1)
+		w = Auto
 	}
 	if h.IsUnset() {
 		h = Cells(1)
