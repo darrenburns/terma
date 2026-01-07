@@ -6,28 +6,28 @@ import (
 	"terma"
 )
 
-// BoxModel describes a rectangular region with a CSS-like box model.
-// The model consists of four nested boxes (from innermost to outermost):
+// BoxModel describes a rectangular region with CSS border-box semantics.
+// Width and Height refer to the border-box (content + padding + border).
+// Content dimensions are computed by subtracting padding and border from the border-box.
+// Margin is added externally to get the margin-box (total allocated space).
 //
-//   - Content box: the actual content area
-//   - Padding box: content + padding
-//   - Border box: content + padding + border
-//   - Margin box: content + padding + border + margin (the bounding box)
-//
-// Unlike CSS where the "box" typically refers to the border-box,
-// in this model the "box" refers to the margin-box (outermost boundary).
+// The model consists of four nested boxes:
+//   - Content box: computed as border-box minus padding and border
+//   - Padding box: border-box minus border
+//   - Border box: the stored Width/Height dimensions
+//   - Margin box: border-box plus margin (the outermost boundary)
 type BoxModel struct {
-	// Content dimensions (innermost area)
-	ContentWidth  int
-	ContentHeight int
+	// Border-box dimensions (content + padding + border)
+	Width  int
+	Height int
 
-	// Min/max constraints (0 = no constraint)
-	MinContentWidth  int
-	MaxContentWidth  int
-	MinContentHeight int
-	MaxContentHeight int
+	// Min/max constraints on border-box dimensions (0 = no constraint)
+	MinWidth  int
+	MaxWidth  int
+	MinHeight int
+	MaxHeight int
 
-	// Insets (from content outward)
+	// Insets (padding and border shrink inward, margin expands outward)
 	Padding terma.EdgeInsets
 	Border  terma.EdgeInsets // Typically uniform (1,1,1,1) for borders
 	Margin  terma.EdgeInsets
@@ -35,8 +35,8 @@ type BoxModel struct {
 	// Scrolling (optional - zero values mean no scrolling)
 	// VirtualWidth/Height represent the total scrollable content size.
 	// When set, content can extend beyond the visible viewport.
-	VirtualWidth  int // Total content width (0 = same as ContentWidth)
-	VirtualHeight int // Total content height (0 = same as ContentHeight)
+	VirtualWidth  int // Total virtual content width (0 = same as computed ContentWidth)
+	VirtualHeight int // Total virtual content height (0 = same as computed ContentHeight)
 	ScrollOffsetX int // Horizontal scroll offset
 	ScrollOffsetY int // Vertical scroll offset
 
@@ -53,19 +53,20 @@ type BoxModel struct {
 
 // Validate checks that all BoxModel fields have valid values.
 // Panics if any field has an invalid value (negative dimensions, invalid constraints, etc.).
+// Note: Negative margins are allowed (CSS behavior) for overlapping/pull effects.
 func (b BoxModel) Validate() {
-	// Content dimensions
-	if b.ContentWidth < 0 {
-		panic("BoxModel: ContentWidth cannot be negative")
+	// Border-box dimensions
+	if b.Width < 0 {
+		panic("BoxModel: Width cannot be negative")
 	}
-	if b.ContentHeight < 0 {
-		panic("BoxModel: ContentHeight cannot be negative")
+	if b.Height < 0 {
+		panic("BoxModel: Height cannot be negative")
 	}
 
-	// Insets
+	// Insets (padding and border must be non-negative, margin can be negative)
 	validateEdgeInsets(b.Padding, "Padding")
 	validateEdgeInsets(b.Border, "Border")
-	validateEdgeInsets(b.Margin, "Margin")
+	// Margin is not validated - negative margins are allowed (CSS behavior)
 
 	// Virtual dimensions
 	if b.VirtualWidth < 0 {
@@ -84,25 +85,25 @@ func (b BoxModel) Validate() {
 	}
 
 	// Min/max constraints must be non-negative
-	if b.MinContentWidth < 0 {
-		panic("BoxModel: MinContentWidth cannot be negative")
+	if b.MinWidth < 0 {
+		panic("BoxModel: MinWidth cannot be negative")
 	}
-	if b.MaxContentWidth < 0 {
-		panic("BoxModel: MaxContentWidth cannot be negative")
+	if b.MaxWidth < 0 {
+		panic("BoxModel: MaxWidth cannot be negative")
 	}
-	if b.MinContentHeight < 0 {
-		panic("BoxModel: MinContentHeight cannot be negative")
+	if b.MinHeight < 0 {
+		panic("BoxModel: MinHeight cannot be negative")
 	}
-	if b.MaxContentHeight < 0 {
-		panic("BoxModel: MaxContentHeight cannot be negative")
+	if b.MaxHeight < 0 {
+		panic("BoxModel: MaxHeight cannot be negative")
 	}
 
 	// Constraint validity (min <= max when both are set)
-	if b.MinContentWidth > 0 && b.MaxContentWidth > 0 && b.MinContentWidth > b.MaxContentWidth {
-		panic("BoxModel: MinContentWidth cannot exceed MaxContentWidth")
+	if b.MinWidth > 0 && b.MaxWidth > 0 && b.MinWidth > b.MaxWidth {
+		panic("BoxModel: MinWidth cannot exceed MaxWidth")
 	}
-	if b.MinContentHeight > 0 && b.MaxContentHeight > 0 && b.MinContentHeight > b.MaxContentHeight {
-		panic("BoxModel: MinContentHeight cannot exceed MaxContentHeight")
+	if b.MinHeight > 0 && b.MaxHeight > 0 && b.MinHeight > b.MaxHeight {
+		panic("BoxModel: MinHeight cannot exceed MaxHeight")
 	}
 }
 
@@ -115,56 +116,70 @@ func validateEdgeInsets(e terma.EdgeInsets, name string) {
 
 // --- Box dimension methods ---
 
-// PaddingBoxWidth returns the width of the padding box (content + horizontal padding).
+// ContentWidth computes the content width by subtracting padding and border from the border-box.
+// Returns 0 if insets exceed the border-box width.
+func (b BoxModel) ContentWidth() int {
+	return max(0, b.Width-b.Padding.Horizontal()-b.Border.Horizontal())
+}
+
+// ContentHeight computes the content height by subtracting padding and border from the border-box.
+// Returns 0 if insets exceed the border-box height.
+func (b BoxModel) ContentHeight() int {
+	return max(0, b.Height-b.Padding.Vertical()-b.Border.Vertical())
+}
+
+// PaddingBoxWidth returns the width of the padding box (border-box minus border).
 func (b BoxModel) PaddingBoxWidth() int {
-	return b.ContentWidth + b.Padding.Horizontal()
+	return max(0, b.Width-b.Border.Horizontal())
 }
 
-// PaddingBoxHeight returns the height of the padding box (content + vertical padding).
+// PaddingBoxHeight returns the height of the padding box (border-box minus border).
 func (b BoxModel) PaddingBoxHeight() int {
-	return b.ContentHeight + b.Padding.Vertical()
+	return max(0, b.Height-b.Border.Vertical())
 }
 
-// BorderBoxWidth returns the width of the border box (padding box + horizontal border).
+// BorderBoxWidth returns the width of the border box.
+// This is the stored Width value.
 func (b BoxModel) BorderBoxWidth() int {
-	return b.PaddingBoxWidth() + b.Border.Horizontal()
+	return b.Width
 }
 
-// BorderBoxHeight returns the height of the border box (padding box + vertical border).
+// BorderBoxHeight returns the height of the border box.
+// This is the stored Height value.
 func (b BoxModel) BorderBoxHeight() int {
-	return b.PaddingBoxHeight() + b.Border.Vertical()
+	return b.Height
 }
 
-// MarginBoxWidth returns the width of the margin box (border box + horizontal margin).
-// This is the total width including all insets.
+// MarginBoxWidth returns the width of the margin box (border-box plus horizontal margin).
+// This is the total width including margin.
 func (b BoxModel) MarginBoxWidth() int {
-	return b.BorderBoxWidth() + b.Margin.Horizontal()
+	return b.Width + b.Margin.Horizontal()
 }
 
-// MarginBoxHeight returns the height of the margin box (border box + vertical margin).
-// This is the total height including all insets.
+// MarginBoxHeight returns the height of the margin box (border-box plus vertical margin).
+// This is the total height including margin.
 func (b BoxModel) MarginBoxHeight() int {
-	return b.BorderBoxHeight() + b.Margin.Vertical()
+	return b.Height + b.Margin.Vertical()
 }
 
 // --- Rect-returning methods ---
 // All rects are positioned relative to the margin box origin (0,0).
 
-// ContentBox returns the full allocated content area as a Rect.
-// This is the space given by the parent layout, before any scrollbar is subtracted.
-// Use for: positioning this widget, drawing backgrounds, border rendering.
+// ContentBox returns the computed content area as a Rect.
+// Content dimensions are computed by subtracting padding and border from the border-box.
+// Use for: laying out content within the available space.
 // The position is relative to the margin box origin.
 func (b BoxModel) ContentBox() terma.Rect {
 	return terma.Rect{
 		X:      b.Margin.Left + b.Border.Left + b.Padding.Left,
 		Y:      b.Margin.Top + b.Border.Top + b.Padding.Top,
-		Width:  b.ContentWidth,
-		Height: b.ContentHeight,
+		Width:  b.ContentWidth(),
+		Height: b.ContentHeight(),
 	}
 }
 
 // UsableContentBox returns the content area available for child widgets.
-// This subtracts space reserved for scrollbars from the allocated content area:
+// This subtracts space reserved for scrollbars from the computed content area:
 //   - Vertical scrollbar (ScrollbarWidth) reduces width when IsScrollableY()
 //   - Horizontal scrollbar (ScrollbarHeight) reduces height when IsScrollableX()
 //
@@ -182,27 +197,21 @@ func (b BoxModel) UsableContentBox() terma.Rect {
 // usableContentWidth returns the content width available for child widgets.
 // This accounts for vertical scrollbar width when vertical scrolling is enabled.
 func (b BoxModel) usableContentWidth() int {
+	contentWidth := b.ContentWidth()
 	if b.IsScrollableY() && b.ScrollbarWidth > 0 {
-		result := b.ContentWidth - b.ScrollbarWidth
-		if result < 0 {
-			return 0
-		}
-		return result
+		return max(0, contentWidth-b.ScrollbarWidth)
 	}
-	return b.ContentWidth
+	return contentWidth
 }
 
 // usableContentHeight returns the content height available for child widgets.
 // This accounts for horizontal scrollbar height when horizontal scrolling is enabled.
 func (b BoxModel) usableContentHeight() int {
+	contentHeight := b.ContentHeight()
 	if b.IsScrollableX() && b.ScrollbarHeight > 0 {
-		result := b.ContentHeight - b.ScrollbarHeight
-		if result < 0 {
-			return 0
-		}
-		return result
+		return max(0, contentHeight-b.ScrollbarHeight)
 	}
-	return b.ContentHeight
+	return contentHeight
 }
 
 // PaddingBox returns the padding box as a Rect.
@@ -265,69 +274,69 @@ func (b BoxModel) TotalVerticalInset() int {
 
 // --- Constraint methods ---
 
-// ClampContentWidth clamps the given width to the min/max content width constraints.
+// ClampWidth clamps the given width to the min/max border-box width constraints.
 // A constraint of 0 means no constraint on that bound.
 // Panics if width is negative.
-func (b BoxModel) ClampContentWidth(width int) int {
+func (b BoxModel) ClampWidth(width int) int {
 	if width < 0 {
-		panic("BoxModel: ClampContentWidth cannot accept negative width")
+		panic("BoxModel: ClampWidth cannot accept negative width")
 	}
-	if b.MinContentWidth > 0 && width < b.MinContentWidth {
-		return b.MinContentWidth
+	if b.MinWidth > 0 && width < b.MinWidth {
+		return b.MinWidth
 	}
-	if b.MaxContentWidth > 0 && width > b.MaxContentWidth {
-		return b.MaxContentWidth
+	if b.MaxWidth > 0 && width > b.MaxWidth {
+		return b.MaxWidth
 	}
 	return width
 }
 
-// ClampContentHeight clamps the given height to the min/max content height constraints.
+// ClampHeight clamps the given height to the min/max border-box height constraints.
 // A constraint of 0 means no constraint on that bound.
 // Panics if height is negative.
-func (b BoxModel) ClampContentHeight(height int) int {
+func (b BoxModel) ClampHeight(height int) int {
 	if height < 0 {
-		panic("BoxModel: ClampContentHeight cannot accept negative height")
+		panic("BoxModel: ClampHeight cannot accept negative height")
 	}
-	if b.MinContentHeight > 0 && height < b.MinContentHeight {
-		return b.MinContentHeight
+	if b.MinHeight > 0 && height < b.MinHeight {
+		return b.MinHeight
 	}
-	if b.MaxContentHeight > 0 && height > b.MaxContentHeight {
-		return b.MaxContentHeight
+	if b.MaxHeight > 0 && height > b.MaxHeight {
+		return b.MaxHeight
 	}
 	return height
 }
 
-// WithClampedContent returns a new BoxModel with content dimensions clamped to constraints.
-func (b BoxModel) WithClampedContent() BoxModel {
+// WithClampedSize returns a new BoxModel with border-box dimensions clamped to constraints.
+func (b BoxModel) WithClampedSize() BoxModel {
 	result := b
-	result.ContentWidth = b.ClampContentWidth(b.ContentWidth)
-	result.ContentHeight = b.ClampContentHeight(b.ContentHeight)
+	result.Width = b.ClampWidth(b.Width)
+	result.Height = b.ClampHeight(b.Height)
 	return result
 }
 
-// SatisfiesWidthConstraints returns true if the content width is within constraints.
+// SatisfiesWidthConstraints returns true if the border-box width is within constraints.
 func (b BoxModel) SatisfiesWidthConstraints() bool {
-	if b.MinContentWidth > 0 && b.ContentWidth < b.MinContentWidth {
+	if b.MinWidth > 0 && b.Width < b.MinWidth {
 		return false
 	}
-	if b.MaxContentWidth > 0 && b.ContentWidth > b.MaxContentWidth {
+	if b.MaxWidth > 0 && b.Width > b.MaxWidth {
 		return false
 	}
 	return true
 }
 
-// SatisfiesHeightConstraints returns true if the content height is within constraints.
+// SatisfiesHeightConstraints returns true if the border-box height is within constraints.
 func (b BoxModel) SatisfiesHeightConstraints() bool {
-	if b.MinContentHeight > 0 && b.ContentHeight < b.MinContentHeight {
+	if b.MinHeight > 0 && b.Height < b.MinHeight {
 		return false
 	}
-	if b.MaxContentHeight > 0 && b.ContentHeight > b.MaxContentHeight {
+	if b.MaxHeight > 0 && b.Height > b.MaxHeight {
 		return false
 	}
 	return true
 }
 
-// SatisfiesConstraints returns true if content dimensions are within all constraints.
+// SatisfiesConstraints returns true if border-box dimensions are within all constraints.
 func (b BoxModel) SatisfiesConstraints() bool {
 	return b.SatisfiesWidthConstraints() && b.SatisfiesHeightConstraints()
 }
@@ -335,33 +344,33 @@ func (b BoxModel) SatisfiesConstraints() bool {
 // --- Scrolling methods ---
 
 // EffectiveVirtualWidth returns the virtual content width.
-// Returns ContentWidth if VirtualWidth is not set (0).
+// Returns computed ContentWidth() if VirtualWidth is not set (0).
 func (b BoxModel) EffectiveVirtualWidth() int {
 	if b.VirtualWidth > 0 {
 		return b.VirtualWidth
 	}
-	return b.ContentWidth
+	return b.ContentWidth()
 }
 
 // EffectiveVirtualHeight returns the virtual content height.
-// Returns ContentHeight if VirtualHeight is not set (0).
+// Returns computed ContentHeight() if VirtualHeight is not set (0).
 func (b BoxModel) EffectiveVirtualHeight() int {
 	if b.VirtualHeight > 0 {
 		return b.VirtualHeight
 	}
-	return b.ContentHeight
+	return b.ContentHeight()
 }
 
 // IsScrollableX returns true if horizontal scrolling is possible.
-// This is true when virtual width exceeds the visible content width.
+// This is true when virtual width exceeds the computed content width.
 func (b BoxModel) IsScrollableX() bool {
-	return b.EffectiveVirtualWidth() > b.ContentWidth
+	return b.EffectiveVirtualWidth() > b.ContentWidth()
 }
 
 // IsScrollableY returns true if vertical scrolling is possible.
-// This is true when virtual height exceeds the visible content height.
+// This is true when virtual height exceeds the computed content height.
 func (b BoxModel) IsScrollableY() bool {
-	return b.EffectiveVirtualHeight() > b.ContentHeight
+	return b.EffectiveVirtualHeight() > b.ContentHeight()
 }
 
 // IsScrollable returns true if scrolling is possible in either direction.
@@ -372,21 +381,21 @@ func (b BoxModel) IsScrollable() bool {
 // MaxScrollX returns the maximum valid horizontal scroll offset.
 // Returns 0 if not scrollable.
 func (b BoxModel) MaxScrollX() int {
-	max := b.EffectiveVirtualWidth() - b.ContentWidth
-	if max < 0 {
+	maxVal := b.EffectiveVirtualWidth() - b.ContentWidth()
+	if maxVal < 0 {
 		return 0
 	}
-	return max
+	return maxVal
 }
 
 // MaxScrollY returns the maximum valid vertical scroll offset.
 // Returns 0 if not scrollable.
 func (b BoxModel) MaxScrollY() int {
-	max := b.EffectiveVirtualHeight() - b.ContentHeight
-	if max < 0 {
+	maxVal := b.EffectiveVirtualHeight() - b.ContentHeight()
+	if maxVal < 0 {
 		return 0
 	}
-	return max
+	return maxVal
 }
 
 // ClampScrollOffsetX clamps the given offset to valid horizontal scroll bounds.
@@ -428,8 +437,8 @@ func (b BoxModel) VisibleContentRect() terma.Rect {
 	return terma.Rect{
 		X:      b.ScrollOffsetX,
 		Y:      b.ScrollOffsetY,
-		Width:  b.ContentWidth,
-		Height: b.ContentHeight,
+		Width:  b.ContentWidth(),
+		Height: b.ContentHeight(),
 	}
 }
 
@@ -446,14 +455,14 @@ func (b BoxModel) VirtualContentRect() terma.Rect {
 
 // --- Builder-style methods for convenience ---
 
-// WithContent returns a new BoxModel with the specified content dimensions.
-// Negative values are clamped to 0, since content dimensions often come from
+// WithSize returns a new BoxModel with the specified border-box dimensions.
+// Negative values are clamped to 0, since dimensions often come from
 // layout calculations that can legitimately underflow (e.g., when the terminal
 // is resized too small).
-func (b BoxModel) WithContent(width, height int) BoxModel {
+func (b BoxModel) WithSize(width, height int) BoxModel {
 	result := b
-	result.ContentWidth = max(0, width)
-	result.ContentHeight = max(0, height)
+	result.Width = max(0, width)
+	result.Height = max(0, height)
 	result.Validate()
 	return result
 }
@@ -485,22 +494,22 @@ func (b BoxModel) WithMargin(margin terma.EdgeInsets) BoxModel {
 	return result
 }
 
-// WithMinContent returns a new BoxModel with min content constraints.
+// WithMinSize returns a new BoxModel with min border-box constraints.
 // Panics if min exceeds max (when both are set).
-func (b BoxModel) WithMinContent(minWidth, minHeight int) BoxModel {
+func (b BoxModel) WithMinSize(minWidth, minHeight int) BoxModel {
 	result := b
-	result.MinContentWidth = minWidth
-	result.MinContentHeight = minHeight
+	result.MinWidth = minWidth
+	result.MinHeight = minHeight
 	result.Validate()
 	return result
 }
 
-// WithMaxContent returns a new BoxModel with max content constraints.
+// WithMaxSize returns a new BoxModel with max border-box constraints.
 // Panics if max is less than min (when both are set).
-func (b BoxModel) WithMaxContent(maxWidth, maxHeight int) BoxModel {
+func (b BoxModel) WithMaxSize(maxWidth, maxHeight int) BoxModel {
 	result := b
-	result.MaxContentWidth = maxWidth
-	result.MaxContentHeight = maxHeight
+	result.MaxWidth = maxWidth
+	result.MaxHeight = maxHeight
 	result.Validate()
 	return result
 }
