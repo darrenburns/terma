@@ -1,6 +1,10 @@
 package layout
 
-import "terma"
+import (
+	"fmt"
+
+	"terma"
+)
 
 // BoxModel describes a rectangular region with a CSS-like box model.
 // The model consists of four nested boxes (from innermost to outermost):
@@ -37,8 +41,76 @@ type BoxModel struct {
 	ScrollOffsetY int // Vertical scroll offset
 
 	// ScrollbarWidth is the space reserved for a vertical scrollbar.
-	// This reduces the effective content width when scrolling is enabled.
+	// This reduces the usable content width when vertical scrolling is enabled.
 	ScrollbarWidth int
+
+	// ScrollbarHeight is the space reserved for a horizontal scrollbar.
+	// This reduces the usable content height when horizontal scrolling is enabled.
+	ScrollbarHeight int
+}
+
+// --- Validation methods ---
+
+// Validate checks that all BoxModel fields have valid values.
+// Panics if any field has an invalid value (negative dimensions, invalid constraints, etc.).
+func (b BoxModel) Validate() {
+	// Content dimensions
+	if b.ContentWidth < 0 {
+		panic("BoxModel: ContentWidth cannot be negative")
+	}
+	if b.ContentHeight < 0 {
+		panic("BoxModel: ContentHeight cannot be negative")
+	}
+
+	// Insets
+	validateEdgeInsets(b.Padding, "Padding")
+	validateEdgeInsets(b.Border, "Border")
+	validateEdgeInsets(b.Margin, "Margin")
+
+	// Virtual dimensions
+	if b.VirtualWidth < 0 {
+		panic("BoxModel: VirtualWidth cannot be negative")
+	}
+	if b.VirtualHeight < 0 {
+		panic("BoxModel: VirtualHeight cannot be negative")
+	}
+
+	// Scrollbars
+	if b.ScrollbarWidth < 0 {
+		panic("BoxModel: ScrollbarWidth cannot be negative")
+	}
+	if b.ScrollbarHeight < 0 {
+		panic("BoxModel: ScrollbarHeight cannot be negative")
+	}
+
+	// Min/max constraints must be non-negative
+	if b.MinContentWidth < 0 {
+		panic("BoxModel: MinContentWidth cannot be negative")
+	}
+	if b.MaxContentWidth < 0 {
+		panic("BoxModel: MaxContentWidth cannot be negative")
+	}
+	if b.MinContentHeight < 0 {
+		panic("BoxModel: MinContentHeight cannot be negative")
+	}
+	if b.MaxContentHeight < 0 {
+		panic("BoxModel: MaxContentHeight cannot be negative")
+	}
+
+	// Constraint validity (min <= max when both are set)
+	if b.MinContentWidth > 0 && b.MaxContentWidth > 0 && b.MinContentWidth > b.MaxContentWidth {
+		panic("BoxModel: MinContentWidth cannot exceed MaxContentWidth")
+	}
+	if b.MinContentHeight > 0 && b.MaxContentHeight > 0 && b.MinContentHeight > b.MaxContentHeight {
+		panic("BoxModel: MinContentHeight cannot exceed MaxContentHeight")
+	}
+}
+
+// validateEdgeInsets checks that all EdgeInsets values are non-negative.
+func validateEdgeInsets(e terma.EdgeInsets, name string) {
+	if e.Top < 0 || e.Right < 0 || e.Bottom < 0 || e.Left < 0 {
+		panic(fmt.Sprintf("BoxModel: %s cannot have negative values", name))
+	}
 }
 
 // --- Box dimension methods ---
@@ -78,7 +150,9 @@ func (b BoxModel) MarginBoxHeight() int {
 // --- Rect-returning methods ---
 // All rects are positioned relative to the margin box origin (0,0).
 
-// ContentBox returns the content area as a Rect.
+// ContentBox returns the full allocated content area as a Rect.
+// This is the space given by the parent layout, before any scrollbar is subtracted.
+// Use for: positioning this widget, drawing backgrounds, border rendering.
 // The position is relative to the margin box origin.
 func (b BoxModel) ContentBox() terma.Rect {
 	return terma.Rect{
@@ -87,6 +161,48 @@ func (b BoxModel) ContentBox() terma.Rect {
 		Width:  b.ContentWidth,
 		Height: b.ContentHeight,
 	}
+}
+
+// UsableContentBox returns the content area available for child widgets.
+// This subtracts space reserved for scrollbars from the allocated content area:
+//   - Vertical scrollbar (ScrollbarWidth) reduces width when IsScrollableY()
+//   - Horizontal scrollbar (ScrollbarHeight) reduces height when IsScrollableX()
+//
+// Use for: laying out children, determining available space for content.
+// The position is relative to the margin box origin.
+func (b BoxModel) UsableContentBox() terma.Rect {
+	return terma.Rect{
+		X:      b.Margin.Left + b.Border.Left + b.Padding.Left,
+		Y:      b.Margin.Top + b.Border.Top + b.Padding.Top,
+		Width:  b.usableContentWidth(),
+		Height: b.usableContentHeight(),
+	}
+}
+
+// usableContentWidth returns the content width available for child widgets.
+// This accounts for vertical scrollbar width when vertical scrolling is enabled.
+func (b BoxModel) usableContentWidth() int {
+	if b.IsScrollableY() && b.ScrollbarWidth > 0 {
+		result := b.ContentWidth - b.ScrollbarWidth
+		if result < 0 {
+			return 0
+		}
+		return result
+	}
+	return b.ContentWidth
+}
+
+// usableContentHeight returns the content height available for child widgets.
+// This accounts for horizontal scrollbar height when horizontal scrolling is enabled.
+func (b BoxModel) usableContentHeight() int {
+	if b.IsScrollableX() && b.ScrollbarHeight > 0 {
+		result := b.ContentHeight - b.ScrollbarHeight
+		if result < 0 {
+			return 0
+		}
+		return result
+	}
+	return b.ContentHeight
 }
 
 // PaddingBox returns the padding box as a Rect.
@@ -151,7 +267,11 @@ func (b BoxModel) TotalVerticalInset() int {
 
 // ClampContentWidth clamps the given width to the min/max content width constraints.
 // A constraint of 0 means no constraint on that bound.
+// Panics if width is negative.
 func (b BoxModel) ClampContentWidth(width int) int {
+	if width < 0 {
+		panic("BoxModel: ClampContentWidth cannot accept negative width")
+	}
 	if b.MinContentWidth > 0 && width < b.MinContentWidth {
 		return b.MinContentWidth
 	}
@@ -163,7 +283,11 @@ func (b BoxModel) ClampContentWidth(width int) int {
 
 // ClampContentHeight clamps the given height to the min/max content height constraints.
 // A constraint of 0 means no constraint on that bound.
+// Panics if height is negative.
 func (b BoxModel) ClampContentHeight(height int) int {
+	if height < 0 {
+		panic("BoxModel: ClampContentHeight cannot accept negative height")
+	}
 	if b.MinContentHeight > 0 && height < b.MinContentHeight {
 		return b.MinContentHeight
 	}
@@ -320,67 +444,75 @@ func (b BoxModel) VirtualContentRect() terma.Rect {
 	}
 }
 
-// EffectiveContentWidth returns the content width available for actual content.
-// This accounts for scrollbar width when vertical scrolling is enabled.
-func (b BoxModel) EffectiveContentWidth() int {
-	if b.IsScrollableY() && b.ScrollbarWidth > 0 {
-		return b.ContentWidth - b.ScrollbarWidth
-	}
-	return b.ContentWidth
-}
-
 // --- Builder-style methods for convenience ---
 
 // WithContent returns a new BoxModel with the specified content dimensions.
+// Negative values are clamped to 0, since content dimensions often come from
+// layout calculations that can legitimately underflow (e.g., when the terminal
+// is resized too small).
 func (b BoxModel) WithContent(width, height int) BoxModel {
 	result := b
-	result.ContentWidth = width
-	result.ContentHeight = height
+	result.ContentWidth = max(0, width)
+	result.ContentHeight = max(0, height)
+	result.Validate()
 	return result
 }
 
 // WithPadding returns a new BoxModel with the specified padding.
+// Panics if any padding value is negative.
 func (b BoxModel) WithPadding(padding terma.EdgeInsets) BoxModel {
 	result := b
 	result.Padding = padding
+	result.Validate()
 	return result
 }
 
 // WithBorder returns a new BoxModel with the specified border.
+// Panics if any border value is negative.
 func (b BoxModel) WithBorder(border terma.EdgeInsets) BoxModel {
 	result := b
 	result.Border = border
+	result.Validate()
 	return result
 }
 
 // WithMargin returns a new BoxModel with the specified margin.
+// Panics if any margin value is negative.
 func (b BoxModel) WithMargin(margin terma.EdgeInsets) BoxModel {
 	result := b
 	result.Margin = margin
+	result.Validate()
 	return result
 }
 
 // WithMinContent returns a new BoxModel with min content constraints.
+// Panics if min exceeds max (when both are set).
 func (b BoxModel) WithMinContent(minWidth, minHeight int) BoxModel {
 	result := b
 	result.MinContentWidth = minWidth
 	result.MinContentHeight = minHeight
+	result.Validate()
 	return result
 }
 
 // WithMaxContent returns a new BoxModel with max content constraints.
+// Panics if max is less than min (when both are set).
 func (b BoxModel) WithMaxContent(maxWidth, maxHeight int) BoxModel {
 	result := b
 	result.MaxContentWidth = maxWidth
 	result.MaxContentHeight = maxHeight
+	result.Validate()
 	return result
 }
 
 // WithVirtualSize returns a new BoxModel with virtual content dimensions for scrolling.
+// Negative values are clamped to 0, since virtual dimensions may come from
+// layout calculations that can legitimately underflow.
 func (b BoxModel) WithVirtualSize(virtualWidth, virtualHeight int) BoxModel {
 	result := b
-	result.VirtualWidth = virtualWidth
-	result.VirtualHeight = virtualHeight
+	result.VirtualWidth = max(0, virtualWidth)
+	result.VirtualHeight = max(0, virtualHeight)
+	result.Validate()
 	return result
 }
 
@@ -392,9 +524,30 @@ func (b BoxModel) WithScrollOffset(offsetX, offsetY int) BoxModel {
 	return result
 }
 
-// WithScrollbarWidth returns a new BoxModel with the specified scrollbar width.
+// WithScrollbarWidth returns a new BoxModel with the specified vertical scrollbar width.
+// Panics if width is negative.
 func (b BoxModel) WithScrollbarWidth(width int) BoxModel {
 	result := b
 	result.ScrollbarWidth = width
+	result.Validate()
+	return result
+}
+
+// WithScrollbarHeight returns a new BoxModel with the specified horizontal scrollbar height.
+// Panics if height is negative.
+func (b BoxModel) WithScrollbarHeight(height int) BoxModel {
+	result := b
+	result.ScrollbarHeight = height
+	result.Validate()
+	return result
+}
+
+// WithScrollbars returns a new BoxModel with the specified scrollbar dimensions.
+// Panics if width or height is negative.
+func (b BoxModel) WithScrollbars(width, height int) BoxModel {
+	result := b
+	result.ScrollbarWidth = width
+	result.ScrollbarHeight = height
+	result.Validate()
 	return result
 }
