@@ -292,120 +292,6 @@ func TestBoxModel_TotalInsets(t *testing.T) {
 	})
 }
 
-func TestBoxModel_Constraints(t *testing.T) {
-	t.Run("ClampWidth", func(t *testing.T) {
-		box := BoxModel{
-			MinWidth: 50,
-			MaxWidth: 150,
-		}
-
-		assert.Equal(t, 50, box.ClampWidth(30), "below min")
-		assert.Equal(t, 50, box.ClampWidth(50), "at min")
-		assert.Equal(t, 100, box.ClampWidth(100), "in range")
-		assert.Equal(t, 150, box.ClampWidth(150), "at max")
-		assert.Equal(t, 150, box.ClampWidth(200), "above max")
-	})
-
-	t.Run("ClampHeight", func(t *testing.T) {
-		box := BoxModel{
-			MinHeight: 50,
-			MaxHeight: 150,
-		}
-
-		assert.Equal(t, 50, box.ClampHeight(30), "below min")
-		assert.Equal(t, 50, box.ClampHeight(50), "at min")
-		assert.Equal(t, 100, box.ClampHeight(100), "in range")
-		assert.Equal(t, 150, box.ClampHeight(150), "at max")
-		assert.Equal(t, 150, box.ClampHeight(200), "above max")
-	})
-
-	t.Run("NoConstraints", func(t *testing.T) {
-		box := BoxModel{} // zero constraints mean no constraint
-
-		assert.Equal(t, 0, box.ClampWidth(0))
-		assert.Equal(t, 1000, box.ClampWidth(1000))
-	})
-
-	t.Run("OnlyMinConstraint", func(t *testing.T) {
-		box := BoxModel{MinWidth: 50}
-
-		assert.Equal(t, 50, box.ClampWidth(30))
-		assert.Equal(t, 1000, box.ClampWidth(1000), "no max constraint")
-	})
-
-	t.Run("OnlyMaxConstraint", func(t *testing.T) {
-		box := BoxModel{MaxWidth: 100}
-
-		assert.Equal(t, 0, box.ClampWidth(0), "no min constraint")
-		assert.Equal(t, 100, box.ClampWidth(150))
-	})
-}
-
-func TestBoxModel_SatisfiesConstraints(t *testing.T) {
-	t.Run("WithinConstraints", func(t *testing.T) {
-		box := BoxModel{
-			Width:     100,
-			Height:    50,
-			MinWidth:  50,
-			MaxWidth:  150,
-			MinHeight: 25,
-			MaxHeight: 75,
-		}
-
-		assert.True(t, box.SatisfiesConstraints())
-	})
-
-	t.Run("BelowMinWidth", func(t *testing.T) {
-		box := BoxModel{
-			Width:    30,
-			Height:   50,
-			MinWidth: 50,
-		}
-
-		assert.False(t, box.SatisfiesWidthConstraints())
-		assert.False(t, box.SatisfiesConstraints())
-	})
-
-	t.Run("AboveMaxHeight", func(t *testing.T) {
-		box := BoxModel{
-			Width:     100,
-			Height:    100,
-			MaxHeight: 75,
-		}
-
-		assert.False(t, box.SatisfiesHeightConstraints())
-		assert.False(t, box.SatisfiesConstraints())
-	})
-
-	t.Run("NoConstraints", func(t *testing.T) {
-		box := BoxModel{
-			Width:  100,
-			Height: 50,
-		}
-
-		assert.True(t, box.SatisfiesConstraints())
-	})
-}
-
-func TestBoxModel_WithClampedSize(t *testing.T) {
-	box := BoxModel{
-		Width:     200,
-		Height:    10,
-		MinWidth:  50,
-		MaxWidth:  150,
-		MinHeight: 25,
-		MaxHeight: 75,
-	}
-
-	clamped := box.WithClampedSize()
-
-	assert.Equal(t, 150, clamped.Width)
-	assert.Equal(t, 25, clamped.Height)
-
-	// Original should be unchanged
-	assert.Equal(t, 200, box.Width, "original should be unchanged")
-}
-
 func TestBoxModel_Scrolling(t *testing.T) {
 	t.Run("NonScrollable", func(t *testing.T) {
 		box := BoxModel{
@@ -819,18 +705,6 @@ func TestBoxModel_BuilderMethods(t *testing.T) {
 		assert.Equal(t, margin, result.Margin)
 	})
 
-	t.Run("WithMinSize", func(t *testing.T) {
-		result := box.WithMinSize(50, 25)
-		assert.Equal(t, 50, result.MinWidth)
-		assert.Equal(t, 25, result.MinHeight)
-	})
-
-	t.Run("WithMaxSize", func(t *testing.T) {
-		result := box.WithMaxSize(150, 75)
-		assert.Equal(t, 150, result.MaxWidth)
-		assert.Equal(t, 75, result.MaxHeight)
-	})
-
 	t.Run("WithVirtualSize", func(t *testing.T) {
 		result := box.WithVirtualSize(300, 200)
 		assert.Equal(t, 300, result.VirtualWidth)
@@ -925,60 +799,12 @@ func TestBoxModel_ValidationPanics(t *testing.T) {
 			BoxModel{}.WithScrollbars(1, -1)
 		})
 	})
-
-	t.Run("MinWidthExceedsMax", func(t *testing.T) {
-		assert.Panics(t, func() {
-			BoxModel{MaxWidth: 50}.WithMinSize(100, 0)
-		})
-	})
-
-	t.Run("MinHeightExceedsMax", func(t *testing.T) {
-		assert.Panics(t, func() {
-			BoxModel{MaxHeight: 50}.WithMinSize(0, 100)
-		})
-	})
-
-	t.Run("NegativeMinWidth", func(t *testing.T) {
-		assert.Panics(t, func() {
-			BoxModel{}.WithMinSize(-10, 0)
-		})
-	})
-
-	t.Run("NegativeMinHeight", func(t *testing.T) {
-		assert.Panics(t, func() {
-			BoxModel{}.WithMinSize(0, -10)
-		})
-	})
-
-	t.Run("NegativeMaxWidth", func(t *testing.T) {
-		assert.Panics(t, func() {
-			BoxModel{}.WithMaxSize(-10, 0)
-		})
-	})
-
-	t.Run("NegativeMaxHeight", func(t *testing.T) {
-		assert.Panics(t, func() {
-			BoxModel{}.WithMaxSize(0, -10)
-		})
-	})
 }
 
 func TestBoxModel_ValidationValid(t *testing.T) {
 	t.Run("ZeroValues", func(t *testing.T) {
 		assert.NotPanics(t, func() {
 			BoxModel{}.WithSize(0, 0)
-		})
-	})
-
-	t.Run("ValidConstraints", func(t *testing.T) {
-		assert.NotPanics(t, func() {
-			BoxModel{}.WithMinSize(50, 50).WithMaxSize(100, 100)
-		})
-	})
-
-	t.Run("EqualMinMax", func(t *testing.T) {
-		assert.NotPanics(t, func() {
-			BoxModel{}.WithMinSize(50, 50).WithMaxSize(50, 50)
 		})
 	})
 }
@@ -1062,60 +888,45 @@ func TestBoxModel_ClampingBehavior(t *testing.T) {
 	})
 }
 
-func TestBoxModel_ClampWithNegativeInput(t *testing.T) {
-	box := BoxModel{MinWidth: 50, MinHeight: 50}
-
-	t.Run("NegativeWidthPanics", func(t *testing.T) {
-		assert.Panics(t, func() {
-			box.ClampWidth(-10)
-		})
-	})
-
-	t.Run("NegativeHeightPanics", func(t *testing.T) {
-		assert.Panics(t, func() {
-			box.ClampHeight(-10)
-		})
-	})
-
-	t.Run("ZeroIsValid", func(t *testing.T) {
-		assert.NotPanics(t, func() {
-			box.ClampWidth(0)
-			box.ClampHeight(0)
-		})
-	})
-}
-
-func TestBoxModel_SizeAtConstraintBoundaries(t *testing.T) {
-	t.Run("WidthAtMin", func(t *testing.T) {
-		box := BoxModel{Width: 50, MinWidth: 50}
-		assert.True(t, box.SatisfiesWidthConstraints())
-	})
-
-	t.Run("WidthAtMax", func(t *testing.T) {
-		box := BoxModel{Width: 100, MaxWidth: 100}
-		assert.True(t, box.SatisfiesWidthConstraints())
-	})
-
-	t.Run("HeightAtMin", func(t *testing.T) {
-		box := BoxModel{Height: 50, MinHeight: 50}
-		assert.True(t, box.SatisfiesHeightConstraints())
-	})
-
-	t.Run("HeightAtMax", func(t *testing.T) {
-		box := BoxModel{Height: 100, MaxHeight: 100}
-		assert.True(t, box.SatisfiesHeightConstraints())
-	})
-
-	t.Run("BothAtBoundaries", func(t *testing.T) {
-		box := BoxModel{
-			Width: 50, Height: 100,
-			MinWidth: 50, MaxHeight: 100,
-		}
-		assert.True(t, box.SatisfiesConstraints())
-	})
-}
-
 func TestBoxModel_VirtualSizeEdgeCases(t *testing.T) {
+	// VirtualSize semantics:
+	// - VirtualSize = 0: "not set" - EffectiveVirtual returns ContentSize (no scrolling)
+	// - VirtualSize > 0: explicit virtual size - used as-is
+	// - VirtualSize < ContentSize: valid "scale-down" case (no scrolling, rare in TUI)
+	// - VirtualSize > ContentSize: triggers scrolling
+
+	t.Run("VirtualZeroDefaultsToContent", func(t *testing.T) {
+		// VirtualSize = 0 is a sentinel meaning "use content size"
+		box := BoxModel{
+			Width:  100,
+			Height: 50,
+			// VirtualWidth and VirtualHeight are 0 (default)
+		}
+
+		// EffectiveVirtual returns ContentSize when Virtual is 0
+		assert.Equal(t, 100, box.EffectiveVirtualWidth(), "defaults to ContentWidth")
+		assert.Equal(t, 50, box.EffectiveVirtualHeight(), "defaults to ContentHeight")
+
+		// Not scrollable because EffectiveVirtual == Content
+		assert.False(t, box.IsScrollableX())
+		assert.False(t, box.IsScrollableY())
+	})
+
+	t.Run("VirtualZeroWithPadding", func(t *testing.T) {
+		// Verify VirtualSize=0 defaults to computed ContentSize (after padding)
+		box := BoxModel{
+			Width:   100,
+			Height:  50,
+			Padding: terma.EdgeInsetsAll(10), // ContentWidth = 80, ContentHeight = 30
+		}
+
+		// EffectiveVirtual returns the computed ContentSize
+		assert.Equal(t, 80, box.ContentWidth())
+		assert.Equal(t, 30, box.ContentHeight())
+		assert.Equal(t, 80, box.EffectiveVirtualWidth(), "defaults to computed ContentWidth")
+		assert.Equal(t, 30, box.EffectiveVirtualHeight(), "defaults to computed ContentHeight")
+	})
+
 	t.Run("VirtualEqualsContent", func(t *testing.T) {
 		box := BoxModel{
 			Width: 100, Height: 50,
@@ -1128,14 +939,53 @@ func TestBoxModel_VirtualSizeEdgeCases(t *testing.T) {
 	})
 
 	t.Run("VirtualSmallerThanContent", func(t *testing.T) {
+		// "Scale-down" case: Virtual is smaller than Content.
+		// Rare in TUI, but valid. EffectiveVirtual returns the explicit value.
 		box := BoxModel{
 			Width: 100, Height: 50,
 			VirtualWidth: 50, VirtualHeight: 25,
 		}
+
+		// EffectiveVirtual returns the explicit (smaller) value, not ContentSize
+		assert.Equal(t, 50, box.EffectiveVirtualWidth(), "uses explicit value, not content")
+		assert.Equal(t, 25, box.EffectiveVirtualHeight(), "uses explicit value, not content")
+
+		// Not scrollable because Virtual < Content
 		assert.False(t, box.IsScrollableX())
 		assert.False(t, box.IsScrollableY())
 		assert.Equal(t, 0, box.MaxScrollX(), "max scroll should be 0, not negative")
 		assert.Equal(t, 0, box.MaxScrollY(), "max scroll should be 0, not negative")
+	})
+
+	t.Run("VirtualLargerThanContent", func(t *testing.T) {
+		// Normal scrolling case: Virtual > Content
+		box := BoxModel{
+			Width: 100, Height: 50,
+			VirtualWidth: 200, VirtualHeight: 150,
+		}
+
+		assert.Equal(t, 200, box.EffectiveVirtualWidth())
+		assert.Equal(t, 150, box.EffectiveVirtualHeight())
+		assert.True(t, box.IsScrollableX())
+		assert.True(t, box.IsScrollableY())
+		assert.Equal(t, 100, box.MaxScrollX()) // 200 - 100
+		assert.Equal(t, 100, box.MaxScrollY()) // 150 - 50
+	})
+
+	t.Run("VirtualOneIsNotZero", func(t *testing.T) {
+		// Edge case: VirtualSize = 1 is an explicit value, not the default
+		box := BoxModel{
+			Width: 100, Height: 50,
+			VirtualWidth: 1, VirtualHeight: 1,
+		}
+
+		// Returns 1, not ContentSize
+		assert.Equal(t, 1, box.EffectiveVirtualWidth())
+		assert.Equal(t, 1, box.EffectiveVirtualHeight())
+
+		// Not scrollable (Virtual < Content)
+		assert.False(t, box.IsScrollableX())
+		assert.False(t, box.IsScrollableY())
 	})
 }
 
@@ -1358,20 +1208,6 @@ func TestBoxModel_PartialInsets(t *testing.T) {
 		rect := box.ContentBox()
 		assert.Equal(t, 10, rect.X)
 		assert.Equal(t, 10, rect.Y)
-	})
-}
-
-func TestBoxModel_HeightOnlyConstraints(t *testing.T) {
-	t.Run("OnlyMinHeightConstraint", func(t *testing.T) {
-		box := BoxModel{MinHeight: 50}
-		assert.Equal(t, 50, box.ClampHeight(30))
-		assert.Equal(t, 1000, box.ClampHeight(1000), "no max constraint")
-	})
-
-	t.Run("OnlyMaxHeightConstraint", func(t *testing.T) {
-		box := BoxModel{MaxHeight: 100}
-		assert.Equal(t, 0, box.ClampHeight(0), "no min constraint")
-		assert.Equal(t, 100, box.ClampHeight(150))
 	})
 }
 

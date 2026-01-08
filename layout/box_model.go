@@ -21,12 +21,6 @@ type BoxModel struct {
 	Width  int
 	Height int
 
-	// Min/max constraints on border-box dimensions (0 = no constraint)
-	MinWidth  int
-	MaxWidth  int
-	MinHeight int
-	MaxHeight int
-
 	// Insets (padding and border shrink inward, margin expands outward)
 	Padding terma.EdgeInsets
 	Border  terma.EdgeInsets // Typically uniform (1,1,1,1) for borders
@@ -82,28 +76,6 @@ func (b BoxModel) Validate() {
 	}
 	if b.ScrollbarHeight < 0 {
 		panic("BoxModel: ScrollbarHeight cannot be negative")
-	}
-
-	// Min/max constraints must be non-negative
-	if b.MinWidth < 0 {
-		panic("BoxModel: MinWidth cannot be negative")
-	}
-	if b.MaxWidth < 0 {
-		panic("BoxModel: MaxWidth cannot be negative")
-	}
-	if b.MinHeight < 0 {
-		panic("BoxModel: MinHeight cannot be negative")
-	}
-	if b.MaxHeight < 0 {
-		panic("BoxModel: MaxHeight cannot be negative")
-	}
-
-	// Constraint validity (min <= max when both are set)
-	if b.MinWidth > 0 && b.MaxWidth > 0 && b.MinWidth > b.MaxWidth {
-		panic("BoxModel: MinWidth cannot exceed MaxWidth")
-	}
-	if b.MinHeight > 0 && b.MaxHeight > 0 && b.MinHeight > b.MaxHeight {
-		panic("BoxModel: MinHeight cannot exceed MaxHeight")
 	}
 }
 
@@ -272,75 +244,6 @@ func (b BoxModel) TotalVerticalInset() int {
 	return b.Padding.Vertical() + b.Border.Vertical() + b.Margin.Vertical()
 }
 
-// --- Constraint methods ---
-
-// ClampWidth clamps the given width to the min/max border-box width constraints.
-// A constraint of 0 means no constraint on that bound.
-// Panics if width is negative.
-func (b BoxModel) ClampWidth(width int) int {
-	if width < 0 {
-		panic("BoxModel: ClampWidth cannot accept negative width")
-	}
-	if b.MinWidth > 0 && width < b.MinWidth {
-		return b.MinWidth
-	}
-	if b.MaxWidth > 0 && width > b.MaxWidth {
-		return b.MaxWidth
-	}
-	return width
-}
-
-// ClampHeight clamps the given height to the min/max border-box height constraints.
-// A constraint of 0 means no constraint on that bound.
-// Panics if height is negative.
-func (b BoxModel) ClampHeight(height int) int {
-	if height < 0 {
-		panic("BoxModel: ClampHeight cannot accept negative height")
-	}
-	if b.MinHeight > 0 && height < b.MinHeight {
-		return b.MinHeight
-	}
-	if b.MaxHeight > 0 && height > b.MaxHeight {
-		return b.MaxHeight
-	}
-	return height
-}
-
-// WithClampedSize returns a new BoxModel with border-box dimensions clamped to constraints.
-func (b BoxModel) WithClampedSize() BoxModel {
-	result := b
-	result.Width = b.ClampWidth(b.Width)
-	result.Height = b.ClampHeight(b.Height)
-	return result
-}
-
-// SatisfiesWidthConstraints returns true if the border-box width is within constraints.
-func (b BoxModel) SatisfiesWidthConstraints() bool {
-	if b.MinWidth > 0 && b.Width < b.MinWidth {
-		return false
-	}
-	if b.MaxWidth > 0 && b.Width > b.MaxWidth {
-		return false
-	}
-	return true
-}
-
-// SatisfiesHeightConstraints returns true if the border-box height is within constraints.
-func (b BoxModel) SatisfiesHeightConstraints() bool {
-	if b.MinHeight > 0 && b.Height < b.MinHeight {
-		return false
-	}
-	if b.MaxHeight > 0 && b.Height > b.MaxHeight {
-		return false
-	}
-	return true
-}
-
-// SatisfiesConstraints returns true if border-box dimensions are within all constraints.
-func (b BoxModel) SatisfiesConstraints() bool {
-	return b.SatisfiesWidthConstraints() && b.SatisfiesHeightConstraints()
-}
-
 // --- Scrolling methods ---
 
 // EffectiveVirtualWidth returns the virtual content width.
@@ -490,26 +393,6 @@ func (b BoxModel) WithBorder(border terma.EdgeInsets) BoxModel {
 func (b BoxModel) WithMargin(margin terma.EdgeInsets) BoxModel {
 	result := b
 	result.Margin = margin
-	result.Validate()
-	return result
-}
-
-// WithMinSize returns a new BoxModel with min border-box constraints.
-// Panics if min exceeds max (when both are set).
-func (b BoxModel) WithMinSize(minWidth, minHeight int) BoxModel {
-	result := b
-	result.MinWidth = minWidth
-	result.MinHeight = minHeight
-	result.Validate()
-	return result
-}
-
-// WithMaxSize returns a new BoxModel with max border-box constraints.
-// Panics if max is less than min (when both are set).
-func (b BoxModel) WithMaxSize(maxWidth, maxHeight int) BoxModel {
-	result := b
-	result.MaxWidth = maxWidth
-	result.MaxHeight = maxHeight
 	result.Validate()
 	return result
 }
