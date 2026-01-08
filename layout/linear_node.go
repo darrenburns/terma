@@ -55,13 +55,12 @@ func (l *LinearNode) ComputeLayout(constraints Constraints) ComputedLayout {
 
 // emptyLayout handles the case of no children.
 func (l *LinearNode) emptyLayout(constraints Constraints) ComputedLayout {
-	// Size to minimum or zero
-	width, height := constraints.Constrain(0, 0)
-
-	// Add our own insets
+	// Natural empty size is just the insets (padding + border)
 	hInset := l.Padding.Horizontal() + l.Border.Horizontal()
 	vInset := l.Padding.Vertical() + l.Border.Vertical()
-	width, height = constraints.Constrain(width+hInset, height+vInset)
+
+	// Clamp to constraints once
+	width, height := constraints.Constrain(hInset, vInset)
 
 	return ComputedLayout{
 		Box: BoxModel{

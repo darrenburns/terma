@@ -45,6 +45,31 @@ func TestLinearNode_EmptyChildren(t *testing.T) {
 		assert.Equal(t, 20, result.Box.Width)  // just padding
 		assert.Equal(t, 10, result.Box.Height) // just padding
 	})
+
+	t.Run("EmptyWithPadding_ConstrainedOnce", func(t *testing.T) {
+		// Bug: emptyLayout was applying constraints twice:
+		// 1. Constrain(0,0) → min (e.g., 100)
+		// 2. Add insets → 120
+		// 3. Constrain again → clamp to max (e.g., 110)
+		// Result: 110, but should be 100 (the minimum)
+		//
+		// An empty container's natural size is just its insets.
+		// That should be clamped to constraints once.
+		row := &RowNode{
+			Padding: EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10}, // 20x20 insets
+		}
+		// Min=100, Max=110 - empty box with 20px insets should clamp to min (100)
+		result := row.ComputeLayout(Constraints{
+			MinWidth:  100,
+			MaxWidth:  110,
+			MinHeight: 100,
+			MaxHeight: 110,
+		})
+
+		// Natural size (20) clamped to min (100), not min+insets clamped to max (110)
+		assert.Equal(t, 100, result.Box.Width, "should clamp insets to min, not add insets to min")
+		assert.Equal(t, 100, result.Box.Height, "should clamp insets to min, not add insets to min")
+	})
 }
 
 func TestLinearNode_BasicLayout(t *testing.T) {
@@ -492,6 +517,35 @@ func TestLinearNode_CrossAxisAlignment(t *testing.T) {
 		assert.Equal(t, 50, result.Children[0].Layout.Box.Height)
 		assert.Equal(t, 50, result.Children[1].Layout.Box.Height)
 		assert.Equal(t, 50, result.Children[2].Layout.Box.Height)
+	})
+
+	t.Run("Stretch_OverridesChildConstraints", func(t *testing.T) {
+		// A child with MaxHeight=15 says "I cannot be taller than 15"
+		// But a sibling is 25 tall, and CrossAxisStretch forces container to 25
+		// Parent constraint (stretch to 25) MUST win over child's MaxHeight
+		//
+		// This matches Flutter's philosophy: parent constraints are authoritative.
+		// When min > max due to conflict, min wins. The child may look ugly
+		// (content overflow), but the layout is deterministic.
+		row := &RowNode{
+			CrossAlign: CrossAxisStretch,
+			Children: []LayoutNode{
+				&BoxNode{Width: 20, Height: 10, MaxHeight: 15}, // "I cannot be > 15"
+				box(20, 25), // Sibling forces container to 25
+			},
+		}
+		result := row.ComputeLayout(Loose(100, 100))
+
+		// Container shrink-wraps to tallest child (25)
+		assert.Equal(t, 25, result.Box.Height)
+
+		// Child 0 is forced to 25, even though it said MaxHeight=15
+		// Parent constraints override child preferences
+		assert.Equal(t, 25, result.Children[0].Layout.Box.Height,
+			"parent stretch constraint should override child's MaxHeight")
+
+		// Child 1 stays at 25 (its natural size)
+		assert.Equal(t, 25, result.Children[1].Layout.Box.Height)
 	})
 }
 
