@@ -26,16 +26,28 @@ type LinearNode struct {
 	Padding EdgeInsets
 	Border  EdgeInsets
 	Margin  EdgeInsets
+
+	// Container's own size constraints (optional, 0 means unconstrained).
+	// These are border-box constraints, applied after content-based sizing
+	// but before parent constraints. Allows containers to enforce minimum
+	// sizes independent of their children.
+	MinWidth  int
+	MaxWidth  int
+	MinHeight int
+	MaxHeight int
 }
 
 // ComputeLayout computes the layout for this linear container.
 func (l *LinearNode) ComputeLayout(constraints Constraints) ComputedLayout {
+	// Combine parent constraints with node's own constraints
+	effective := l.effectiveConstraints(constraints)
+
 	if len(l.Children) == 0 {
-		return l.emptyLayout(constraints)
+		return l.emptyLayout(effective)
 	}
 
 	// Step 1: Convert to content-box constraints (space available for children)
-	contentConstraints := l.toContentConstraints(constraints)
+	contentConstraints := l.toContentConstraints(effective)
 
 	// Step 2: First pass - measure all children
 	childLayouts, totalMain, maxCross := l.measureChildren(contentConstraints)
@@ -50,7 +62,12 @@ func (l *LinearNode) ComputeLayout(constraints Constraints) ComputedLayout {
 	positionedChildren := l.positionChildren(childLayouts, mainPositions, containerCross, contentConstraints)
 
 	// Step 6: Build the final BoxModel
-	return l.buildResult(constraints, containerMain, containerCross, positionedChildren)
+	return l.buildResult(effective, containerMain, containerCross, positionedChildren)
+}
+
+// effectiveConstraints combines parent constraints with node's own min/max constraints.
+func (l *LinearNode) effectiveConstraints(parent Constraints) Constraints {
+	return parent.WithNodeConstraints(l.MinWidth, l.MaxWidth, l.MinHeight, l.MaxHeight)
 }
 
 // emptyLayout handles the case of no children.

@@ -757,3 +757,178 @@ func TestLinearNode_Constraints(t *testing.T) {
 		assert.Equal(t, 30, result.Box.Height)
 	})
 }
+
+func TestLinearNode_NodeConstraints(t *testing.T) {
+	t.Run("Row_MinHeight_WithStretch", func(t *testing.T) {
+		// Key test case: Row has MinHeight=50 on the node itself.
+		// Parent gives loose constraints. Children are 20px tall.
+		// CrossAlign: Stretch.
+		//
+		// Expected: Container should be 50px (due to MinHeight).
+		// Children should stretch to 50px.
+		row := &RowNode{
+			MinHeight:  50,
+			CrossAlign: CrossAxisStretch,
+			Children: []LayoutNode{
+				box(20, 20),
+			},
+		}
+		result := row.ComputeLayout(Loose(100, 100))
+
+		// Container respects its own MinHeight
+		assert.Equal(t, 50, result.Box.Height,
+			"container should respect its own MinHeight")
+
+		// Child stretches to fill container's MinHeight
+		assert.Equal(t, 50, result.Children[0].Layout.Box.Height,
+			"child should stretch to container's MinHeight")
+	})
+
+	t.Run("Column_MinWidth_WithStretch", func(t *testing.T) {
+		// Same test but for Column (cross-axis is width)
+		col := &ColumnNode{
+			MinWidth:   50,
+			CrossAlign: CrossAxisStretch,
+			Children: []LayoutNode{
+				box(20, 20),
+			},
+		}
+		result := col.ComputeLayout(Loose(100, 100))
+
+		// Container respects its own MinWidth
+		assert.Equal(t, 50, result.Box.Width,
+			"container should respect its own MinWidth")
+
+		// Child stretches to fill container's MinWidth
+		assert.Equal(t, 50, result.Children[0].Layout.Box.Width,
+			"child should stretch to container's MinWidth")
+	})
+
+	t.Run("Row_MinWidth_MainAxis", func(t *testing.T) {
+		// MinWidth on Row affects the main axis (width)
+		row := &RowNode{
+			MinWidth:  80,
+			MainAlign: MainAxisCenter,
+			Children: []LayoutNode{
+				box(20, 10),
+			},
+		}
+		result := row.ComputeLayout(Loose(100, 50))
+
+		// Container is at least MinWidth
+		assert.Equal(t, 80, result.Box.Width)
+
+		// Child is centered in the larger container
+		assert.Equal(t, 30, result.Children[0].X) // (80-20)/2
+	})
+
+	t.Run("Row_MaxHeight_Limits", func(t *testing.T) {
+		// MaxHeight limits container even if children are taller
+		row := &RowNode{
+			MaxHeight: 30,
+			Children: []LayoutNode{
+				box(20, 50), // Taller than MaxHeight
+			},
+		}
+		result := row.ComputeLayout(Loose(100, 100))
+
+		// Container is clamped to MaxHeight
+		assert.Equal(t, 30, result.Box.Height,
+			"container should respect its own MaxHeight")
+	})
+
+	t.Run("NodeConstraints_CombineWithParent", func(t *testing.T) {
+		// Node says MinHeight=50, parent says MaxHeight=40
+		// Parent constraints are inviolable - they define available space.
+		// Node gets clamped to parent's max.
+		row := &RowNode{
+			MinHeight: 50,
+			Children: []LayoutNode{
+				box(20, 20),
+			},
+		}
+		result := row.ComputeLayout(Constraints{
+			MinWidth:  0,
+			MaxWidth:  100,
+			MinHeight: 0,
+			MaxHeight: 40, // Less than node's MinHeight
+		})
+
+		// Node's MinHeight (50) > parent's MaxHeight (40) creates conflict.
+		// Parent wins: node is clamped to 40 (the available space).
+		// This prevents returning sizes that exceed available space.
+		assert.Equal(t, 40, result.Box.Height,
+			"parent max wins when it conflicts with node min")
+	})
+
+	t.Run("Empty_RespectsMinSize", func(t *testing.T) {
+		// Empty row with MinHeight should still be that height
+		row := &RowNode{
+			MinHeight: 30,
+			MinWidth:  50,
+		}
+		result := row.ComputeLayout(Loose(100, 100))
+
+		assert.Equal(t, 50, result.Box.Width)
+		assert.Equal(t, 30, result.Box.Height)
+	})
+
+	t.Run("NavBar_UseCase", func(t *testing.T) {
+		// Real-world use case: NavBar component that's always at least 3 cells tall
+		navBar := &RowNode{
+			MinHeight:  3,
+			CrossAlign: CrossAxisStretch,
+			Padding:    EdgeInsets{Left: 1, Right: 1},
+			Children: []LayoutNode{
+				box(10, 1), // Small button
+				box(10, 1), // Small button
+			},
+		}
+		result := navBar.ComputeLayout(Loose(80, 24))
+
+		// NavBar respects MinHeight even though content is only 1 tall
+		assert.Equal(t, 3, result.Box.Height)
+
+		// Children stretch to fill (3 - 0 padding vertical = 3)
+		assert.Equal(t, 3, result.Children[0].Layout.Box.Height)
+		assert.Equal(t, 3, result.Children[1].Layout.Box.Height)
+	})
+
+	t.Run("Sidebar_UseCase", func(t *testing.T) {
+		// Real-world use case: Sidebar that's always at least 20 cells wide
+		sidebar := &ColumnNode{
+			MinWidth:   20,
+			CrossAlign: CrossAxisStretch,
+			Children: []LayoutNode{
+				box(10, 5), // Menu item
+				box(15, 5), // Menu item
+			},
+		}
+		result := sidebar.ComputeLayout(Loose(80, 24))
+
+		// Sidebar respects MinWidth even though content is only 15 wide
+		assert.Equal(t, 20, result.Box.Width)
+
+		// Children stretch to fill MinWidth
+		assert.Equal(t, 20, result.Children[0].Layout.Box.Width)
+		assert.Equal(t, 20, result.Children[1].Layout.Box.Width)
+	})
+
+	t.Run("UserConfigError_MinExceedsMax", func(t *testing.T) {
+		// User misconfigures node with Min > Max (e.g., MinHeight: 60, MaxHeight: 40)
+		// This is a configuration error, but we handle it gracefully.
+		// Min wins as it represents a hard functional requirement.
+		row := &RowNode{
+			MinHeight: 60,
+			MaxHeight: 40, // Error: less than MinHeight
+			Children: []LayoutNode{
+				box(20, 20),
+			},
+		}
+		result := row.ComputeLayout(Loose(100, 100))
+
+		// Min wins: container is 60, not 40
+		assert.Equal(t, 60, result.Box.Height,
+			"min should win when user misconfigures min > max")
+	})
+}

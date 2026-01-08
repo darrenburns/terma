@@ -91,6 +91,45 @@ func (c Constraints) Constrain(width, height int) (int, int) {
 	return w, h
 }
 
+// WithNodeConstraints applies a node's own min/max constraints to parent constraints.
+// Node constraints use 0 to mean "unconstrained".
+// Parent constraints are inviolable - node constraints are clamped to parent bounds:
+//   - Node's min is clamped to parent's max (can't exceed available space)
+//   - Node's max is raised to parent's min (can't refuse required minimum, e.g., stretch)
+//
+// If the resulting constraints are invalid (min > max), min wins. This handles
+// user configuration errors like MinHeight: 60, MaxHeight: 40.
+func (c Constraints) WithNodeConstraints(minW, maxW, minH, maxH int) Constraints {
+	effective := c
+
+	// Apply node's min constraints, but clamp to parent's max.
+	if minW > 0 {
+		effective.MinWidth = max(effective.MinWidth, min(minW, c.MaxWidth))
+	}
+	if minH > 0 {
+		effective.MinHeight = max(effective.MinHeight, min(minH, c.MaxHeight))
+	}
+
+	// Apply node's max constraints, but clamp to parent's min.
+	if maxW > 0 {
+		effective.MaxWidth = min(effective.MaxWidth, max(maxW, c.MinWidth))
+	}
+	if maxH > 0 {
+		effective.MaxHeight = min(effective.MaxHeight, max(maxH, c.MinHeight))
+	}
+
+	// Sanity check: ensure min <= max. If user misconfigured node constraints
+	// (e.g., MinHeight > MaxHeight), min wins as it represents a hard requirement.
+	if effective.MinWidth > effective.MaxWidth {
+		effective.MaxWidth = effective.MinWidth
+	}
+	if effective.MinHeight > effective.MaxHeight {
+		effective.MaxHeight = effective.MinHeight
+	}
+
+	return effective
+}
+
 // LayoutNode represents a node in the layout tree.
 // It can be a leaf (BoxNode) or a container (RowNode, ColumnNode, etc.).
 type LayoutNode interface {

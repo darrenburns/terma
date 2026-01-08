@@ -75,35 +75,8 @@ func (b *BoxNode) ComputeLayout(constraints Constraints) ComputedLayout {
 }
 
 // effectiveConstraints computes the intersection of parent constraints and node's own min/max.
-// The result is the tightest constraints that satisfy both.
 func (b *BoxNode) effectiveConstraints(parent Constraints) Constraints {
-	effective := parent
-
-	// Tighten min constraints (take the larger minimum)
-	if b.MinWidth > 0 && b.MinWidth > effective.MinWidth {
-		effective.MinWidth = b.MinWidth
-	}
-	if b.MinHeight > 0 && b.MinHeight > effective.MinHeight {
-		effective.MinHeight = b.MinHeight
-	}
-
-	// Tighten max constraints (take the smaller maximum)
-	if b.MaxWidth > 0 && b.MaxWidth < effective.MaxWidth {
-		effective.MaxWidth = b.MaxWidth
-	}
-	if b.MaxHeight > 0 && b.MaxHeight < effective.MaxHeight {
-		effective.MaxHeight = b.MaxHeight
-	}
-
-	// Ensure min doesn't exceed max (min wins if conflict)
-	if effective.MinWidth > effective.MaxWidth {
-		effective.MaxWidth = effective.MinWidth
-	}
-	if effective.MinHeight > effective.MaxHeight {
-		effective.MaxHeight = effective.MinHeight
-	}
-
-	return effective
+	return parent.WithNodeConstraints(b.MinWidth, b.MaxWidth, b.MinHeight, b.MaxHeight)
 }
 
 // toContentBoxConstraints converts border-box constraints to content-box constraints

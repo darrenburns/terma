@@ -112,8 +112,9 @@ func TestBoxNode_NodeConstraints(t *testing.T) {
 
 	t.Run("NodeMinExceedsParentMax", func(t *testing.T) {
 		// Node wants at least 80, but parent only allows up to 50.
-		// When min/max conflict, min wins (widget needs that space to function).
-		// This matches Flutter's behavior.
+		// Parent constraints are inviolable - they define the available space.
+		// If node's min exceeds parent's max, node gets clamped to parent's max.
+		// This prevents returning sizes that exceed available space (buffer overflow).
 		node := &BoxNode{
 			Width:    100,
 			Height:   30,
@@ -123,8 +124,8 @@ func TestBoxNode_NodeConstraints(t *testing.T) {
 		result := node.ComputeLayout(Loose(50, 100))
 
 		// Node's MinWidth (80) > parent's MaxWidth (50) creates a conflict.
-		// Min wins: effective constraints become [80, 80], so result is 80.
-		assert.Equal(t, 80, result.Box.Width, "node's min constraint wins when it conflicts with parent max")
+		// Parent wins: node is clamped to 50 (the available space).
+		assert.Equal(t, 50, result.Box.Width, "parent max wins when it conflicts with node min")
 	})
 }
 

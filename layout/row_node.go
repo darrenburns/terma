@@ -19,6 +19,12 @@ type RowNode struct {
 	Padding EdgeInsets
 	Border  EdgeInsets
 	Margin  EdgeInsets
+
+	// Container's own size constraints (optional, 0 means unconstrained).
+	MinWidth  int
+	MaxWidth  int
+	MinHeight int
+	MaxHeight int
 }
 
 // ComputeLayout computes the row layout by delegating to LinearNode.
@@ -32,5 +38,9 @@ func (r *RowNode) ComputeLayout(constraints Constraints) ComputedLayout {
 		Padding:    r.Padding,
 		Border:     r.Border,
 		Margin:     r.Margin,
+		MinWidth:   r.MinWidth,
+		MaxWidth:   r.MaxWidth,
+		MinHeight:  r.MinHeight,
+		MaxHeight:  r.MaxHeight,
 	}).ComputeLayout(constraints)
 }

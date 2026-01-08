@@ -19,6 +19,12 @@ type ColumnNode struct {
 	Padding EdgeInsets
 	Border  EdgeInsets
 	Margin  EdgeInsets
+
+	// Container's own size constraints (optional, 0 means unconstrained).
+	MinWidth  int
+	MaxWidth  int
+	MinHeight int
+	MaxHeight int
 }
 
 // ComputeLayout computes the column layout by delegating to LinearNode.
@@ -32,5 +38,9 @@ func (c *ColumnNode) ComputeLayout(constraints Constraints) ComputedLayout {
 		Padding:    c.Padding,
 		Border:     c.Border,
 		Margin:     c.Margin,
+		MinWidth:   c.MinWidth,
+		MaxWidth:   c.MaxWidth,
+		MinHeight:  c.MinHeight,
+		MaxHeight:  c.MaxHeight,
 	}).ComputeLayout(constraints)
 }
