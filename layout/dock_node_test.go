@@ -511,6 +511,136 @@ func TestDockNode_ConstraintPropagation(t *testing.T) {
 			"edge height should be clamped to available space")
 	})
 
+	t.Run("MultipleTopsExceedAvailableHeight", func(t *testing.T) {
+		// Two Top children that together exceed container height.
+		// First gets 60, leaving only 40 for second (which wants 60).
+		dock := &DockNode{
+			Top: []LayoutNode{
+				dockBox(100, 60), // First top: gets 60
+				dockBox(100, 60), // Second top: wants 60, only 40 available
+			},
+		}
+
+		result := dock.ComputeLayout(Tight(100, 100))
+
+		assert.Len(t, result.Children, 2)
+
+		// First child gets its full height
+		assert.Equal(t, 60, result.Children[0].Layout.Box.Height)
+		assert.Equal(t, 0, result.Children[0].Y)
+
+		// Second child is clamped to remaining space (40)
+		assert.Equal(t, 40, result.Children[1].Layout.Box.Height,
+			"second top should be clamped to remaining height")
+		assert.Equal(t, 60, result.Children[1].Y)
+	})
+
+	t.Run("MultipleLeftsExceedAvailableWidth", func(t *testing.T) {
+		// Two Left children that together exceed container width.
+		dock := &DockNode{
+			Left: []LayoutNode{
+				dockBox(60, 100), // First left: gets 60
+				dockBox(60, 100), // Second left: wants 60, only 40 available
+			},
+		}
+
+		result := dock.ComputeLayout(Tight(100, 100))
+
+		assert.Len(t, result.Children, 2)
+
+		// First child gets its full width
+		assert.Equal(t, 60, result.Children[0].Layout.Box.Width)
+		assert.Equal(t, 0, result.Children[0].X)
+
+		// Second child is clamped to remaining space (40)
+		assert.Equal(t, 40, result.Children[1].Layout.Box.Width,
+			"second left should be clamped to remaining width")
+		assert.Equal(t, 60, result.Children[1].X)
+	})
+
+	t.Run("EdgesConsume100Percent_BodyGetsZero", func(t *testing.T) {
+		// Top takes 50, Bottom takes 50.
+		// Remaining height is exactly 0.
+		dock := &DockNode{
+			Top:    []LayoutNode{dockBox(100, 50)},
+			Bottom: []LayoutNode{dockBox(100, 50)},
+			Body:   dockBox(10, 10), // Wants space, gets none
+		}
+
+		result := dock.ComputeLayout(Tight(100, 100))
+
+		assert.Equal(t, 50, result.Children[0].Layout.Box.Height) // Top
+		assert.Equal(t, 50, result.Children[1].Layout.Box.Height) // Bottom
+
+		// Ensure Body exists but has 0 height (and no negative values!)
+		body := result.Children[2]
+		assert.Equal(t, 0, body.Layout.Box.Height, "Body should be clamped to 0")
+		assert.GreaterOrEqual(t, body.Y, 0, "Body Y should be valid")
+	})
+
+	t.Run("TopAndBottomExceedAvailableHeight", func(t *testing.T) {
+		// Top and Bottom together exceed container height.
+		// Top is processed first (default order), gets its full height.
+		// Bottom is clamped to remaining space.
+		dock := &DockNode{
+			Top:    []LayoutNode{dockBox(100, 70)}, // Top: gets 70
+			Bottom: []LayoutNode{dockBox(100, 50)}, // Bottom: wants 50, only 30 left
+		}
+
+		result := dock.ComputeLayout(Tight(100, 100))
+
+		// Top gets full height
+		assert.Equal(t, 70, result.Children[0].Layout.Box.Height)
+		assert.Equal(t, 0, result.Children[0].Y)
+
+		// Bottom is clamped to remaining 30
+		assert.Equal(t, 30, result.Children[1].Layout.Box.Height,
+			"bottom should be clamped to remaining height after top")
+		assert.Equal(t, 70, result.Children[1].Y, "bottom starts where remaining space starts")
+	})
+
+	t.Run("AllEdgesExceedSpace_BodyGetsMinimal", func(t *testing.T) {
+		// All edges consume significant space, leaving minimal for body.
+		// Trace through:
+		//   Container: 100x100
+		//   Top: 40 height → remaining: 100x60
+		//   Bottom: 40 height → remaining: 100x20 (60-40=20)
+		//   Left: 40 width, 20 height → remaining: 60x20
+		//   Right: 40 width, 20 height → remaining: 20x20
+		//   Body: gets 20x20
+		dock := &DockNode{
+			Top:    []LayoutNode{dockBox(100, 40)},
+			Bottom: []LayoutNode{dockBox(100, 40)},
+			Left:   []LayoutNode{dockBox(40, 100)}, // Wants 100 height, gets 20
+			Right:  []LayoutNode{dockBox(40, 100)}, // Wants 100 height, gets 20
+			Body:   dockBox(100, 100),              // Wants 100x100, gets 20x20
+		}
+
+		result := dock.ComputeLayout(Tight(100, 100))
+
+		// Top: 40 height, full width
+		assert.Equal(t, 100, result.Children[0].Layout.Box.Width)
+		assert.Equal(t, 40, result.Children[0].Layout.Box.Height)
+
+		// Bottom: 40 height, full width
+		assert.Equal(t, 100, result.Children[1].Layout.Box.Width)
+		assert.Equal(t, 40, result.Children[1].Layout.Box.Height)
+
+		// Left: 40 width, 20 height (remaining after top+bottom)
+		assert.Equal(t, 40, result.Children[2].Layout.Box.Width)
+		assert.Equal(t, 20, result.Children[2].Layout.Box.Height,
+			"left height clamped to remaining after top+bottom")
+
+		// Right: 40 width, 20 height
+		assert.Equal(t, 40, result.Children[3].Layout.Box.Width)
+		assert.Equal(t, 20, result.Children[3].Layout.Box.Height)
+
+		// Body: gets remaining space (20x20)
+		body := result.Children[4]
+		assert.Equal(t, 20, body.Layout.Box.Width, "body width = 100-40-40")
+		assert.Equal(t, 20, body.Layout.Box.Height, "body height = 100-40-40")
+	})
+
 }
 
 func TestDockNode_RealWorldScenarios(t *testing.T) {
