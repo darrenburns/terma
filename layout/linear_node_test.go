@@ -146,8 +146,8 @@ func TestLinearNode_Spacing(t *testing.T) {
 
 		// Positions include spacing
 		assert.Equal(t, 0, result.Children[0].X)
-		assert.Equal(t, 25, result.Children[1].X)  // 20 + 5
-		assert.Equal(t, 60, result.Children[2].X)  // 25 + 30 + 5
+		assert.Equal(t, 25, result.Children[1].X) // 20 + 5
+		assert.Equal(t, 60, result.Children[2].X) // 25 + 30 + 5
 	})
 
 	t.Run("Column_WithSpacing", func(t *testing.T) {
@@ -213,8 +213,8 @@ func TestLinearNode_MainAxisAlignment(t *testing.T) {
 
 		// 40px extra / 2 gaps = 20px each
 		assert.Equal(t, 0, result.Children[0].X)
-		assert.Equal(t, 40, result.Children[1].X)  // 0 + 20 + 20
-		assert.Equal(t, 80, result.Children[2].X)  // 40 + 20 + 20
+		assert.Equal(t, 40, result.Children[1].X) // 0 + 20 + 20
+		assert.Equal(t, 80, result.Children[2].X) // 40 + 20 + 20
 	})
 
 	t.Run("SpaceAround", func(t *testing.T) {
@@ -236,8 +236,8 @@ func TestLinearNode_MainAxisAlignment(t *testing.T) {
 
 		// 40px extra / 4 gaps = 10px each
 		assert.Equal(t, 10, result.Children[0].X)
-		assert.Equal(t, 40, result.Children[1].X)  // 10 + 20 + 10
-		assert.Equal(t, 70, result.Children[2].X)  // 40 + 20 + 10
+		assert.Equal(t, 40, result.Children[1].X) // 10 + 20 + 10
+		assert.Equal(t, 70, result.Children[2].X) // 40 + 20 + 10
 	})
 
 	t.Run("SpaceEvenly_NoPixelLoss", func(t *testing.T) {
@@ -352,7 +352,7 @@ func TestLinearNode_MainAxisAlignment(t *testing.T) {
 
 		// Calculate actual gaps
 		gaps := []int{
-			result.Children[0].X,                               // leading gap
+			result.Children[0].X, // leading gap
 			result.Children[1].X - (result.Children[0].X + 21), // gap 0-1
 			result.Children[2].X - (result.Children[1].X + 21), // gap 1-2
 			100 - (result.Children[2].X + 21),                  // trailing gap
@@ -387,6 +387,199 @@ func TestLinearNode_MainAxisAlignment(t *testing.T) {
 
 		// Verify container size
 		assert.Equal(t, 100, result.Box.Width)
+	})
+
+	t.Run("SpaceAround_GapsDistributedEvenly", func(t *testing.T) {
+		// 3 children of 21 width each = 63, container = 100
+		// Extra = 37, SpaceAround distributes as: half + full + full + half = 3 units
+		// With cumulative distribution, remainder spreads evenly
+		row := &RowNode{
+			MainAlign: MainAxisSpaceAround,
+			Children: []LayoutNode{
+				box(21, 10),
+				box(21, 10),
+				box(21, 10),
+			},
+		}
+		result := row.ComputeLayout(Tight(100, 20))
+
+		// Calculate actual gaps
+		gaps := []int{
+			result.Children[0].X,                               // leading gap (half)
+			result.Children[1].X - (result.Children[0].X + 21), // gap 0-1 (full)
+			result.Children[2].X - (result.Children[1].X + 21), // gap 1-2 (full)
+			100 - (result.Children[2].X + 21),                  // trailing gap (half)
+		}
+
+		// Between gaps (full units) should be roughly equal
+		betweenGaps := []int{gaps[1], gaps[2]}
+		minBetween, maxBetween := betweenGaps[0], betweenGaps[0]
+		for _, g := range betweenGaps {
+			if g < minBetween {
+				minBetween = g
+			}
+			if g > maxBetween {
+				maxBetween = g
+			}
+		}
+		assert.LessOrEqual(t, maxBetween-minBetween, 1, "between gaps should differ by at most 1")
+
+		// Edge gaps should be roughly half of between gaps (within rounding tolerance)
+		// For 37/3 ≈ 12.33 per unit: full ≈ 12, half ≈ 6
+		edgeGaps := []int{gaps[0], gaps[3]}
+		for i, edge := range edgeGaps {
+			// Allow edge gaps to be slightly more or less than half due to cumulative rounding
+			assert.GreaterOrEqual(t, edge, 5, "edge gap %d too small", i)
+			assert.LessOrEqual(t, edge, 8, "edge gap %d too large", i)
+		}
+
+		// Verify total gaps sum to extra space (most important check)
+		totalGaps := 0
+		for _, g := range gaps {
+			totalGaps += g
+		}
+		assert.Equal(t, 37, totalGaps, "gaps should sum to extra space")
+	})
+
+	// --- 0-child edge cases (ensure no crashes) ---
+
+	t.Run("SpaceBetween_NoChildren", func(t *testing.T) {
+		row := &RowNode{
+			MainAlign: MainAxisSpaceBetween,
+			Children:  []LayoutNode{}, // Empty
+		}
+		result := row.ComputeLayout(Tight(100, 20))
+
+		// Should not crash, returns empty layout
+		assert.Equal(t, 100, result.Box.Width)
+		assert.Equal(t, 20, result.Box.Height)
+		assert.Empty(t, result.Children)
+	})
+
+	t.Run("SpaceAround_NoChildren", func(t *testing.T) {
+		row := &RowNode{
+			MainAlign: MainAxisSpaceAround,
+			Children:  []LayoutNode{},
+		}
+		result := row.ComputeLayout(Tight(100, 20))
+		assert.Equal(t, 100, result.Box.Width)
+		assert.Empty(t, result.Children)
+	})
+
+	t.Run("SpaceEvenly_NoChildren", func(t *testing.T) {
+		row := &RowNode{
+			MainAlign: MainAxisSpaceEvenly,
+			Children:  []LayoutNode{},
+		}
+		result := row.ComputeLayout(Tight(100, 20))
+		assert.Equal(t, 100, result.Box.Width)
+		assert.Empty(t, result.Children)
+	})
+
+	// --- Single-child edge cases ---
+
+	t.Run("SpaceBetween_SingleChild", func(t *testing.T) {
+		// Single child with SpaceBetween: no "between" to space, child at 0
+		row := &RowNode{
+			MainAlign: MainAxisSpaceBetween,
+			Children:  []LayoutNode{box(20, 10)},
+		}
+		result := row.ComputeLayout(Tight(100, 20))
+
+		// Single child starts at 0 (explicit handling in code)
+		assert.Equal(t, 0, result.Children[0].X)
+	})
+
+	t.Run("SpaceAround_SingleChild", func(t *testing.T) {
+		// Single child with SpaceAround: equal space on both sides = centered
+		row := &RowNode{
+			MainAlign: MainAxisSpaceAround,
+			Children:  []LayoutNode{box(20, 10)},
+		}
+		result := row.ComputeLayout(Tight(100, 20))
+
+		// extraSpace = 80, formula: (80 * 1) / 2 = 40
+		assert.Equal(t, 40, result.Children[0].X)
+	})
+
+	t.Run("SpaceEvenly_SingleChild", func(t *testing.T) {
+		// Single child with SpaceEvenly: equal gaps everywhere = centered
+		row := &RowNode{
+			MainAlign: MainAxisSpaceEvenly,
+			Children:  []LayoutNode{box(20, 10)},
+		}
+		result := row.ComputeLayout(Tight(100, 20))
+
+		// extraSpace = 80, numGaps = 2, spaceBefore = (80 * 1) / 2 = 40
+		assert.Equal(t, 40, result.Children[0].X)
+	})
+
+	// --- Spacing field ignored for space-* alignments ---
+
+	t.Run("SpaceBetween_IgnoresSpacingField", func(t *testing.T) {
+		// Setting Spacing has no effect when MainAlign is SpaceBetween
+		// This documents intentional behavior: space-* alignments calculate their own gaps
+		rowWithSpacing := &RowNode{
+			Spacing:   100, // Large spacing - should be ignored
+			MainAlign: MainAxisSpaceBetween,
+			Children: []LayoutNode{
+				box(20, 10),
+				box(20, 10),
+			},
+		}
+		rowWithoutSpacing := &RowNode{
+			Spacing:   0,
+			MainAlign: MainAxisSpaceBetween,
+			Children: []LayoutNode{
+				box(20, 10),
+				box(20, 10),
+			},
+		}
+
+		r1 := rowWithSpacing.ComputeLayout(Tight(100, 20))
+		r2 := rowWithoutSpacing.ComputeLayout(Tight(100, 20))
+
+		// Same positions - Spacing field is ignored for SpaceBetween
+		assert.Equal(t, r1.Children[0].X, r2.Children[0].X)
+		assert.Equal(t, r1.Children[1].X, r2.Children[1].X)
+	})
+
+	t.Run("SpaceEvenly_IgnoresSpacingField", func(t *testing.T) {
+		rowWithSpacing := &RowNode{
+			Spacing:   100,
+			MainAlign: MainAxisSpaceEvenly,
+			Children:  []LayoutNode{box(20, 10), box(20, 10)},
+		}
+		rowWithoutSpacing := &RowNode{
+			Spacing:   0,
+			MainAlign: MainAxisSpaceEvenly,
+			Children:  []LayoutNode{box(20, 10), box(20, 10)},
+		}
+
+		r1 := rowWithSpacing.ComputeLayout(Tight(100, 20))
+		r2 := rowWithoutSpacing.ComputeLayout(Tight(100, 20))
+
+		assert.Equal(t, r1.Children[0].X, r2.Children[0].X)
+		assert.Equal(t, r1.Children[1].X, r2.Children[1].X)
+	})
+
+	t.Run("SpaceAround_IgnoresSpacingField", func(t *testing.T) {
+		rowWithSpacing := &RowNode{
+			Spacing:   100,
+			MainAlign: MainAxisSpaceAround,
+			Children:  []LayoutNode{box(20, 10), box(20, 10)},
+		}
+		rowWithoutSpacing := &RowNode{
+			Spacing:   0,
+			MainAlign: MainAxisSpaceAround,
+			Children:  []LayoutNode{box(20, 10), box(20, 10)},
+		}
+
+		r1 := rowWithSpacing.ComputeLayout(Tight(100, 20))
+		r2 := rowWithoutSpacing.ComputeLayout(Tight(100, 20))
+
+		assert.Equal(t, r1.Children[0].X, r2.Children[0].X)
+		assert.Equal(t, r1.Children[1].X, r2.Children[1].X)
 	})
 }
 
@@ -546,6 +739,69 @@ func TestLinearNode_CrossAxisAlignment(t *testing.T) {
 
 		// Child 1 stays at 25 (its natural size)
 		assert.Equal(t, 25, result.Children[1].Layout.Box.Height)
+	})
+
+	t.Run("Stretch_WithChildMargins", func(t *testing.T) {
+		// Container is 50px tall, child has 5px top/bottom margin
+		// Child should stretch to fill available space (50 - 10 = 40px)
+		row := &RowNode{
+			CrossAlign: CrossAxisStretch,
+			Children: []LayoutNode{
+				boxWithMargin(20, 10, EdgeInsets{Top: 5, Right: 0, Bottom: 5, Left: 0}),
+			},
+		}
+		result := row.ComputeLayout(Tight(100, 50))
+
+		// Child border-box should be 40 (container 50 - margins 10)
+		assert.Equal(t, 40, result.Children[0].Layout.Box.Height,
+			"stretched child should account for its own margins")
+
+		// Child margin-box should equal container
+		assert.Equal(t, 50, result.Children[0].Layout.Box.MarginBoxHeight(),
+			"child margin-box should fit exactly in container")
+
+		// Child positioned at margin offset
+		assert.Equal(t, 5, result.Children[0].Y)
+	})
+
+	t.Run("Stretch_ShrinksLargerChildren", func(t *testing.T) {
+		// Child is 80px tall but container is only 30px
+		// Stretch forces the child's layout box to match container exactly,
+		// even if that means shrinking. Content may overflow visually,
+		// but layout integrity is preserved.
+		row := &RowNode{
+			CrossAlign: CrossAxisStretch,
+			Children: []LayoutNode{
+				box(20, 80), // Wants 80px height
+			},
+		}
+		result := row.ComputeLayout(Tight(100, 30))
+
+		// Child is shrunk to container height
+		assert.Equal(t, 30, result.Children[0].Layout.Box.Height,
+			"stretch should shrink larger children to fit container")
+
+		// Container is the tight constraint size
+		assert.Equal(t, 30, result.Box.Height)
+	})
+
+	t.Run("Stretch_ShrinksLargerChildrenWithMargins", func(t *testing.T) {
+		// Child wants 80px but container is 40px, child has 5px margins
+		// Available for border-box = 40 - 10 = 30
+		row := &RowNode{
+			CrossAlign: CrossAxisStretch,
+			Children: []LayoutNode{
+				boxWithMargin(20, 80, EdgeInsets{Top: 5, Right: 0, Bottom: 5, Left: 0}),
+			},
+		}
+		result := row.ComputeLayout(Tight(100, 40))
+
+		// Child border-box shrunk to 30 (40 - margins)
+		assert.Equal(t, 30, result.Children[0].Layout.Box.Height,
+			"stretch should shrink to available space after margins")
+
+		// Margin-box equals container
+		assert.Equal(t, 40, result.Children[0].Layout.Box.MarginBoxHeight())
 	})
 }
 
@@ -935,5 +1191,108 @@ func TestLinearNode_NodeConstraints(t *testing.T) {
 		// Min wins: container is 60, not 40
 		assert.Equal(t, 60, result.Box.Height,
 			"min should win when user misconfigures min > max")
+	})
+
+}
+
+func TestLinearNode_Overflow(t *testing.T) {
+	t.Run("Center_ChildrenExceedContainer", func(t *testing.T) {
+		// Children total 80px in 50px container
+		row := &RowNode{
+			MainAlign: MainAxisCenter,
+			Children: []LayoutNode{
+				box(40, 10),
+				box(40, 10),
+			},
+		}
+		result := row.ComputeLayout(Tight(50, 20))
+
+		// Content is centered: overflows equally on both sides
+		// extraSpace = 50 - 80 = -30, centered = -15
+		assert.Equal(t, -15, result.Children[0].X)
+		assert.Equal(t, 25, result.Children[1].X) // -15 + 40
+	})
+
+	t.Run("End_ChildrenExceedContainer", func(t *testing.T) {
+		row := &RowNode{
+			MainAlign: MainAxisEnd,
+			Children: []LayoutNode{
+				box(40, 10),
+				box(40, 10),
+			},
+		}
+		result := row.ComputeLayout(Tight(50, 20))
+
+		// Last child flush with end, overflow on left
+		assert.Equal(t, -30, result.Children[0].X)
+		assert.Equal(t, 10, result.Children[1].X)
+		// Last child ends at container edge
+		assert.Equal(t, 50, result.Children[1].X+40)
+	})
+
+	t.Run("SpaceBetween_ChildrenExceedContainer", func(t *testing.T) {
+		row := &RowNode{
+			MainAlign: MainAxisSpaceBetween,
+			Children: []LayoutNode{
+				box(40, 10),
+				box(40, 10),
+			},
+		}
+		result := row.ComputeLayout(Tight(50, 20))
+
+		// SpaceBetween invariant maintained: first at 0, last ends at container edge
+		// Children overlap due to negative gap
+		assert.Equal(t, 0, result.Children[0].X)
+		assert.Equal(t, 10, result.Children[1].X) // gap = -30, so 40 - 30 = 10
+		assert.Equal(t, 50, result.Children[1].X+40)
+	})
+
+	t.Run("Start_ChildrenExceedContainer", func(t *testing.T) {
+		row := &RowNode{
+			MainAlign: MainAxisStart,
+			Children: []LayoutNode{
+				box(40, 10),
+				box(40, 10),
+			},
+		}
+		result := row.ComputeLayout(Tight(50, 20))
+
+		// Children positioned normally, overflow to the right
+		assert.Equal(t, 0, result.Children[0].X)
+		assert.Equal(t, 40, result.Children[1].X) // second child starts at 40, ends at 80
+	})
+}
+
+func TestLinearNode_InvalidInputConstraints(t *testing.T) {
+	t.Run("MinExceedsMax_Normalized", func(t *testing.T) {
+		// Parent passes invalid constraints (MinWidth > MaxWidth)
+		row := &RowNode{
+			Children: []LayoutNode{box(50, 20)},
+		}
+		result := row.ComputeLayout(Constraints{
+			MinWidth:  100,
+			MaxWidth:  90, // Invalid: less than MinWidth
+			MinHeight: 0,
+			MaxHeight: 50,
+		})
+
+		// Min wins: container is 100 (the minimum)
+		// System normalizes constraints so Max becomes 100
+		assert.Equal(t, 100, result.Box.Width)
+	})
+
+	t.Run("MinHeightExceedsMaxHeight_Normalized", func(t *testing.T) {
+		col := &ColumnNode{
+			Children: []LayoutNode{box(20, 30)},
+		}
+		result := col.ComputeLayout(Constraints{
+			MinWidth:  0,
+			MaxWidth:  100,
+			MinHeight: 80,
+			MaxHeight: 60, // Invalid: less than MinHeight
+		})
+
+		// Min wins: container is 80
+		assert.Equal(t, 80, result.Box.Height)
 	})
 }

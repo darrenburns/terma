@@ -290,9 +290,14 @@ func (l *LinearNode) positionChildren(
 			crossPos = containerCross - childCross
 
 		case CrossAxisStretch:
-			// Re-layout child with tight cross constraint
-			if childCross < containerCross {
-				stretchedConstraints := l.makeStretchConstraints(contentConstraints, containerCross)
+			// Re-layout child with tight cross constraint, accounting for child's margins.
+			// The available space for the border-box is container minus margins.
+			// Stretch forces the child's layout box to match exactly, even if that means
+			// shrinking. Content may visually overflow, but layout integrity is preserved.
+			childMarginCross := l.crossSize(layout.Box.Margin.Horizontal(), layout.Box.Margin.Vertical())
+			availableCross := containerCross - childMarginCross
+			if availableCross > 0 {
+				stretchedConstraints := l.makeStretchConstraints(contentConstraints, availableCross)
 				layout = l.Children[i].ComputeLayout(stretchedConstraints)
 			}
 			crossPos = 0
