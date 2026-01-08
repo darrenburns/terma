@@ -2,8 +2,6 @@ package layout
 
 import (
 	"fmt"
-
-	"terma"
 )
 
 // BoxModel describes a rectangular region with CSS border-box semantics.
@@ -22,9 +20,9 @@ type BoxModel struct {
 	Height int
 
 	// Insets (padding and border shrink inward, margin expands outward)
-	Padding terma.EdgeInsets
-	Border  terma.EdgeInsets // Typically uniform (1,1,1,1) for borders
-	Margin  terma.EdgeInsets
+	Padding EdgeInsets
+	Border  EdgeInsets // Typically uniform (1,1,1,1) for borders
+	Margin  EdgeInsets
 
 	// Scrolling (optional - zero values mean no scrolling)
 	// VirtualWidth/Height represent the total scrollable content size.
@@ -80,7 +78,7 @@ func (b BoxModel) Validate() {
 }
 
 // validateEdgeInsets checks that all EdgeInsets values are non-negative.
-func validateEdgeInsets(e terma.EdgeInsets, name string) {
+func validateEdgeInsets(e EdgeInsets, name string) {
 	if e.Top < 0 || e.Right < 0 || e.Bottom < 0 || e.Left < 0 {
 		panic(fmt.Sprintf("BoxModel: %s cannot have negative values", name))
 	}
@@ -141,8 +139,8 @@ func (b BoxModel) MarginBoxHeight() int {
 // Content dimensions are computed by subtracting padding and border from the border-box.
 // Use for: laying out content within the available space.
 // The position is relative to the margin box origin.
-func (b BoxModel) ContentBox() terma.Rect {
-	return terma.Rect{
+func (b BoxModel) ContentBox() Rect {
+	return Rect{
 		X:      b.Margin.Left + b.Border.Left + b.Padding.Left,
 		Y:      b.Margin.Top + b.Border.Top + b.Padding.Top,
 		Width:  b.ContentWidth(),
@@ -157,8 +155,8 @@ func (b BoxModel) ContentBox() terma.Rect {
 //
 // Use for: laying out children, determining available space for content.
 // The position is relative to the margin box origin.
-func (b BoxModel) UsableContentBox() terma.Rect {
-	return terma.Rect{
+func (b BoxModel) UsableContentBox() Rect {
+	return Rect{
 		X:      b.Margin.Left + b.Border.Left + b.Padding.Left,
 		Y:      b.Margin.Top + b.Border.Top + b.Padding.Top,
 		Width:  b.usableContentWidth(),
@@ -188,8 +186,8 @@ func (b BoxModel) usableContentHeight() int {
 
 // PaddingBox returns the padding box as a Rect.
 // The position is relative to the margin box origin.
-func (b BoxModel) PaddingBox() terma.Rect {
-	return terma.Rect{
+func (b BoxModel) PaddingBox() Rect {
+	return Rect{
 		X:      b.Margin.Left + b.Border.Left,
 		Y:      b.Margin.Top + b.Border.Top,
 		Width:  b.PaddingBoxWidth(),
@@ -199,8 +197,8 @@ func (b BoxModel) PaddingBox() terma.Rect {
 
 // BorderBox returns the border box as a Rect.
 // The position is relative to the margin box origin.
-func (b BoxModel) BorderBox() terma.Rect {
-	return terma.Rect{
+func (b BoxModel) BorderBox() Rect {
+	return Rect{
 		X:      b.Margin.Left,
 		Y:      b.Margin.Top,
 		Width:  b.BorderBoxWidth(),
@@ -210,8 +208,8 @@ func (b BoxModel) BorderBox() terma.Rect {
 
 // MarginBox returns the margin box as a Rect.
 // This is always positioned at (0,0) since it's the outermost boundary.
-func (b BoxModel) MarginBox() terma.Rect {
-	return terma.Rect{
+func (b BoxModel) MarginBox() Rect {
+	return Rect{
 		X:      0,
 		Y:      0,
 		Width:  b.MarginBoxWidth(),
@@ -336,8 +334,8 @@ func (b BoxModel) WithClampedScrollOffset() BoxModel {
 // VisibleContentRect returns the visible portion of the virtual content.
 // The rect is in virtual content coordinates (not screen coordinates).
 // For non-scrollable boxes, this returns a rect starting at (0,0).
-func (b BoxModel) VisibleContentRect() terma.Rect {
-	return terma.Rect{
+func (b BoxModel) VisibleContentRect() Rect {
+	return Rect{
 		X:      b.ScrollOffsetX,
 		Y:      b.ScrollOffsetY,
 		Width:  b.ContentWidth(),
@@ -347,8 +345,8 @@ func (b BoxModel) VisibleContentRect() terma.Rect {
 
 // VirtualContentRect returns the full virtual content area.
 // For non-scrollable boxes, this equals the content dimensions.
-func (b BoxModel) VirtualContentRect() terma.Rect {
-	return terma.Rect{
+func (b BoxModel) VirtualContentRect() Rect {
+	return Rect{
 		X:      0,
 		Y:      0,
 		Width:  b.EffectiveVirtualWidth(),
@@ -372,7 +370,7 @@ func (b BoxModel) WithSize(width, height int) BoxModel {
 
 // WithPadding returns a new BoxModel with the specified padding.
 // Panics if any padding value is negative.
-func (b BoxModel) WithPadding(padding terma.EdgeInsets) BoxModel {
+func (b BoxModel) WithPadding(padding EdgeInsets) BoxModel {
 	result := b
 	result.Padding = padding
 	result.Validate()
@@ -381,7 +379,7 @@ func (b BoxModel) WithPadding(padding terma.EdgeInsets) BoxModel {
 
 // WithBorder returns a new BoxModel with the specified border.
 // Panics if any border value is negative.
-func (b BoxModel) WithBorder(border terma.EdgeInsets) BoxModel {
+func (b BoxModel) WithBorder(border EdgeInsets) BoxModel {
 	result := b
 	result.Border = border
 	result.Validate()
@@ -390,7 +388,7 @@ func (b BoxModel) WithBorder(border terma.EdgeInsets) BoxModel {
 
 // WithMargin returns a new BoxModel with the specified margin.
 // Panics if any margin value is negative.
-func (b BoxModel) WithMargin(margin terma.EdgeInsets) BoxModel {
+func (b BoxModel) WithMargin(margin EdgeInsets) BoxModel {
 	result := b
 	result.Margin = margin
 	result.Validate()

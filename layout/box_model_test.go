@@ -1,7 +1,6 @@
 package layout
 
 import (
-	"terma"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,9 +12,9 @@ func TestBoxModel_DimensionMethods(t *testing.T) {
 	box := BoxModel{
 		Width:   112, // Border-box width
 		Height:  62,  // Border-box height
-		Padding: terma.EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
-		Border:  terma.EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
-		Margin:  terma.EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
+		Padding: EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
+		Border:  EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
+		Margin:  EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
 	}
 
 	// Border-box: 112x62
@@ -70,7 +69,7 @@ func TestBoxModel_ContentClampedToZero(t *testing.T) {
 		box := BoxModel{
 			Width:   20,
 			Height:  20,
-			Padding: terma.EdgeInsets{Top: 15, Right: 15, Bottom: 15, Left: 15},
+			Padding: EdgeInsets{Top: 15, Right: 15, Bottom: 15, Left: 15},
 		}
 		assert.Equal(t, 0, box.ContentWidth(), "content clamped to 0")
 		assert.Equal(t, 0, box.ContentHeight(), "content clamped to 0")
@@ -80,7 +79,7 @@ func TestBoxModel_ContentClampedToZero(t *testing.T) {
 		box := BoxModel{
 			Width:  10,
 			Height: 10,
-			Border: terma.EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
+			Border: EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
 		}
 		assert.Equal(t, 0, box.PaddingBoxWidth(), "padding-box clamped to 0")
 		assert.Equal(t, 0, box.PaddingBoxHeight(), "padding-box clamped to 0")
@@ -97,8 +96,8 @@ func TestBoxModel_ContentClampedToZero(t *testing.T) {
 		// content "would start" if there were space.
 		box := BoxModel{
 			Width:   10, // Very small border-box
-			Padding: terma.EdgeInsets{Left: 20}, // Exceeds width
-			Margin:  terma.EdgeInsets{Left: 5},
+			Padding: EdgeInsets{Left: 20}, // Exceeds width
+			Margin:  EdgeInsets{Left: 5},
 		}
 
 		// ContentWidth is 0 (clamped)
@@ -122,9 +121,9 @@ func TestBoxModel_RectMethods(t *testing.T) {
 	box := BoxModel{
 		Width:   112, // Border-box width
 		Height:  62,  // Border-box height
-		Padding: terma.EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
-		Border:  terma.EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
-		Margin:  terma.EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
+		Padding: EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
+		Border:  EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
+		Margin:  EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
 	}
 
 	t.Run("ContentBox", func(t *testing.T) {
@@ -132,7 +131,7 @@ func TestBoxModel_RectMethods(t *testing.T) {
 		// X = margin.left + border.left + padding.left = 10 + 1 + 5 = 16
 		// Y = margin.top + border.top + padding.top = 10 + 1 + 5 = 16
 		// Width = 112 - 10 - 2 = 100, Height = 62 - 10 - 2 = 50
-		assert.Equal(t, terma.Rect{X: 16, Y: 16, Width: 100, Height: 50}, rect)
+		assert.Equal(t, Rect{X: 16, Y: 16, Width: 100, Height: 50}, rect)
 	})
 
 	t.Run("PaddingBox", func(t *testing.T) {
@@ -140,20 +139,20 @@ func TestBoxModel_RectMethods(t *testing.T) {
 		// X = margin.left + border.left = 10 + 1 = 11
 		// Y = margin.top + border.top = 10 + 1 = 11
 		// Width = 112 - 2 = 110, Height = 62 - 2 = 60
-		assert.Equal(t, terma.Rect{X: 11, Y: 11, Width: 110, Height: 60}, rect)
+		assert.Equal(t, Rect{X: 11, Y: 11, Width: 110, Height: 60}, rect)
 	})
 
 	t.Run("BorderBox", func(t *testing.T) {
 		rect := box.BorderBox()
 		// X = margin.left = 10
 		// Y = margin.top = 10
-		assert.Equal(t, terma.Rect{X: 10, Y: 10, Width: 112, Height: 62}, rect)
+		assert.Equal(t, Rect{X: 10, Y: 10, Width: 112, Height: 62}, rect)
 	})
 
 	t.Run("MarginBox", func(t *testing.T) {
 		rect := box.MarginBox()
 		// Always at origin
-		assert.Equal(t, terma.Rect{X: 0, Y: 0, Width: 132, Height: 82}, rect)
+		assert.Equal(t, Rect{X: 0, Y: 0, Width: 132, Height: 82}, rect)
 	})
 
 	t.Run("ContentBoxVsUsableContentBox", func(t *testing.T) {
@@ -187,9 +186,9 @@ func TestBoxModel_ContentOrigin(t *testing.T) {
 	box := BoxModel{
 		Width:   112,
 		Height:  62,
-		Padding: terma.EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
-		Border:  terma.EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
-		Margin:  terma.EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
+		Padding: EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
+		Border:  EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
+		Margin:  EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
 	}
 
 	x, y := box.ContentOrigin()
@@ -206,9 +205,9 @@ func TestBoxModel_AsymmetricInsets(t *testing.T) {
 	box := BoxModel{
 		Width:   116,
 		Height:  60,
-		Padding: terma.EdgeInsets{Top: 2, Right: 4, Bottom: 6, Left: 8},
-		Border:  terma.EdgeInsets{Top: 1, Right: 2, Bottom: 1, Left: 2},
-		Margin:  terma.EdgeInsets{Top: 5, Right: 10, Bottom: 15, Left: 20},
+		Padding: EdgeInsets{Top: 2, Right: 4, Bottom: 6, Left: 8},
+		Border:  EdgeInsets{Top: 1, Right: 2, Bottom: 1, Left: 2},
+		Margin:  EdgeInsets{Top: 5, Right: 10, Bottom: 15, Left: 20},
 	}
 
 	// Padding: horizontal = 8 + 4 = 12, vertical = 2 + 6 = 8
@@ -268,7 +267,7 @@ func TestBoxModel_ZeroInsets(t *testing.T) {
 	})
 
 	t.Run("ContentAtOrigin", func(t *testing.T) {
-		assert.Equal(t, terma.Rect{X: 0, Y: 0, Width: 100, Height: 50}, box.ContentBox())
+		assert.Equal(t, Rect{X: 0, Y: 0, Width: 100, Height: 50}, box.ContentBox())
 	})
 }
 
@@ -276,9 +275,9 @@ func TestBoxModel_TotalInsets(t *testing.T) {
 	box := BoxModel{
 		Width:   112,
 		Height:  62,
-		Padding: terma.EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
-		Border:  terma.EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
-		Margin:  terma.EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
+		Padding: EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
+		Border:  EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
+		Margin:  EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
 	}
 
 	t.Run("TotalHorizontalInset", func(t *testing.T) {
@@ -426,7 +425,7 @@ func TestBoxModel_VisibleContentRect(t *testing.T) {
 		ScrollOffsetY: 25,
 	}
 
-	assert.Equal(t, terma.Rect{X: 50, Y: 25, Width: 100, Height: 50}, box.VisibleContentRect())
+	assert.Equal(t, Rect{X: 50, Y: 25, Width: 100, Height: 50}, box.VisibleContentRect())
 }
 
 func TestBoxModel_VirtualContentRect(t *testing.T) {
@@ -438,7 +437,7 @@ func TestBoxModel_VirtualContentRect(t *testing.T) {
 			VirtualHeight: 200,
 		}
 
-		assert.Equal(t, terma.Rect{X: 0, Y: 0, Width: 300, Height: 200}, box.VirtualContentRect())
+		assert.Equal(t, Rect{X: 0, Y: 0, Width: 300, Height: 200}, box.VirtualContentRect())
 	})
 
 	t.Run("WithoutVirtualSize", func(t *testing.T) {
@@ -447,7 +446,7 @@ func TestBoxModel_VirtualContentRect(t *testing.T) {
 			Height: 50,
 		}
 
-		assert.Equal(t, terma.Rect{X: 0, Y: 0, Width: 100, Height: 50}, box.VirtualContentRect())
+		assert.Equal(t, Rect{X: 0, Y: 0, Width: 100, Height: 50}, box.VirtualContentRect())
 	})
 }
 
@@ -551,7 +550,7 @@ func TestBoxModel_UsableContentBox(t *testing.T) {
 		box := BoxModel{
 			Width:   110,
 			Height:  60,
-			Padding: terma.EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
+			Padding: EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
 		}
 
 		content := box.ContentBox()
@@ -571,7 +570,7 @@ func TestBoxModel_UsableContentBox(t *testing.T) {
 			Height:         100,
 			VirtualHeight:  200, // Triggers vertical scrollbar
 			ScrollbarWidth: 10,
-			Padding:        terma.EdgeInsetsAll(10), // 10 on each side
+			Padding:        EdgeInsetsAll(10), // 10 on each side
 		}
 
 		// 1. BorderBox = 100
@@ -590,8 +589,8 @@ func TestBoxModel_UsableContentBox(t *testing.T) {
 		box := BoxModel{
 			Width:          100,
 			Height:         100,
-			Border:         terma.EdgeInsetsAll(2),  // 2 on each side = 4 total
-			Padding:        terma.EdgeInsetsAll(8),  // 8 on each side = 16 total
+			Border:         EdgeInsetsAll(2),  // 2 on each side = 4 total
+			Padding:        EdgeInsetsAll(8),  // 8 on each side = 16 total
 			VirtualHeight:  200,                     // Triggers vertical scrollbar
 			ScrollbarWidth: 5,
 		}
@@ -614,7 +613,7 @@ func TestBoxModel_UsableContentBox(t *testing.T) {
 		box := BoxModel{
 			Width:          50,
 			Height:         50,
-			Padding:        terma.EdgeInsets{Left: 10, Right: 10},
+			Padding:        EdgeInsets{Left: 10, Right: 10},
 			VirtualHeight:  200, // Triggers vertical scrollbar
 			ScrollbarWidth: 40,  // Exceeds ContentWidth of 30
 		}
@@ -631,8 +630,8 @@ func TestBoxModel_UsableContentBox(t *testing.T) {
 		box := BoxModel{
 			Width:           60,
 			Height:          60,
-			Border:          terma.EdgeInsetsAll(5),  // 10 total
-			Padding:         terma.EdgeInsetsAll(10), // 20 total
+			Border:          EdgeInsetsAll(5),  // 10 total
+			Padding:         EdgeInsetsAll(10), // 20 total
 			VirtualHeight:   200,
 			ScrollbarWidth:  50, // Exceeds ContentWidth
 			VirtualWidth:    200,
@@ -688,19 +687,19 @@ func TestBoxModel_BuilderMethods(t *testing.T) {
 	})
 
 	t.Run("WithPadding", func(t *testing.T) {
-		padding := terma.EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5}
+		padding := EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5}
 		result := box.WithPadding(padding)
 		assert.Equal(t, padding, result.Padding)
 	})
 
 	t.Run("WithBorder", func(t *testing.T) {
-		border := terma.EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1}
+		border := EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1}
 		result := box.WithBorder(border)
 		assert.Equal(t, border, result.Border)
 	})
 
 	t.Run("WithMargin", func(t *testing.T) {
-		margin := terma.EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10}
+		margin := EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10}
 		result := box.WithMargin(margin)
 		assert.Equal(t, margin, result.Margin)
 	})
@@ -736,9 +735,9 @@ func TestBoxModel_BuilderMethods(t *testing.T) {
 	t.Run("Chaining", func(t *testing.T) {
 		result := box.
 			WithSize(200, 100).
-			WithPadding(terma.EdgeInsetsAll(5)).
-			WithBorder(terma.EdgeInsetsAll(1)).
-			WithMargin(terma.EdgeInsetsAll(10))
+			WithPadding(EdgeInsetsAll(5)).
+			WithBorder(EdgeInsetsAll(1)).
+			WithMargin(EdgeInsetsAll(10))
 
 		// Border-box is 200, MarginBox = 200 + 20 = 220
 		assert.Equal(t, 220, result.MarginBoxWidth())
@@ -749,9 +748,9 @@ func TestBoxModel_BorderOrigin(t *testing.T) {
 	box := BoxModel{
 		Width:   112,
 		Height:  62,
-		Padding: terma.EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
-		Border:  terma.EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
-		Margin:  terma.EdgeInsets{Top: 10, Right: 15, Bottom: 10, Left: 20},
+		Padding: EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
+		Border:  EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
+		Margin:  EdgeInsets{Top: 10, Right: 15, Bottom: 10, Left: 20},
 	}
 
 	x, y := box.BorderOrigin()
@@ -767,13 +766,13 @@ func TestBoxModel_ValidationPanics(t *testing.T) {
 
 	t.Run("NegativePadding", func(t *testing.T) {
 		assert.Panics(t, func() {
-			BoxModel{}.WithPadding(terma.EdgeInsets{Left: -1})
+			BoxModel{}.WithPadding(EdgeInsets{Left: -1})
 		})
 	})
 
 	t.Run("NegativeBorder", func(t *testing.T) {
 		assert.Panics(t, func() {
-			BoxModel{}.WithBorder(terma.EdgeInsets{Top: -1})
+			BoxModel{}.WithBorder(EdgeInsets{Top: -1})
 		})
 	})
 
@@ -917,7 +916,7 @@ func TestBoxModel_VirtualSizeEdgeCases(t *testing.T) {
 		box := BoxModel{
 			Width:   100,
 			Height:  50,
-			Padding: terma.EdgeInsetsAll(10), // ContentWidth = 80, ContentHeight = 30
+			Padding: EdgeInsetsAll(10), // ContentWidth = 80, ContentHeight = 30
 		}
 
 		// EffectiveVirtual returns the computed ContentSize
@@ -1127,9 +1126,9 @@ func TestBoxModel_ZeroBorderBoxWithInsets(t *testing.T) {
 	box := BoxModel{
 		Width:   0,
 		Height:  0,
-		Padding: terma.EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
-		Border:  terma.EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
-		Margin:  terma.EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
+		Padding: EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
+		Border:  EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
+		Margin:  EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
 	}
 
 	t.Run("ContentClampedToZero", func(t *testing.T) {
@@ -1166,7 +1165,7 @@ func TestBoxModel_PartialInsets(t *testing.T) {
 		box := BoxModel{
 			Width:   110,
 			Height:  60,
-			Padding: terma.EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
+			Padding: EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
 		}
 		// Content = 110 - 10 = 100, Height = 60 - 10 = 50
 		assert.Equal(t, 100, box.ContentWidth())
@@ -1182,7 +1181,7 @@ func TestBoxModel_PartialInsets(t *testing.T) {
 		box := BoxModel{
 			Width:  102,
 			Height: 52,
-			Border: terma.EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
+			Border: EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},
 		}
 		// Content = 102 - 2 = 100, Height = 52 - 2 = 50
 		assert.Equal(t, 100, box.ContentWidth())
@@ -1198,7 +1197,7 @@ func TestBoxModel_PartialInsets(t *testing.T) {
 		box := BoxModel{
 			Width:  100,
 			Height: 50,
-			Margin: terma.EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
+			Margin: EdgeInsets{Top: 10, Right: 10, Bottom: 10, Left: 10},
 		}
 		// Content = 100 (no padding/border), MarginBox = 100 + 20 = 120
 		assert.Equal(t, 100, box.ContentWidth())
@@ -1219,7 +1218,7 @@ func TestBoxModel_NegativeMargin(t *testing.T) {
 		box := BoxModel{
 			Width:  100,
 			Height: 50,
-			Margin: terma.EdgeInsets{Top: -10, Right: -10, Bottom: -10, Left: -10},
+			Margin: EdgeInsets{Top: -10, Right: -10, Bottom: -10, Left: -10},
 		}
 
 		// MarginBox = Width + Margin.Left + Margin.Right
@@ -1252,7 +1251,7 @@ func TestBoxModel_NegativeMargin(t *testing.T) {
 		box := BoxModel{
 			Width:  100,
 			Height: 50,
-			Margin: terma.EdgeInsets{Top: 10, Right: -5, Bottom: 10, Left: 20},
+			Margin: EdgeInsets{Top: 10, Right: -5, Bottom: 10, Left: 20},
 		}
 
 		// MarginBoxWidth = 100 + 20 + (-5) = 115
@@ -1269,12 +1268,12 @@ func TestBoxModel_NegativeMargin(t *testing.T) {
 	t.Run("NegativeMarginWithBuilder", func(t *testing.T) {
 		// Verify builder accepts negative margins without panicking
 		assert.NotPanics(t, func() {
-			BoxModel{}.WithMargin(terma.EdgeInsets{Left: -10, Top: -5})
+			BoxModel{}.WithMargin(EdgeInsets{Left: -10, Top: -5})
 		})
 
 		box := BoxModel{}.
 			WithSize(100, 50).
-			WithMargin(terma.EdgeInsets{Left: -10, Right: -10})
+			WithMargin(EdgeInsets{Left: -10, Right: -10})
 
 		assert.Equal(t, 80, box.MarginBoxWidth())
 	})
@@ -1285,8 +1284,8 @@ func TestBoxModel_ScrollingWithInsets(t *testing.T) {
 	box := BoxModel{
 		Width:         120, // Border-box
 		Height:        70,
-		Padding:       terma.EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
-		Border:        terma.EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
+		Padding:       EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
+		Border:        EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
 		VirtualWidth:  200,
 		VirtualHeight: 150,
 	}
