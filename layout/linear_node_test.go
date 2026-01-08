@@ -823,11 +823,12 @@ func TestLinearNode_NodeConstraints(t *testing.T) {
 	})
 
 	t.Run("Row_MaxHeight_Limits", func(t *testing.T) {
-		// MaxHeight limits container even if children are taller
+		// MaxHeight limits container even if children are taller.
+		// Container constraints flow down to children - they get clamped too.
 		row := &RowNode{
 			MaxHeight: 30,
 			Children: []LayoutNode{
-				box(20, 50), // Taller than MaxHeight
+				box(20, 50), // Wants 50, but will be constrained to 30
 			},
 		}
 		result := row.ComputeLayout(Loose(100, 100))
@@ -835,6 +836,10 @@ func TestLinearNode_NodeConstraints(t *testing.T) {
 		// Container is clamped to MaxHeight
 		assert.Equal(t, 30, result.Box.Height,
 			"container should respect its own MaxHeight")
+
+		// Child is also clamped - container constraints flow down to children
+		assert.Equal(t, 30, result.Children[0].Layout.Box.Height,
+			"child should be clamped to container's MaxHeight")
 	})
 
 	t.Run("NodeConstraints_CombineWithParent", func(t *testing.T) {
