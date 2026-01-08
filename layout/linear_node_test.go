@@ -405,7 +405,7 @@ func TestLinearNode_MainAxisAlignment(t *testing.T) {
 
 		// Calculate actual gaps
 		gaps := []int{
-			result.Children[0].X,                               // leading gap (half)
+			result.Children[0].X, // leading gap (half)
 			result.Children[1].X - (result.Children[0].X + 21), // gap 0-1 (full)
 			result.Children[2].X - (result.Children[1].X + 21), // gap 1-2 (full)
 			100 - (result.Children[2].X + 21),                  // trailing gap (half)
@@ -762,6 +762,10 @@ func TestLinearNode_CrossAxisAlignment(t *testing.T) {
 
 		// Child positioned at margin offset
 		assert.Equal(t, 5, result.Children[0].Y)
+
+		// Ensure Main Axis (Width) remains untouched (should be natural size 20)
+		assert.Equal(t, 20, result.Children[0].Layout.Box.Width,
+			"Main axis width should preserve natural size during cross-axis stretch")
 	})
 
 	t.Run("Stretch_ShrinksLargerChildren", func(t *testing.T) {

@@ -127,8 +127,8 @@ func TestDockNode_MultipleEdges(t *testing.T) {
 		dock := &DockNode{
 			Top:    []LayoutNode{dockBox(100, 10)},
 			Bottom: []LayoutNode{dockBox(100, 15)},
-			Left:   []LayoutNode{dockBox(20, 75)},  // height = 100 - 10 - 15 = 75
-			Right:  []LayoutNode{dockBox(25, 75)},  // height = 75
+			Left:   []LayoutNode{dockBox(20, 75)}, // height = 100 - 10 - 15 = 75
+			Right:  []LayoutNode{dockBox(25, 75)}, // height = 75
 		}
 
 		result := dock.ComputeLayout(Tight(100, 100))
@@ -236,12 +236,19 @@ func TestDockNode_CustomOrder(t *testing.T) {
 	})
 }
 
+// TestDockNode_MultipleChildrenPerEdge verifies that multiple children on the
+// same edge stack VERTICALLY (for Top/Bottom) or HORIZONTALLY (for Left/Right),
+// each consuming space from the remaining area. This matches WPF DockPanel behavior.
+//
+// NOTE: If you want a horizontal toolbar in the Top slot, wrap multiple items
+// in a RowNode: Top: []LayoutNode{&RowNode{Children: [button1, button2, button3]}}
 func TestDockNode_MultipleChildrenPerEdge(t *testing.T) {
-	t.Run("TwoTops", func(t *testing.T) {
+	t.Run("TwoTops_StackVertically", func(t *testing.T) {
+		// Multiple Top children stack vertically, each consuming height
 		dock := &DockNode{
 			Top: []LayoutNode{
-				dockBox(100, 15), // First header
-				dockBox(100, 10), // Second header
+				dockBox(100, 15), // First header row
+				dockBox(100, 10), // Second header row (e.g., breadcrumbs)
 			},
 		}
 
@@ -258,11 +265,12 @@ func TestDockNode_MultipleChildrenPerEdge(t *testing.T) {
 		assert.Equal(t, 10, result.Children[1].Layout.Box.Height)
 	})
 
-	t.Run("TwoLefts", func(t *testing.T) {
+	t.Run("TwoLefts_StackHorizontally", func(t *testing.T) {
+		// Multiple Left children stack horizontally, each consuming width
 		dock := &DockNode{
 			Left: []LayoutNode{
-				dockBox(20, 100),
-				dockBox(15, 100),
+				dockBox(20, 100), // First sidebar
+				dockBox(15, 100), // Second sidebar (e.g., nested nav)
 			},
 		}
 
@@ -415,13 +423,103 @@ func TestDockNode_Constraints(t *testing.T) {
 	})
 }
 
+// TestDockNode_ConstraintPropagation verifies that DockNode properly constrains
+// children to available space. This is critical for "sticky header" behavior:
+// the body must be constrained so it handles overflow internally (via scrolling),
+// rather than expanding the dock container.
+func TestDockNode_ConstraintPropagation(t *testing.T) {
+	t.Run("BodyIsConstrainedToRemainingSpace", func(t *testing.T) {
+		// Scenario: Container is 100 tall. Header is 20.
+		// The Body content wants 500 height (huge).
+		// For sticky behavior, the Body layout MUST be clamped to 80
+		// so that overflow (scrollbars) can trigger inside the Body.
+		dock := &DockNode{
+			Top:  []LayoutNode{dockBox(100, 20)},
+			Body: dockBox(100, 500), // Requested height > Available height
+		}
+
+		result := dock.ComputeLayout(Tight(100, 100))
+
+		assert.Equal(t, 20, result.Children[0].Layout.Box.Height, "header height")
+
+		// CRITICAL: Body must be clamped to remaining space (80), not requested (500).
+		// If this returns 500, sticky header fails (whole page scrolls).
+		// If this returns 80, layout correctly creates a viewport for the body.
+		body := result.Children[1]
+		assert.Equal(t, 80, body.Layout.Box.Height,
+			"body should be clamped to remaining space, not its requested size")
+		assert.Equal(t, 20, body.Y, "body starts after header")
+	})
+
+	t.Run("BodyWithFixedSizeStretchesToFill", func(t *testing.T) {
+		// Body wants only 10x10, but should be stretched to fill remaining space.
+		// This confirms DockNode passes Tight constraints, not Loose.
+		dock := &DockNode{
+			Top:    []LayoutNode{dockBox(100, 20)},
+			Bottom: []LayoutNode{dockBox(100, 10)},
+			Left:   []LayoutNode{dockBox(15, 70)},
+			Right:  []LayoutNode{dockBox(25, 70)},
+			Body:   dockBox(10, 10), // Small fixed size
+		}
+
+		result := dock.ComputeLayout(Tight(100, 100))
+
+		// Remaining: width = 100 - 15 - 25 = 60, height = 100 - 20 - 10 = 70
+		body := result.Children[4]
+		assert.Equal(t, 60, body.Layout.Box.Width,
+			"body should stretch to fill remaining width")
+		assert.Equal(t, 70, body.Layout.Box.Height,
+			"body should stretch to fill remaining height")
+	})
+
+	t.Run("EdgeMinWidthExceedsAvailable", func(t *testing.T) {
+		// Top edge has MinWidth: 150, but container is only 100 wide.
+		// Parent constraints are inviolable - edge should be clamped to 100.
+		dock := &DockNode{
+			Top: []LayoutNode{
+				&BoxNode{
+					Width:    150,
+					Height:   20,
+					MinWidth: 150, // Wants at least 150, but only 100 available
+				},
+			},
+		}
+
+		result := dock.ComputeLayout(Tight(100, 100))
+
+		// Edge should be clamped to available width (100), not its MinWidth (150)
+		assert.Equal(t, 100, result.Children[0].Layout.Box.Width,
+			"edge width should be clamped to available space")
+	})
+
+	t.Run("EdgeMinHeightExceedsAvailable", func(t *testing.T) {
+		// Left edge has MinHeight: 150, but container is only 100 tall.
+		dock := &DockNode{
+			Left: []LayoutNode{
+				&BoxNode{
+					Width:     30,
+					Height:    150,
+					MinHeight: 150,
+				},
+			},
+		}
+
+		result := dock.ComputeLayout(Tight(100, 100))
+
+		// Edge should be clamped to available height (100)
+		assert.Equal(t, 100, result.Children[0].Layout.Box.Height,
+			"edge height should be clamped to available space")
+	})
+
+}
+
 func TestDockNode_RealWorldScenarios(t *testing.T) {
 	t.Run("AppLayout_HeaderFooterBody", func(t *testing.T) {
 		// Typical app: header at top, footer at bottom, content fills middle
 		dock := &DockNode{
-			Top:    []LayoutNode{dockBox(0, 3)},  // Header: 3 rows
-			Bottom: []LayoutNode{dockBox(0, 1)},  // Footer: 1 row (keybind bar)
-			Body:   dockBox(0, 0),                 // Content fills remainder
+			Top:    []LayoutNode{dockBox(0, 3)}, // Header: 3 rows
+			Bottom: []LayoutNode{dockBox(0, 1)}, // Footer: 1 row (keybind bar)
+			Body:   dockBox(0, 0),               // Content fills remainder
 		}
 
 		result := dock.ComputeLayout(Tight(80, 24)) // 80x24 terminal
@@ -451,7 +549,7 @@ func TestDockNode_RealWorldScenarios(t *testing.T) {
 			Top:    []LayoutNode{dockBox(0, 2)},  // Header
 			Bottom: []LayoutNode{dockBox(0, 1)},  // Footer
 			Left:   []LayoutNode{dockBox(20, 0)}, // Sidebar: 20 cols wide
-			Body:   dockBox(0, 0),                 // Main content
+			Body:   dockBox(0, 0),                // Main content
 		}
 
 		result := dock.ComputeLayout(Tight(80, 24))
@@ -477,9 +575,9 @@ func TestDockNode_RealWorldScenarios(t *testing.T) {
 			Top:    []LayoutNode{dockBox(0, 1)},  // Toolbar
 			Bottom: []LayoutNode{dockBox(0, 1)},  // Status bar
 			Left:   []LayoutNode{dockBox(25, 0)}, // File tree
-			Body:   &DockNode{ // Editor + Terminal area
+			Body: &DockNode{ // Editor + Terminal area
 				Bottom: []LayoutNode{dockBox(0, 8)}, // Terminal: 8 rows
-				Body:   dockBox(0, 0),                // Editor
+				Body:   dockBox(0, 0),               // Editor
 			},
 		}
 
