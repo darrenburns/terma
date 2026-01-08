@@ -8,8 +8,11 @@ type BoxNode struct {
 	Width  int
 	Height int
 
-	// Node's own min/max constraints (0 = no constraint).
+	// Node's own min/max constraints.
 	// These are merged with parent constraints to form effective constraints.
+	// NOTE: 0 means "no constraint" (unconstrained), not "zero size".
+	// This is a pragmatic trade-off for API simplicity in TUI contexts.
+	// If you need a box that shrinks to zero, use MeasureFunc or set Width/Height directly.
 	MinWidth  int
 	MaxWidth  int
 	MinHeight int
