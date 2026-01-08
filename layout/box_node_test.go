@@ -290,8 +290,8 @@ func TestBoxNode_MeasureFunc(t *testing.T) {
 	t.Run("ContentBoxSemantics_WithPaddingAndBorder", func(t *testing.T) {
 		var received Constraints
 		node := &BoxNode{
-			Padding: EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},   // 10 horizontal, 10 vertical
-			Border:  EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1},   // 2 horizontal, 2 vertical
+			Padding: EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5}, // 10 horizontal, 10 vertical
+			Border:  EdgeInsets{Top: 1, Right: 1, Bottom: 1, Left: 1}, // 2 horizontal, 2 vertical
 			MeasureFunc: func(constraints Constraints) (int, int) {
 				received = constraints
 				return 50, 30
@@ -335,6 +335,30 @@ func TestBoxNode_MeasureFunc(t *testing.T) {
 		// Content dimensions match what we measured
 		assert.Equal(t, 100, result.Box.ContentWidth())
 		assert.Equal(t, 20, result.Box.ContentHeight())
+	})
+
+	t.Run("InsetsExceedAvailableSpace", func(t *testing.T) {
+		// When padding/border exceed parent's max, the box is clamped
+		// and content area collapses to zero.
+		var receivedMaxWidth int
+		node := &BoxNode{
+			Padding: EdgeInsets{Top: 0, Right: 30, Bottom: 0, Left: 30}, // 60 horizontal
+			MeasureFunc: func(constraints Constraints) (int, int) {
+				receivedMaxWidth = constraints.MaxWidth
+				return 0, 20 // Content can't fit, return minimal
+			},
+		}
+
+		result := node.ComputeLayout(Loose(50, 100)) // Only 50 available, but 60 padding
+
+		// MeasureFunc receives max(0, 50-60) = 0 content space
+		assert.Equal(t, 0, receivedMaxWidth)
+
+		// Final size is clamped to parent's max (50), not padding (60)
+		assert.Equal(t, 50, result.Box.Width, "clamped to parent constraint")
+
+		// Content area collapses to zero (50 - 60 padding = negative, clamped to 0)
+		assert.Equal(t, 0, result.Box.ContentWidth(), "content collapses when insets exceed box")
 	})
 }
 
