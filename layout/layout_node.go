@@ -112,8 +112,21 @@ type ComputedLayout struct {
 }
 
 // PositionedChild is a child with its computed position.
+//
+// Coordinate system: X and Y specify the child's border-box position
+// relative to the parent's content-area origin (after padding and border).
+//
+// The renderer must add the parent's padding and border offsets when
+// translating to screen coordinates. For example:
+//
+//	screenX := parentScreenX + parent.Box.Padding.Left + parent.Box.Border.Left + child.X
+//	screenY := parentScreenY + parent.Box.Padding.Top + parent.Box.Border.Top + child.Y
+//
+// Child margins are already accounted for in X,Y: if a child has Margin.Left=5,
+// its X is offset by 5 from where its margin-box starts. This means X,Y point
+// directly to where the child's visible border-box begins.
 type PositionedChild struct {
-	// X, Y is the position relative to the parent's content area.
+	// X, Y is the child's border-box position relative to parent's content-area.
 	X, Y int
 
 	// Layout is the child's computed layout (recursive).
