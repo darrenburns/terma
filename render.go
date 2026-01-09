@@ -836,8 +836,8 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 				break
 			}
 			pos := tree.Layout.Children[i]
-			// Pass the clipped context so children are constrained to parent's content area
-			r.renderTree(childClipCtx, childTree, absContentX+pos.X, absContentY+pos.Y)
+			// Pass relative positions - childClipCtx.X/Y already contains absContentX/Y
+			r.renderTree(childClipCtx, childTree, pos.X, pos.Y)
 		}
 	}
 
