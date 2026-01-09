@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
+	"terma/layout"
 )
 
 // WrapMode defines how text should wrap within available width.
@@ -66,6 +67,21 @@ func (t Text) GetDimensions() (width, height Dimension) {
 // GetStyle returns the style of the text widget.
 func (t Text) GetStyle() Style {
 	return t.Style
+}
+
+// BuildLayoutNode builds a layout node for this Text widget.
+// Implements the LayoutNodeBuilder interface.
+func (t Text) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
+	// Get the text content (spans concatenated or plain content)
+	content := t.textContent()
+
+	return &layout.TextNode{
+		Content: content,
+		Wrap:    toLayoutWrapMode(t.Wrap),
+		Padding: toLayoutEdgeInsets(t.Style.Padding),
+		Border:  borderToEdgeInsets(t.Style.Border),
+		Margin:  toLayoutEdgeInsets(t.Style.Margin),
+	}
 }
 
 // textContent returns the effective text content.

@@ -2,6 +2,8 @@ package terma
 
 import (
 	"testing"
+
+	"terma/layout"
 )
 
 // Mock widget for testing layout behavior.
@@ -69,6 +71,39 @@ func (m mockWidget) Layout(ctx BuildContext, constraints Constraints) Size {
 	}
 
 	return Size{Width: width, Height: height}
+}
+
+func (m mockWidget) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
+	// Create a BoxNode with the mock widget's size
+	width := 0
+	height := 0
+
+	if m.layoutSize.Width > 0 || m.layoutSize.Height > 0 {
+		width = m.layoutSize.Width
+		height = m.layoutSize.Height
+	} else {
+		switch {
+		case m.width.IsCells():
+			width = m.width.CellsValue()
+		default: // Auto
+			width = 10 // Default auto size
+		}
+
+		switch {
+		case m.height.IsCells():
+			height = m.height.CellsValue()
+		default: // Auto
+			height = 5 // Default auto size
+		}
+	}
+
+	return &layout.BoxNode{
+		Width:   width,
+		Height:  height,
+		Padding: toLayoutEdgeInsets(m.style.Padding),
+		Border:  borderToEdgeInsets(m.style.Border),
+		Margin:  toLayoutEdgeInsets(m.style.Margin),
+	}
 }
 
 // Helper to create test build context

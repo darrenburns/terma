@@ -1,5 +1,7 @@
 package terma
 
+import "terma/layout"
+
 // MainAxisAlign specifies how children are aligned along the main axis.
 // For Row, main axis is horizontal. For Column, main axis is vertical.
 type MainAxisAlign int
@@ -41,6 +43,9 @@ type Row struct {
 	Children   []Widget
 	Click      func()     // Optional callback invoked when clicked
 	Hover      func(bool) // Optional callback invoked when hover state changes
+
+	// cachedLayout stores the computed layout for use by Render.
+	cachedLayout *layout.ComputedLayout
 }
 
 // GetDimensions returns the width and height dimension preferences.
@@ -85,134 +90,55 @@ func (r Row) Build(ctx BuildContext) Widget {
 	return r
 }
 
-// Layout computes the size of the row and positions children.
-func (r Row) Layout(ctx BuildContext, constraints Constraints) Size {
-	// Two-pass layout algorithm for fractional dimensions:
-	// Pass 1: Measure fixed/auto children, collect fr children
-	// Pass 2: Distribute remaining space to fr children
-
-	type childInfo struct {
-		built      Widget
-		layoutable Layoutable
-		widthDim   Dimension
-		size       Size
-		isFr       bool
-		hInset     int // horizontal padding + margin
-		vInset     int // vertical padding + margin
-	}
-
-	children := make([]childInfo, len(r.Children))
-	totalFixedWidth := 0
-	totalFr := 0.0
-	maxHeight := 0
-
-	// Account for spacing
-	spacingTotal := 0
-	if len(r.Children) > 1 {
-		spacingTotal = r.Spacing * (len(r.Children) - 1)
-	}
-	availableWidth := constraints.MaxWidth - spacingTotal
-
-	// Pass 1: Measure fixed/auto children and collect fr info
+// BuildLayoutNode builds a layout node for this Row widget.
+// Implements the LayoutNodeBuilder interface.
+func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
+	children := make([]layout.LayoutNode, len(r.Children))
 	for i, child := range r.Children {
-		built := child.Build(ctx)
-		layoutable, ok := built.(Layoutable)
-		if !ok {
-			continue
-		}
-
-		children[i].built = built
-		children[i].layoutable = layoutable
-
-		// Get padding/margin/border insets
-		if styled, ok := built.(Styled); ok {
-			style := styled.GetStyle()
-			borderWidth := style.Border.Width()
-			children[i].hInset = style.Padding.Horizontal() + style.Margin.Horizontal() + borderWidth*2
-			children[i].vInset = style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
-		}
-
-		// Check if child has dimension preferences
-		var widthDim Dimension
-		if dimensioned, ok := built.(Dimensioned); ok {
-			widthDim, _ = dimensioned.GetDimensions()
-		}
-		children[i].widthDim = widthDim
-
-		if widthDim.IsFr() {
-			children[i].isFr = true
-			totalFr += widthDim.FrValue()
+		built := child.Build(ctx.PushChild(i))
+		if builder, ok := built.(LayoutNodeBuilder); ok {
+			children[i] = builder.BuildLayoutNode(ctx.PushChild(i))
 		} else {
-			// Fixed or auto - measure now
-			// For non-stretch cross-axis alignment, let children size naturally
-			childMinHeight := constraints.MinHeight
-			if r.CrossAlign != CrossAxisStretch {
-				childMinHeight = 0
-			}
-			childConstraints := Constraints{
-				MinWidth:  0,
-				MaxWidth:  100000, // Unconstrained width - let children take natural size
-				MinHeight: childMinHeight,
-				MaxHeight: constraints.MaxHeight - children[i].vInset,
-			}
-			size := layoutable.Layout(ctx, childConstraints)
-			children[i].size = size
-			totalFixedWidth += size.Width + children[i].hInset
-			totalHeight := size.Height + children[i].vInset
-			if totalHeight > maxHeight {
-				maxHeight = totalHeight
-			}
+			// Fallback: create a BoxNode with zero size for non-builder widgets
+			children[i] = &layout.BoxNode{}
 		}
 	}
 
-	// Pass 2: Distribute remaining space to fr children
-	remainingWidth := availableWidth - totalFixedWidth
-	if remainingWidth < 0 {
-		remainingWidth = 0
+	return &layout.RowNode{
+		Spacing:    r.Spacing,
+		MainAlign:  toLayoutMainAlign(r.MainAlign),
+		CrossAlign: toLayoutCrossAlign(r.CrossAlign),
+		Children:   children,
+		Padding:    toLayoutEdgeInsets(r.Style.Padding),
+		Border:     borderToEdgeInsets(r.Style.Border),
+		Margin:     toLayoutEdgeInsets(r.Style.Margin),
+	}
+}
+
+// Layout computes the size of the row and positions children using the new layout system.
+func (r *Row) Layout(ctx BuildContext, constraints Constraints) Size {
+	// Build layout node tree
+	node := r.BuildLayoutNode(ctx)
+
+	// Convert Terma constraints to layout constraints
+	layoutConstraints := layout.Constraints{
+		MinWidth:  constraints.MinWidth,
+		MaxWidth:  constraints.MaxWidth,
+		MinHeight: constraints.MinHeight,
+		MaxHeight: constraints.MaxHeight,
 	}
 
-	for i := range children {
-		if !children[i].isFr || children[i].layoutable == nil {
-			continue
-		}
+	// Compute layout
+	result := node.ComputeLayout(layoutConstraints)
 
-		// Calculate this child's share of remaining space
-		frValue := children[i].widthDim.FrValue()
-		childWidth := 0
-		if totalFr > 0 {
-			childWidth = int(float64(remainingWidth) * frValue / totalFr)
-		}
+	// Cache for render phase
+	r.cachedLayout = &result
 
-		// For non-stretch cross-axis alignment, let children size naturally
-		childMinHeight := constraints.MinHeight
-		if r.CrossAlign != CrossAxisStretch {
-			childMinHeight = 0
-		}
-		childConstraints := Constraints{
-			MinWidth:  childWidth - children[i].hInset,
-			MaxWidth:  childWidth - children[i].hInset,
-			MinHeight: childMinHeight,
-			MaxHeight: constraints.MaxHeight - children[i].vInset,
-		}
-		size := children[i].layoutable.Layout(ctx, childConstraints)
-		children[i].size = size
-		totalHeight := size.Height + children[i].vInset
-		if totalHeight > maxHeight {
-			maxHeight = totalHeight
-		}
-	}
+	// Get content size from computed layout
+	contentWidth := result.Box.MarginBoxWidth()
+	contentHeight := result.Box.MarginBoxHeight()
 
-	// Calculate total width including spacing and insets
-	totalWidth := 0
-	for _, child := range children {
-		totalWidth += child.size.Width + child.hInset
-	}
-	// Add spacing between children
-	if len(r.Children) > 1 {
-		totalWidth += r.Spacing * (len(r.Children) - 1)
-	}
-
-	// Determine final dimensions
+	// Apply Row's own dimensions
 	var width int
 	switch {
 	case r.Width.IsCells():
@@ -220,7 +146,7 @@ func (r Row) Layout(ctx BuildContext, constraints Constraints) Size {
 	case r.Width.IsFr():
 		width = constraints.MaxWidth
 	default: // Auto
-		width = totalWidth
+		width = contentWidth
 	}
 
 	var height int
@@ -230,7 +156,7 @@ func (r Row) Layout(ctx BuildContext, constraints Constraints) Size {
 	case r.Height.IsFr():
 		height = constraints.MaxHeight
 	default: // Auto
-		height = maxHeight
+		height = contentHeight
 	}
 
 	// Clamp to constraints
@@ -250,151 +176,46 @@ func (r Row) Layout(ctx BuildContext, constraints Constraints) Size {
 	return Size{Width: width, Height: height}
 }
 
-// Render draws the row's children.
+// Render draws the row's children using the new layout system.
 func (r Row) Render(ctx *RenderContext) {
-	// Calculate child widths using the same algorithm as Layout
-	type childInfo struct {
-		widthDim Dimension
-		width    int
-		height   int
-		isFr     bool
+	if len(r.Children) == 0 {
+		return
 	}
 
-	children := make([]childInfo, len(r.Children))
-	totalFixedWidth := 0
-	totalFr := 0.0
-
-	// Account for spacing in available width
-	spacingTotal := 0
-	if len(r.Children) > 1 {
-		spacingTotal = r.Spacing * (len(r.Children) - 1)
+	// Compute layout fresh (can't rely on cache due to value semantics)
+	node := r.BuildLayoutNode(ctx.buildContext)
+	layoutConstraints := layout.Constraints{
+		MinWidth:  0,
+		MaxWidth:  ctx.Width,
+		MinHeight: 0,
+		MaxHeight: ctx.Height,
 	}
-	availableWidth := ctx.Width - spacingTotal
+	result := node.ComputeLayout(layoutConstraints)
 
-	// Pass 1: Measure fixed/auto children
-	for i, child := range r.Children {
-		built := child.Build(ctx.buildContext)
-
-		var widthDim Dimension
-		if dimensioned, ok := built.(Dimensioned); ok {
-			widthDim, _ = dimensioned.GetDimensions()
-		}
-		children[i].widthDim = widthDim
-
-		if widthDim.IsFr() {
-			children[i].isFr = true
-			totalFr += widthDim.FrValue()
-		} else {
-			// Fixed or auto - measure now
-			if layoutable, ok := built.(Layoutable); ok {
-				// Get padding, margin, and border insets BEFORE layout
-				var hInset, vInset int
-				if styled, ok := built.(Styled); ok {
-					style := styled.GetStyle()
-					borderWidth := style.Border.Width()
-					hInset = style.Padding.Horizontal() + style.Margin.Horizontal() + borderWidth*2
-					vInset = style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
-				}
-				childConstraints := Constraints{
-					MinWidth:  0,
-					MaxWidth:  100000, // Unconstrained width - let children take natural size
-					MinHeight: 0,
-					MaxHeight: ctx.Height - vInset,
-				}
-				size := layoutable.Layout(ctx.buildContext, childConstraints)
-				children[i].width = size.Width + hInset
-				children[i].height = size.Height + vInset
-				totalFixedWidth += children[i].width
-			}
-		}
-	}
-
-	// Pass 2: Calculate fr widths and measure fr children heights
-	remainingWidth := availableWidth - totalFixedWidth
-	if remainingWidth < 0 {
-		remainingWidth = 0
-	}
+	Log("Row.Render: ctx.Width=%d, ctx.Height=%d, numChildren=%d, resultChildren=%d",
+		ctx.Width, ctx.Height, len(r.Children), len(result.Children))
+	Log("Row.Render: result.Box width=%d height=%d", result.Box.BorderBoxWidth(), result.Box.BorderBoxHeight())
 
 	for i, child := range r.Children {
-		if !children[i].isFr {
-			continue
+		if i >= len(result.Children) {
+			Log("Row.Render: child %d - skipping, no layout result", i)
+			break
 		}
-		frValue := children[i].widthDim.FrValue()
-		if totalFr > 0 {
-			children[i].width = int(float64(remainingWidth) * frValue / totalFr)
-		}
-		// Measure height for Fr children
-		built := child.Build(ctx.buildContext)
-		if layoutable, ok := built.(Layoutable); ok {
-			childConstraints := Constraints{
-				MinWidth:  children[i].width,
-				MaxWidth:  children[i].width,
-				MinHeight: 0,
-				MaxHeight: ctx.Height,
-			}
-			size := layoutable.Layout(ctx.buildContext, childConstraints)
-			childHeight := size.Height
-			if styled, ok := built.(Styled); ok {
-				style := styled.GetStyle()
-				borderWidth := style.Border.Width()
-				childHeight += style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
-			}
-			children[i].height = childHeight
-		}
-	}
+		pos := result.Children[i]
+		childLayout := pos.Layout
 
-	// Calculate total content width for main axis alignment
-	totalContentWidth := 0
-	for _, child := range children {
-		totalContentWidth += child.width
-	}
-	if len(r.Children) > 1 {
-		totalContentWidth += r.Spacing * (len(r.Children) - 1)
-	}
+		Log("Row.Render: child %d at x=%d, y=%d, w=%d, h=%d",
+			i, pos.X, pos.Y, childLayout.Box.BorderBoxWidth(), childLayout.Box.BorderBoxHeight())
 
-	// Calculate main axis starting offset
-	xOffset := 0
-	switch r.MainAlign {
-	case MainAxisStart:
-		xOffset = 0
-	case MainAxisCenter:
-		xOffset = (ctx.Width - totalContentWidth) / 2
-	case MainAxisEnd:
-		xOffset = ctx.Width - totalContentWidth
-	}
-	if xOffset < 0 {
-		xOffset = 0
-	}
-
-	// Render children with calculated widths and alignment
-	for i, child := range r.Children {
-		childWidth := children[i].width
-		childHeight := children[i].height
-		renderHeight := childHeight
-
-		// Calculate cross-axis (vertical) offset for this child
-		yOffset := 0
-		switch r.CrossAlign {
-		case CrossAxisStretch:
-			yOffset = 0
-			renderHeight = ctx.Height
-		case CrossAxisStart:
-			yOffset = 0
-		case CrossAxisCenter:
-			yOffset = (ctx.Height - childHeight) / 2
-		case CrossAxisEnd:
-			yOffset = ctx.Height - childHeight
-		}
-		if yOffset < 0 {
-			yOffset = 0
-		}
-
-		ctx.RenderChild(i, child, xOffset, yOffset, childWidth, renderHeight)
-		xOffset += childWidth
-		// Add spacing after each child except the last
-		if i < len(r.Children)-1 {
-			xOffset += r.Spacing
-		}
+		// Use RenderChild which handles background, border, focus tracking, etc.
+		ctx.RenderChild(
+			i,
+			child,
+			pos.X,
+			pos.Y,
+			childLayout.Box.BorderBoxWidth(),
+			childLayout.Box.BorderBoxHeight(),
+		)
 	}
 }
 

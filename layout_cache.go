@@ -1,5 +1,7 @@
 package terma
 
+import "terma/layout"
+
 // ChildLayout holds precomputed layout for a child widget.
 type ChildLayout struct {
 	// BorderBox is the widget bounds (content + padding + border, excludes margin).
@@ -33,12 +35,15 @@ func (cl ChildLayout) MarginBoxY() int {
 // Created fresh at the start of each render pass to avoid stale data.
 type LayoutCache struct {
 	cache map[string][]ChildLayout
+	// computedCache stores layouts from the new layout system
+	computedCache map[string]*layout.ComputedLayout
 }
 
 // NewLayoutCache creates a new empty layout cache.
 func NewLayoutCache() *LayoutCache {
 	return &LayoutCache{
-		cache: make(map[string][]ChildLayout),
+		cache:         make(map[string][]ChildLayout),
+		computedCache: make(map[string]*layout.ComputedLayout),
 	}
 }
 
@@ -58,4 +63,28 @@ func (lc *LayoutCache) Get(autoID string) ([]ChildLayout, bool) {
 	}
 	layouts, ok := lc.cache[autoID]
 	return layouts, ok
+}
+
+// StoreComputed saves a computed layout from the new layout system.
+func (lc *LayoutCache) StoreComputed(path string, computed *layout.ComputedLayout) {
+	if lc == nil || lc.computedCache == nil {
+		return
+	}
+	lc.computedCache[path] = computed
+}
+
+// LoadComputed retrieves a computed layout from the new layout system.
+func (lc *LayoutCache) LoadComputed(path string) *layout.ComputedLayout {
+	if lc == nil || lc.computedCache == nil {
+		return nil
+	}
+	return lc.computedCache[path]
+}
+
+// Clear removes all cached layouts (call at start of each frame).
+func (lc *LayoutCache) Clear() {
+	if lc != nil {
+		clear(lc.cache)
+		clear(lc.computedCache)
+	}
 }

@@ -1,6 +1,8 @@
 package terma
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // pendingFocusID holds the ID of a widget that should receive focus after the next render.
 // Set via RequestFocus() and consumed by the app loop.
