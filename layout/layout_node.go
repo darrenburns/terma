@@ -93,9 +93,15 @@ func (c Constraints) Constrain(width, height int) (int, int) {
 
 // WithNodeConstraints applies a node's own min/max constraints to parent constraints.
 // Node constraints use 0 to mean "unconstrained".
-// Parent constraints are inviolable - node constraints are clamped to parent bounds:
+//
+// Precedence rules:
+//   - Node's explicit MaxWidth/MaxHeight takes precedence (represents user intent like Width: Cells(4))
+//   - If parent's min exceeds node's explicit max, parent's min is lowered to match
 //   - Node's min is clamped to parent's max (can't exceed available space)
-//   - Node's max is raised to parent's min (can't refuse required minimum, e.g., stretch)
+//   - Without explicit node max, parent constraints pass through (e.g., stretch works)
+//
+// This matches Flutter/CSS behavior where explicit size constraints are respected
+// even when a parent wants to stretch the child.
 //
 // If the resulting constraints are invalid (min > max), min wins. This handles
 // user configuration errors like MinHeight: 60, MaxHeight: 40.

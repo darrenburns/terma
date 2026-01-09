@@ -712,14 +712,10 @@ func TestLinearNode_CrossAxisAlignment(t *testing.T) {
 		assert.Equal(t, 50, result.Children[2].Layout.Box.Height)
 	})
 
-	t.Run("Stretch_OverridesChildConstraints", func(t *testing.T) {
-		// A child with MaxHeight=15 says "I cannot be taller than 15"
-		// But a sibling is 25 tall, and CrossAxisStretch forces container to 25
-		// Parent constraint (stretch to 25) MUST win over child's MaxHeight
-		//
+	t.Run("Stretch_RespectsExplicitChildConstraints", func(t *testing.T) {
 		// When a child has explicit size constraints (like MaxHeight: 15),
 		// those constraints are respected even with CrossAxisStretch.
-		// This matches user expectations: Width: Cells(4) should mean 4 cells.
+		// This matches Flutter/CSS behavior: explicit constraints represent user intent.
 		row := &RowNode{
 			CrossAlign: CrossAxisStretch,
 			Children: []LayoutNode{
