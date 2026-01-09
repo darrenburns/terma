@@ -96,8 +96,8 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		if builder, ok := built.(LayoutNodeBuilder); ok {
 			children[i] = builder.BuildLayoutNode(ctx.PushChild(i))
 		} else {
-			// Fallback: create a BoxNode with zero size for non-builder widgets
-			children[i] = &layout.BoxNode{}
+			// Fallback: create a BoxNode for widgets without LayoutNodeBuilder
+			children[i] = buildFallbackLayoutNode(built, ctx.PushChild(i))
 		}
 	}
 
@@ -134,9 +134,6 @@ func (r Row) Layout(ctx BuildContext, constraints Constraints) Size {
 
 	// Compute layout
 	result := node.ComputeLayout(layoutConstraints)
-
-	// Store for render phase (shared via layoutHolder pointer)
-	ctx.StoreLayout(&result)
 
 	// Get content size from computed layout
 	contentWidth := result.Box.MarginBoxWidth()
@@ -180,43 +177,11 @@ func (r Row) Layout(ctx BuildContext, constraints Constraints) Size {
 	return Size{Width: width, Height: height}
 }
 
-// Render draws the row's children using the new layout system.
+// Render is a no-op for Row when using the RenderTree-based rendering path.
+// Child positioning is handled by renderTree() which uses the computed layout.
+// Row has no content of its own to render - it's purely a layout container.
 func (r Row) Render(ctx *RenderContext) {
-	if len(r.Children) == 0 {
-		return
-	}
-
-	// Retrieve the layout computed by Layout()
-	result := ctx.buildContext.GetLayout()
-	if result == nil {
-		Log("Row.Render: no layout found in context, skipping render")
-		return
-	}
-
-	Log("Row.Render: ctx.Width=%d, ctx.Height=%d, numChildren=%d, resultChildren=%d",
-		ctx.Width, ctx.Height, len(r.Children), len(result.Children))
-
-	for i, child := range r.Children {
-		if i >= len(result.Children) {
-			Log("Row.Render: child %d - skipping, no layout result", i)
-			break
-		}
-		pos := result.Children[i]
-		childLayout := pos.Layout
-
-		Log("Row.Render: child %d at x=%d, y=%d, w=%d, h=%d",
-			i, pos.X, pos.Y, childLayout.Box.BorderBoxWidth(), childLayout.Box.BorderBoxHeight())
-
-		// Use RenderChild which handles background, border, focus tracking, etc.
-		ctx.RenderChild(
-			i,
-			child,
-			pos.X,
-			pos.Y,
-			childLayout.Box.BorderBoxWidth(),
-			childLayout.Box.BorderBoxHeight(),
-		)
-	}
+	// No-op: children are positioned by renderTree() using ComputedLayout.Children
 }
 
 // Column arranges its children vertically.

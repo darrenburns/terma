@@ -3,6 +3,8 @@ package terma
 import (
 	"strings"
 
+	"terma/layout"
+
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 )
@@ -938,149 +940,82 @@ func (r *Renderer) ScreenText() string {
 }
 
 // Render renders the widget tree to the terminal and returns collected focusables.
+// This uses the tree-based rendering path which builds the complete layout tree first,
+// then renders using BoxModel utilities for clean separation of layout and painting.
 func (r *Renderer) Render(root Widget) []FocusableEntry {
 	// Reset collectors and widget registry for this render pass
 	r.focusCollector.Reset()
 	r.widgetRegistry.Reset()
 	r.floatCollector.Reset()
 	r.modalFocusTarget = ""
-	r.widgetRegistry.IncrementTotal() // Count root widget
 
 	// Create build context
 	buildCtx := NewBuildContext(r.focusManager, r.focusedSignal, r.hoveredSignal, r.floatCollector)
 
-	// Create render context
-	ctx := NewRenderContext(r.terminal, r.width, r.height, r.focusCollector, r.focusManager, buildCtx, r.widgetRegistry)
+	// Phase 1+2: Build complete render tree (layout + focus collection)
+	constraints := layout.Loose(r.width, r.height)
+	renderTree := BuildRenderTree(root, buildCtx, constraints, r.focusCollector)
 
-	// Track if root widget handles keys (KeyHandler or KeybindProvider) for bubbling
-	if r.focusCollector.ShouldTrackAncestor(root) {
-		r.focusCollector.PushAncestor(root)
-	}
+	// Phase 3: Render from the tree (pure painting - no layout or focus logic)
+	ctx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
+	r.renderTree(ctx, renderTree, 0, 0)
 
-	// Auto-collect focusable for root widget (collect original, not built)
-	ctx.collectFocusable(root)
+	// Handle floats
+	r.renderFloats(ctx, buildCtx)
 
-	// Build the root widget
-	built := root.Build(buildCtx)
+	return r.focusCollector.Focusables()
+}
 
-	// Also collect focusable for the built widget (in case root.Build returns
-	// a different focusable widget, e.g., App.Build returning a Scrollable)
-	if built != root {
-		ctx.collectFocusable(built)
-	}
+// renderTree paints a render tree to the terminal.
+// All positions come from BoxModel utilities - no manual offset calculations.
+// This is the new rendering path that uses computed layout geometry.
+func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, screenY int) {
+	box := tree.Layout.Box
 
-	// Extract style for padding, margin, and border
+	// Get positions using BoxModel utilities
+	borderX, borderY := box.BorderOrigin()   // Offset from margin-box to border-box
+	contentX, contentY := box.ContentOrigin() // Offset from margin-box to content
+
+	// Absolute screen positions
+	absBorderX := screenX + borderX
+	absBorderY := screenY + borderY
+	absContentX := screenX + contentX
+	absContentY := screenY + contentY
+
+	// Extract style for painting
 	var style Style
-	if styled, ok := built.(Styled); ok {
+	if styled, ok := tree.Widget.(Styled); ok {
 		style = styled.GetStyle()
 	}
-	margin := style.Margin
-	padding := style.Padding
-	border := style.Border
-	borderWidth := border.Width()
 
-	// Calculate total insets (margin + border + padding)
-	hInset := margin.Horizontal() + borderWidth*2 + padding.Horizontal()
-	vInset := margin.Vertical() + borderWidth*2 + padding.Vertical()
-
-	// Reduce available space for layout by insets
-	contentMaxWidth := r.width - hInset
-	contentMaxHeight := r.height - vInset
-	if contentMaxWidth < 0 {
-		contentMaxWidth = 0
-	}
-	if contentMaxHeight < 0 {
-		contentMaxHeight = 0
-	}
-
-	// Create constraints with reduced size
-	constraints := Constraints{
-		MinWidth:  0,
-		MaxWidth:  contentMaxWidth,
-		MinHeight: 0,
-		MaxHeight: contentMaxHeight,
-	}
-
-	// Layout the widget
-	var contentWidth, contentHeight int
-	if layoutable, ok := built.(Layoutable); ok {
-		size := layoutable.Layout(buildCtx, constraints)
-		contentWidth = size.Width
-		contentHeight = size.Height
-	} else {
-		contentWidth = contentMaxWidth
-		contentHeight = contentMaxHeight
-	}
-
-	// Calculate the bordered area (content + padding + border, excludes margin)
-	borderedWidth := contentWidth + padding.Horizontal() + borderWidth*2
-	borderedHeight := contentHeight + padding.Vertical() + borderWidth*2
-	borderedXOffset := margin.Left
-	borderedYOffset := margin.Top
-
-	// Fill the bordered area (border + padding + content) with background color if set
-	// This ensures border cells also have the correct background color
+	// 1. Fill background (border-box area)
 	if style.BackgroundColor.IsSet() {
-		borderedCtx := ctx.SubContext(borderedXOffset, borderedYOffset, borderedWidth, borderedHeight)
-		borderedCtx.FillRect(0, 0, borderedWidth, borderedHeight, style.BackgroundColor)
+		bgCtx := ctx.SubContext(absBorderX, absBorderY, box.Width, box.Height)
+		bgCtx.FillRect(0, 0, box.Width, box.Height, style.BackgroundColor)
 	}
 
-	// Draw border if set (on top of the background)
-	if !border.IsZero() {
-		borderCtx := ctx.SubContext(borderedXOffset, borderedYOffset, borderedWidth, borderedHeight)
-		// Border cells use the widget's own background color
+	// 2. Draw border
+	if !style.Border.IsZero() {
+		borderCtx := ctx.SubContext(absBorderX, absBorderY, box.Width, box.Height)
+		// Set inherited background for border cells
 		if style.BackgroundColor.IsSet() {
 			widgetBg := style.BackgroundColor
 			borderCtx.inheritedBgAt = func(absY int) Color { return widgetBg }
 		}
-		borderCtx.DrawBorder(0, 0, borderedWidth, borderedHeight, border)
+		borderCtx.DrawBorder(0, 0, box.Width, box.Height, style.Border)
 	}
 
-	// Record root widget in registry BEFORE rendering children.
-	// This ensures the root is recorded first, so when searching back-to-front
-	// we find the deepest (most nested) widget first.
-	// Use bordered area (excludes margin) - margin is outside the widget.
-	var rootID string
-	if identifiable, ok := root.(Identifiable); ok {
-		rootID = identifiable.WidgetID()
-	}
-	r.widgetRegistry.Record(root, rootID, Rect{
-		X:      borderedXOffset,
-		Y:      borderedYOffset,
-		Width:  borderedWidth,
-		Height: borderedHeight,
-	})
-
-	// Also record the built widget if different from root (e.g., App.Build returns Scrollable)
-	if built != root {
-		var builtID string
-		if identifiable, ok := built.(Identifiable); ok {
-			builtID = identifiable.WidgetID()
-		}
-		r.widgetRegistry.Record(built, builtID, Rect{
-			X:      borderedXOffset,
-			Y:      borderedYOffset,
-			Width:  borderedWidth,
-			Height: borderedHeight,
-		})
-	}
-
-	// Render the widget offset by margin, border, and padding
-	// This happens AFTER recording so children are recorded after root
-	if renderable, ok := built.(Renderable); ok {
-		contentXOffset := margin.Left + borderWidth + padding.Left
-		contentYOffset := margin.Top + borderWidth + padding.Top
-		childCtx := ctx.SubContext(contentXOffset, contentYOffset, contentWidth, contentHeight)
-		// Set inherited background callback for this widget's children.
+	// 3. Render widget content at content origin
+	if renderable, ok := tree.Widget.(Renderable); ok {
+		contentCtx := ctx.SubContext(absContentX, absContentY, box.ContentWidth(), box.ContentHeight())
+		// Set inherited background for children
 		if style.BackgroundColor.IsSet() {
 			widgetBg := style.BackgroundColor
 			parentCallback := ctx.inheritedBgAt
-
 			if widgetBg.IsOpaque() {
-				childCtx.inheritedBgAt = func(absY int) Color { return widgetBg }
+				contentCtx.inheritedBgAt = func(absY int) Color { return widgetBg }
 			} else {
-				// For semi-transparent backgrounds, children see the blended result.
-				childCtx.inheritedBgAt = func(absY int) Color {
+				contentCtx.inheritedBgAt = func(absY int) Color {
 					inherited := Black
 					if parentCallback != nil {
 						inherited = parentCallback(absY)
@@ -1092,18 +1027,32 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 				}
 			}
 		}
-		renderable.Render(childCtx)
+		renderable.Render(contentCtx)
 	}
 
-	// Phase 2: Render floating widgets on top
-	// Set up inherited background on root context so float backdrops can blend properly
-	if style.BackgroundColor.IsSet() {
-		rootBg := style.BackgroundColor
-		ctx.inheritedBgAt = func(absY int) Color { return rootBg }
+	// 4. Render children at their computed positions
+	// If tree.Children is empty but widget has children, the widget handles them in Render() (fallback)
+	// If tree.Children is populated, we handle positioning here (new path)
+	for i, childTree := range tree.Children {
+		if i >= len(tree.Layout.Children) {
+			break
+		}
+		pos := tree.Layout.Children[i]
+		r.renderTree(ctx, childTree, absContentX+pos.X, absContentY+pos.Y)
 	}
-	r.renderFloats(ctx, buildCtx)
 
-	return r.focusCollector.Focusables()
+	// 5. Register for hit testing
+	// Get widget ID if available
+	var widgetID string
+	if identifiable, ok := tree.Widget.(Identifiable); ok {
+		widgetID = identifiable.WidgetID()
+	}
+	r.widgetRegistry.Record(tree.Widget, widgetID, Rect{
+		X:      absBorderX,
+		Y:      absBorderY,
+		Width:  box.Width,
+		Height: box.Height,
+	})
 }
 
 // renderFloats renders all collected floating widgets on top of the main widget tree.

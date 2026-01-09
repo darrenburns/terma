@@ -79,3 +79,35 @@ func dimensionToMinMax(d Dimension) (min, max int) {
 	}
 	return 0, 0
 }
+
+// buildFallbackLayoutNode creates a BoxNode for widgets that don't implement LayoutNodeBuilder.
+// It uses the widget's Dimensioned and Styled interfaces to extract dimensions and insets.
+func buildFallbackLayoutNode(widget Widget, ctx BuildContext) layout.LayoutNode {
+	var widthDim, heightDim Dimension
+	if dimensioned, ok := widget.(Dimensioned); ok {
+		widthDim, heightDim = dimensioned.GetDimensions()
+	}
+
+	// Convert dimensions to min/max constraints
+	minWidth, maxWidth := dimensionToMinMax(widthDim)
+	minHeight, maxHeight := dimensionToMinMax(heightDim)
+
+	// Extract style for insets
+	var padding, border, margin layout.EdgeInsets
+	if styled, ok := widget.(Styled); ok {
+		style := styled.GetStyle()
+		padding = toLayoutEdgeInsets(style.Padding)
+		border = borderToEdgeInsets(style.Border)
+		margin = toLayoutEdgeInsets(style.Margin)
+	}
+
+	return &layout.BoxNode{
+		MinWidth:  minWidth,
+		MaxWidth:  maxWidth,
+		MinHeight: minHeight,
+		MaxHeight: maxHeight,
+		Padding:   padding,
+		Border:    border,
+		Margin:    margin,
+	}
+}
