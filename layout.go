@@ -93,12 +93,19 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	children := make([]layout.LayoutNode, len(r.Children))
 	for i, child := range r.Children {
 		built := child.Build(ctx.PushChild(i))
+
+		// Build the child's layout node
+		var childNode layout.LayoutNode
 		if builder, ok := built.(LayoutNodeBuilder); ok {
-			children[i] = builder.BuildLayoutNode(ctx.PushChild(i))
+			childNode = builder.BuildLayoutNode(ctx.PushChild(i))
 		} else {
 			// Fallback: create a BoxNode for widgets without LayoutNodeBuilder
-			children[i] = buildFallbackLayoutNode(built, ctx.PushChild(i))
+			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
 		}
+
+		// Wrap in FlexNode if child has Fr width (Row's main axis is horizontal)
+		mainAxisDim := getChildMainAxisDimension(built, true)
+		children[i] = wrapInFlexIfNeeded(childNode, mainAxisDim)
 	}
 
 	minWidth, maxWidth := dimensionToMinMax(r.Width)
@@ -245,12 +252,19 @@ func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	children := make([]layout.LayoutNode, len(c.Children))
 	for i, child := range c.Children {
 		built := child.Build(ctx.PushChild(i))
+
+		// Build the child's layout node
+		var childNode layout.LayoutNode
 		if builder, ok := built.(LayoutNodeBuilder); ok {
-			children[i] = builder.BuildLayoutNode(ctx.PushChild(i))
+			childNode = builder.BuildLayoutNode(ctx.PushChild(i))
 		} else {
 			// Fallback: create a BoxNode for widgets without LayoutNodeBuilder
-			children[i] = buildFallbackLayoutNode(built, ctx.PushChild(i))
+			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
 		}
+
+		// Wrap in FlexNode if child has Fr height (Column's main axis is vertical)
+		mainAxisDim := getChildMainAxisDimension(built, false)
+		children[i] = wrapInFlexIfNeeded(childNode, mainAxisDim)
 	}
 
 	minWidth, maxWidth := dimensionToMinMax(c.Width)

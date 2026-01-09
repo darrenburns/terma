@@ -49,20 +49,49 @@ func (l *LinearNode) ComputeLayout(constraints Constraints) ComputedLayout {
 	// Step 1: Convert to content-box constraints (space available for children)
 	contentConstraints := l.toContentConstraints(effective)
 
-	// Step 2: First pass - measure all children
-	childLayouts, totalMain, maxCross := l.measureChildren(contentConstraints)
+	// Step 2: First pass - measure non-flex children, identify flex children
+	childLayouts, fixedInfo := l.measureNonFlexChildren(contentConstraints)
 
-	// Step 3: Determine final container size
-	containerMain, containerCross := l.determineContainerSize(contentConstraints, totalMain, maxCross)
+	// Step 3: Determine container size (expand to max if flex children present)
+	containerMain, containerCross := l.determineContainerSizeWithFlex(contentConstraints, fixedInfo)
 
-	// Step 4: Calculate main-axis positions based on alignment
-	mainPositions := l.calculateMainPositions(childLayouts, containerMain)
+	// Step 4: Second pass - measure flex children with allocated space
+	l.measureFlexChildren(childLayouts, containerMain, containerCross, fixedInfo, contentConstraints)
 
-	// Step 5: Position children (apply cross-axis alignment, possibly re-layout for stretch)
+	// Step 5: Recalculate maxCross including flex children
+	maxCross := fixedInfo.maxCross
+	for i, layout := range childLayouts {
+		if fixedInfo.isFlexChild[i] {
+			childCross := l.crossSize(layout.Box.MarginBoxWidth(), layout.Box.MarginBoxHeight())
+			if childCross > maxCross {
+				maxCross = childCross
+			}
+		}
+	}
+
+	// Step 6: Re-determine container cross size with flex children included
+	_, crossMax := l.crossConstraint(contentConstraints)
+	crossMin, _ := l.crossConstraint(contentConstraints)
+	containerCross = max(crossMin, min(crossMax, maxCross))
+
+	// Step 7: Calculate main-axis positions based on alignment
+	mainPositions := l.calculateMainPositionsWithFlex(childLayouts, containerMain)
+
+	// Step 8: Position children (apply cross-axis alignment, possibly re-layout for stretch)
 	positionedChildren := l.positionChildren(childLayouts, mainPositions, containerCross, contentConstraints)
 
-	// Step 6: Build the final BoxModel
+	// Step 9: Build the final BoxModel
 	return l.buildResult(effective, containerMain, containerCross, positionedChildren)
+}
+
+// fixedLayoutInfo holds information from the first pass (non-flex measurement).
+type fixedLayoutInfo struct {
+	totalFixedMain int       // Total main-axis size of non-flex children (including spacing)
+	totalFlex      float64   // Sum of all Flex values
+	maxCross       int       // Maximum cross-axis size from non-flex children
+	hasFlex        bool      // True if any child is a FlexNode
+	isFlexChild    []bool    // Per-child: true if it's a FlexNode
+	flexValues     []float64 // Per-child: Flex value (0 for non-flex)
 }
 
 // effectiveConstraints combines parent constraints with node's own min/max constraints.
@@ -104,14 +133,34 @@ func (l *LinearNode) toContentConstraints(constraints Constraints) Constraints {
 	}
 }
 
-// measureChildren performs the first pass: measure each child and track totals.
-func (l *LinearNode) measureChildren(contentConstraints Constraints) ([]ComputedLayout, int, int) {
-	childLayouts := make([]ComputedLayout, len(l.Children))
-	totalMain := 0
-	maxCross := 0
+// measureNonFlexChildren performs the first pass: measure non-flex children and identify flex children.
+func (l *LinearNode) measureNonFlexChildren(contentConstraints Constraints) ([]ComputedLayout, fixedLayoutInfo) {
+	n := len(l.Children)
+	childLayouts := make([]ComputedLayout, n)
+	info := fixedLayoutInfo{
+		isFlexChild: make([]bool, n),
+		flexValues:  make([]float64, n),
+	}
 
 	for i, child := range l.Children {
-		// Give each child loose constraints on main axis, full cross constraint
+		// Check if this is a FlexNode
+		if flex, ok := IsFlexNode(child); ok {
+			info.isFlexChild[i] = true
+			info.hasFlex = true
+
+			// Normalize flex value
+			flexVal := flex.Flex
+			if flexVal <= 0 {
+				flexVal = 1
+			}
+			info.flexValues[i] = flexVal
+			info.totalFlex += flexVal
+
+			// Skip measuring - will be done in second pass
+			continue
+		}
+
+		// Non-flex child: measure now
 		childConstraints := l.makeChildConstraints(contentConstraints)
 		childLayouts[i] = child.ComputeLayout(childConstraints)
 
@@ -119,18 +168,134 @@ func (l *LinearNode) measureChildren(contentConstraints Constraints) ([]Computed
 		childMain := l.mainSize(childLayouts[i].Box.MarginBoxWidth(), childLayouts[i].Box.MarginBoxHeight())
 		childCross := l.crossSize(childLayouts[i].Box.MarginBoxWidth(), childLayouts[i].Box.MarginBoxHeight())
 
-		totalMain += childMain
-		if childCross > maxCross {
-			maxCross = childCross
+		info.totalFixedMain += childMain
+		if childCross > info.maxCross {
+			info.maxCross = childCross
 		}
 	}
 
-	// Add spacing between children
-	if len(l.Children) > 1 {
-		totalMain += l.Spacing * (len(l.Children) - 1)
+	// Add spacing (between ALL children, including flex)
+	if n > 1 {
+		info.totalFixedMain += l.Spacing * (n - 1)
 	}
 
-	return childLayouts, totalMain, maxCross
+	return childLayouts, info
+}
+
+// determineContainerSizeWithFlex calculates the container's content size,
+// expanding to maxWidth/maxHeight if flex children are present.
+func (l *LinearNode) determineContainerSizeWithFlex(contentConstraints Constraints, info fixedLayoutInfo) (int, int) {
+	mainMin, mainMax := l.mainConstraint(contentConstraints)
+	crossMin, crossMax := l.crossConstraint(contentConstraints)
+
+	var containerMain int
+	if info.hasFlex {
+		// With flex children, container expands to fill available space
+		// This gives flex children space to fill
+		containerMain = mainMax
+	} else {
+		// Without flex children, shrink-wrap to content
+		containerMain = max(mainMin, min(mainMax, info.totalFixedMain))
+	}
+
+	// Cross-axis size is determined by tallest child (so far only non-flex)
+	containerCross := max(crossMin, min(crossMax, info.maxCross))
+
+	return containerMain, containerCross
+}
+
+// measureFlexChildren performs the second pass: allocate remaining space to flex children.
+func (l *LinearNode) measureFlexChildren(
+	childLayouts []ComputedLayout,
+	containerMain, containerCross int,
+	info fixedLayoutInfo,
+	contentConstraints Constraints,
+) {
+	if !info.hasFlex || info.totalFlex == 0 {
+		return
+	}
+
+	// Calculate remaining space for flex children
+	// Note: totalFixedMain includes spacing between ALL children
+	remaining := containerMain - info.totalFixedMain + l.Spacing*l.countFlexChildren(info)
+	// Actually, let's recalculate more carefully:
+	// totalFixedMain = sum of fixed children sizes + spacing*(n-1)
+	// We want: remaining = containerMain - fixedSizesOnly - spacing*(n-1)
+	// So: remaining = containerMain - (totalFixedMain - spacing*(n-1) if no flex counted) ...
+	// This is getting complex. Let me recalculate totalFixedMain without spacing, then add spacing back.
+
+	// Recalculate: fixed children sizes only (no spacing)
+	fixedSizesOnly := info.totalFixedMain
+	n := len(l.Children)
+	if n > 1 {
+		fixedSizesOnly -= l.Spacing * (n - 1)
+	}
+
+	// Total spacing (between all children)
+	totalSpacing := 0
+	if n > 1 {
+		totalSpacing = l.Spacing * (n - 1)
+	}
+
+	// Remaining space for flex children
+	remaining = containerMain - fixedSizesOnly - totalSpacing
+	if remaining < 0 {
+		remaining = 0
+	}
+
+	// Distribute remaining space to flex children using cumulative distribution
+	// This ensures no pixel loss due to rounding
+	allocatedSoFar := 0.0
+	actualAllocatedSoFar := 0
+
+	_, crossMax := l.crossConstraint(contentConstraints)
+
+	for i := range l.Children {
+		if !info.isFlexChild[i] {
+			continue
+		}
+
+		// Calculate this child's share using cumulative distribution
+		allocatedSoFar += info.flexValues[i]
+		targetTotal := float64(remaining) * allocatedSoFar / info.totalFlex
+		thisAllocation := int(targetTotal) - actualAllocatedSoFar
+		actualAllocatedSoFar += thisAllocation
+
+		// Create tight constraint on main axis for flex child
+		flexConstraints := l.makeFlexChildConstraints(contentConstraints, thisAllocation, crossMax)
+
+		// Get the actual child (unwrap FlexNode)
+		actualChild := l.Children[i]
+		if flex, ok := IsFlexNode(actualChild); ok {
+			actualChild = flex.Child
+		}
+
+		childLayouts[i] = actualChild.ComputeLayout(flexConstraints)
+	}
+}
+
+// countFlexChildren returns the number of flex children.
+func (l *LinearNode) countFlexChildren(info fixedLayoutInfo) int {
+	count := 0
+	for _, isFlex := range info.isFlexChild {
+		if isFlex {
+			count++
+		}
+	}
+	return count
+}
+
+// makeFlexChildConstraints creates constraints for a flex child.
+func (l *LinearNode) makeFlexChildConstraints(contentConstraints Constraints, mainSize, crossMax int) Constraints {
+	// Main axis: tight (exactly mainSize)
+	// Cross axis: loose (0 to max)
+	return l.makeConstraints(mainSize, mainSize, 0, crossMax, 0, 0)
+}
+
+// calculateMainPositionsWithFlex calculates positions accounting for actual child sizes.
+func (l *LinearNode) calculateMainPositionsWithFlex(childLayouts []ComputedLayout, containerMain int) []int {
+	// This is the same as calculateMainPositions but using actual child sizes
+	return l.calculateMainPositions(childLayouts, containerMain)
 }
 
 // makeChildConstraints creates constraints for measuring a child.
@@ -142,18 +307,6 @@ func (l *LinearNode) makeChildConstraints(contentConstraints Constraints) Constr
 
 	// Children get loose constraints - they report their natural size
 	return l.makeConstraints(0, mainMax, 0, crossMax, 0, 0)
-}
-
-// determineContainerSize calculates the container's content size.
-func (l *LinearNode) determineContainerSize(contentConstraints Constraints, totalMain, maxCross int) (int, int) {
-	mainMin, mainMax := l.mainConstraint(contentConstraints)
-	crossMin, crossMax := l.crossConstraint(contentConstraints)
-
-	// Clamp to constraints
-	containerMain := max(mainMin, min(mainMax, totalMain))
-	containerCross := max(crossMin, min(crossMax, maxCross))
-
-	return containerMain, containerCross
 }
 
 // calculateMainPositions calculates the position of each child along the main axis.
@@ -294,11 +447,26 @@ func (l *LinearNode) positionChildren(
 			// The available space for the border-box is container minus margins.
 			// Stretch forces the child's layout box to match exactly, even if that means
 			// shrinking. Content may visually overflow, but layout integrity is preserved.
+			//
+			// IMPORTANT: For flex children, we must preserve their allocated main-axis size.
+			// The first layout pass gave them a specific width/height based on flex distribution.
+			// We use tight main-axis constraints to prevent reverting to natural size.
 			childMarginCross := l.crossSize(layout.Box.Margin.Horizontal(), layout.Box.Margin.Vertical())
 			availableCross := containerCross - childMarginCross
 			if availableCross > 0 {
-				stretchedConstraints := l.makeStretchConstraints(contentConstraints, availableCross)
-				layout = l.Children[i].ComputeLayout(stretchedConstraints)
+				// Get the main-axis size from the first layout pass (preserves flex allocation)
+				childMainSize := l.mainSize(layout.Box.Width, layout.Box.Height)
+
+				// Create constraints: tight on main-axis (preserve flex), tight on cross-axis (stretch)
+				stretchedConstraints := l.makeStretchConstraintsPreserveMain(childMainSize, availableCross)
+
+				// Get the actual child (unwrap FlexNode if present)
+				actualChild := l.Children[i]
+				if flex, ok := IsFlexNode(actualChild); ok {
+					actualChild = flex.Child
+				}
+
+				layout = actualChild.ComputeLayout(stretchedConstraints)
 			}
 			crossPos = 0
 		}
@@ -320,12 +488,13 @@ func (l *LinearNode) positionChildren(
 	return positioned
 }
 
-// makeStretchConstraints creates constraints for stretching a child on the cross axis.
-func (l *LinearNode) makeStretchConstraints(contentConstraints Constraints, crossSize int) Constraints {
-	_, mainMax := l.mainConstraint(contentConstraints)
-	// Main axis: loose (0 to max) - child keeps its natural main-axis size
-	// Cross axis: tight (crossSize) - child stretches to fill cross-axis
-	return l.makeConstraints(0, mainMax, crossSize, crossSize, 0, 0)
+// makeStretchConstraintsPreserveMain creates constraints for stretching a child on the cross axis
+// while preserving its main-axis size. This is critical for flex children whose main-axis
+// size was determined by flex distribution and must not revert to natural size.
+func (l *LinearNode) makeStretchConstraintsPreserveMain(mainSize, crossSize int) Constraints {
+	// Main axis: tight (preserve the allocated/computed size from first pass)
+	// Cross axis: tight (stretch to fill container)
+	return l.makeConstraints(mainSize, mainSize, crossSize, crossSize, 0, 0)
 }
 
 // buildResult constructs the final ComputedLayout.
