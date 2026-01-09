@@ -7,9 +7,9 @@ type App struct{}
 func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 	return terma.Row{
 		Spacing:    2,
-		Width:      terma.Cells(21),
+		Width:      terma.Cells(30),
 		Height:     terma.Cells(5),
-		CrossAlign: terma.CrossAxisCenter,
+		CrossAlign: terma.CrossAxisStart,
 		MainAlign:  terma.MainAxisEnd,
 		Style: terma.Style{
 			BackgroundColor: terma.Red,
@@ -17,7 +17,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 			Border:          terma.RoundedBorder(terma.Blue),
 		},
 		Children: []terma.Widget{
-			terma.Text{Wrap: terma.WrapHard, Content: "Hello", Style: terma.Style{BackgroundColor: terma.Black}, Width: terma.Cells(4)},
+			terma.Text{Wrap: terma.WrapHard, Content: "Hello", Style: terma.Style{BackgroundColor: terma.BrightCyan}, Width: terma.Cells(4)},
 			terma.ParseMarkupToText("[on #f42e41]World[/]", ctx.Theme()),
 			terma.Text{Content: "!"},
 			terma.Row{

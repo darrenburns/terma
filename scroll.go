@@ -375,64 +375,7 @@ func (s Scrollable) Layout(ctx BuildContext, constraints Constraints) Size {
 
 // Render draws the scrollable widget and its child.
 func (s Scrollable) Render(ctx *RenderContext) {
-	if s.Child == nil || s.State == nil {
-		return
-	}
-
-	// Determine scrollbar width for content area calculation
-	scrollbarWidth := 0
-	if !s.DisableScroll {
-		scrollbarWidth = 1
-	}
-
-	// Content area width (excluding scrollbar)
-	contentWidth := ctx.Width - scrollbarWidth
-
-	// Calculate content height based on actual render dimensions.
-	// This is necessary because Layout may have been called multiple times
-	// with different constraints (e.g., by floating widgets).
-	built := s.Child.Build(ctx.buildContext)
-	var childVInset int
-	if styled, ok := built.(Styled); ok {
-		style := styled.GetStyle()
-		borderWidth := style.Border.Width()
-		childVInset = style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
-	}
-
-	contentHeight := ctx.Height // fallback
-	if layoutable, ok := built.(Layoutable); ok {
-		childConstraints := Constraints{
-			MinWidth:  0,
-			MaxWidth:  contentWidth,
-			MinHeight: 0,
-			MaxHeight: 100000, // Large value to allow natural height
-		}
-		size := layoutable.Layout(ctx.buildContext, childConstraints)
-		contentHeight = size.Height + childVInset
-	}
-
-	// Update state with actual render dimensions and clamp offset
-	s.State.updateLayout(ctx.Height, contentHeight)
-	s.clampScrollOffset()
-
-	scrollOffset := s.getScrollOffset()
-	Log("Scrollable[%s].Render: ctx.Width=%d, ctx.Height=%d, state.viewportHeight=%d, state.contentHeight=%d, scrollOffset=%d, maxOffset=%d",
-		s.ID, ctx.Width, ctx.Height, s.State.viewportHeight, s.State.contentHeight, scrollOffset, s.State.maxOffset())
-
-	// Determine if we need to show scrollbar (after updating state)
-	needsScrollbar := s.canScroll()
-
-	// Create a scrolled sub-context for the child
-	childCtx := ctx.ScrolledSubContext(0, 0, contentWidth, ctx.Height, scrollOffset, contentHeight)
-
-	// Render the child through the scrolled context
-	childCtx.RenderChild(0, s.Child, 0, 0, contentWidth, contentHeight)
-
-	// Render scrollbar if needed (on the main context, not scrolled)
-	if needsScrollbar {
-		focused := ctx.IsFocused(s)
-		s.renderScrollbar(ctx, scrollOffset, focused)
-	}
+	// No-op - rendering is done via renderTree
 }
 
 // scrollbarThumbMetrics calculates smooth scrollbar thumb position and size.

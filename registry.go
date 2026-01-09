@@ -12,6 +12,25 @@ func (r Rect) Contains(x, y int) bool {
 		y >= r.Y && y < r.Y+r.Height
 }
 
+// IsEmpty returns true if the rect has zero or negative area.
+func (r Rect) IsEmpty() bool {
+	return r.Width <= 0 || r.Height <= 0
+}
+
+// Intersect returns the intersection of two rectangles.
+// Returns a zero-size rect if they don't overlap.
+func (r Rect) Intersect(other Rect) Rect {
+	x1 := max(r.X, other.X)
+	y1 := max(r.Y, other.Y)
+	x2 := min(r.X+r.Width, other.X+other.Width)
+	y2 := min(r.Y+r.Height, other.Y+other.Height)
+
+	if x2 <= x1 || y2 <= y1 {
+		return Rect{} // No intersection
+	}
+	return Rect{X: x1, Y: y1, Width: x2 - x1, Height: y2 - y1}
+}
+
 // WidgetEntry stores a widget along with its position and identity.
 type WidgetEntry struct {
 	Widget Widget
