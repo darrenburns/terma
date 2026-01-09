@@ -2,6 +2,8 @@ package terma
 
 import (
 	"fmt"
+
+	"terma/layout"
 )
 
 // pendingFocusID holds the ID of a widget that should receive focus after the next render.
@@ -13,6 +15,12 @@ var pendingFocusID string
 // such as keybind actions or callbacks.
 func RequestFocus(id string) {
 	pendingFocusID = id
+}
+
+// layoutHolder holds a computed layout to share between Layout and Render calls.
+// Using a struct pointer allows the value to be shared across BuildContext copies.
+type layoutHolder struct {
+	layout *layout.ComputedLayout
 }
 
 // BuildContext provides access to framework state during widget building.
@@ -28,6 +36,8 @@ type BuildContext struct {
 	path []int
 	// floatCollector gathers Floating widgets for deferred rendering
 	floatCollector *FloatCollector
+	// layoutResult holds the computed layout from Layout for use by Render
+	layoutResult *layoutHolder
 }
 
 // NewBuildContext creates a new build context.
@@ -38,6 +48,7 @@ func NewBuildContext(fm *FocusManager, focusedSignal AnySignal[Focusable], hover
 		hoveredSignal:  hoveredSignal,
 		path:           []int{0},
 		floatCollector: fc,
+		layoutResult:   &layoutHolder{},
 	}
 }
 
@@ -74,7 +85,23 @@ func (ctx BuildContext) PushChild(index int) BuildContext {
 		hoveredSignal:  ctx.hoveredSignal,
 		path:           newPath,
 		floatCollector: ctx.floatCollector,
+		layoutResult:   &layoutHolder{}, // Each child gets its own layout holder
 	}
+}
+
+// StoreLayout stores a computed layout for later retrieval by Render.
+func (ctx BuildContext) StoreLayout(l *layout.ComputedLayout) {
+	if ctx.layoutResult != nil {
+		ctx.layoutResult.layout = l
+	}
+}
+
+// GetLayout retrieves the computed layout stored by Layout.
+func (ctx BuildContext) GetLayout() *layout.ComputedLayout {
+	if ctx.layoutResult != nil {
+		return ctx.layoutResult.layout
+	}
+	return nil
 }
 
 // IsFocused returns true if the given widget currently has focus.

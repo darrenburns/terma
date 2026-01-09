@@ -43,9 +43,6 @@ type Row struct {
 	Children   []Widget
 	Click      func()     // Optional callback invoked when clicked
 	Hover      func(bool) // Optional callback invoked when hover state changes
-
-	// cachedLayout stores the computed layout for use by Render.
-	cachedLayout *layout.ComputedLayout
 }
 
 // GetDimensions returns the width and height dimension preferences.
@@ -104,6 +101,9 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		}
 	}
 
+	minWidth, maxWidth := dimensionToMinMax(r.Width)
+	minHeight, maxHeight := dimensionToMinMax(r.Height)
+
 	return &layout.RowNode{
 		Spacing:    r.Spacing,
 		MainAlign:  toLayoutMainAlign(r.MainAlign),
@@ -112,11 +112,15 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		Padding:    toLayoutEdgeInsets(r.Style.Padding),
 		Border:     borderToEdgeInsets(r.Style.Border),
 		Margin:     toLayoutEdgeInsets(r.Style.Margin),
+		MinWidth:   minWidth,
+		MaxWidth:   maxWidth,
+		MinHeight:  minHeight,
+		MaxHeight:  maxHeight,
 	}
 }
 
 // Layout computes the size of the row and positions children using the new layout system.
-func (r *Row) Layout(ctx BuildContext, constraints Constraints) Size {
+func (r Row) Layout(ctx BuildContext, constraints Constraints) Size {
 	// Build layout node tree
 	node := r.BuildLayoutNode(ctx)
 
@@ -131,8 +135,8 @@ func (r *Row) Layout(ctx BuildContext, constraints Constraints) Size {
 	// Compute layout
 	result := node.ComputeLayout(layoutConstraints)
 
-	// Cache for render phase
-	r.cachedLayout = &result
+	// Store for render phase (shared via layoutHolder pointer)
+	ctx.StoreLayout(&result)
 
 	// Get content size from computed layout
 	contentWidth := result.Box.MarginBoxWidth()
@@ -182,19 +186,15 @@ func (r Row) Render(ctx *RenderContext) {
 		return
 	}
 
-	// Compute layout fresh (can't rely on cache due to value semantics)
-	node := r.BuildLayoutNode(ctx.buildContext)
-	layoutConstraints := layout.Constraints{
-		MinWidth:  0,
-		MaxWidth:  ctx.Width,
-		MinHeight: 0,
-		MaxHeight: ctx.Height,
+	// Retrieve the layout computed by Layout()
+	result := ctx.buildContext.GetLayout()
+	if result == nil {
+		Log("Row.Render: no layout found in context, skipping render")
+		return
 	}
-	result := node.ComputeLayout(layoutConstraints)
 
 	Log("Row.Render: ctx.Width=%d, ctx.Height=%d, numChildren=%d, resultChildren=%d",
 		ctx.Width, ctx.Height, len(r.Children), len(result.Children))
-	Log("Row.Render: result.Box width=%d height=%d", result.Box.BorderBoxWidth(), result.Box.BorderBoxHeight())
 
 	for i, child := range r.Children {
 		if i >= len(result.Children) {

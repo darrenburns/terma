@@ -11,12 +11,12 @@ import (
 type WrapMode int
 
 const (
+	// WrapNone disables wrapping - text is truncated if too long.
+	WrapNone WrapMode = iota
 	// WrapSoft breaks at word boundaries (spaces), only breaking words if necessary (default).
-	WrapSoft WrapMode = iota
+	WrapSoft
 	// WrapHard breaks at exact character boundary when line exceeds width.
 	WrapHard
-	// WrapNone disables wrapping - text is truncated if too long.
-	WrapNone
 )
 
 // Text is a leaf widget that displays text content.
@@ -75,12 +75,19 @@ func (t Text) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	// Get the text content (spans concatenated or plain content)
 	content := t.textContent()
 
+	minWidth, maxWidth := dimensionToMinMax(t.Width)
+	minHeight, maxHeight := dimensionToMinMax(t.Height)
+
 	return &layout.TextNode{
-		Content: content,
-		Wrap:    toLayoutWrapMode(t.Wrap),
-		Padding: toLayoutEdgeInsets(t.Style.Padding),
-		Border:  borderToEdgeInsets(t.Style.Border),
-		Margin:  toLayoutEdgeInsets(t.Style.Margin),
+		Content:   content,
+		Wrap:      toLayoutWrapMode(t.Wrap),
+		Padding:   toLayoutEdgeInsets(t.Style.Padding),
+		Border:    borderToEdgeInsets(t.Style.Border),
+		Margin:    toLayoutEdgeInsets(t.Style.Margin),
+		MinWidth:  minWidth,
+		MaxWidth:  maxWidth,
+		MinHeight: minHeight,
+		MaxHeight: maxHeight,
 	}
 }
 
