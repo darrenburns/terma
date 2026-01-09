@@ -717,9 +717,9 @@ func TestLinearNode_CrossAxisAlignment(t *testing.T) {
 		// But a sibling is 25 tall, and CrossAxisStretch forces container to 25
 		// Parent constraint (stretch to 25) MUST win over child's MaxHeight
 		//
-		// This matches Flutter's philosophy: parent constraints are authoritative.
-		// When min > max due to conflict, min wins. The child may look ugly
-		// (content overflow), but the layout is deterministic.
+		// When a child has explicit size constraints (like MaxHeight: 15),
+		// those constraints are respected even with CrossAxisStretch.
+		// This matches user expectations: Width: Cells(4) should mean 4 cells.
 		row := &RowNode{
 			CrossAlign: CrossAxisStretch,
 			Children: []LayoutNode{
@@ -732,12 +732,12 @@ func TestLinearNode_CrossAxisAlignment(t *testing.T) {
 		// Container shrink-wraps to tallest child (25)
 		assert.Equal(t, 25, result.Box.Height)
 
-		// Child 0 is forced to 25, even though it said MaxHeight=15
-		// Parent constraints override child preferences
-		assert.Equal(t, 25, result.Children[0].Layout.Box.Height,
-			"parent stretch constraint should override child's MaxHeight")
+		// Child 0 respects its MaxHeight=15, not stretched to 25
+		// Explicit constraints take precedence over stretch
+		assert.Equal(t, 15, result.Children[0].Layout.Box.Height,
+			"child's explicit MaxHeight should be respected over stretch")
 
-		// Child 1 stays at 25 (its natural size)
+		// Child 1 stays at 25 (its natural size, no explicit constraint)
 		assert.Equal(t, 25, result.Children[1].Layout.Box.Height)
 	})
 

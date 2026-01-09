@@ -26,7 +26,7 @@ type Text struct {
 	Spans   []Span     // Rich text segments (takes precedence if non-empty)
 	Width   Dimension  // Optional width (zero value = auto)
 	Height  Dimension  // Optional height (zero value = auto)
-	Wrap    WrapMode   // Wrapping mode (default = WrapSoft)
+	Wrap    WrapMode   // Wrapping mode (default = WrapNone)
 	Style   Style      // Optional styling (colors, inherited by spans)
 	Click   func()     // Optional callback invoked when clicked
 	Hover   func(bool) // Optional callback invoked when hover state changes
@@ -247,7 +247,6 @@ func (t Text) renderPlain(ctx *RenderContext) {
 
 	// Get lines with wrapping applied
 	lines := wrapText(t.Content, ctx.Width, t.Wrap)
-	Log("Text.renderPlain: ctx.Width=%d, ctx.Height=%d, numLines=%d", ctx.Width, ctx.Height, len(lines))
 
 	for i := 0; i < ctx.Height; i++ {
 		var line string

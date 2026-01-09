@@ -102,20 +102,30 @@ func (c Constraints) Constrain(width, height int) (int, int) {
 func (c Constraints) WithNodeConstraints(minW, maxW, minH, maxH int) Constraints {
 	effective := c
 
+	// Apply node's max constraints first - these represent explicit size limits
+	// like Width: Cells(4) which should be respected even against parent's min.
+	if maxW > 0 {
+		effective.MaxWidth = min(effective.MaxWidth, maxW)
+		// If parent's min exceeds node's explicit max, lower it.
+		// This ensures explicit width constraints like Width: Cells(4) are respected
+		// even when CrossAxisStretch wants to force a larger size.
+		if c.MinWidth > maxW {
+			effective.MinWidth = maxW
+		}
+	}
+	if maxH > 0 {
+		effective.MaxHeight = min(effective.MaxHeight, maxH)
+		if c.MinHeight > maxH {
+			effective.MinHeight = maxH
+		}
+	}
+
 	// Apply node's min constraints, but clamp to parent's max.
 	if minW > 0 {
 		effective.MinWidth = max(effective.MinWidth, min(minW, c.MaxWidth))
 	}
 	if minH > 0 {
 		effective.MinHeight = max(effective.MinHeight, min(minH, c.MaxHeight))
-	}
-
-	// Apply node's max constraints, but clamp to parent's min.
-	if maxW > 0 {
-		effective.MaxWidth = min(effective.MaxWidth, max(maxW, c.MinWidth))
-	}
-	if maxH > 0 {
-		effective.MaxHeight = min(effective.MaxHeight, max(maxH, c.MinHeight))
 	}
 
 	// Sanity check: ensure min <= max. If user misconfigured node constraints

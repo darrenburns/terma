@@ -240,6 +240,37 @@ func (c Column) Build(ctx BuildContext) Widget {
 	return c
 }
 
+// BuildLayoutNode creates a ColumnNode for the layout system.
+func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
+	children := make([]layout.LayoutNode, len(c.Children))
+	for i, child := range c.Children {
+		built := child.Build(ctx.PushChild(i))
+		if builder, ok := built.(LayoutNodeBuilder); ok {
+			children[i] = builder.BuildLayoutNode(ctx.PushChild(i))
+		} else {
+			// Fallback: create a BoxNode for widgets without LayoutNodeBuilder
+			children[i] = buildFallbackLayoutNode(built, ctx.PushChild(i))
+		}
+	}
+
+	minWidth, maxWidth := dimensionToMinMax(c.Width)
+	minHeight, maxHeight := dimensionToMinMax(c.Height)
+
+	return &layout.ColumnNode{
+		Spacing:    c.Spacing,
+		MainAlign:  toLayoutMainAlign(c.MainAlign),
+		CrossAlign: toLayoutCrossAlign(c.CrossAlign),
+		Children:   children,
+		Padding:    toLayoutEdgeInsets(c.Style.Padding),
+		Border:     borderToEdgeInsets(c.Style.Border),
+		Margin:     toLayoutEdgeInsets(c.Style.Margin),
+		MinWidth:   minWidth,
+		MaxWidth:   maxWidth,
+		MinHeight:  minHeight,
+		MaxHeight:  maxHeight,
+	}
+}
+
 // Layout computes the size of the column and positions children.
 func (c Column) Layout(ctx BuildContext, constraints Constraints) Size {
 	// Two-pass layout algorithm for fractional dimensions:
