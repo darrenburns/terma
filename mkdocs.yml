@@ -7,8 +7,11 @@ theme:
     scheme: slate
     primary: indigo
     accent: cyan
+  features:
+    - content.code.copy
 
 markdown_extensions:
+  - admonition
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.superfences
@@ -16,7 +19,9 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
-  - Widgets: widgets.md
+  - Widgets:
+    - Overview: widgets/index.md
+    - Spacer: widgets/spacer.md
   - Signals: signals.md
   - Layout: layout.md
   - Styling: styling.md

@@ -1,0 +1,62 @@
+# Widgets
+
+Widgets are the building blocks of Terma applications. Everything in Terma is a widget, from simple text to complex interactive lists.
+
+## Widget Categories
+
+### Layout Widgets
+
+Widgets that arrange and position other widgets:
+
+- [Row](../layout.md) - Arrange children horizontally
+- [Column](../layout.md) - Arrange children vertically
+- [Dock](../layout.md) - Edge-docking layout
+- [Spacer](spacer.md) - Empty space for layout control
+
+### Content Widgets
+
+Widgets that display content:
+
+- Text - Display plain or rich text
+- Button - Focusable button with press handler
+- List - Generic navigable list
+
+### Utility Widgets
+
+- KeybindBar - Display active keybindings
+- [Spacer](spacer.md) - Empty space for layout control
+
+## Creating Custom Widgets
+
+Every widget implements the `Widget` interface:
+
+```go
+type Widget interface {
+    Build(ctx BuildContext) Widget
+}
+```
+
+Leaf widgets (those that render directly) return themselves from `Build()`. Composite widgets return a tree of other widgets.
+
+```go
+// Leaf widget example
+type MyLeafWidget struct{}
+
+func (w MyLeafWidget) Build(ctx BuildContext) Widget {
+    return w  // Returns itself
+}
+
+// Composite widget example
+type MyCompositeWidget struct {
+    Title string
+}
+
+func (w MyCompositeWidget) Build(ctx BuildContext) Widget {
+    return Column{
+        Children: []Widget{
+            Text{Content: w.Title},
+            // ... more widgets
+        },
+    }
+}
+```

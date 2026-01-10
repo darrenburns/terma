@@ -115,6 +115,7 @@ func main() {
 | Widget | Purpose | Key Fields |
 |--------|---------|------------|
 | `KeybindBar` | Displays active keybinds from focused widget | `Style`, `FormatKey` |
+| `Spacer` | Empty space for layout control | `Width`, `Height` (default Flex(1)) |
 
 ### Widget Examples
 
