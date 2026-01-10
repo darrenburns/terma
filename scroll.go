@@ -1,5 +1,7 @@
 package terma
 
+import "terma/layout"
+
 // Vertical scrollbar characters for smooth rendering.
 // These are "lower eighths" Unicode block elements (U+2581-U+2587).
 // Index 0 = 1/8 filled from bottom, index 6 = 7/8 filled, index 7 = space.
@@ -201,6 +203,56 @@ func (s Scrollable) OnHover(hovered bool) {
 // Build returns itself as Scrollable manages its own child.
 func (s Scrollable) Build(ctx BuildContext) Widget {
 	return s
+}
+
+// BuildLayoutNode builds a layout node for this Scrollable widget.
+// Implements the LayoutNodeBuilder interface.
+func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
+	if s.Child == nil {
+		// No child - return empty box
+		return &layout.BoxNode{}
+	}
+
+	// Build the child widget
+	built := s.Child.Build(ctx.PushChild(0))
+
+	// Get child's layout node
+	var childNode layout.LayoutNode
+	if builder, ok := built.(LayoutNodeBuilder); ok {
+		childNode = builder.BuildLayoutNode(ctx.PushChild(0))
+	} else {
+		childNode = buildFallbackLayoutNode(built, ctx.PushChild(0))
+	}
+
+	// Get scroll offset from state
+	scrollOffsetY := 0
+	if s.State != nil {
+		scrollOffsetY = s.State.Offset.Peek()
+	}
+
+	// Scrollbar width: 1 if scrolling enabled, 0 if disabled
+	scrollbarWidth := 0
+	if !s.DisableScroll {
+		scrollbarWidth = 1
+	}
+
+	// Get node constraints from dimensions
+	minWidth, maxWidth := dimensionToMinMax(s.Width)
+	minHeight, maxHeight := dimensionToMinMax(s.Height)
+
+	return &layout.ScrollableNode{
+		Child:           childNode,
+		ScrollOffsetY:   scrollOffsetY,
+		ScrollbarWidth:  scrollbarWidth,
+		ScrollbarHeight: 0, // Horizontal scrolling not supported yet
+		Padding:         toLayoutEdgeInsets(s.Style.Padding),
+		Border:          borderToEdgeInsets(s.Style.Border),
+		Margin:          toLayoutEdgeInsets(s.Style.Margin),
+		MinWidth:        minWidth,
+		MaxWidth:        maxWidth,
+		MinHeight:       minHeight,
+		MaxHeight:       maxHeight,
+	}
 }
 
 // getScrollOffset returns the current scroll offset.

@@ -93,6 +93,11 @@ func extractChildren(widget Widget) []Widget {
 		return w.Children
 	case Column:
 		return w.Children
+	case Scrollable:
+		if w.Child != nil {
+			return []Widget{w.Child}
+		}
+		return nil
 	// Add other container types as they implement LayoutNodeBuilder
 	default:
 		return nil

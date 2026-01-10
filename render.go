@@ -808,9 +808,22 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 	// If tree.Children is empty but widget has children, the widget handles them in Render() (fallback)
 	// If tree.Children is populated, we handle positioning here (new path)
 	if len(tree.Children) > 0 {
-		// Create a context clipped to this widget's content area for child rendering
-		// This ensures children are clipped to their parent's content bounds
-		childClipCtx := ctx.SubContext(absContentX, absContentY, box.ContentWidth(), box.ContentHeight())
+		// Determine usable content area (accounts for scrollbar space)
+		usableBox := box.UsableContentBox()
+		usableWidth := usableBox.Width
+		usableHeight := usableBox.Height
+
+		// Create a context clipped to this widget's usable content area
+		// For scrollable widgets, use ScrolledSubContext to apply scroll offset
+		var childClipCtx *RenderContext
+		if box.IsScrollableY() {
+			// Scrollable: apply scroll offset so content is shifted up
+			childClipCtx = ctx.ScrolledSubContext(absContentX, absContentY, usableWidth, usableHeight, box.ScrollOffsetY)
+		} else {
+			// Non-scrollable: use regular SubContext
+			childClipCtx = ctx.SubContext(absContentX, absContentY, usableWidth, usableHeight)
+		}
+
 		// Set inherited background for children
 		if style.BackgroundColor.IsSet() {
 			widgetBg := style.BackgroundColor
@@ -838,6 +851,30 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 			pos := tree.Layout.Children[i]
 			// Pass relative positions - childClipCtx.X/Y already contains absContentX/Y
 			r.renderTree(childClipCtx, childTree, pos.X, pos.Y)
+		}
+	}
+
+	// 4b. Render scrollbar and update ScrollState if widget is scrollable
+	if scrollable, ok := tree.Widget.(Scrollable); ok {
+		// Update ScrollState with computed dimensions from layout
+		// This enables keyboard scrolling to work correctly
+		if scrollable.State != nil {
+			usableBox := box.UsableContentBox()
+			scrollable.State.updateLayout(usableBox.Height, box.VirtualHeight)
+		}
+
+		// Render scrollbar if scrolling is enabled and content overflows
+		if box.IsScrollableY() && !scrollable.DisableScroll {
+			// Get focus state
+			focused := ctx.focusManager != nil && ctx.IsFocused(tree.Widget)
+
+			// Create context for scrollbar (at content area, not affected by scroll offset)
+			scrollbarCtx := ctx.SubContext(absContentX, absContentY, box.ContentWidth(), box.ContentHeight())
+			if style.BackgroundColor.IsSet() {
+				widgetBg := style.BackgroundColor
+				scrollbarCtx.inheritedBgAt = func(absY int) Color { return widgetBg }
+			}
+			scrollable.renderScrollbar(scrollbarCtx, box.ScrollOffsetY, focused)
 		}
 	}
 
