@@ -25,22 +25,29 @@ type RowNode struct {
 	MaxWidth  int
 	MinHeight int
 	MaxHeight int
+
+	// Expand flags force the container to fill available space on that axis.
+	// Used when the widget's dimension is Flex() to mean "fill available space".
+	ExpandWidth  bool
+	ExpandHeight bool
 }
 
 // ComputeLayout computes the row layout by delegating to LinearNode.
 func (r *RowNode) ComputeLayout(constraints Constraints) ComputedLayout {
 	return (&LinearNode{
-		Axis:       Horizontal,
-		Spacing:    r.Spacing,
-		MainAlign:  r.MainAlign,
-		CrossAlign: r.CrossAlign,
-		Children:   r.Children,
-		Padding:    r.Padding,
-		Border:     r.Border,
-		Margin:     r.Margin,
-		MinWidth:   r.MinWidth,
-		MaxWidth:   r.MaxWidth,
-		MinHeight:  r.MinHeight,
-		MaxHeight:  r.MaxHeight,
+		Axis:         Horizontal,
+		Spacing:      r.Spacing,
+		MainAlign:    r.MainAlign,
+		CrossAlign:   r.CrossAlign,
+		Children:     r.Children,
+		Padding:      r.Padding,
+		Border:       r.Border,
+		Margin:       r.Margin,
+		MinWidth:     r.MinWidth,
+		MaxWidth:     r.MaxWidth,
+		MinHeight:    r.MinHeight,
+		MaxHeight:    r.MaxHeight,
+		ExpandWidth:  r.ExpandWidth,
+		ExpandHeight: r.ExpandHeight,
 	}).ComputeLayout(constraints)
 }

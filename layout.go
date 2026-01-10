@@ -112,17 +112,19 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minHeight, maxHeight := dimensionToMinMax(r.Height)
 
 	return &layout.RowNode{
-		Spacing:    r.Spacing,
-		MainAlign:  toLayoutMainAlign(r.MainAlign),
-		CrossAlign: toLayoutCrossAlign(r.CrossAlign),
-		Children:   children,
-		Padding:    toLayoutEdgeInsets(r.Style.Padding),
-		Border:     borderToEdgeInsets(r.Style.Border),
-		Margin:     toLayoutEdgeInsets(r.Style.Margin),
-		MinWidth:   minWidth,
-		MaxWidth:   maxWidth,
-		MinHeight:  minHeight,
-		MaxHeight:  maxHeight,
+		Spacing:      r.Spacing,
+		MainAlign:    toLayoutMainAlign(r.MainAlign),
+		CrossAlign:   toLayoutCrossAlign(r.CrossAlign),
+		Children:     children,
+		Padding:      toLayoutEdgeInsets(r.Style.Padding),
+		Border:       borderToEdgeInsets(r.Style.Border),
+		Margin:       toLayoutEdgeInsets(r.Style.Margin),
+		MinWidth:     minWidth,
+		MaxWidth:     maxWidth,
+		MinHeight:    minHeight,
+		MaxHeight:    maxHeight,
+		ExpandWidth:  r.Width.IsFlex(),
+		ExpandHeight: r.Height.IsFlex(),
 	}
 }
 
@@ -213,17 +215,19 @@ func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minHeight, maxHeight := dimensionToMinMax(c.Height)
 
 	return &layout.ColumnNode{
-		Spacing:    c.Spacing,
-		MainAlign:  toLayoutMainAlign(c.MainAlign),
-		CrossAlign: toLayoutCrossAlign(c.CrossAlign),
-		Children:   children,
-		Padding:    toLayoutEdgeInsets(c.Style.Padding),
-		Border:     borderToEdgeInsets(c.Style.Border),
-		Margin:     toLayoutEdgeInsets(c.Style.Margin),
-		MinWidth:   minWidth,
-		MaxWidth:   maxWidth,
-		MinHeight:  minHeight,
-		MaxHeight:  maxHeight,
+		Spacing:      c.Spacing,
+		MainAlign:    toLayoutMainAlign(c.MainAlign),
+		CrossAlign:   toLayoutCrossAlign(c.CrossAlign),
+		Children:     children,
+		Padding:      toLayoutEdgeInsets(c.Style.Padding),
+		Border:       borderToEdgeInsets(c.Style.Border),
+		Margin:       toLayoutEdgeInsets(c.Style.Margin),
+		MinWidth:     minWidth,
+		MaxWidth:     maxWidth,
+		MinHeight:    minHeight,
+		MaxHeight:    maxHeight,
+		ExpandWidth:  c.Width.IsFlex(),
+		ExpandHeight: c.Height.IsFlex(),
 	}
 }
 

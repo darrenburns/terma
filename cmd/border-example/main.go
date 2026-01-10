@@ -7,13 +7,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	if err := t.InitLogger(); err != nil {
-		log.Printf("Warning: could not initialize logger: %v", err)
-	}
-	t.InitDebug()
-}
-
 // Theme names for cycling
 var themeNames = []string{
 	t.ThemeNameRosePine,
@@ -81,7 +74,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 				Spacing: 2,
 				Children: []t.Widget{
 					t.Text{
-						Width:   t.Cells(10),
+						//Width:   t.Cells(10),
 						Content: "Square Border",
 						Style: t.Style{
 							Border:  t.SquareBorder(theme.Info),
@@ -89,7 +82,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 						},
 					},
 					t.Text{
-						Width:   t.Cells(10),
+						//Width:   t.Cells(10),
 						Content: "Rounded Border",
 						Style: t.Style{
 							Border:  t.RoundedBorder(theme.Secondary),
@@ -158,7 +151,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 			},
 
 			// Colored decorations
-			t.Column{
+			t.Row{
 				Style: t.Style{
 					Border: t.Border{
 						Style: t.BorderRounded,
@@ -178,7 +171,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 			},
 
 			// Nested borders with titles
-			t.Column{
+			t.Row{
 				ID: "outer-box",
 				Style: t.Style{
 					Border: t.RoundedBorder(theme.Primary,
@@ -186,6 +179,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 					),
 					Padding: t.EdgeInsetsAll(1),
 				},
+				Spacing: 2,
 				Children: []t.Widget{
 					t.Text{Content: "Outer container"},
 					t.Column{
@@ -196,8 +190,8 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 								t.BorderSubtitleCenter("Nested!"),
 							),
 							BackgroundColor: theme.Surface,
-							Padding:         t.EdgeInsetsAll(1),
-							Margin:          t.EdgeInsetsTRBL(1, 0, 0, 0),
+							//Padding:         t.EdgeInsetsAll(1),
+							//Margin:          t.EdgeInsetsTRBL(1, 0, 0, 0),
 						},
 						Children: []t.Widget{
 							t.Text{Content: "Nested border with title"},
@@ -207,7 +201,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 			},
 
 			// Rich text with spans
-			t.Column{
+			t.Row{
 				Style: t.Style{
 					Border: t.RoundedBorder(theme.Info,
 						t.BorderTitle("Rich Text"),
@@ -225,6 +219,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 					},
 					// Fully styled span
 					t.Text{
+						//Wrap:  t.WrapSoft,
 						Spans: t.ParseMarkup("Mixed: [b $Secondary]Bold+Color[/] and [i u $Primary]Italic+Underline[/]", theme),
 					},
 				},

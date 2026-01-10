@@ -35,6 +35,13 @@ type LinearNode struct {
 	MaxWidth  int
 	MinHeight int
 	MaxHeight int
+
+	// Expand flags force the container to fill available space on that axis.
+	// When true, MinWidth/MinHeight is set to MaxWidth/MaxHeight from constraints,
+	// creating tight constraints that force expansion instead of shrink-wrapping.
+	// This is used when a widget's dimension is Flex() to mean "fill available space".
+	ExpandWidth  bool
+	ExpandHeight bool
 }
 
 // ComputeLayout computes the layout for this linear container.
@@ -95,8 +102,20 @@ type fixedLayoutInfo struct {
 }
 
 // effectiveConstraints combines parent constraints with node's own min/max constraints.
+// If ExpandWidth/ExpandHeight are set, forces tight constraints on that axis.
 func (l *LinearNode) effectiveConstraints(parent Constraints) Constraints {
-	return parent.WithNodeConstraints(l.MinWidth, l.MaxWidth, l.MinHeight, l.MaxHeight)
+	result := parent.WithNodeConstraints(l.MinWidth, l.MaxWidth, l.MinHeight, l.MaxHeight)
+
+	// Apply expand flags - force MinWidth/MinHeight to match MaxWidth/MaxHeight
+	// This creates tight constraints that prevent shrink-wrapping
+	if l.ExpandWidth {
+		result.MinWidth = result.MaxWidth
+	}
+	if l.ExpandHeight {
+		result.MinHeight = result.MaxHeight
+	}
+
+	return result
 }
 
 // emptyLayout handles the case of no children.

@@ -1296,3 +1296,97 @@ func TestLinearNode_InvalidInputConstraints(t *testing.T) {
 		assert.Equal(t, 80, result.Box.Height)
 	})
 }
+
+func TestLinearNode_ExpandFlags(t *testing.T) {
+	t.Run("ExpandWidth_ForcesFullWidth", func(t *testing.T) {
+		// Column with ExpandWidth=true should expand to full width,
+		// not shrink-wrap to content width
+		col := &ColumnNode{
+			ExpandWidth: true,
+			Children:    []LayoutNode{box(30, 20)}, // Child is 30 wide
+		}
+		result := col.ComputeLayout(Loose(100, 100))
+
+		// Without ExpandWidth, would be 30 (shrink-wrap)
+		// With ExpandWidth, should be 100 (full width)
+		assert.Equal(t, 100, result.Box.Width)
+	})
+
+	t.Run("ExpandHeight_ForcesFullHeight", func(t *testing.T) {
+		// Row with ExpandHeight=true should expand to full height
+		row := &RowNode{
+			ExpandHeight: true,
+			Children:     []LayoutNode{box(30, 20)}, // Child is 20 tall
+		}
+		result := row.ComputeLayout(Loose(100, 100))
+
+		// Without ExpandHeight, would be 20 (shrink-wrap)
+		// With ExpandHeight, should be 100 (full height)
+		assert.Equal(t, 100, result.Box.Height)
+	})
+
+	t.Run("ExpandBoth_FillsContainer", func(t *testing.T) {
+		// Column with both expand flags fills entire container
+		col := &ColumnNode{
+			ExpandWidth:  true,
+			ExpandHeight: true,
+			Children:     []LayoutNode{box(30, 20)},
+		}
+		result := col.ComputeLayout(Loose(100, 100))
+
+		assert.Equal(t, 100, result.Box.Width)
+		assert.Equal(t, 100, result.Box.Height)
+	})
+
+	t.Run("ExpandWithPadding", func(t *testing.T) {
+		// Expand should account for padding in final size
+		col := &ColumnNode{
+			ExpandWidth:  true,
+			ExpandHeight: true,
+			Padding:      EdgeInsets{Top: 5, Right: 5, Bottom: 5, Left: 5},
+			Children:     []LayoutNode{box(30, 20)},
+		}
+		result := col.ComputeLayout(Loose(100, 100))
+
+		// Container expands to 100x100 (border-box)
+		assert.Equal(t, 100, result.Box.Width)
+		assert.Equal(t, 100, result.Box.Height)
+
+		// Content area is reduced by padding
+		assert.Equal(t, 90, result.Box.ContentWidth())
+		assert.Equal(t, 90, result.Box.ContentHeight())
+	})
+
+	t.Run("NoExpand_ShrinkWraps", func(t *testing.T) {
+		// Without expand flags, should shrink-wrap to content
+		col := &ColumnNode{
+			ExpandWidth:  false,
+			ExpandHeight: false,
+			Children:     []LayoutNode{box(30, 20)},
+		}
+		result := col.ComputeLayout(Loose(100, 100))
+
+		// Should shrink-wrap: width = child width, height = child height
+		assert.Equal(t, 30, result.Box.Width)
+		assert.Equal(t, 20, result.Box.Height)
+	})
+
+	t.Run("ExpandWithFlexChildren", func(t *testing.T) {
+		// ExpandWidth on a Row, combined with flex children
+		row := &RowNode{
+			ExpandWidth: true,
+			Children: []LayoutNode{
+				&FlexNode{Flex: 1, Child: box(0, 20)},
+				&FlexNode{Flex: 1, Child: box(0, 20)},
+			},
+		}
+		result := row.ComputeLayout(Loose(100, 100))
+
+		// Row expands to full width
+		assert.Equal(t, 100, result.Box.Width)
+
+		// Flex children split the space evenly
+		assert.Equal(t, 0, result.Children[0].X)
+		assert.Equal(t, 50, result.Children[1].X)
+	})
+}
