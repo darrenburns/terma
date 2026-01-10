@@ -1,8 +1,3 @@
-//go:build ignore
-// +build ignore
-
-// DISABLED: Uses t.Dock which doesn't exist yet
-
 package main
 
 import (
@@ -11,7 +6,6 @@ import (
 
 	t "terma"
 )
-
 
 // TextInputDemo demonstrates the TextInput widget with multiple inputs,
 // showing placeholder text, change tracking, and form submission.
