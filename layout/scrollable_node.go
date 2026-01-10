@@ -100,7 +100,39 @@ func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 	needsVerticalScroll := virtualHeight > contentMaxHeight
 	needsHorizontalScroll := virtualWidth > contentMaxWidth
 
-	// Phase 3: Re-measure if we need scrollbar space but didn't reserve it initially
+	// Phase 3: Re-measure if vertical scrollbar needed but space wasn't reserved initially.
+	// Reducing width for scrollbar may cause content to reflow (text wrapping) or
+	// reveal horizontal overflow (fixed-width elements).
+	if needsVerticalScroll && !s.AlwaysReserveScrollbarSpace && scrollbarWidth > 0 {
+		measureWidth = max(0, contentMaxWidth-scrollbarWidth)
+
+		// Measure with bounded width for proper text wrapping and height calculation
+		boundedConstraints := Constraints{
+			MinWidth:  0,
+			MaxWidth:  measureWidth,
+			MinHeight: 0,
+			MaxHeight: math.MaxInt32,
+		}
+		childLayout = s.Child.ComputeLayout(boundedConstraints)
+		virtualHeight = childLayout.Box.MarginBoxHeight()
+
+		// Measure with unbounded width to detect horizontal overflow.
+		// This reveals if the child has minimum width requirements that exceed
+		// the reduced viewport (e.g., fixed-width elements, long words).
+		unboundedWidthConstraints := Constraints{
+			MinWidth:  0,
+			MaxWidth:  math.MaxInt32, // Unbounded width
+			MinHeight: 0,
+			MaxHeight: math.MaxInt32,
+		}
+		naturalLayout := s.Child.ComputeLayout(unboundedWidthConstraints)
+		virtualWidth = naturalLayout.Box.MarginBoxWidth()
+
+		// Re-evaluate horizontal scroll: does natural width exceed reduced viewport?
+		needsHorizontalScroll = virtualWidth > measureWidth
+	}
+
+	// Determine actual scrollbar space to reserve
 	actualScrollbarWidth := 0
 	if needsVerticalScroll && scrollbarWidth > 0 {
 		actualScrollbarWidth = scrollbarWidth
@@ -115,18 +147,13 @@ func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 		actualScrollbarHeight = scrollbarHeight
 	}
 
-	// If we need vertical scrollbar but didn't reserve space initially, re-measure
-	if needsVerticalScroll && !s.AlwaysReserveScrollbarSpace && scrollbarWidth > 0 {
-		measureWidth = max(0, contentMaxWidth-scrollbarWidth)
-		unboundedConstraints.MaxWidth = measureWidth
-		childLayout = s.Child.ComputeLayout(unboundedConstraints)
-		virtualHeight = childLayout.Box.MarginBoxHeight()
-		virtualWidth = childLayout.Box.MarginBoxWidth()
-	}
-
 	// Phase 4: Determine viewport size
-	viewportWidth := contentMaxWidth
-	viewportHeight := contentMaxHeight
+	// Viewport is the smaller of virtual content size and available space.
+	// This shrink-wraps when content fits, and caps at constraints when content overflows.
+	// ScrollableNode acts as a "boundary" - it contains content tightly rather than
+	// expanding to fill available space like layout containers do.
+	viewportWidth := min(virtualWidth, contentMaxWidth)
+	viewportHeight := min(virtualHeight, contentMaxHeight)
 
 	// Clamp viewport to min constraints
 	viewportWidth = max(contentMinWidth, viewportWidth)
@@ -145,16 +172,17 @@ func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 	clampedScrollX := max(0, min(s.ScrollOffsetX, maxScrollX))
 
 	box := BoxModel{
-		Width:          borderBoxWidth,
-		Height:         borderBoxHeight,
-		Padding:        s.Padding,
-		Border:         s.Border,
-		Margin:         s.Margin,
-		VirtualWidth:   virtualWidth,
-		VirtualHeight:  virtualHeight,
-		ScrollOffsetX:  clampedScrollX,
-		ScrollOffsetY:  clampedScrollY,
-		ScrollbarWidth: actualScrollbarWidth,
+		Width:           borderBoxWidth,
+		Height:          borderBoxHeight,
+		Padding:         s.Padding,
+		Border:          s.Border,
+		Margin:          s.Margin,
+		VirtualWidth:    virtualWidth,
+		VirtualHeight:   virtualHeight,
+		ScrollOffsetX:   clampedScrollX,
+		ScrollOffsetY:   clampedScrollY,
+		ScrollbarWidth:  actualScrollbarWidth,
+		ScrollbarHeight: actualScrollbarHeight,
 	}
 
 	// Child is positioned at (0, 0) relative to our content area

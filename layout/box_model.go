@@ -166,9 +166,12 @@ func (b BoxModel) UsableContentBox() Rect {
 
 // usableContentWidth returns the content width available for child widgets.
 // This accounts for vertical scrollbar width when vertical scrolling is enabled.
+// Uses raw virtual/content comparison to avoid circular dependency with IsScrollableX/Y.
 func (b BoxModel) usableContentWidth() int {
 	contentWidth := b.ContentWidth()
-	if b.IsScrollableY() && b.ScrollbarWidth > 0 {
+	// Check if vertical scroll is possible using raw comparison
+	verticalScrollPossible := b.EffectiveVirtualHeight() > b.ContentHeight()
+	if verticalScrollPossible && b.ScrollbarWidth > 0 {
 		return max(0, contentWidth-b.ScrollbarWidth)
 	}
 	return contentWidth
@@ -176,9 +179,12 @@ func (b BoxModel) usableContentWidth() int {
 
 // usableContentHeight returns the content height available for child widgets.
 // This accounts for horizontal scrollbar height when horizontal scrolling is enabled.
+// Uses raw virtual/content comparison to avoid circular dependency with IsScrollableX/Y.
 func (b BoxModel) usableContentHeight() int {
 	contentHeight := b.ContentHeight()
-	if b.IsScrollableX() && b.ScrollbarHeight > 0 {
+	// Check if horizontal scroll is possible using raw comparison
+	horizontalScrollPossible := b.EffectiveVirtualWidth() > b.ContentWidth()
+	if horizontalScrollPossible && b.ScrollbarHeight > 0 {
 		return max(0, contentHeight-b.ScrollbarHeight)
 	}
 	return contentHeight
@@ -263,15 +269,17 @@ func (b BoxModel) EffectiveVirtualHeight() int {
 }
 
 // IsScrollableX returns true if horizontal scrolling is possible.
-// This is true when virtual width exceeds the computed content width.
+// This is true when virtual width exceeds the usable content width
+// (accounting for vertical scrollbar space if vertical scrolling is enabled).
 func (b BoxModel) IsScrollableX() bool {
-	return b.EffectiveVirtualWidth() > b.ContentWidth()
+	return b.EffectiveVirtualWidth() > b.usableContentWidth()
 }
 
 // IsScrollableY returns true if vertical scrolling is possible.
-// This is true when virtual height exceeds the computed content height.
+// This is true when virtual height exceeds the usable content height
+// (accounting for horizontal scrollbar space if horizontal scrolling is enabled).
 func (b BoxModel) IsScrollableY() bool {
-	return b.EffectiveVirtualHeight() > b.ContentHeight()
+	return b.EffectiveVirtualHeight() > b.usableContentHeight()
 }
 
 // IsScrollable returns true if scrolling is possible in either direction.

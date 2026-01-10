@@ -1,6 +1,7 @@
 package layout
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -271,17 +272,126 @@ func TestScrollableNode_ChildPositioning(t *testing.T) {
 	})
 }
 
-func TestScrollableNode_LooseConstraints(t *testing.T) {
-	t.Run("TakesMaxSizeWithLooseConstraints", func(t *testing.T) {
-		// With loose constraints, scrollable should take max available space
+func TestScrollableNode_ShrinkWrap(t *testing.T) {
+	t.Run("ShrinkWrapsToContentWithLooseConstraints", func(t *testing.T) {
+		// ScrollableNode shrink-wraps to content size, acting as a boundary.
+		// Unlike layout containers that expand to fill space, scrollable
+		// contains content tightly.
 		scrollable := &ScrollableNode{
 			Child: fixedBox(50, 50),
 		}
 		result := scrollable.ComputeLayout(Loose(100, 100))
 
-		// Should take max available
+		// Should shrink-wrap to content, not expand to fill
+		assert.Equal(t, 50, result.Box.Width)
+		assert.Equal(t, 50, result.Box.Height)
+		assert.False(t, result.Box.IsScrollableX())
+		assert.False(t, result.Box.IsScrollableY())
+	})
+
+	t.Run("ShrinkWrapsWithUnboundedConstraints", func(t *testing.T) {
+		// With fully unbounded constraints, shrink-wraps to content size.
+		// Scrollables act as a boundary on infinity.
+		scrollable := &ScrollableNode{
+			Child: fixedBox(50, 50),
+		}
+		result := scrollable.ComputeLayout(Unbounded())
+
+		assert.Equal(t, 50, result.Box.Width)
+		assert.Equal(t, 50, result.Box.Height)
+	})
+
+	t.Run("ShrinkWrapsWidthWithUnboundedWidth", func(t *testing.T) {
+		// Unbounded width, bounded height - shrinks width, caps height
+		scrollable := &ScrollableNode{
+			Child:          fixedBox(50, 200),
+			ScrollbarWidth: 1,
+		}
+		result := scrollable.ComputeLayout(Constraints{
+			MinWidth: 0, MaxWidth: math.MaxInt32,
+			MinHeight: 0, MaxHeight: 100,
+		})
+
+		assert.Equal(t, 50, result.Box.Width)
+		assert.Equal(t, 100, result.Box.Height)
+		assert.True(t, result.Box.IsScrollableY()) // 200 > 100
+	})
+
+	t.Run("CapsAtMaxWhenContentOverflows", func(t *testing.T) {
+		// Content larger than available space - caps at max, enables scrolling
+		scrollable := &ScrollableNode{
+			Child:          fixedBox(200, 300),
+			ScrollbarWidth: 1,
+		}
+		result := scrollable.ComputeLayout(Loose(100, 100))
+
 		assert.Equal(t, 100, result.Box.Width)
 		assert.Equal(t, 100, result.Box.Height)
+		assert.True(t, result.Box.IsScrollableX())
+		assert.True(t, result.Box.IsScrollableY())
+	})
+
+	t.Run("RespectsMinConstraints", func(t *testing.T) {
+		// Content smaller than min constraints - expands to min
+		scrollable := &ScrollableNode{
+			Child: fixedBox(20, 20),
+		}
+		result := scrollable.ComputeLayout(Constraints{
+			MinWidth: 50, MaxWidth: 100,
+			MinHeight: 50, MaxHeight: 100,
+		})
+
+		assert.Equal(t, 50, result.Box.Width)
+		assert.Equal(t, 50, result.Box.Height)
+	})
+}
+
+// Helper to create a box with minimum width (can't shrink below this)
+func minWidthBox(minW, height int) *BoxNode {
+	return &BoxNode{MinWidth: minW, Height: height}
+}
+
+func TestScrollableNode_ScrollbarInteraction(t *testing.T) {
+	t.Run("VerticalScrollbarCausesHorizontalOverflow", func(t *testing.T) {
+		// Scenario: Content has minimum width equal to viewport, but is tall (needs vertical scroll).
+		// When vertical scrollbar space is reserved, viewport width reduces.
+		// Content can't shrink below MinWidth, so it now overflows horizontally.
+		//
+		// Initial: MinWidth=100, Height=200, viewport=100x100
+		// After vertical scrollbar (width 1): usable viewport is 99w
+		// Content MinWidth=100 > 99, so needs horizontal scroll too
+		scrollable := &ScrollableNode{
+			Child:           minWidthBox(100, 200), // MinWidth prevents shrinking
+			ScrollbarWidth:  1,
+			ScrollbarHeight: 1,
+		}
+		result := scrollable.ComputeLayout(Tight(100, 100))
+
+		// Should need vertical scroll (200 > 100)
+		assert.True(t, result.Box.IsScrollableY())
+		assert.Equal(t, 1, result.Box.ScrollbarWidth)
+
+		// After reserving vertical scrollbar space, content (100w) > usable viewport (99w)
+		// So horizontal scroll should now be needed too
+		assert.True(t, result.Box.IsScrollableX(), "horizontal scroll should be triggered after vertical scrollbar reduces width")
+		assert.Equal(t, 1, result.Box.ScrollbarHeight)
+	})
+
+	t.Run("VerticalScrollbarDoesNotCauseHorizontalOverflow", func(t *testing.T) {
+		// Content is narrower than viewport minus scrollbar, so no horizontal scroll
+		scrollable := &ScrollableNode{
+			Child:           fixedBox(90, 200), // Narrow enough to fit with scrollbar
+			ScrollbarWidth:  1,
+			ScrollbarHeight: 1,
+		}
+		result := scrollable.ComputeLayout(Tight(100, 100))
+
+		assert.True(t, result.Box.IsScrollableY())
+		assert.Equal(t, 1, result.Box.ScrollbarWidth)
+
+		// Content (90w) < viewport after scrollbar (99w), no horizontal scroll
+		assert.False(t, result.Box.IsScrollableX())
+		assert.Equal(t, 0, result.Box.ScrollbarHeight)
 	})
 }
 
