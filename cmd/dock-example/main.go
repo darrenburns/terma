@@ -1,8 +1,3 @@
-//go:build ignore
-// +build ignore
-
-// DISABLED: Uses t.Dock and t.Edge which don't exist yet
-
 package main
 
 import (

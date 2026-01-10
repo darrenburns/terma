@@ -98,7 +98,8 @@ func extractChildren(widget Widget) []Widget {
 			return []Widget{w.Child}
 		}
 		return nil
-	// Add other container types as they implement LayoutNodeBuilder
+	case Dock:
+		return w.AllChildren()
 	default:
 		return nil
 	}
