@@ -81,17 +81,13 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 			},
 
 			// Theme indicator
-			t.Text{
-				Spans: t.ParseMarkup(fmt.Sprintf("[$TextMuted]Theme: [/][$Accent]%s[/][$TextMuted] (press t to change)[/]", currentTheme), theme),
-			},
+			t.ParseMarkupToText(fmt.Sprintf("[$TextMuted]Theme: [/][$Accent]%s[/][$TextMuted] (press t to change)[/]", currentTheme), theme),
 
 			// Instructions
-			t.Text{
-				Spans: t.ParseMarkup("Use [b $Info]↑/↓[/] or [b $Info]j/k[/] to scroll • [b $Info]PgUp/PgDn[/] or [b $Info]Ctrl+U/D[/] for half-page • [b $Info]Home/End[/] or [b $Info]g/G[/] for top/bottom", theme),
-			},
+			t.ParseMarkupToText("Use [b $Info]↑/↓[/] or [b $Info]j/k[/] to scroll • [b $Info]PgUp/PgDn[/] or [b $Info]Ctrl+U/D[/] for half-page • [b $Info]Home/End[/] or [b $Info]g/G[/] for top/bottom", theme),
 
 			// Body: scrollable container with all the panels
-			&t.Scrollable{
+			t.Scrollable{
 				ID:     "body",
 				State:  s.bodyState,
 				Height: t.Flex(1),
@@ -103,7 +99,7 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 							Spacing: 2,
 							Children: []t.Widget{
 								// Scrollable list with fixed height
-								&t.Scrollable{
+								t.Scrollable{
 									ID:     "scroll-list",
 									State:  s.scrollListState,
 									Height: t.Cells(15),
@@ -118,7 +114,7 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 								},
 
 								// Second scrollable panel with different content
-								&t.Scrollable{
+								t.Scrollable{
 									ID:     "scroll-text",
 									State:  s.scrollTextState,
 									Height: t.Cells(15),

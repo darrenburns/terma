@@ -1,3 +1,8 @@
+//go:build ignore
+// +build ignore
+
+// DISABLED: Uses t.Dock which doesn't exist yet
+
 package main
 
 import (
@@ -7,9 +12,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	t.InitDebug()
-}
 
 // FocusedLabel is a widget that displays the currently focused widget's key.
 type FocusedLabel struct{}

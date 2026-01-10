@@ -1,3 +1,8 @@
+//go:build ignore
+// +build ignore
+
+// DISABLED: Uses t.Dock and t.Edge which don't exist yet
+
 package main
 
 import (
@@ -8,12 +13,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	if err := t.InitLogger(); err != nil {
-		log.Printf("Warning: could not initialize logger: %v", err)
-	}
-	t.InitDebug()
-}
 
 // DockDemo demonstrates the Dock widget with header, footer, sidebar, and scrollable body.
 type DockDemo struct {

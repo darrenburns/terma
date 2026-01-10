@@ -1,3 +1,8 @@
+//go:build ignore
+// +build ignore
+
+// DISABLED: Uses t.Dock which doesn't exist yet
+
 package main
 
 import (
@@ -7,12 +12,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	if err := t.InitLogger(); err != nil {
-		log.Printf("Warning: could not initialize logger: %v", err)
-	}
-	t.InitDebug()
-}
 
 // SwitcherDemo demonstrates the Switcher widget with three tabs.
 // Each tab preserves its state when switching between them.

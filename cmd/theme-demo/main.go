@@ -6,9 +6,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	t.InitDebug()
-}
 
 // App demonstrates the theme system with interactive theme switching.
 type App struct {

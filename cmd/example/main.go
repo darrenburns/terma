@@ -6,9 +6,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	t.InitDebug()
-}
 
 // App is the root widget for this application.
 type App struct {

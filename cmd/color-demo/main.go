@@ -1,3 +1,8 @@
+//go:build ignore
+// +build ignore
+
+// DISABLED: Uses t.GradientBox which doesn't exist yet
+
 package main
 
 import (
@@ -6,9 +11,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	t.InitDebug()
-}
 
 type ColorDemo struct {
 	scrollState *t.ScrollState
