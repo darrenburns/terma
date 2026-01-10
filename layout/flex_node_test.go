@@ -26,25 +26,44 @@ func TestFlexNode_OutsideLinearNode(t *testing.T) {
 		assert.Equal(t, 20, result.Box.Height)
 	})
 
-	t.Run("DefaultFlexValue", func(t *testing.T) {
-		// Zero or negative Flex should default to 1
+	t.Run("FlexValue_DefaultsTo1_WhenZero", func(t *testing.T) {
+		flex := &FlexNode{
+			Flex:  0,
+			Child: box(30, 20),
+		}
+
+		assert.Equal(t, 1.0, flex.FlexValue(), "FlexValue() should return 1 for Flex: 0")
+		assert.Equal(t, 0.0, flex.Flex, "original Flex field should not be mutated")
+	})
+
+	t.Run("FlexValue_DefaultsTo1_WhenNegative", func(t *testing.T) {
+		flex := &FlexNode{
+			Flex:  -5,
+			Child: box(30, 20),
+		}
+
+		assert.Equal(t, 1.0, flex.FlexValue(), "FlexValue() should return 1 for negative Flex")
+		assert.Equal(t, -5.0, flex.Flex, "original Flex field should not be mutated")
+	})
+
+	t.Run("FlexValue_ReturnsActualValue_WhenPositive", func(t *testing.T) {
+		flex := &FlexNode{
+			Flex:  2.5,
+			Child: box(30, 20),
+		}
+
+		assert.Equal(t, 2.5, flex.FlexValue(), "FlexValue() should return actual value")
+	})
+
+	t.Run("ComputeLayout_DoesNotMutate", func(t *testing.T) {
+		// Ensure ComputeLayout doesn't mutate the struct
 		flex := &FlexNode{
 			Flex:  0,
 			Child: box(30, 20),
 		}
 		_ = flex.ComputeLayout(Loose(100, 100))
 
-		assert.Equal(t, 1.0, flex.Flex, "Flex: 0 should default to 1")
-	})
-
-	t.Run("NegativeFlexDefaultsTo1", func(t *testing.T) {
-		flex := &FlexNode{
-			Flex:  -5,
-			Child: box(30, 20),
-		}
-		_ = flex.ComputeLayout(Loose(100, 100))
-
-		assert.Equal(t, 1.0, flex.Flex, "negative Flex should default to 1")
+		assert.Equal(t, 0.0, flex.Flex, "ComputeLayout should not mutate Flex field")
 	})
 }
 

@@ -39,11 +39,16 @@ type FlexNode struct {
 // This is only called if FlexNode is used outside a LinearNode context,
 // in which case the Flex value is ignored and the child is measured normally.
 func (f *FlexNode) ComputeLayout(constraints Constraints) ComputedLayout {
-	// Ensure Flex has a sensible default
-	if f.Flex <= 0 {
-		f.Flex = 1
-	}
 	return f.Child.ComputeLayout(constraints)
+}
+
+// FlexValue returns the flex value, defaulting to 1 if not set or invalid.
+// This avoids mutating the struct during layout computation.
+func (f *FlexNode) FlexValue() float64 {
+	if f.Flex <= 0 {
+		return 1
+	}
+	return f.Flex
 }
 
 // IsFlexNode returns true if the node is a FlexNode.

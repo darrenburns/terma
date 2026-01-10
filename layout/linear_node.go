@@ -148,11 +148,8 @@ func (l *LinearNode) measureNonFlexChildren(contentConstraints Constraints) ([]C
 			info.isFlexChild[i] = true
 			info.hasFlex = true
 
-			// Normalize flex value
-			flexVal := flex.Flex
-			if flexVal <= 0 {
-				flexVal = 1
-			}
+			// Get normalized flex value (defaults to 1 if invalid)
+			flexVal := flex.FlexValue()
 			info.flexValues[i] = flexVal
 			info.totalFlex += flexVal
 
