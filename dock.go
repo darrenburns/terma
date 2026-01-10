@@ -132,7 +132,7 @@ func (d Dock) buildEdgeChildren(ctx BuildContext, widgets []Widget, index *int) 
 		} else {
 			nodes[i] = buildFallbackLayoutNode(built, ctx.PushChild(*index))
 		}
-		(*index)++
+		*index++
 	}
 	return nodes
 }
