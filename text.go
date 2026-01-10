@@ -171,7 +171,7 @@ func (t Text) Layout(ctx BuildContext, constraints Constraints) Size {
 	switch {
 	case t.Width.IsCells():
 		wrapWidth = t.Width.CellsValue()
-	case t.Width.IsFr():
+	case t.Width.IsFlex():
 		wrapWidth = constraints.MaxWidth
 	default: // Auto
 		wrapWidth = constraints.MaxWidth
@@ -194,7 +194,7 @@ func (t Text) Layout(ctx BuildContext, constraints Constraints) Size {
 	switch {
 	case t.Width.IsCells():
 		width = t.Width.CellsValue()
-	case t.Width.IsFr():
+	case t.Width.IsFlex():
 		width = constraints.MaxWidth
 	default: // Auto
 		width = naturalWidth
@@ -205,7 +205,7 @@ func (t Text) Layout(ctx BuildContext, constraints Constraints) Size {
 	switch {
 	case t.Height.IsCells():
 		height = t.Height.CellsValue()
-	case t.Height.IsFr():
+	case t.Height.IsFlex():
 		height = constraints.MaxHeight
 	default: // Auto
 		height = naturalHeight

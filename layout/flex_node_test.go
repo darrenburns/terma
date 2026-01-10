@@ -594,7 +594,7 @@ func TestLinearNode_FlexEdgeCases(t *testing.T) {
 	t.Run("LooseConstraints_FlexChildrenExpand", func(t *testing.T) {
 		// Design decision: With loose constraints and flex children,
 		// container expands to maxWidth and flex children fill space.
-		// This matches TUI user expectations where Fr(1) means "fill remaining".
+		// This matches TUI user expectations where Flex(1) means "fill remaining".
 		// If there are NO flex children, container shrink-wraps (existing behavior).
 		// If there ARE flex children, container expands to give them space.
 		row := &RowNode{

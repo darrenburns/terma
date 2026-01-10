@@ -46,11 +46,11 @@ type Row struct {
 }
 
 // GetDimensions returns the width and height dimension preferences.
-// Row defaults to Fr(1) width if not explicitly set.
+// Row defaults to Flex(1) width if not explicitly set.
 func (r Row) GetDimensions() (width, height Dimension) {
 	w := r.Width
 	if w.IsUnset() {
-		w = Fr(1)
+		w = Flex(1)
 	}
 	return w, r.Height
 }
@@ -151,7 +151,7 @@ func (r Row) Layout(ctx BuildContext, constraints Constraints) Size {
 	switch {
 	case r.Width.IsCells():
 		width = r.Width.CellsValue()
-	case r.Width.IsFr():
+	case r.Width.IsFlex():
 		width = constraints.MaxWidth
 	default: // Auto
 		width = contentWidth
@@ -161,7 +161,7 @@ func (r Row) Layout(ctx BuildContext, constraints Constraints) Size {
 	switch {
 	case r.Height.IsCells():
 		height = r.Height.CellsValue()
-	case r.Height.IsFr():
+	case r.Height.IsFlex():
 		height = constraints.MaxHeight
 	default: // Auto
 		height = contentHeight
@@ -206,11 +206,11 @@ type Column struct {
 }
 
 // GetDimensions returns the width and height dimension preferences.
-// Column defaults to Fr(1) height if not explicitly set.
+// Column defaults to Flex(1) height if not explicitly set.
 func (c Column) GetDimensions() (width, height Dimension) {
 	h := c.Height
 	if h.IsUnset() {
-		h = Fr(1)
+		h = Flex(1)
 	}
 	return c.Width, h
 }
@@ -339,9 +339,9 @@ func (c Column) Layout(ctx BuildContext, constraints Constraints) Size {
 		}
 		children[i].heightDim = heightDim
 
-		if heightDim.IsFr() {
+		if heightDim.IsFlex() {
 			children[i].isFr = true
-			totalFr += heightDim.FrValue()
+			totalFr += heightDim.FlexValue()
 		} else {
 			// Fixed or auto - measure now
 			// For non-stretch cross-axis alignment, let children size naturally
@@ -377,7 +377,7 @@ func (c Column) Layout(ctx BuildContext, constraints Constraints) Size {
 		}
 
 		// Calculate this child's share of remaining space
-		frValue := children[i].heightDim.FrValue()
+		frValue := children[i].heightDim.FlexValue()
 		childHeight := 0
 		if totalFr > 0 {
 			childHeight = int(float64(remainingHeight) * frValue / totalFr)
@@ -417,7 +417,7 @@ func (c Column) Layout(ctx BuildContext, constraints Constraints) Size {
 	switch {
 	case c.Width.IsCells():
 		width = c.Width.CellsValue()
-	case c.Width.IsFr():
+	case c.Width.IsFlex():
 		width = constraints.MaxWidth
 	default: // Auto
 		width = maxWidth
@@ -427,7 +427,7 @@ func (c Column) Layout(ctx BuildContext, constraints Constraints) Size {
 	switch {
 	case c.Height.IsCells():
 		height = c.Height.CellsValue()
-	case c.Height.IsFr():
+	case c.Height.IsFlex():
 		height = constraints.MaxHeight
 	default: // Auto
 		height = totalHeight

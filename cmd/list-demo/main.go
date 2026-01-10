@@ -145,7 +145,7 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 
 	return t.Column{
 		ID:      "list-demo-root",
-		Height:  t.Fr(1),
+		Height:  t.Flex(1),
 		Spacing: 1,
 		Style: t.Style{
 			BackgroundColor: theme.Background,

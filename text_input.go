@@ -478,7 +478,7 @@ func (t TextInput) Layout(ctx BuildContext, constraints Constraints) Size {
 	switch {
 	case t.Width.IsCells():
 		width = t.Width.CellsValue()
-	case t.Width.IsFr():
+	case t.Width.IsFlex():
 		width = constraints.MaxWidth
 	default: // Auto - use content or placeholder width, minimum 1
 		contentWidth := 1

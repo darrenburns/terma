@@ -74,16 +74,16 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 	}
 
 	return t.Row{
-		Width:  t.Fr(1),
-		Height: t.Fr(1),
+		Width:  t.Flex(1),
+		Height: t.Flex(1),
 		Children: []t.Widget{
 			t.GradientBox{
 				Gradient: t.NewGradient(
 					theme.Primary.Darken(0.6),
 					theme.Background,
 				),
-				Width:  t.Fr(1),
-				Height: t.Fr(1),
+				Width:  t.Flex(1),
+				Height: t.Flex(1),
 				Child: t.Dock{
 					Style: t.Style{
 						Padding: t.EdgeInsetsXY(2, 1), // Horizontal and vertical padding
@@ -132,7 +132,7 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 				ID:          "new-task-input",
 				State:       a.inputState,
 				Placeholder: "What needs to be done?",
-				Width:       t.Fr(1),
+				Width:       t.Flex(1),
 				OnSubmit:    a.addTask,
 			},
 		},
@@ -146,7 +146,7 @@ func (a *TodoApp) buildTaskList(ctx t.BuildContext) t.Widget {
 
 	return t.Scrollable{
 		State:  a.scrollState,
-		Height: t.Fr(1),
+		Height: t.Flex(1),
 		Child: t.List[Task]{
 			ID:          "task-list",
 			State:       a.tasks,
@@ -181,13 +181,13 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 
 			// Align with normal display: "  ○  " = prefix + circle + spacing
 			return t.Row{
-				Width: t.Fr(1),
+				Width: t.Flex(1),
 				Children: []t.Widget{
 					t.Text{Content: "  ○  "}, // Match the prefix + circle + space
 					t.TextInput{
 						ID:    "edit-input",
 						State: a.editInputState,
-						Width: t.Fr(1),
+						Width: t.Flex(1),
 						Style: t.Style{
 							BackgroundColor: theme.Surface,
 						},
@@ -240,7 +240,7 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 		}
 
 		return t.Row{
-			Width: t.Fr(1),
+			Width: t.Flex(1),
 			Children: []t.Widget{
 				t.Text{
 					Content: prefix,
@@ -253,7 +253,7 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 				t.Text{
 					Content: task.Title,
 					Style:   textStyle,
-					Width:   t.Fr(1),
+					Width:   t.Flex(1),
 				},
 			},
 		}
@@ -332,7 +332,7 @@ func (a *TodoApp) renderThemeItem(theme t.ThemeData) func(string, bool, bool) t.
 		return t.Text{
 			Content: prefix + themeName + suffix,
 			Style:   style,
-			Width:   t.Fr(1),
+			Width:   t.Flex(1),
 		}
 	}
 }

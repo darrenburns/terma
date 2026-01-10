@@ -78,7 +78,7 @@ func (d *SwitcherDemo) Build(ctx t.BuildContext) t.Widget {
 			Children: []t.Widget{
 				t.Switcher{
 					Active: d.activeTab.Get(),
-					Height: t.Fr(1),
+					Height: t.Flex(1),
 					Children: map[string]t.Widget{
 						"fruits":  d.buildFruitsTab(ctx),
 						"colors":  d.buildColorsTab(ctx),

@@ -24,7 +24,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 	currentTheme := a.themeNames[themeIdx]
 
 	return t.Column{
-		Height: t.Fr(1),
+		Height: t.Flex(1),
 		Style: t.Style{
 			BackgroundColor: theme.Background,
 			Padding:         t.EdgeInsetsAll(1),

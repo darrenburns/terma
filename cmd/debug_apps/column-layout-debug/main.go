@@ -20,8 +20,8 @@ func (c *ColumnLayoutDebug) Build(ctx t.BuildContext) t.Widget {
 
 	return t.Column{
 		ID:     "root",
-		Height: t.Fr(1),
-		Width:  t.Fr(1),
+		Height: t.Flex(1),
+		Width:  t.Flex(1),
 		Style: t.Style{
 			BackgroundColor: theme.Background,
 			Padding:         t.EdgeInsetsAll(1),
@@ -39,12 +39,12 @@ func (c *ColumnLayoutDebug) Build(ctx t.BuildContext) t.Widget {
 
 			// Main row containing all test columns
 			t.Row{
-				Height:  t.Fr(1),
+				Height:  t.Flex(1),
 				Spacing: 2,
 				Children: []t.Widget{
 					// Column 1: Fixed heights (4 cells each)
 					t.Column{
-						Height: t.Fr(1),
+						Height: t.Flex(1),
 						Spacing: 1,
 						Style: t.Style{
 							Border: t.RoundedBorder(theme.Info,
@@ -83,20 +83,20 @@ func (c *ColumnLayoutDebug) Build(ctx t.BuildContext) t.Widget {
 						},
 					},
 
-					// Column 2: All Fr(1)
+					// Column 2: All Flex(1)
 					t.Column{
-						Height: t.Fr(1),
+						Height: t.Flex(1),
 						Spacing: 1,
 						Style: t.Style{
 							Border: t.RoundedBorder(theme.Secondary,
-								t.BorderTitle("All Fr(1)"),
+								t.BorderTitle("All Flex(1)"),
 							),
 							Padding: t.EdgeInsetsAll(1),
 						},
 						Children: []t.Widget{
 							t.Text{
 								Content: "Box 1",
-								Height:  t.Fr(1),
+								Height:  t.Flex(1),
 								Style: t.Style{
 									BackgroundColor: theme.Error,
 									ForegroundColor: theme.Text,
@@ -105,7 +105,7 @@ func (c *ColumnLayoutDebug) Build(ctx t.BuildContext) t.Widget {
 							},
 							t.Text{
 								Content: "Box 2",
-								Height:  t.Fr(1),
+								Height:  t.Flex(1),
 								Style: t.Style{
 									BackgroundColor: theme.Warning,
 									ForegroundColor: theme.Text,
@@ -114,7 +114,7 @@ func (c *ColumnLayoutDebug) Build(ctx t.BuildContext) t.Widget {
 							},
 							t.Text{
 								Content: "Box 3",
-								Height:  t.Fr(1),
+								Height:  t.Flex(1),
 								Style: t.Style{
 									BackgroundColor: theme.Success,
 									ForegroundColor: theme.Text,
@@ -124,20 +124,20 @@ func (c *ColumnLayoutDebug) Build(ctx t.BuildContext) t.Widget {
 						},
 					},
 
-					// Column 3: Fr(2), Fr(1), Fr(1)
+					// Column 3: Flex(2), Flex(1), Flex(1)
 					t.Column{
-						Height: t.Fr(1),
+						Height: t.Flex(1),
 						Spacing: 1,
 						Style: t.Style{
 							Border: t.RoundedBorder(theme.Warning,
-								t.BorderTitle("Fr(2), Fr(1), Fr(1)"),
+								t.BorderTitle("Flex(2), Flex(1), Flex(1)"),
 							),
 							Padding: t.EdgeInsetsAll(1),
 						},
 						Children: []t.Widget{
 							t.Text{
-								Content: "Box 1 (Fr 2)",
-								Height:  t.Fr(2),
+								Content: "Box 1 (Flex 2)",
+								Height:  t.Flex(2),
 								Style: t.Style{
 									BackgroundColor: theme.Error,
 									ForegroundColor: theme.Text,
@@ -145,8 +145,8 @@ func (c *ColumnLayoutDebug) Build(ctx t.BuildContext) t.Widget {
 								},
 							},
 							t.Text{
-								Content: "Box 2 (Fr 1)",
-								Height:  t.Fr(1),
+								Content: "Box 2 (Flex 1)",
+								Height:  t.Flex(1),
 								Style: t.Style{
 									BackgroundColor: theme.Warning,
 									ForegroundColor: theme.Text,
@@ -154,8 +154,8 @@ func (c *ColumnLayoutDebug) Build(ctx t.BuildContext) t.Widget {
 								},
 							},
 							t.Text{
-								Content: "Box 3 (Fr 1)",
-								Height:  t.Fr(1),
+								Content: "Box 3 (Flex 1)",
+								Height:  t.Flex(1),
 								Style: t.Style{
 									BackgroundColor: theme.Success,
 									ForegroundColor: theme.Text,
@@ -165,20 +165,20 @@ func (c *ColumnLayoutDebug) Build(ctx t.BuildContext) t.Widget {
 						},
 					},
 
-					// Column 4: Fr(1) + wrapping text
+					// Column 4: Flex(1) + wrapping text
 					t.Column{
-						Height: t.Fr(1),
+						Height: t.Flex(1),
 						Spacing: 1,
 						Style: t.Style{
 							Border: t.RoundedBorder(theme.Success,
-								t.BorderTitle("Fr(1) + Text"),
+								t.BorderTitle("Flex(1) + Text"),
 							),
 							Padding: t.EdgeInsetsAll(1),
 						},
 						Children: []t.Widget{
 							t.Text{
-								Content: "Fr(1) Box",
-								Height:  t.Fr(1),
+								Content: "Flex(1) Box",
+								Height:  t.Flex(1),
 								Style: t.Style{
 									BackgroundColor: theme.Error,
 									ForegroundColor: theme.Text,

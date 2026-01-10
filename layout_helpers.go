@@ -80,8 +80,8 @@ func dimensionToMinMax(d Dimension) (min, max int) {
 	return 0, 0
 }
 
-// wrapInFlexIfNeeded wraps a layout node in FlexNode if the dimension is Fr().
-// This is used when building layout trees from widgets - children with Fr dimensions
+// wrapInFlexIfNeeded wraps a layout node in FlexNode if the dimension is Flex().
+// This is used when building layout trees from widgets - children with Flex dimensions
 // on the main axis should be wrapped in FlexNode so LinearNode can distribute space.
 //
 // Parameters:
@@ -89,12 +89,12 @@ func dimensionToMinMax(d Dimension) (min, max int) {
 //   - mainAxisDim: The dimension on the main axis (Width for Row, Height for Column)
 //
 // Returns:
-//   - The original node if mainAxisDim is not Fr()
-//   - A FlexNode wrapping the original if mainAxisDim is Fr()
+//   - The original node if mainAxisDim is not Flex()
+//   - A FlexNode wrapping the original if mainAxisDim is Flex()
 func wrapInFlexIfNeeded(node layout.LayoutNode, mainAxisDim Dimension) layout.LayoutNode {
-	if mainAxisDim.IsFr() {
+	if mainAxisDim.IsFlex() {
 		return &layout.FlexNode{
-			Flex:  mainAxisDim.FrValue(),
+			Flex:  mainAxisDim.FlexValue(),
 			Child: node,
 		}
 	}

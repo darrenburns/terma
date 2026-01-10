@@ -329,7 +329,7 @@ func (s Scrollable) Layout(ctx BuildContext, constraints Constraints) Size {
 		if width < 0 {
 			width = 0
 		}
-	case s.Width.IsFr():
+	case s.Width.IsFlex():
 		width = constraints.MaxWidth
 	default: // Auto
 		// Use child's natural width plus scrollbar and child's horizontal insets
@@ -343,7 +343,7 @@ func (s Scrollable) Layout(ctx BuildContext, constraints Constraints) Size {
 		if height < 0 {
 			height = 0
 		}
-	case s.Height.IsFr():
+	case s.Height.IsFlex():
 		height = constraints.MaxHeight
 	default: // Auto
 		// Use natural content height, but clamp to constraints

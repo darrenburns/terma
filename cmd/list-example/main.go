@@ -93,14 +93,14 @@ func (d *EditorSettingsMenu) Build(ctx t.BuildContext) t.Widget {
 			},
 
 			t.Row{
-				Height: t.Fr(1),
+				Height: t.Flex(1),
 				Children: []t.Widget{
 					// The List widget inside a Scrollable (left side)
 					t.Scrollable{
 						ID:           "list-scroll",
 						State:        d.scrollState,
 						Height:       t.Cells(12),
-						Width:        t.Fr(2),
+						Width:        t.Flex(2),
 						DisableFocus: true, // Let List handle focus
 						Style: t.Style{
 							Border: t.RoundedBorder(t.Cyan, t.BorderTitle("Editor Settings"),
@@ -133,7 +133,7 @@ func (d *EditorSettingsMenu) Build(ctx t.BuildContext) t.Widget {
 										t.Text{
 											Content: item.Title,
 											Style:   titleStyle,
-											Width:   t.Fr(1),
+											Width:   t.Flex(1),
 										},
 										t.Text{
 											Content: item.Description,
@@ -146,7 +146,7 @@ func (d *EditorSettingsMenu) Build(ctx t.BuildContext) t.Widget {
 					},
 
 					// Right side of the screen showing the current scroll offset
-					t.Text{Content: fmt.Sprintf("%d", d.scrollState.GetOffset()), Width: t.Fr(1), Height: t.Fr(1), Style: t.Style{ForegroundColor: t.Black, BackgroundColor: t.Magenta}},
+					t.Text{Content: fmt.Sprintf("%d", d.scrollState.GetOffset()), Width: t.Flex(1), Height: t.Flex(1), Style: t.Style{ForegroundColor: t.Black, BackgroundColor: t.Magenta}},
 				},
 			},
 
