@@ -1,8 +1,3 @@
-//go:build ignore
-// +build ignore
-
-// DISABLED: Uses t.Dock which doesn't exist yet
-
 package main
 
 import (
@@ -11,7 +6,6 @@ import (
 
 	t "terma"
 )
-
 
 // SwitcherDemo demonstrates the Switcher widget with three tabs.
 // Each tab preserves its state when switching between them.

@@ -11,7 +11,6 @@ import (
 	t "terma"
 )
 
-
 type ColorDemo struct {
 	scrollState *t.ScrollState
 }

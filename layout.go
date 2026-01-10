@@ -34,8 +34,8 @@ const (
 // Row arranges its children horizontally.
 type Row struct {
 	ID         string         // Optional unique identifier for the widget
-	Width      Dimension      // Optional width (zero value = auto)
-	Height     Dimension      // Optional height (zero value = auto)
+	Width      Dimension      // Optional width (zero value = auto, Flex(1) = fill)
+	Height     Dimension      // Optional height (zero value = auto, Flex(1) = fill)
 	Style      Style          // Optional styling (background color)
 	Spacing    int            // Space between children
 	MainAlign  MainAxisAlign  // Main axis (horizontal) alignment
@@ -46,13 +46,8 @@ type Row struct {
 }
 
 // GetDimensions returns the width and height dimension preferences.
-// Row defaults to Flex(1) width if not explicitly set.
 func (r Row) GetDimensions() (width, height Dimension) {
-	w := r.Width
-	if w.IsUnset() {
-		w = Flex(1)
-	}
-	return w, r.Height
+	return r.Width, r.Height
 }
 
 // GetStyle returns the style of the row.
@@ -138,8 +133,8 @@ func (r Row) Render(ctx *RenderContext) {
 // Column arranges its children vertically.
 type Column struct {
 	ID         string         // Optional unique identifier for the widget
-	Width      Dimension      // Optional width (zero value = auto)
-	Height     Dimension      // Optional height (zero value = auto)
+	Width      Dimension      // Optional width (zero value = auto, Flex(1) = fill)
+	Height     Dimension      // Optional height (zero value = auto, Flex(1) = fill)
 	Style      Style          // Optional styling (background color)
 	Spacing    int            // Space between children
 	MainAlign  MainAxisAlign  // Main axis (vertical) alignment
@@ -150,13 +145,8 @@ type Column struct {
 }
 
 // GetDimensions returns the width and height dimension preferences.
-// Column defaults to Flex(1) height if not explicitly set.
 func (c Column) GetDimensions() (width, height Dimension) {
-	h := c.Height
-	if h.IsUnset() {
-		h = Flex(1)
-	}
-	return c.Width, h
+	return c.Width, c.Height
 }
 
 // GetStyle returns the style of the column.
