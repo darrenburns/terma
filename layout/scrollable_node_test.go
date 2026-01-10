@@ -129,18 +129,18 @@ func TestScrollableNode_ScrollbarReservation(t *testing.T) {
 		assert.Equal(t, 1, result.Box.ScrollbarWidth)
 	})
 
-	t.Run("NoScrollbarWhenDisabled", func(t *testing.T) {
+	t.Run("ZeroScrollbarWidth_NoSpaceReserved", func(t *testing.T) {
+		// ScrollbarWidth: 0 means no space reserved (e.g., for overlay scrollbars)
 		scrollable := &ScrollableNode{
 			Child:          fixedBox(80, 200),
-			ScrollbarWidth: 0, // Explicitly disabled
+			ScrollbarWidth: 0,
 		}
-		// Need to set scrollbar width to 0 explicitly
-		scrollable.ScrollbarWidth = 0
-
 		result := scrollable.ComputeLayout(Tight(100, 100))
 
-		// Default scrollbar width is applied
-		assert.Equal(t, 1, result.Box.ScrollbarWidth)
+		// Zero means no scrollbar space - user explicitly opted out
+		assert.Equal(t, 0, result.Box.ScrollbarWidth)
+		// Content still scrolls, just no space reserved for scrollbar
+		assert.True(t, result.Box.IsScrollableY())
 	})
 }
 

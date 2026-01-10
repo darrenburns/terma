@@ -65,15 +65,9 @@ func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 	// Apply node's own constraints
 	effective := constraints.WithNodeConstraints(s.MinWidth, s.MaxWidth, s.MinHeight, s.MaxHeight)
 
-	// Default scrollbar widths if not specified
+	// Use scrollbar dimensions as specified (0 = no space reserved, e.g. for overlay/hidden scrollbars)
 	scrollbarWidth := s.ScrollbarWidth
-	if scrollbarWidth == 0 && s.ScrollbarWidth == 0 {
-		scrollbarWidth = 1 // Default to 1 cell for vertical scrollbar
-	}
 	scrollbarHeight := s.ScrollbarHeight
-	if scrollbarHeight == 0 && s.ScrollbarHeight == 0 {
-		scrollbarHeight = 1 // Default to 1 cell for horizontal scrollbar
-	}
 
 	// Convert to content-box constraints (subtract our own padding/border)
 	hInset := s.Padding.Horizontal() + s.Border.Horizontal()
