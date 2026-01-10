@@ -67,9 +67,7 @@ func (w invisibleWrapper) Layout(ctx BuildContext, constraints Constraints) Size
 // Render only renders the child when visible.
 // When invisible, the space is reserved but nothing is drawn and no focus/hover events occur.
 func (w invisibleWrapper) Render(ctx *RenderContext) {
-	if w.visible {
-		ctx.RenderChild(0, w.child, 0, 0, ctx.Width, ctx.Height)
-	}
+	// No-op - renderTree takes care of rendering now.
 }
 
 // VisibleWhen reserves space for a child regardless of visibility.

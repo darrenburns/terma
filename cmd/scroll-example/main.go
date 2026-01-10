@@ -7,13 +7,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	if err := t.InitLogger(); err != nil {
-		log.Printf("Warning: could not initialize logger: %v", err)
-	}
-	t.InitDebug()
-}
-
 // Theme names for cycling
 var themeNames = []string{
 	t.ThemeNameRosePine,
@@ -70,7 +63,7 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 
 	return t.Column{
 		ID:      "root",
-		Height:  t.Fr(1),
+		Height:  t.Flex(1),
 		Spacing: 1,
 		Style: t.Style{
 			BackgroundColor: theme.Background,
@@ -88,20 +81,16 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 			},
 
 			// Theme indicator
-			t.Text{
-				Spans: t.ParseMarkup(fmt.Sprintf("[$TextMuted]Theme: [/][$Accent]%s[/][$TextMuted] (press t to change)[/]", currentTheme), theme),
-			},
+			t.ParseMarkupToText(fmt.Sprintf("[$TextMuted]Theme: [/][$Accent]%s[/][$TextMuted] (press t to change)[/]", currentTheme), theme),
 
 			// Instructions
-			t.Text{
-				Spans: t.ParseMarkup("Use [b $Info]↑/↓[/] or [b $Info]j/k[/] to scroll • [b $Info]PgUp/PgDn[/] or [b $Info]Ctrl+U/D[/] for half-page • [b $Info]Home/End[/] or [b $Info]g/G[/] for top/bottom", theme),
-			},
+			t.ParseMarkupToText("Use [b $Info]↑/↓[/] or [b $Info]j/k[/] to scroll • [b $Info]PgUp/PgDn[/] or [b $Info]Ctrl+U/D[/] for half-page • [b $Info]Home/End[/] or [b $Info]g/G[/] for top/bottom", theme),
 
 			// Body: scrollable container with all the panels
-			&t.Scrollable{
+			t.Scrollable{
 				ID:     "body",
 				State:  s.bodyState,
-				Height: t.Fr(1),
+				Height: t.Flex(1),
 				Child: t.Column{
 					Spacing: 1,
 					Children: []t.Widget{
@@ -110,11 +99,11 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 							Spacing: 2,
 							Children: []t.Widget{
 								// Scrollable list with fixed height
-								&t.Scrollable{
+								t.Scrollable{
 									ID:     "scroll-list",
 									State:  s.scrollListState,
 									Height: t.Cells(15),
-									Width:  t.Fr(1),
+									Width:  t.Flex(2),
 									Style: t.Style{
 										Border:  t.RoundedBorder(theme.Info, t.BorderTitle("Scrollable List")),
 										Padding: t.EdgeInsetsAll(1),
@@ -125,18 +114,19 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 								},
 
 								// Second scrollable panel with different content
-								&t.Scrollable{
+								t.Scrollable{
 									ID:     "scroll-text",
 									State:  s.scrollTextState,
 									Height: t.Cells(15),
-									Width:  t.Fr(1),
+									Width:  t.Flex(1),
 									Style: t.Style{
 										Border:  t.RoundedBorder(theme.Secondary, t.BorderTitle("Long Text")),
 										Padding: t.EdgeInsetsAll(1),
 									},
 									Child: t.Text{
+										Wrap:    t.WrapSoft,
 										Content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. \n\n Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.",
-										Width:   t.Fr(1),
+										Width:   t.Flex(1),
 									},
 								},
 							},
@@ -156,7 +146,7 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 									},
 									Child: t.Text{
 										Content: "This panel has scrolling disabled. Content that overflows is hidden. This demonstrates what happens when you have more text than fits in the available space but scrolling is not enabled.",
-										Width:   t.Fr(1),
+										Width:   t.Flex(1),
 									},
 								},
 							},

@@ -13,7 +13,7 @@ import "strings"
 // their keys joined with "/" (e.g., "enter/space Press").
 type KeybindBar struct {
 	Style  Style     // Optional styling (background, padding, etc.)
-	Width  Dimension // Width dimension (default: Fr(1) to fill available width)
+	Width  Dimension // Width dimension (default: Flex(1) to fill available width)
 	Height Dimension // Height dimension (default: Cells(1) for single-line bar)
 
 	// FormatKey transforms key strings for display. If nil, uses minimal
@@ -24,12 +24,12 @@ type KeybindBar struct {
 }
 
 // GetDimensions returns the width and height dimension preferences.
-// Width defaults to Fr(1) if not explicitly set, as KeybindBar typically fills width.
+// Width defaults to Flex(1) if not explicitly set, as KeybindBar typically fills width.
 // Height defaults to Cells(1) if not explicitly set, as KeybindBar is a single-line widget.
 func (f KeybindBar) GetDimensions() (width, height Dimension) {
 	w, h := f.Width, f.Height
 	if w.IsUnset() {
-		w = Fr(1)
+		w = Flex(1)
 	}
 	if h.IsUnset() {
 		h = Cells(1)

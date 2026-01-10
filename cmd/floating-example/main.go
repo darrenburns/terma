@@ -6,12 +6,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	if err := t.InitLogger(); err != nil {
-		log.Printf("Warning: could not initialize logger: %v", err)
-	}
-	t.InitDebug()
-}
 
 // FloatingDemo demonstrates the Floating widget for popups and modals.
 type FloatingDemo struct {
@@ -34,8 +28,8 @@ func (d *FloatingDemo) Build(ctx t.BuildContext) t.Widget {
 	return t.Column{
 		ID:      "floating-demo-root",
 		Spacing: 1,
-		Width:   t.Fr(1),
-		Height:  t.Fr(1),
+		Width:   t.Flex(1),
+		Height:  t.Flex(1),
 		Style: t.Style{
 			Padding:         t.EdgeInsetsXY(2, 1),
 			BackgroundColor: theme.Background,

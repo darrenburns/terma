@@ -1,5 +1,7 @@
 package terma
 
+import "terma/layout"
+
 // Widget is the base interface for all UI elements.
 // Leaf widgets (like Text) return themselves from Build().
 // Container widgets return a composed widget tree.
@@ -39,6 +41,12 @@ type Dimensioned interface {
 // The framework uses this to extract padding and margin for automatic layout.
 type Styled interface {
 	GetStyle() Style
+}
+
+// LayoutNodeBuilder is implemented by widgets that can build a layout node for themselves.
+// This enables integration with the new layout system in the layout package.
+type LayoutNodeBuilder interface {
+	BuildLayoutNode(ctx BuildContext) layout.LayoutNode
 }
 
 // widgetNode is an internal node in the widget tree.

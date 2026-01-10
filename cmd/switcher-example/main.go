@@ -7,13 +7,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	if err := t.InitLogger(); err != nil {
-		log.Printf("Warning: could not initialize logger: %v", err)
-	}
-	t.InitDebug()
-}
-
 // SwitcherDemo demonstrates the Switcher widget with three tabs.
 // Each tab preserves its state when switching between them.
 type SwitcherDemo struct {
@@ -78,7 +71,7 @@ func (d *SwitcherDemo) Build(ctx t.BuildContext) t.Widget {
 			Children: []t.Widget{
 				t.Switcher{
 					Active: d.activeTab.Get(),
-					Height: t.Fr(1),
+					Height: t.Flex(1),
 					Children: map[string]t.Widget{
 						"fruits":  d.buildFruitsTab(ctx),
 						"colors":  d.buildColorsTab(ctx),

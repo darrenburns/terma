@@ -7,9 +7,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	t.InitDebug()
-}
 
 // FocusedLabel is a widget that displays the currently focused widget's key.
 type FocusedLabel struct{}

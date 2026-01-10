@@ -20,8 +20,8 @@ func (a *App) Build(ctx BuildContext) Widget {
 	return Scrollable{
 		ID:     "style-demo-scroll",
 		State:  a.scrollState,
-		Width:  Fr(1),
-		Height: Fr(1),
+		Width:  Flex(1),
+		Height: Flex(1),
 		Child: Column{
 			Spacing: 1,
 			Style: Style{

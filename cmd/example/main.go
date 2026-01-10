@@ -6,9 +6,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	t.InitDebug()
-}
 
 // App is the root widget for this application.
 type App struct {
@@ -29,7 +26,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 			t.Text{Content: ""},
 			// Counter with dynamic width based on count value
 			t.Row{
-				Width: t.Fr(1),
+				Width: t.Flex(1),
 				Children: []t.Widget{
 					t.Text{
 						Width:   t.Cells(w),
@@ -37,7 +34,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 						Style:   t.Style{BackgroundColor: t.Blue, ForegroundColor: t.Black},
 					},
 					t.Text{
-						Width:   t.Fr(1),
+						Width:   t.Flex(1),
 						Content: "1fr",
 						Style:   t.Style{BackgroundColor: t.BrightBlack, ForegroundColor: t.White},
 					},

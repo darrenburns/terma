@@ -35,7 +35,7 @@ go mod tidy
 
 **Signals**: Reactive state via `Signal[T]`. Call `Get()` during `Build()` to auto-subscribe; call `Set()` to trigger rebuilds. Use `AnySignal[T]` for non-comparable types.
 
-**Layout**: Two-pass constraint-based system. Dimensions can be `Auto`, `Cells(n)` (fixed), or `Fr(n)` (fractional/proportional).
+**Layout**: Two-pass constraint-based system. Dimensions can be `Auto`, `Cells(n)` (fixed), or `Flex(n)` (flexible/proportional).
 
 ### Key Files
 
@@ -86,7 +86,7 @@ func main() {
 
 - `Auto` - fit content
 - `Cells(n)` - fixed n terminal cells
-- `Fr(n)` - fractional (proportional to siblings)
+- `Flex(n)` - flexible (proportional to siblings)
 
 ## Available Widgets
 
@@ -139,7 +139,7 @@ scrollState := NewScrollState()
 listState := NewListState(items)
 Scrollable{
     State:  scrollState,
-    Height: Fr(1),
+    Height: Flex(1),
     Child: List[string]{
         State:       listState,
         ScrollState: scrollState,

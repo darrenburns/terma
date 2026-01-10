@@ -1,3 +1,8 @@
+//go:build ignore
+// +build ignore
+
+// DISABLED: Uses t.GradientBox which doesn't exist yet
+
 package main
 
 import (
@@ -5,10 +10,6 @@ import (
 
 	t "terma"
 )
-
-func init() {
-	t.InitDebug()
-}
 
 type ColorDemo struct {
 	scrollState *t.ScrollState
@@ -20,13 +21,13 @@ func (d *ColorDemo) Build(ctx t.BuildContext) t.Widget {
 			t.Hex("#0F172A"), // Slate 900
 			t.Hex("#1E293B"), // Slate 800
 		),
-		Width:  t.Fr(1),
-		Height: t.Fr(1),
+		Width:  t.Flex(1),
+		Height: t.Flex(1),
 		Child: t.Scrollable{
 			ID:                  "color-demo-scroll",
 			State:               d.scrollState,
-			Width:               t.Fr(1),
-			Height:              t.Fr(1),
+			Width:               t.Flex(1),
+			Height:              t.Flex(1),
 			ScrollbarThumbColor: t.Hex("#475569"), // Slate 600
 			ScrollbarTrackColor: t.Hex("#1E293B"), // Slate 800 (matches gradient)
 			Child: t.Column{

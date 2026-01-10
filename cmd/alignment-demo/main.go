@@ -7,9 +7,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	t.InitDebug()
-}
 
 // Alignment name helpers
 var mainAxisNames = []string{"Start", "Center", "End"}
@@ -102,7 +99,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 			},
 		},
 		Body: t.Column{
-			Height: t.Fr(1),
+			Height: t.Flex(1),
 			Children: []t.Widget{
 				// Title
 				t.Text{
@@ -122,7 +119,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 
 				// Demo containers side by side
 				t.Row{
-					Height:  t.Fr(1),
+					Height:  t.Flex(1),
 					Spacing: 2,
 					Style:   t.Style{Padding: t.EdgeInsets{Left: 1, Right: 1}},
 					Children: []t.Widget{
@@ -153,15 +150,15 @@ func (a *App) buildRowDemo(ctx t.BuildContext, mainAlign t.MainAxisAlign, crossA
 	}
 
 	return t.Column{
-		Width: t.Fr(1),
+		Width: t.Flex(1),
 		Children: []t.Widget{
 			t.Text{
 				Content: fmt.Sprintf("Row (main=horiz, cross=vert)"),
 				Style:   t.Style{ForegroundColor: borderColor},
 			},
 			t.Row{
-				Width:      t.Fr(1),
-				Height:    t.Fr(1),
+				Width:      t.Flex(1),
+				Height:    t.Flex(1),
 				MainAlign:  mainAlign,
 				CrossAlign: crossAlign,
 				Style: t.Style{
@@ -203,15 +200,15 @@ func (a *App) buildColumnDemo(ctx t.BuildContext, mainAlign t.MainAxisAlign, cro
 	}
 
 	return t.Column{
-		Width: t.Fr(1),
+		Width: t.Flex(1),
 		Children: []t.Widget{
 			t.Text{
 				Content: fmt.Sprintf("Column (main=vert, cross=horiz)"),
 				Style:   t.Style{ForegroundColor: borderColor},
 			},
 			t.Column{
-				Width:      t.Fr(1),
-				Height:    t.Fr(1),
+				Width:      t.Flex(1),
+				Height:    t.Flex(1),
 				MainAlign:  mainAlign,
 				CrossAlign: crossAlign,
 				Style: t.Style{

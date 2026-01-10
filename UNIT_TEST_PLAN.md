@@ -21,15 +21,15 @@ The dimension type is fundamental to all layout calculations.
 |-----------|-------------|
 | `TestCells_ReturnsFixedDimension` | `Cells(10)` creates fixed dimension |
 | `TestCells_ZeroValue` | `Cells(0)` is valid |
-| `TestFr_ReturnsFractionalDimension` | `Fr(1)` creates fractional dimension |
-| `TestFr_ZeroValue` | `Fr(0)` behavior |
-| `TestFr_LargeValue` | `Fr(100)` works correctly |
+| `TestFlex_ReturnsFlexibleDimension` | `Flex(1)` creates flexible dimension |
+| `TestFlex_ZeroValue` | `Flex(0)` behavior |
+| `TestFlex_LargeValue` | `Flex(100)` works correctly |
 | `TestAuto_IsAutoTrue` | `Auto.IsAuto()` returns true |
 | `TestCells_IsAutoFalse` | `Cells(n).IsAuto()` returns false |
 | `TestCells_IsCellsTrue` | `Cells(n).IsCells()` returns true |
-| `TestFr_IsFrTrue` | `Fr(n).IsFr()` returns true |
+| `TestFlex_IsFlexTrue` | `Flex(n).IsFlex()` returns true |
 | `TestCells_CellsValue` | `Cells(10).CellsValue()` returns 10 |
-| `TestFr_FrValue` | `Fr(2).FrValue()` returns 2 |
+| `TestFlex_FlexValue` | `Flex(2).FlexValue()` returns 2 |
 | `TestDimension_ZeroValueIsAuto` | Default zero value behaves as Auto |
 
 #### 2. `signal_test.go` - Reactive State System
@@ -78,11 +78,11 @@ The two-pass layout algorithm is complex and critical.
 |-----------|-------------|
 | `TestColumn_SingleChild_Auto` | Single Auto child gets content size |
 | `TestColumn_SingleChild_Cells` | Single fixed child respects size |
-| `TestColumn_SingleChild_Fr` | Single Fr child fills available space |
+| `TestColumn_SingleChild_Flex` | Single Flex child fills available space |
 | `TestColumn_MultipleChildren_AllAuto` | Multiple Auto children stack |
 | `TestColumn_MultipleChildren_AllCells` | Multiple fixed children stack |
-| `TestColumn_MultipleChildren_AllFr` | Fr children divide space proportionally |
-| `TestColumn_MixedDimensions` | Auto + Cells + Fr together |
+| `TestColumn_MultipleChildren_AllFlex` | Flex children divide space proportionally |
+| `TestColumn_MixedDimensions` | Auto + Cells + Flex together |
 | `TestColumn_Spacing` | Spacing adds gaps between children |
 | `TestColumn_MainAlign_Start` | Children at top |
 | `TestColumn_MainAlign_Center` | Children centered vertically |
@@ -90,9 +90,9 @@ The two-pass layout algorithm is complex and critical.
 | `TestColumn_CrossAlign_Start` | Children left-aligned |
 | `TestColumn_CrossAlign_Center` | Children centered horizontally |
 | `TestColumn_CrossAlign_End` | Children right-aligned |
-| `TestColumn_FrDistribution_1_1` | `Fr(1), Fr(1)` = 50/50 split |
-| `TestColumn_FrDistribution_1_2` | `Fr(1), Fr(2)` = 33/67 split |
-| `TestColumn_FrDistribution_1_1_1` | `Fr(1), Fr(1), Fr(1)` = thirds |
+| `TestColumn_FlexDistribution_1_1` | `Flex(1), Flex(1)` = 50/50 split |
+| `TestColumn_FlexDistribution_1_2` | `Flex(1), Flex(2)` = 33/67 split |
+| `TestColumn_FlexDistribution_1_1_1` | `Flex(1), Flex(1), Flex(1)` = thirds |
 | `TestColumn_ChildWithPadding` | Padding affects layout |
 | `TestColumn_ChildWithMargin` | Margin affects layout |
 | `TestColumn_EmptyChildren` | No children = zero size |

@@ -8,12 +8,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	if err := t.InitLogger(); err != nil {
-		log.Printf("Warning: could not initialize logger: %v", err)
-	}
-	t.InitDebug()
-}
 
 // Theme names for cycling
 var themeNames = []string{
@@ -145,7 +139,7 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 
 	return t.Column{
 		ID:      "list-demo-root",
-		Height:  t.Fr(1),
+		Height:  t.Flex(1),
 		Spacing: 1,
 		Style: t.Style{
 			BackgroundColor: theme.Background,

@@ -35,47 +35,47 @@ func TestCells_LargeValue(t *testing.T) {
 	}
 }
 
-func TestFr_ReturnsFractionalDimension(t *testing.T) {
-	d := Fr(1)
+func TestFlex_ReturnsFlexibleDimension(t *testing.T) {
+	d := Flex(1)
 
-	if !d.IsFr() {
-		t.Error("expected IsFr() to be true")
+	if !d.IsFlex() {
+		t.Error("expected IsFlex() to be true")
 	}
-	if d.FrValue() != 1 {
-		t.Errorf("expected FrValue() = 1, got %f", d.FrValue())
-	}
-}
-
-func TestFr_ZeroValue(t *testing.T) {
-	d := Fr(0)
-
-	if !d.IsFr() {
-		t.Error("expected IsFr() to be true for Fr(0)")
-	}
-	if d.FrValue() != 0 {
-		t.Errorf("expected FrValue() = 0, got %f", d.FrValue())
+	if d.FlexValue() != 1 {
+		t.Errorf("expected FlexValue() = 1, got %f", d.FlexValue())
 	}
 }
 
-func TestFr_FractionalValue(t *testing.T) {
-	d := Fr(2.5)
+func TestFlex_ZeroValue(t *testing.T) {
+	d := Flex(0)
 
-	if !d.IsFr() {
-		t.Error("expected IsFr() to be true")
+	if !d.IsFlex() {
+		t.Error("expected IsFlex() to be true for Flex(0)")
 	}
-	if d.FrValue() != 2.5 {
-		t.Errorf("expected FrValue() = 2.5, got %f", d.FrValue())
+	if d.FlexValue() != 0 {
+		t.Errorf("expected FlexValue() = 0, got %f", d.FlexValue())
 	}
 }
 
-func TestFr_LargeValue(t *testing.T) {
-	d := Fr(100)
+func TestFlex_FractionalValue(t *testing.T) {
+	d := Flex(2.5)
 
-	if !d.IsFr() {
-		t.Error("expected IsFr() to be true")
+	if !d.IsFlex() {
+		t.Error("expected IsFlex() to be true")
 	}
-	if d.FrValue() != 100 {
-		t.Errorf("expected FrValue() = 100, got %f", d.FrValue())
+	if d.FlexValue() != 2.5 {
+		t.Errorf("expected FlexValue() = 2.5, got %f", d.FlexValue())
+	}
+}
+
+func TestFlex_LargeValue(t *testing.T) {
+	d := Flex(100)
+
+	if !d.IsFlex() {
+		t.Error("expected IsFlex() to be true")
+	}
+	if d.FlexValue() != 100 {
+		t.Errorf("expected FlexValue() = 100, got %f", d.FlexValue())
 	}
 }
 
@@ -91,9 +91,9 @@ func TestAuto_IsNotCells(t *testing.T) {
 	}
 }
 
-func TestAuto_IsNotFr(t *testing.T) {
-	if Auto.IsFr() {
-		t.Error("expected Auto.IsFr() to be false")
+func TestAuto_IsNotFlex(t *testing.T) {
+	if Auto.IsFlex() {
+		t.Error("expected Auto.IsFlex() to be false")
 	}
 }
 
@@ -105,27 +105,27 @@ func TestCells_IsAutoFalse(t *testing.T) {
 	}
 }
 
-func TestCells_IsFrFalse(t *testing.T) {
+func TestCells_IsFlexFalse(t *testing.T) {
 	d := Cells(10)
 
-	if d.IsFr() {
-		t.Error("expected Cells(10).IsFr() to be false")
+	if d.IsFlex() {
+		t.Error("expected Cells(10).IsFlex() to be false")
 	}
 }
 
-func TestFr_IsAutoFalse(t *testing.T) {
-	d := Fr(1)
+func TestFlex_IsAutoFalse(t *testing.T) {
+	d := Flex(1)
 
 	if d.IsAuto() {
-		t.Error("expected Fr(1).IsAuto() to be false")
+		t.Error("expected Flex(1).IsAuto() to be false")
 	}
 }
 
-func TestFr_IsCellsFalse(t *testing.T) {
-	d := Fr(1)
+func TestFlex_IsCellsFalse(t *testing.T) {
+	d := Flex(1)
 
 	if d.IsCells() {
-		t.Error("expected Fr(1).IsCells() to be false")
+		t.Error("expected Flex(1).IsCells() to be false")
 	}
 }
 
@@ -161,11 +161,11 @@ func TestCells_IsNotUnset(t *testing.T) {
 	}
 }
 
-func TestFr_IsNotUnset(t *testing.T) {
-	d := Fr(1)
+func TestFlex_IsNotUnset(t *testing.T) {
+	d := Flex(1)
 
 	if d.IsUnset() {
-		t.Error("expected Fr(1) to not be unset")
+		t.Error("expected Flex(1) to not be unset")
 	}
 }
 
@@ -176,14 +176,14 @@ func TestDimension_TypeExclusivity(t *testing.T) {
 		dim     Dimension
 		isAuto  bool
 		isCells bool
-		isFr    bool
+		isFlex  bool
 	}{
 		{"Auto", Auto, true, false, false},
 		{"Cells(0)", Cells(0), false, true, false},
 		{"Cells(10)", Cells(10), false, true, false},
-		{"Fr(0)", Fr(0), false, false, true},
-		{"Fr(1)", Fr(1), false, false, true},
-		{"Fr(2.5)", Fr(2.5), false, false, true},
+		{"Flex(0)", Flex(0), false, false, true},
+		{"Flex(1)", Flex(1), false, false, true},
+		{"Flex(2.5)", Flex(2.5), false, false, true},
 	}
 
 	for _, tt := range tests {
@@ -194,8 +194,8 @@ func TestDimension_TypeExclusivity(t *testing.T) {
 			if tt.dim.IsCells() != tt.isCells {
 				t.Errorf("IsCells() = %v, want %v", tt.dim.IsCells(), tt.isCells)
 			}
-			if tt.dim.IsFr() != tt.isFr {
-				t.Errorf("IsFr() = %v, want %v", tt.dim.IsFr(), tt.isFr)
+			if tt.dim.IsFlex() != tt.isFlex {
+				t.Errorf("IsFlex() = %v, want %v", tt.dim.IsFlex(), tt.isFlex)
 			}
 		})
 	}

@@ -1,5 +1,7 @@
 package terma
 
+import "terma/layout"
+
 // Vertical scrollbar characters for smooth rendering.
 // These are "lower eighths" Unicode block elements (U+2581-U+2587).
 // Index 0 = 1/8 filled from bottom, index 6 = 7/8 filled, index 7 = space.
@@ -203,6 +205,56 @@ func (s Scrollable) Build(ctx BuildContext) Widget {
 	return s
 }
 
+// BuildLayoutNode builds a layout node for this Scrollable widget.
+// Implements the LayoutNodeBuilder interface.
+func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
+	if s.Child == nil {
+		// No child - return empty box
+		return &layout.BoxNode{}
+	}
+
+	// Build the child widget
+	built := s.Child.Build(ctx.PushChild(0))
+
+	// Get child's layout node
+	var childNode layout.LayoutNode
+	if builder, ok := built.(LayoutNodeBuilder); ok {
+		childNode = builder.BuildLayoutNode(ctx.PushChild(0))
+	} else {
+		childNode = buildFallbackLayoutNode(built, ctx.PushChild(0))
+	}
+
+	// Get scroll offset from state
+	scrollOffsetY := 0
+	if s.State != nil {
+		scrollOffsetY = s.State.Offset.Peek()
+	}
+
+	// Scrollbar width: 1 if scrolling enabled, 0 if disabled
+	scrollbarWidth := 0
+	if !s.DisableScroll {
+		scrollbarWidth = 1
+	}
+
+	// Get node constraints from dimensions
+	minWidth, maxWidth := dimensionToMinMax(s.Width)
+	minHeight, maxHeight := dimensionToMinMax(s.Height)
+
+	return &layout.ScrollableNode{
+		Child:           childNode,
+		ScrollOffsetY:   scrollOffsetY,
+		ScrollbarWidth:  scrollbarWidth,
+		ScrollbarHeight: 0, // Horizontal scrolling not supported yet
+		Padding:         toLayoutEdgeInsets(s.Style.Padding),
+		Border:          borderToEdgeInsets(s.Style.Border),
+		Margin:          toLayoutEdgeInsets(s.Style.Margin),
+		MinWidth:        minWidth,
+		MaxWidth:        maxWidth,
+		MinHeight:       minHeight,
+		MaxHeight:       maxHeight,
+	}
+}
+
 // getScrollOffset returns the current scroll offset.
 func (s Scrollable) getScrollOffset() int {
 	if s.State == nil {
@@ -259,180 +311,9 @@ func (s Scrollable) ScrollDown(lines int) bool {
 	return s.State.ScrollDown(lines)
 }
 
-// Layout computes the size of the scrollable widget.
-func (s Scrollable) Layout(ctx BuildContext, constraints Constraints) Size {
-	if s.Child == nil || s.State == nil {
-		return Size{Width: constraints.MinWidth, Height: constraints.MinHeight}
-	}
-
-	// Build the child first
-	built := s.Child.Build(ctx)
-
-	// Calculate Scrollable's own style insets (border, padding, margin)
-	// These will be applied by RenderChild when rendering this Scrollable,
-	// reducing the viewport available for scrolling
-	selfStyle := s.GetStyle()
-	selfBorderWidth := selfStyle.Border.Width()
-	selfHInset := selfStyle.Padding.Horizontal() + selfStyle.Margin.Horizontal() + selfBorderWidth*2
-	selfVInset := selfStyle.Padding.Vertical() + selfStyle.Margin.Vertical() + selfBorderWidth*2
-
-	// Determine if we need space for scrollbar
-	scrollbarWidth := 0
-	if !s.DisableScroll {
-		scrollbarWidth = 1 // Reserve space for scrollbar
-	}
-
-	// Get child's style insets (RenderChild will apply these during render)
-	var childHInset, childVInset int
-	if styled, ok := built.(Styled); ok {
-		style := styled.GetStyle()
-		borderWidth := style.Border.Width()
-		childHInset = style.Padding.Horizontal() + style.Margin.Horizontal() + borderWidth*2
-		childVInset = style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
-	}
-
-	// Calculate available content width (subtract scrollbar width only)
-	// Note: RenderChild will handle the child's own style insets (border, padding, margin)
-	contentMaxWidth := constraints.MaxWidth - scrollbarWidth
-	if contentMaxWidth < 0 {
-		contentMaxWidth = 0
-	}
-
-	// Layout child with UNBOUNDED height to get natural content height
-	childWidth := contentMaxWidth
-	var contentHeight int
-	if layoutable, ok := built.(Layoutable); ok {
-		childConstraints := Constraints{
-			MinWidth:  0,
-			MaxWidth:  contentMaxWidth,
-			MinHeight: 0,
-			MaxHeight: 100000, // Large value to allow natural height
-		}
-		size := layoutable.Layout(ctx, childConstraints)
-		childWidth = size.Width
-		// Add child's vertical insets since RenderChild will apply them
-		contentHeight = size.Height + childVInset
-		Log("Scrollable[%s].Layout child: contentMaxWidth=%d, size.Height=%d, childVInset=%d, contentHeight=%d",
-			s.ID, contentMaxWidth, size.Height, childVInset, contentHeight)
-	} else {
-		contentHeight = constraints.MaxHeight
-	}
-
-	// Determine content dimensions (what RenderChild will use for the sub-context)
-	// For Cells(n), n is the OUTER size, so content size = n - selfInsets
-	// For Fr, constraints are already reduced by parent for our insets
-	// For Auto, use the natural content size
-	var width int
-	switch {
-	case s.Width.IsCells():
-		width = s.Width.CellsValue() - selfHInset
-		if width < 0 {
-			width = 0
-		}
-	case s.Width.IsFr():
-		width = constraints.MaxWidth
-	default: // Auto
-		// Use child's natural width plus scrollbar and child's horizontal insets
-		width = childWidth + scrollbarWidth + childHInset
-	}
-
-	var height int
-	switch {
-	case s.Height.IsCells():
-		height = s.Height.CellsValue() - selfVInset
-		if height < 0 {
-			height = 0
-		}
-	case s.Height.IsFr():
-		height = constraints.MaxHeight
-	default: // Auto
-		// Use natural content height, but clamp to constraints
-		height = contentHeight
-	}
-
-	// Clamp to constraints
-	if width < constraints.MinWidth {
-		width = constraints.MinWidth
-	}
-	if width > constraints.MaxWidth {
-		width = constraints.MaxWidth
-	}
-	if height < constraints.MinHeight {
-		height = constraints.MinHeight
-	}
-	if height > constraints.MaxHeight {
-		height = constraints.MaxHeight
-	}
-
-	// Update state with layout info (clamping is deferred to Render)
-	// height is now the content/viewport height (already accounts for our insets)
-	Log("Scrollable[%s].Layout: viewportHeight=%d, contentHeight=%d, maxOffset=%d",
-		s.ID, height, contentHeight, contentHeight-height)
-	s.State.updateLayout(height, contentHeight)
-
-	return Size{Width: width, Height: height}
-}
-
 // Render draws the scrollable widget and its child.
 func (s Scrollable) Render(ctx *RenderContext) {
-	if s.Child == nil || s.State == nil {
-		return
-	}
-
-	// Determine scrollbar width for content area calculation
-	scrollbarWidth := 0
-	if !s.DisableScroll {
-		scrollbarWidth = 1
-	}
-
-	// Content area width (excluding scrollbar)
-	contentWidth := ctx.Width - scrollbarWidth
-
-	// Calculate content height based on actual render dimensions.
-	// This is necessary because Layout may have been called multiple times
-	// with different constraints (e.g., by floating widgets).
-	built := s.Child.Build(ctx.buildContext)
-	var childVInset int
-	if styled, ok := built.(Styled); ok {
-		style := styled.GetStyle()
-		borderWidth := style.Border.Width()
-		childVInset = style.Padding.Vertical() + style.Margin.Vertical() + borderWidth*2
-	}
-
-	contentHeight := ctx.Height // fallback
-	if layoutable, ok := built.(Layoutable); ok {
-		childConstraints := Constraints{
-			MinWidth:  0,
-			MaxWidth:  contentWidth,
-			MinHeight: 0,
-			MaxHeight: 100000, // Large value to allow natural height
-		}
-		size := layoutable.Layout(ctx.buildContext, childConstraints)
-		contentHeight = size.Height + childVInset
-	}
-
-	// Update state with actual render dimensions and clamp offset
-	s.State.updateLayout(ctx.Height, contentHeight)
-	s.clampScrollOffset()
-
-	scrollOffset := s.getScrollOffset()
-	Log("Scrollable[%s].Render: ctx.Width=%d, ctx.Height=%d, state.viewportHeight=%d, state.contentHeight=%d, scrollOffset=%d, maxOffset=%d",
-		s.ID, ctx.Width, ctx.Height, s.State.viewportHeight, s.State.contentHeight, scrollOffset, s.State.maxOffset())
-
-	// Determine if we need to show scrollbar (after updating state)
-	needsScrollbar := s.canScroll()
-
-	// Create a scrolled sub-context for the child
-	childCtx := ctx.ScrolledSubContext(0, 0, contentWidth, ctx.Height, scrollOffset, contentHeight)
-
-	// Render the child through the scrolled context
-	childCtx.RenderChild(0, s.Child, 0, 0, contentWidth, contentHeight)
-
-	// Render scrollbar if needed (on the main context, not scrolled)
-	if needsScrollbar {
-		focused := ctx.IsFocused(s)
-		s.renderScrollbar(ctx, scrollOffset, focused)
-	}
+	// No-op - rendering is done via renderTree
 }
 
 // scrollbarThumbMetrics calculates smooth scrollbar thumb position and size.

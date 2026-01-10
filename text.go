@@ -4,18 +4,19 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
+	"terma/layout"
 )
 
 // WrapMode defines how text should wrap within available width.
 type WrapMode int
 
 const (
+	// WrapNone disables wrapping - text is truncated if too long.
+	WrapNone WrapMode = iota
 	// WrapSoft breaks at word boundaries (spaces), only breaking words if necessary (default).
-	WrapSoft WrapMode = iota
+	WrapSoft
 	// WrapHard breaks at exact character boundary when line exceeds width.
 	WrapHard
-	// WrapNone disables wrapping - text is truncated if too long.
-	WrapNone
 )
 
 // Text is a leaf widget that displays text content.
@@ -25,7 +26,7 @@ type Text struct {
 	Spans   []Span     // Rich text segments (takes precedence if non-empty)
 	Width   Dimension  // Optional width (zero value = auto)
 	Height  Dimension  // Optional height (zero value = auto)
-	Wrap    WrapMode   // Wrapping mode (default = WrapSoft)
+	Wrap    WrapMode   // Wrapping mode (default = WrapNone)
 	Style   Style      // Optional styling (colors, inherited by spans)
 	Click   func()     // Optional callback invoked when clicked
 	Hover   func(bool) // Optional callback invoked when hover state changes
@@ -66,6 +67,28 @@ func (t Text) GetDimensions() (width, height Dimension) {
 // GetStyle returns the style of the text widget.
 func (t Text) GetStyle() Style {
 	return t.Style
+}
+
+// BuildLayoutNode builds a layout node for this Text widget.
+// Implements the LayoutNodeBuilder interface.
+func (t Text) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
+	// Get the text content (spans concatenated or plain content)
+	content := t.textContent()
+
+	minWidth, maxWidth := dimensionToMinMax(t.Width)
+	minHeight, maxHeight := dimensionToMinMax(t.Height)
+
+	return &layout.TextNode{
+		Content:   content,
+		Wrap:      toLayoutWrapMode(t.Wrap),
+		Padding:   toLayoutEdgeInsets(t.Style.Padding),
+		Border:    borderToEdgeInsets(t.Style.Border),
+		Margin:    toLayoutEdgeInsets(t.Style.Margin),
+		MinWidth:  minWidth,
+		MaxWidth:  maxWidth,
+		MinHeight: minHeight,
+		MaxHeight: maxHeight,
+	}
 }
 
 // textContent returns the effective text content.
@@ -139,72 +162,6 @@ func wrapText(content string, maxWidth int, mode WrapMode) []string {
 	return result
 }
 
-// Layout computes the size of the text widget.
-func (t Text) Layout(ctx BuildContext, constraints Constraints) Size {
-	content := t.textContent()
-
-	// Determine the width we'll use for wrapping
-	var wrapWidth int
-	switch {
-	case t.Width.IsCells():
-		wrapWidth = t.Width.CellsValue()
-	case t.Width.IsFr():
-		wrapWidth = constraints.MaxWidth
-	default: // Auto
-		wrapWidth = constraints.MaxWidth
-	}
-
-	// Get lines (wrapped or not based on mode)
-	lines := wrapText(content, wrapWidth, t.Wrap)
-
-	naturalHeight := len(lines)
-	naturalWidth := 0
-	for _, line := range lines {
-		lineWidth := ansi.StringWidth(line)
-		if lineWidth > naturalWidth {
-			naturalWidth = lineWidth
-		}
-	}
-
-	// Determine width based on dimension type
-	var width int
-	switch {
-	case t.Width.IsCells():
-		width = t.Width.CellsValue()
-	case t.Width.IsFr():
-		width = constraints.MaxWidth
-	default: // Auto
-		width = naturalWidth
-	}
-
-	// Determine height based on dimension type
-	var height int
-	switch {
-	case t.Height.IsCells():
-		height = t.Height.CellsValue()
-	case t.Height.IsFr():
-		height = constraints.MaxHeight
-	default: // Auto
-		height = naturalHeight
-	}
-
-	// Clamp to constraints
-	if width < constraints.MinWidth {
-		width = constraints.MinWidth
-	}
-	if width > constraints.MaxWidth {
-		width = constraints.MaxWidth
-	}
-	if height < constraints.MinHeight {
-		height = constraints.MinHeight
-	}
-	if height > constraints.MaxHeight {
-		height = constraints.MaxHeight
-	}
-
-	return Size{Width: width, Height: height}
-}
-
 // Render draws the text to the render context.
 func (t Text) Render(ctx *RenderContext) {
 	if len(t.Spans) > 0 {
@@ -224,7 +181,6 @@ func (t Text) renderPlain(ctx *RenderContext) {
 
 	// Get lines with wrapping applied
 	lines := wrapText(t.Content, ctx.Width, t.Wrap)
-	Log("Text.renderPlain: ctx.Width=%d, ctx.Height=%d, numLines=%d", ctx.Width, ctx.Height, len(lines))
 
 	for i := 0; i < ctx.Height; i++ {
 		var line string

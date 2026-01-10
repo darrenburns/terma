@@ -474,7 +474,7 @@ func (l List[T]) themedDefaultRenderItem(ctx BuildContext) func(item T, active b
 		return Text{
 			Content: prefix + content,
 			Style:   style,
-			Width:   Fr(1), // Fill available width for consistent background
+			Width:   Flex(1), // Fill available width for consistent background
 		}
 	}
 }
@@ -499,7 +499,7 @@ func defaultRenderItem[T any](item T, active bool, selected bool) Widget {
 	return Text{
 		Content: prefix + content,
 		Style:   style,
-		Width:   Fr(1), // Fill available width for consistent background
+		Width:   Flex(1), // Fill available width for consistent background
 	}
 }
 

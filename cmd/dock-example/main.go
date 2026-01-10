@@ -8,12 +8,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	if err := t.InitLogger(); err != nil {
-		log.Printf("Warning: could not initialize logger: %v", err)
-	}
-	t.InitDebug()
-}
 
 // DockDemo demonstrates the Dock widget with header, footer, sidebar, and scrollable body.
 type DockDemo struct {
@@ -79,7 +73,7 @@ func (d *DockDemo) Build(ctx t.BuildContext) t.Widget {
 func (d *DockDemo) buildHeader(ctx t.BuildContext) t.Widget {
 	return t.Text{
 		Content: " Dock Demo ",
-		Width:   t.Fr(1),
+		Width:   t.Flex(1),
 		Style: t.Style{
 			ForegroundColor: ctx.Theme().Background,
 			BackgroundColor: ctx.Theme().Primary,
@@ -100,7 +94,7 @@ func (d *DockDemo) buildSidebar(ctx t.BuildContext) t.Widget {
 		}
 		children[i] = t.Text{
 			Content: fmt.Sprintf(" %s ", item),
-			Width:   t.Fr(1),
+			Width:   t.Flex(1),
 			Style: t.Style{
 				ForegroundColor: ctx.Theme().Text,
 				BackgroundColor: bg,
@@ -113,7 +107,7 @@ func (d *DockDemo) buildSidebar(ctx t.BuildContext) t.Widget {
 
 	return t.Column{
 		Width:  t.Cells(12),
-		Height: t.Fr(1),
+		Height: t.Flex(1),
 		Style: t.Style{
 			BackgroundColor: ctx.Theme().Surface,
 		},
@@ -136,11 +130,11 @@ func (d *DockDemo) buildBody() t.Widget {
 	return t.Scrollable{
 		ID:     "body-scroll",
 		State:  d.scrollState,
-		Width:  t.Fr(1),
-		Height: t.Fr(1),
+		Width:  t.Flex(1),
+		Height: t.Flex(1),
 		Child: t.Text{
 			Content: strings.Join(lines, "\n"),
-			Width:   t.Fr(1),
+			Width:   t.Flex(1),
 			Style: t.Style{
 				Padding: t.EdgeInsetsXY(1, 0),
 			},

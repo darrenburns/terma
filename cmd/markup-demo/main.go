@@ -6,9 +6,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	t.InitDebug()
-}
 
 type App struct {
 	themeIndex  t.Signal[int]
@@ -20,8 +17,8 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
 
 	return t.Column{
-		Width:  t.Fr(1),
-		Height: t.Fr(1),
+		Width:  t.Flex(1),
+		Height: t.Flex(1),
 		Style: t.Style{
 			BackgroundColor: theme.Background,
 			Padding:         t.EdgeInsetsAll(1),
@@ -41,10 +38,10 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 			t.Scrollable{
 				ID:     "content",
 				State:  a.scrollState,
-				Width:  t.Fr(1),
-				Height: t.Fr(1),
+				Width:  t.Flex(1),
+				Height: t.Flex(1),
 				Child: t.Column{
-					Width: t.Fr(1),
+					Width: t.Flex(1),
 					Children: []t.Widget{
 						a.section("Style Modifiers", theme,
 							`[bold]bold[/]`,
@@ -104,7 +101,7 @@ func (a *App) section(title string, theme t.ThemeData, examples ...string) t.Wid
 	}
 
 	return t.Column{
-		Width: t.Fr(1),
+		Width: t.Flex(1),
 		Style: t.Style{
 			Border: t.RoundedBorder(theme.Border,
 				t.BorderDecoration{Text: title, Position: t.DecorationTopLeft, Color: theme.Text},

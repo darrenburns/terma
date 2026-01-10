@@ -7,12 +7,6 @@ import (
 	t "terma"
 )
 
-func init() {
-	if err := t.InitLogger(); err != nil {
-		log.Printf("Warning: could not initialize logger: %v", err)
-	}
-	t.InitDebug()
-}
 
 // SimpleListDemo demonstrates the most basic usage of List[string]
 // without custom rendering logic or scrollable wrapper.
