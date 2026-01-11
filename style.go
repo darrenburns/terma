@@ -314,6 +314,7 @@ type Style struct {
 	Reverse        bool
 	Conceal        bool
 	Strikethrough  bool
+	FillLine       bool // Extend underline/strikethrough to fill the line width
 
 	// Layout
 	Padding EdgeInsets
@@ -336,6 +337,7 @@ func (s Style) IsZero() bool {
 		!s.Reverse &&
 		!s.Conceal &&
 		!s.Strikethrough &&
+		!s.FillLine &&
 		s.Padding == (EdgeInsets{}) &&
 		s.Margin == (EdgeInsets{}) &&
 		s.Border.IsZero()

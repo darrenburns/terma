@@ -37,10 +37,23 @@ type TodoApp struct {
 	nextID int
 }
 
-// NewTodoApp creates a new TODO application.
+// NewTodoApp creates a new todo application.
 func NewTodoApp() *TodoApp {
+	now := time.Now()
+	initialTasks := []Task{
+		{ID: "task-1", Title: "Invent a new color", Completed: false, CreatedAt: now},
+		{ID: "task-2", Title: "Teach the cat to file taxes", Completed: false, CreatedAt: now},
+		{ID: "task-3", Title: "Find out who let the dogs out", Completed: true, CreatedAt: now},
+		{ID: "task-4", Title: "Convince houseplants I'm responsible", Completed: false, CreatedAt: now},
+		{ID: "task-5", Title: "Reply to email from 2019", Completed: false, CreatedAt: now},
+		{ID: "task-6", Title: "Figure out what the fox says", Completed: true, CreatedAt: now},
+		{ID: "task-7", Title: "Organize sock drawer by emotional value", Completed: false, CreatedAt: now},
+		{ID: "task-8", Title: "Finally read the terms and conditions", Completed: false, CreatedAt: now},
+		{ID: "task-9", Title: "Become a morning person (unlikely)", Completed: false, CreatedAt: now},
+	}
+
 	return &TodoApp{
-		tasks:            t.NewListState([]Task{}),
+		tasks:            t.NewListState(initialTasks),
 		inputState:       t.NewTextInputState(""),
 		scrollState:      t.NewScrollState(),
 		editingIndex:     t.NewSignal(-1),
@@ -48,7 +61,7 @@ func NewTodoApp() *TodoApp {
 		showThemePicker:  t.NewSignal(false),
 		themeListState:   t.NewListState(t.ThemeNames()),
 		themeScrollState: t.NewScrollState(),
-		nextID:           1,
+		nextID:           10,
 	}
 }
 
@@ -85,8 +98,13 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 		Children: []t.Widget{
 			t.Dock{
 				Bottom: []t.Widget{
-					a.buildStatusBar(theme),
-					t.KeybindBar{},
+					t.Column{
+						CrossAlign: t.CrossAxisCenter,
+						Children: []t.Widget{
+							a.buildStatusBar(theme),
+							t.KeybindBar{},
+						},
+					},
 				},
 				Body: a.buildMainContainer(ctx, bgColor),
 			},
@@ -246,16 +264,16 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 
 		if active && listFocused {
 			// Show cursor and highlight row when list is focused
-			prefix = "› "
+			prefix = "❯ "
 			textStyle.ForegroundColor = theme.Text
-			rowStyle.BackgroundColor = theme.Surface
+			rowStyle.BackgroundColor = t.NewGradient(theme.Surface, theme.Surface.WithAlpha(0.15)).WithAngle(90)
 			if !task.Completed {
 				checkboxStyle.ForegroundColor = theme.Primary
 			}
 		}
 
 		if task.Completed {
-			textStyle.ForegroundColor = theme.TextMuted
+			textStyle.ForegroundColor = theme.TextMuted.WithAlpha(0.67)
 			textStyle.Strikethrough = true
 		}
 
@@ -294,10 +312,10 @@ func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 			BackdropColor: t.Hex("#000000").WithAlpha(0.25),
 		},
 		Child: t.Column{
-			Width: t.Cells(40),
+			Spacing: 1,
+			Width:   t.Cells(50),
 			Style: t.Style{
-				BackgroundColor: theme.Surface,
-				Border:          t.RoundedBorder(theme.Primary),
+				BackgroundColor: t.NewGradient(theme.Surface.Lighten(0.05), theme.Surface).WithAngle(45),
 				Padding:         t.EdgeInsetsXY(2, 1),
 			},
 			Children: []t.Widget{
@@ -308,10 +326,8 @@ func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 						Bold:            true,
 					},
 				},
-				t.Text{Content: ""}, // Spacer
 				t.Scrollable{
-					State:  a.themeScrollState,
-					Height: t.Cells(12),
+					State: a.themeScrollState,
 					Child: t.List[string]{
 						ID:             "theme-list",
 						State:          a.themeListState,
@@ -321,7 +337,6 @@ func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 						RenderItem:     a.renderThemeItem(theme),
 					},
 				},
-				t.Text{Content: ""}, // Spacer
 				t.Text{
 					Content: "↑↓ navigate · enter select · esc cancel",
 					Style: t.Style{
@@ -338,23 +353,21 @@ func (a *TodoApp) renderThemeItem(theme t.ThemeData) func(string, bool, bool) t.
 	currentTheme := t.CurrentThemeName()
 	return func(themeName string, active bool, selected bool) t.Widget {
 		prefix := "  "
-		suffix := ""
 		style := t.Style{ForegroundColor: theme.Text}
 
 		if active {
-			prefix = "▸ "
+			prefix = "❯ "
 			style.ForegroundColor = theme.Accent
 		}
 
 		if themeName == currentTheme {
-			suffix = " ✓"
 			if !active {
 				style.ForegroundColor = theme.Success
 			}
 		}
 
 		return t.Text{
-			Content: prefix + themeName + suffix,
+			Content: prefix + themeName,
 			Style:   style,
 			Width:   t.Flex(1),
 		}
@@ -391,14 +404,9 @@ func (a *TodoApp) buildStatusBar(theme t.ThemeData) t.Widget {
 	}
 
 	return t.Column{
-		Width: t.Flex(1),
+		CrossAlign: t.CrossAxisCenter,
+		Width:      t.Flex(1),
 		Children: []t.Widget{
-			t.Text{
-				Content: strings.Repeat("─", 66),
-				Style: t.Style{
-					ForegroundColor: theme.Border,
-				},
-			},
 			t.Text{
 				Content: status,
 				Style: t.Style{
@@ -600,6 +608,6 @@ func (a *TodoApp) selectTheme(themeName string) {
 }
 
 func main() {
-	t.SetTheme("rose-pine")
+	t.SetTheme("kanagawa")
 	_ = t.Run(NewTodoApp())
 }
