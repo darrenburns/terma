@@ -57,6 +57,10 @@ const (
 	AnchorRightBottom
 )
 
+// DefaultModalBackdropColor is the default backdrop color for modal floats.
+// Semi-transparent black at 50% opacity.
+var DefaultModalBackdropColor = RGBA(0, 0, 0, 128)
+
 // FloatConfig configures positioning and behavior for a floating widget.
 type FloatConfig struct {
 	// Anchor-based positioning (use AnchorID + Anchor).

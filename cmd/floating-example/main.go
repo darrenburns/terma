@@ -6,7 +6,6 @@ import (
 	t "terma"
 )
 
-
 // FloatingDemo demonstrates the Floating widget for popups and modals.
 type FloatingDemo struct {
 	showDropdown t.Signal[bool]
@@ -205,6 +204,7 @@ func (d *FloatingDemo) buildModalDialog() t.Widget {
 }
 
 func main() {
+	t.InitLogger()
 	app := NewFloatingDemo()
 	if err := t.Run(app); err != nil {
 		log.Fatal(err)

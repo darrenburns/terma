@@ -726,11 +726,10 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 
 	// Phase 3: Render from the tree (pure painting - no layout or focus logic)
 	ctx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
-	r.renderTree(ctx, renderTree, 0, 0)
+	r.renderTree(ctx, renderTree, 0, 0, 0, 0)
 
-	// Handle floats
-	// Still need to implement this...
-	//r.renderFloats(ctx, buildCtx)
+	// Handle floats - render on top of main widget tree
+	r.renderFloats(ctx, buildCtx)
 
 	return r.focusCollector.Focusables()
 }
@@ -738,18 +737,30 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 // renderTree paints a render tree to the terminal.
 // All positions come from BoxModel utilities - no manual offset calculations.
 // This is the new rendering path that uses computed layout geometry.
-func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, screenY int) {
+//
+// Parameters:
+//   - ctx: RenderContext with clip bounds and inherited state
+//   - tree: The render tree node to paint
+//   - offsetX, offsetY: Position relative to ctx (for rendering)
+//   - absX, absY: Absolute screen position (for widget registration)
+func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, offsetX, offsetY, absX, absY int) {
 	box := tree.Layout.Box
 
 	// Get positions using BoxModel utilities
 	borderX, borderY := box.BorderOrigin()    // Offset from margin-box to border-box
 	contentX, contentY := box.ContentOrigin() // Offset from margin-box to content
 
-	// Absolute screen positions
-	absBorderX := screenX + borderX
-	absBorderY := screenY + borderY
-	absContentX := screenX + contentX
-	absContentY := screenY + contentY
+	// Positions relative to ctx (for rendering)
+	relBorderX := offsetX + borderX
+	relBorderY := offsetY + borderY
+	relContentX := offsetX + contentX
+	relContentY := offsetY + contentY
+
+	// Absolute screen positions (for widget registration)
+	absBorderX := absX + borderX
+	absBorderY := absY + borderY
+	absContentX := absX + contentX
+	absContentY := absY + contentY
 
 	// Extract style for painting
 	var style Style
@@ -759,13 +770,13 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 
 	// 1. Fill background (border-box area)
 	if style.BackgroundColor.IsSet() {
-		bgCtx := ctx.SubContext(absBorderX, absBorderY, box.Width, box.Height)
+		bgCtx := ctx.SubContext(relBorderX, relBorderY, box.Width, box.Height)
 		bgCtx.FillRect(0, 0, box.Width, box.Height, style.BackgroundColor)
 	}
 
 	// 2. Draw border
 	if !style.Border.IsZero() {
-		borderCtx := ctx.SubContext(absBorderX, absBorderY, box.Width, box.Height)
+		borderCtx := ctx.SubContext(relBorderX, relBorderY, box.Width, box.Height)
 		// Set inherited background for border cells
 		if style.BackgroundColor.IsSet() {
 			widgetBg := style.BackgroundColor
@@ -776,7 +787,7 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 
 	// 3. Render widget content at content origin
 	if renderable, ok := tree.Widget.(Renderable); ok {
-		contentCtx := ctx.SubContext(absContentX, absContentY, box.ContentWidth(), box.ContentHeight())
+		contentCtx := ctx.SubContext(relContentX, relContentY, box.ContentWidth(), box.ContentHeight())
 		// Set inherited background for children
 		if style.BackgroundColor.IsSet() {
 			widgetBg := style.BackgroundColor
@@ -813,10 +824,10 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 		var childClipCtx *RenderContext
 		if box.IsScrollableY() {
 			// Scrollable: apply scroll offset so content is shifted up
-			childClipCtx = ctx.ScrolledSubContext(absContentX, absContentY, usableWidth, usableHeight, box.ScrollOffsetY)
+			childClipCtx = ctx.ScrolledSubContext(relContentX, relContentY, usableWidth, usableHeight, box.ScrollOffsetY)
 		} else {
 			// Non-scrollable: use regular SubContext
-			childClipCtx = ctx.SubContext(absContentX, absContentY, usableWidth, usableHeight)
+			childClipCtx = ctx.SubContext(relContentX, relContentY, usableWidth, usableHeight)
 		}
 
 		// Set inherited background for children
@@ -844,8 +855,8 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 				break
 			}
 			pos := tree.Layout.Children[i]
-			// Pass relative positions - childClipCtx.X/Y already contains absContentX/Y
-			r.renderTree(childClipCtx, childTree, pos.X, pos.Y)
+			// Pass relative positions for rendering, absolute positions for registration
+			r.renderTree(childClipCtx, childTree, pos.X, pos.Y, absContentX+pos.X, absContentY+pos.Y)
 		}
 	}
 
@@ -864,7 +875,7 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 			focused := ctx.focusManager != nil && ctx.IsFocused(tree.Widget)
 
 			// Create context for scrollbar (at content area, not affected by scroll offset)
-			scrollbarCtx := ctx.SubContext(absContentX, absContentY, box.ContentWidth(), box.ContentHeight())
+			scrollbarCtx := ctx.SubContext(relContentX, relContentY, box.ContentWidth(), box.ContentHeight())
 			if style.BackgroundColor.IsSet() {
 				widgetBg := style.BackgroundColor
 				scrollbarCtx.inheritedBgAt = func(absY int) Color { return widgetBg }
@@ -874,10 +885,13 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 	}
 
 	// 5. Register for hit testing
-	// Get widget ID if available
-	var widgetID string
-	if identifiable, ok := tree.Widget.(Identifiable); ok {
-		widgetID = identifiable.WidgetID()
+	// Prefer OriginalID (from widget before Build()) over built widget's ID
+	// This handles cases like Button where Build() returns Text without the ID
+	widgetID := tree.OriginalID
+	if widgetID == "" {
+		if identifiable, ok := tree.Widget.(Identifiable); ok {
+			widgetID = identifiable.WidgetID()
+		}
 	}
 	r.widgetRegistry.Record(tree.Widget, widgetID, Rect{
 		X:      absBorderX,
@@ -948,4 +962,121 @@ func (r *Renderer) HasModalFloat() bool {
 // Used to auto-focus into modals when they open.
 func (r *Renderer) ModalFocusTarget() string {
 	return r.modalFocusTarget
+}
+
+// renderFloats renders all floating widgets on top of the main widget tree.
+// Floats are rendered in registration order (last registered = topmost).
+// Modal floats render a backdrop before their content.
+func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
+	if r.floatCollector.Len() == 0 {
+		return
+	}
+
+	// Create a separate focus collector for floats
+	floatFocusCollector := NewFocusCollector()
+
+	for i := range r.floatCollector.entries {
+		entry := &r.floatCollector.entries[i]
+		r.renderFloat(ctx, buildCtx, entry, floatFocusCollector)
+	}
+
+	// Append float focusables to main focus collector
+	for _, f := range floatFocusCollector.Focusables() {
+		r.focusCollector.focusables = append(r.focusCollector.focusables, f)
+	}
+}
+
+// renderFloat renders a single floating widget entry.
+func (r *Renderer) renderFloat(
+	ctx *RenderContext,
+	buildCtx BuildContext,
+	entry *FloatEntry,
+	fc *FocusCollector,
+) {
+	// Create a new BuildContext for floats that doesn't collect nested floats
+	floatBuildCtx := NewBuildContext(
+		buildCtx.focusManager,
+		buildCtx.focusedSignal,
+		buildCtx.hoveredSignal,
+		nil, // Don't collect nested floats
+	)
+
+	// Phase 1: Build the float's widget tree
+	// Use Loose constraints based on screen size
+	constraints := layout.Loose(r.width, r.height)
+	renderTree := BuildRenderTree(entry.Child, floatBuildCtx, constraints, fc)
+
+	// Get the float's computed size from the render tree
+	floatWidth := renderTree.Layout.Box.MarginBoxWidth()
+	floatHeight := renderTree.Layout.Box.MarginBoxHeight()
+
+	// Debug: log all registered widget IDs
+	Log("Float rendering - looking for anchor %q", entry.Config.AnchorID)
+	Log("Widget registry has %d entries:", len(r.widgetRegistry.entries))
+	for i, e := range r.widgetRegistry.entries {
+		if e.ID != "" {
+			Log("  [%d] ID=%q bounds=(%d,%d,%d,%d)", i, e.ID, e.Bounds.X, e.Bounds.Y, e.Bounds.Width, e.Bounds.Height)
+		}
+	}
+
+	// Phase 2: Compute screen position
+	var x, y int
+	if entry.Config.AnchorID != "" {
+		// Anchor-based positioning
+		anchor := r.widgetRegistry.WidgetByID(entry.Config.AnchorID)
+		if anchor == nil {
+			Log("Warning: Float anchor ID %q not found in registry", entry.Config.AnchorID)
+		} else {
+			Log("Found anchor %q at bounds=(%d,%d,%d,%d)", entry.Config.AnchorID, anchor.Bounds.X, anchor.Bounds.Y, anchor.Bounds.Width, anchor.Bounds.Height)
+		}
+		x, y = calculateAnchorPosition(
+			anchor,
+			entry.Config.Anchor,
+			floatWidth,
+			floatHeight,
+			entry.Config.Offset,
+		)
+		Log("Calculated position: x=%d, y=%d (floatSize=%dx%d)", x, y, floatWidth, floatHeight)
+	} else {
+		// Absolute positioning
+		x, y = calculateAbsolutePosition(
+			entry.Config.Position,
+			r.width,
+			r.height,
+			floatWidth,
+			floatHeight,
+			entry.Config.Offset,
+		)
+	}
+
+	// Phase 3: Clamp to screen bounds
+	x, y = clampToScreen(x, y, floatWidth, floatHeight, r.width, r.height)
+
+	// Phase 4: Update entry with computed bounds (for hit testing)
+	entry.X = x
+	entry.Y = y
+	entry.Width = floatWidth
+	entry.Height = floatHeight
+
+	// Phase 5: Render backdrop for modal floats
+	if entry.Config.Modal {
+		backdropColor := entry.Config.BackdropColor
+		if !backdropColor.IsSet() {
+			// Default: semi-transparent black
+			backdropColor = DefaultModalBackdropColor
+		}
+		ctx.DrawBackdrop(0, 0, r.width, r.height, backdropColor)
+
+		// Track first focusable in modal for auto-focus
+		if r.modalFocusTarget == "" {
+			focusables := fc.Focusables()
+			if len(focusables) > 0 {
+				r.modalFocusTarget = focusables[0].ID
+			}
+		}
+	}
+
+	// Phase 6: Render the float's content at computed position
+	// For floats, x/y is both the relative offset and absolute position
+	r.renderTree(ctx, renderTree, x, y, x, y)
 }

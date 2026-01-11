@@ -12,6 +12,11 @@ type RenderTree struct {
 	// Used for calling Render() and extracting style.
 	Widget Widget
 
+	// OriginalID is the ID from the original widget (before Build()).
+	// This preserves the ID for registration even when Build() returns
+	// a different widget type (e.g., Button.Build() returns Text).
+	OriginalID string
+
 	// Layout is the computed geometry for this widget.
 	// Contains BoxModel with all dimensions and insets.
 	Layout layout.ComputedLayout
@@ -25,6 +30,14 @@ type RenderTree struct {
 // Focus collection also happens here, keeping the render phase pure painting.
 func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constraints, fc *FocusCollector) RenderTree {
 	built := widget.Build(ctx)
+
+	// Extract the original widget's ID before it's lost to Build()
+	// This is needed because Build() may return a different widget type
+	// (e.g., Button.Build() returns Text, losing the Button's ID)
+	var originalID string
+	if identifiable, ok := widget.(Identifiable); ok {
+		originalID = identifiable.WidgetID()
+	}
 
 	// Collect focusables during tree build (not during render)
 	if fc != nil {
@@ -50,9 +63,10 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 	children := buildChildTrees(built, ctx, computed, fc)
 
 	return RenderTree{
-		Widget:   built,
-		Layout:   computed,
-		Children: children,
+		Widget:     built,
+		OriginalID: originalID,
+		Layout:     computed,
+		Children:   children,
 	}
 }
 
