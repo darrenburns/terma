@@ -44,4 +44,5 @@ No manual redraws. No event wiring. Just declare your UI and let Terma handle th
 - [Layout](layout.md) — Layout system and dimensions
 - [Styling](styling.md) — Colors, padding, margins, and theming
 - [Focus & Keyboard](focus-keyboard.md) — Focus management and keybindings
+- [Conditional Rendering](conditional.md) — ShowWhen, Switcher, and visibility control
 - [Examples](examples.md) — Example applications
