@@ -381,24 +381,43 @@ func (g Gradient) ColorAt(width, height, x, y int) Color {
 		return Color{}
 	}
 
+	// Handle single-cell case: use midpoint
+	if width <= 1 && height <= 1 {
+		return g.At(0.5)
+	}
+
 	angleRad := g.angle * math.Pi / 180
 	cosA := math.Cos(angleRad)
 	sinA := math.Sin(angleRad)
 
-	// Calculate max projection for normalization
-	maxProj := math.Abs(float64(width)*sinA) + math.Abs(float64(height)*cosA)
-	if maxProj == 0 {
-		maxProj = 1
+	// Calculate projections at all four corners to find min/max
+	// Use (width-1, height-1) as the far corner since we're working with cell indices
+	w := float64(width - 1)
+	h := float64(height - 1)
+	if w < 0 {
+		w = 0
+	}
+	if h < 0 {
+		h = 0
 	}
 
-	// Project position onto gradient axis
+	// Projections at corners: (0,0), (w,0), (0,h), (w,h)
+	p00 := 0.0
+	p10 := w * sinA
+	p01 := h * cosA
+	p11 := w*sinA + h*cosA
+
+	minProj := min(p00, p10, p01, p11)
+	maxProj := max(p00, p10, p01, p11)
+
+	// Avoid division by zero
+	if maxProj == minProj {
+		return g.At(0.5)
+	}
+
+	// Project current position and normalize to [0, 1]
 	proj := float64(x)*sinA + float64(y)*cosA
-	t := proj / maxProj
-
-	// Handle single-cell case: use midpoint
-	if width == 1 && height == 1 {
-		t = 0.5
-	}
+	t := (proj - minProj) / (maxProj - minProj)
 
 	// Clamp t to [0, 1]
 	if t < 0 {
