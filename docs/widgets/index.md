@@ -11,6 +11,7 @@ Widgets that arrange and position other widgets:
 - [Row](../layout.md) - Arrange children horizontally
 - [Column](../layout.md) - Arrange children vertically
 - [Dock](../layout.md) - Edge-docking layout
+- [Floating](../floating.md) - Overlays, modals, and dropdowns
 - [Spacer](spacer.md) - Empty space for layout control
 
 ### Content Widgets
@@ -20,6 +21,7 @@ Widgets that display content:
 - Text - Display plain or rich text
 - Button - Focusable button with press handler
 - List - Generic navigable list
+- [ProgressBar](progressbar.md) - Horizontal progress indicator
 
 ### Conditional & Switching Widgets
 

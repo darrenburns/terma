@@ -38,9 +38,13 @@ nav:
   - Getting Started: getting-started.md
   - Widgets:
     - Overview: widgets/index.md
+    - ProgressBar: widgets/progressbar.md
     - Spacer: widgets/spacer.md
   - Signals: signals.md
   - Layout: layout.md
   - Styling: styling.md
   - Focus & Keyboard: focus-keyboard.md
+  - Conditional Rendering: conditional.md
+  - Animation: animation.md
+  - Floating: floating.md
   - Examples: examples.md

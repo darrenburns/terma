@@ -46,4 +46,5 @@ No manual redraws. No event wiring. Just declare your UI and let Terma handle th
 - [Focus & Keyboard](focus-keyboard.md) — Focus management and keybindings
 - [Conditional Rendering](conditional.md) — ShowWhen, Switcher, and visibility control
 - [Animation](animation.md) — Smooth transitions, spinners, and easing
+- [Floating](floating.md) — Overlays, modals, dropdowns, and tooltips
 - [Examples](examples.md) — Example applications
