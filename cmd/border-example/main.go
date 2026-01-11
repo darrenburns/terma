@@ -44,6 +44,17 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 	themeIdx := b.themeIndex.Get()
 	currentTheme := themeNames[themeIdx]
 
+	// Helper to create a border demo box
+	borderBox := func(name string, border t.Border) t.Widget {
+		return t.Text{
+			Content: name,
+			Style: t.Style{
+				Border:  border,
+				Padding: t.EdgeInsetsXY(1, 0),
+			},
+		}
+	}
+
 	return t.Column{
 		ID:      "root",
 		Height:  t.Flex(1),
@@ -56,7 +67,7 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 		Children: []t.Widget{
 			// Header
 			t.Text{
-				Content: "Border Demo",
+				Content: "Border Demo - All Border Types",
 				Style: t.Style{
 					ForegroundColor: theme.TextOnPrimary,
 					BackgroundColor: theme.Primary,
@@ -69,159 +80,69 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 				Spans: t.ParseMarkup(fmt.Sprintf("[$TextMuted]Theme: [/][$Accent]%s[/][$TextMuted] (press t to change, Ctrl+C to quit)[/]", currentTheme), theme),
 			},
 
-			// Row with square and rounded borders side by side
+			// Row 1: Basic borders
 			t.Row{
 				Spacing: 2,
 				Children: []t.Widget{
-					t.Text{
-						//Width:   t.Cells(10),
-						Content: "Square Border",
-						Style: t.Style{
-							Border:  t.SquareBorder(theme.Info),
-							Padding: t.EdgeInsetsAll(1),
-						},
-					},
-					t.Text{
-						//Width:   t.Cells(10),
-						Content: "Rounded Border",
-						Style: t.Style{
-							Border:  t.RoundedBorder(theme.Secondary),
-							Padding: t.EdgeInsetsAll(1),
-						},
-					},
+					borderBox("Square", t.SquareBorder(theme.Primary)),
+					borderBox("Rounded", t.RoundedBorder(theme.Primary)),
+					borderBox("Double", t.DoubleBorder(theme.Primary)),
+					borderBox("Heavy", t.HeavyBorder(theme.Primary)),
 				},
 			},
 
-			// Border decorations - titles and subtitles
+			// Row 2: More line-based borders
 			t.Row{
 				Spacing: 2,
 				Children: []t.Widget{
-					t.Column{
-						Style: t.Style{
-							Border: t.RoundedBorder(theme.Info,
-								t.BorderTitle("Settings"),
-							),
-							Padding: t.EdgeInsetsAll(1),
-						},
-						Children: []t.Widget{
-							t.Text{Content: "Option 1: Enabled"},
-							t.Text{Content: "Option 2: Disabled"},
-						},
-					},
-					t.Column{
-						Style: t.Style{
-							Border: t.SquareBorder(theme.Warning,
-								t.BorderTitle("Info"),
-								t.BorderSubtitle("Press q to quit"),
-							),
-							Padding: t.EdgeInsetsAll(1),
-						},
-						Children: []t.Widget{
-							t.Text{Content: "Title and subtitle"},
-							t.Text{Content: "on the same border"},
-						},
-					},
+					borderBox("Dashed", t.DashedBorder(theme.Secondary)),
+					borderBox("Ascii", t.AsciiBorder(theme.Secondary)),
 				},
 			},
 
-			// Centered decorations
+			// Row 3: Block element borders
 			t.Row{
 				Spacing: 2,
 				Children: []t.Widget{
-					t.Text{
-						Content: "Center title",
-						Style: t.Style{
-							Border: t.RoundedBorder(theme.Success,
-								t.BorderTitleCenter("Centered"),
-							),
-							Padding: t.EdgeInsetsAll(1),
-						},
-					},
-					t.Text{
-						Content: "Right aligned",
-						Style: t.Style{
-							Border: t.SquareBorder(theme.Secondary,
-								t.BorderTitleRight("Right"),
-								t.BorderSubtitleRight("Also Right"),
-							),
-							Padding: t.EdgeInsetsAll(1),
-						},
-					},
+					borderBox("Inner", t.InnerBorder(theme.Info)),
+					borderBox("Outer", t.OuterBorder(theme.Info)),
+					borderBox("Thick", t.ThickBorder(theme.Info)),
 				},
 			},
 
-			// Colored decorations
+			// Row 4: Key-cap borders
+			t.Row{
+				Spacing: 2,
+				Children: []t.Widget{
+					borderBox("HKey", t.HKeyBorder(theme.Warning)),
+					borderBox("VKey", t.VKeyBorder(theme.Warning)),
+				},
+			},
+
+			// Decorations demo with Double border
 			t.Row{
 				Style: t.Style{
-					Border: t.Border{
-						Style: t.BorderRounded,
-						Color: theme.Border,
-						Decorations: []t.BorderDecoration{
-							{Text: "Status", Position: t.DecorationTopLeft, Color: theme.Info},
-							{Text: "Online", Position: t.DecorationTopRight, Color: theme.Success},
-							{Text: "v1.0.0", Position: t.DecorationBottomRight, Color: theme.Warning},
-						},
-					},
-					Padding: t.EdgeInsetsAll(1),
-				},
-				Children: []t.Widget{
-					t.Text{Content: "Decorations can have"},
-					t.Text{Content: "individual colors!"},
-				},
-			},
-
-			// Nested borders with titles
-			t.Row{
-				ID: "outer-box",
-				Style: t.Style{
-					Border: t.RoundedBorder(theme.Primary,
-						t.BorderTitle("Outer"),
-					),
-					Padding: t.EdgeInsetsAll(1),
-				},
-				Spacing: 2,
-				Children: []t.Widget{
-					t.Text{Content: "Outer container"},
-					t.Column{
-						ID: "inner-box",
-						Style: t.Style{
-							Border: t.SquareBorder(theme.Error,
-								t.BorderTitle("Inner"),
-								t.BorderSubtitleCenter("Nested!"),
-							),
-							BackgroundColor: theme.Surface,
-							//Padding:         t.EdgeInsetsAll(1),
-							//Margin:          t.EdgeInsetsTRBL(1, 0, 0, 0),
-						},
-						Children: []t.Widget{
-							t.Text{Content: "Nested border with title"},
-						},
-					},
-				},
-			},
-
-			// Rich text with spans
-			t.Row{
-				Style: t.Style{
-					Border: t.RoundedBorder(theme.Info,
-						t.BorderTitle("Rich Text"),
+					Border: t.DoubleBorder(theme.Accent,
+						t.BorderTitle("Double with Title"),
+						t.BorderSubtitleCenter("and subtitle"),
 					),
 					Padding: t.EdgeInsetsAll(1),
 				},
 				Children: []t.Widget{
-					// Status line with multiple colored spans
-					t.Text{
-						Spans: t.ParseMarkup("Status: [$Success]Online[/] | Errors: [$Error]3[/]", theme),
-					},
-					// Text with formatting attributes
-					t.Text{
-						Spans: t.ParseMarkup("This is [b $Text]bold[/], [i $Info]italic[/], and [u $Warning]underlined[/] text.", theme),
-					},
-					// Fully styled span
-					t.Text{
-						//Wrap:  t.WrapSoft,
-						Spans: t.ParseMarkup("Mixed: [b $Secondary]Bold+Color[/] and [i u $Primary]Italic+Underline[/]", theme),
-					},
+					t.Text{Content: "Decorations work with all border types"},
+				},
+			},
+
+			// Heavy border with decorations
+			t.Row{
+				Style: t.Style{
+					Border: t.HeavyBorder(theme.Error,
+						t.BorderTitleCenter("Heavy Border"),
+					),
+					Padding: t.EdgeInsetsAll(1),
+				},
+				Children: []t.Widget{
+					t.Text{Content: "Heavy borders make a bold statement"},
 				},
 			},
 		},

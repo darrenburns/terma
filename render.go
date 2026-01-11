@@ -307,15 +307,10 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		return
 	}
 
-	// Border characters based on style
-	var tl, tr, bl, br, h, v string
-	switch border.Style {
-	case BorderSquare:
-		tl, tr, bl, br, h, v = "┌", "┐", "└", "┘", "─", "│"
-	case BorderRounded:
-		tl, tr, bl, br, h, v = "╭", "╮", "╰", "╯", "─", "│"
-	default:
-		return
+	// Get border characters for this style
+	chars := GetBorderCharSet(border.Style)
+	if chars.TopLeft == "" {
+		return // Unknown border style
 	}
 
 	// Helper to set a cell with a specific foreground color
@@ -347,10 +342,10 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 	}
 
 	// Draw corners
-	setCell(x, y, tl)
-	setCell(x+width-1, y, tr)
-	setCell(x, y+height-1, bl)
-	setCell(x+width-1, y+height-1, br)
+	setCell(x, y, chars.TopLeft)
+	setCell(x+width-1, y, chars.TopRight)
+	setCell(x, y+height-1, chars.BottomLeft)
+	setCell(x+width-1, y+height-1, chars.BottomRight)
 
 	// Available width for horizontal edges (excluding corners)
 	edgeWidth := width - 2
@@ -367,7 +362,7 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 	}
 
 	// Draw horizontal edge with decorations
-	drawHorizontalEdge := func(edgeY int, decorations []BorderDecoration) {
+	drawHorizontalEdge := func(edgeY int, edgeChar string, decorations []BorderDecoration) {
 		// Create a slice to track which positions are occupied by decoration text
 		// true = occupied by decoration, false = draw border character
 		occupied := make([]bool, edgeWidth)
@@ -424,7 +419,7 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		// Draw border characters where not occupied
 		for col := 0; col < edgeWidth; col++ {
 			if !occupied[col] {
-				setCell(x+1+col, edgeY, h)
+				setCell(x+1+col, edgeY, edgeChar)
 			}
 		}
 
@@ -443,15 +438,15 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 	}
 
 	// Draw top edge with decorations
-	drawHorizontalEdge(y, topDecorations)
+	drawHorizontalEdge(y, chars.Top, topDecorations)
 
 	// Draw bottom edge with decorations
-	drawHorizontalEdge(y+height-1, bottomDecorations)
+	drawHorizontalEdge(y+height-1, chars.Bottom, bottomDecorations)
 
-	// Draw left and right edges
+	// Draw left and right edges (using different characters for each side)
 	for row := 1; row < height-1; row++ {
-		setCell(x, y+row, v)
-		setCell(x+width-1, y+row, v)
+		setCell(x, y+row, chars.Left)
+		setCell(x+width-1, y+row, chars.Right)
 	}
 }
 
