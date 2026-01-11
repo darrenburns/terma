@@ -287,9 +287,10 @@ func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 	return t.Floating{
 		Visible: a.showThemePicker.Get(),
 		Config: t.FloatConfig{
-			Position:  t.FloatPositionCenter,
-			Modal:     true,
-			OnDismiss: a.dismissThemePicker,
+			Position:      t.FloatPositionCenter,
+			Modal:         true,
+			OnDismiss:     a.dismissThemePicker,
+			BackdropColor: t.Hex("#000000").WithAlpha(0.25),
 		},
 		Child: t.Column{
 			Width: t.Cells(40),

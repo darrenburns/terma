@@ -1085,7 +1085,7 @@ func (r *Renderer) renderModalBackdrop(ctx *RenderContext, backdropColor Color) 
 	}
 
 	for y := 0; y < r.height; y++ {
-		for x := 0; x < r.width; x++ {
+		for x := 0; x < r.width; {
 			// Get existing cell to blend with
 			existing := ctx.terminal.CellAt(x, y)
 			var bgColor Color
@@ -1105,6 +1105,9 @@ func (r *Renderer) renderModalBackdrop(ctx *RenderContext, backdropColor Color) 
 			if existing != nil && existing.Content != "" {
 				content = existing.Content
 				width = existing.Width
+				if width < 1 {
+					width = 1
+				}
 			}
 
 			cellStyle := uv.Style{Bg: blended.toANSI()}
@@ -1120,6 +1123,9 @@ func (r *Renderer) renderModalBackdrop(ctx *RenderContext, backdropColor Color) 
 
 			cell := &uv.Cell{Content: content, Width: width, Style: cellStyle}
 			ctx.terminal.SetCell(x, y, cell)
+
+			// Advance by cell width to skip continuation cells for wide characters
+			x += width
 		}
 	}
 }
