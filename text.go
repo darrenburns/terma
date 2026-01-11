@@ -175,7 +175,7 @@ func (t Text) Render(ctx *RenderContext) {
 func (t Text) renderPlain(ctx *RenderContext) {
 	// Start with the full style, then ensure foreground color has a default
 	style := t.Style
-	if !style.ForegroundColor.IsSet() {
+	if style.ForegroundColor == nil || !style.ForegroundColor.IsSet() {
 		style.ForegroundColor = ctx.buildContext.Theme().Text
 	}
 
@@ -205,7 +205,7 @@ func (t Text) renderPlain(ctx *RenderContext) {
 func (t Text) renderSpans(ctx *RenderContext) {
 	// Start with the full style, then ensure foreground color has a default
 	baseStyle := t.Style
-	if !baseStyle.ForegroundColor.IsSet() {
+	if baseStyle.ForegroundColor == nil || !baseStyle.ForegroundColor.IsSet() {
 		baseStyle.ForegroundColor = ctx.buildContext.Theme().Text
 	}
 

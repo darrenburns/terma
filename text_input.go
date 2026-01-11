@@ -512,7 +512,7 @@ func (t TextInput) Render(ctx *RenderContext) {
 
 	// Determine base style
 	baseStyle := t.Style
-	if !baseStyle.ForegroundColor.IsSet() {
+	if baseStyle.ForegroundColor == nil || !baseStyle.ForegroundColor.IsSet() {
 		baseStyle.ForegroundColor = theme.Text
 	}
 	if baseStyle.BackgroundColor == nil || !baseStyle.BackgroundColor.IsSet() {

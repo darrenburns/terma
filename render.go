@@ -319,6 +319,9 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		return
 	}
 
+	// Check if border color is a ColorProvider (for gradient borders)
+	borderColorProvider := border.Color
+
 	// Helper to set a cell with a specific foreground color
 	setCellStyled := func(cx, cy int, content string, fgColor Color) {
 		absX := ctx.X + cx
@@ -342,9 +345,14 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		ctx.terminal.SetCell(absX, absY, cell)
 	}
 
-	// Helper to set a cell with border color
+	// Helper to set a cell with border color (samples from ColorProvider at cell position)
 	setCell := func(cx, cy int, content string) {
-		setCellStyled(cx, cy, content, border.Color)
+		var fgColor Color
+		if borderColorProvider != nil && borderColorProvider.IsSet() {
+			// Sample border color at this cell's position within the border box
+			fgColor = borderColorProvider.ColorAt(width, height, cx-x, cy-y)
+		}
+		setCellStyled(cx, cy, content, fgColor)
 	}
 
 	// Draw corners
@@ -431,13 +439,18 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 
 		// Draw decoration text
 		for _, p := range placed {
-			fgColor := border.Color
-			if p.color.IsSet() {
-				fgColor = p.color
-			}
 			for i, r := range p.text {
 				if p.start+i < edgeWidth {
-					setCellStyled(x+1+p.start+i, edgeY, string(r), fgColor)
+					cellX := x + 1 + p.start + i
+					// Determine foreground color for this decoration character
+					var fgColor Color
+					if p.color.IsSet() {
+						fgColor = p.color
+					} else if borderColorProvider != nil && borderColorProvider.IsSet() {
+						// Sample from border color gradient at this position
+						fgColor = borderColorProvider.ColorAt(width, height, cellX-x, edgeY-y)
+					}
+					setCellStyled(cellX, edgeY, string(r), fgColor)
 				}
 			}
 		}
@@ -471,8 +484,13 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 		return
 	}
 
-	// Check if we have an explicit background color
+	// Check if we have explicit foreground/background colors
+	hasExplicitFg := style.ForegroundColor != nil && style.ForegroundColor.IsSet()
 	hasExplicitBg := style.BackgroundColor != nil && style.BackgroundColor.IsSet()
+
+	// Calculate text width for foreground gradient sampling
+	// Use trimmed text (no trailing spaces) so gradients span actual content, not padding
+	textWidth := ansi.StringWidth(strings.TrimRight(text, " "))
 
 	// Build text attributes bitmask
 	var attrs uint8
@@ -525,8 +543,14 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 				bg = ctx.inheritedBgAt(cellX, absY)
 			}
 
-			// Blend foreground if semi-transparent
-			fg := blendForeground(style.ForegroundColor, bg)
+			// Sample foreground at this cell's position (supports gradients)
+			var fg Color
+			if hasExplicitFg {
+				// Sample from ColorProvider using text width and context height
+				// This allows horizontal gradients per-line and vertical gradients across lines
+				fg = style.ForegroundColor.ColorAt(textWidth, ctx.Height, col, y)
+				fg = blendForeground(fg, bg)
+			}
 
 			cellStyle := uv.Style{
 				Fg:        fg.toANSI(),
@@ -553,16 +577,18 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 	absX := ctx.X + x
 	absY := ctx.Y + y
 
+	// Calculate span width for foreground gradient sampling
+	spanWidth := ansi.StringWidth(span.Text)
+
 	// Skip if outside vertical clip bounds
 	if absY < ctx.clip.Y || absY >= ctx.clip.Y+ctx.clip.Height {
-		return ansi.StringWidth(span.Text)
+		return spanWidth
 	}
 
-	// Determine foreground color: span style overrides base style
-	fg := span.Style.Foreground
-	if !fg.IsSet() {
-		fg = baseStyle.ForegroundColor
-	}
+	// Track whether span has explicit foreground (Color) or falls back to base (ColorProvider)
+	spanHasFg := span.Style.Foreground.IsSet()
+	baseFgProvider := baseStyle.ForegroundColor
+	hasBaseFg := baseFgProvider != nil && baseFgProvider.IsSet()
 
 	// Check if span has explicit background
 	explicitBg := span.Style.Background
@@ -629,8 +655,17 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 				bg = ctx.inheritedBgAt(cellX, absY)
 			}
 
-			// Blend foreground if semi-transparent
-			cellFg := blendForeground(fg, bg)
+			// Determine foreground color: span style (Color) overrides base style (ColorProvider)
+			var cellFg Color
+			if spanHasFg {
+				// Span has explicit foreground color
+				cellFg = blendForeground(span.Style.Foreground, bg)
+			} else if hasBaseFg {
+				// Fall back to base style foreground (sample from ColorProvider)
+				// Use span width for horizontal and context height for vertical gradients
+				cellFg = baseFgProvider.ColorAt(spanWidth, ctx.Height, col, y)
+				cellFg = blendForeground(cellFg, bg)
+			}
 
 			cellStyle := uv.Style{
 				Fg:        cellFg.toANSI(),
@@ -649,7 +684,7 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 		remaining = remaining[len(grapheme):]
 	}
 
-	return ansi.StringWidth(span.Text)
+	return spanWidth
 }
 
 // Renderer handles the widget tree rendering pipeline.
