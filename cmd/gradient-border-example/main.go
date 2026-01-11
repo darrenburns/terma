@@ -95,8 +95,7 @@ func lightEffectCard(angle float64) t.Widget {
 	return t.Column{
 		//Width:      t.Cells(30),
 		//Height:     t.Cells(12),
-		MainAlign:  t.MainAxisCenter,
-		CrossAlign: t.CrossAxisCenter,
+		MainAlign: t.MainAxisCenter,
 		Style: t.Style{
 			BackgroundColor: surfaceColor,
 			Border: t.Border{
@@ -112,23 +111,14 @@ func lightEffectCard(angle float64) t.Widget {
 		},
 		Children: []t.Widget{
 			t.Text{
-				Content: "Light Effect",
+				Content: "Pending",
 				Style: t.Style{
 					ForegroundColor: t.White,
 					Bold:            true,
 				},
 			},
-			t.Spacer{Height: t.Cells(1)},
 			t.Text{
-				Content: "The border gradient",
-				Style:   t.Style{ForegroundColor: t.Hex("#94a3b8")},
-			},
-			t.Text{
-				Content: "fades into the",
-				Style:   t.Style{ForegroundColor: t.Hex("#94a3b8")},
-			},
-			t.Text{
-				Content: "background color",
+				Content: "Waiting for a response...",
 				Style:   t.Style{ForegroundColor: t.Hex("#94a3b8")},
 			},
 		},
