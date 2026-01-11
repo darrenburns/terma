@@ -588,5 +588,5 @@ func (a *TodoApp) selectTheme(themeName string) {
 
 func main() {
 	t.SetTheme("rose-pine")
-	t.Run(NewTodoApp())
+	_ = t.Run(NewTodoApp())
 }
