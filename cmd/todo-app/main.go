@@ -75,22 +75,16 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 	}
 
 	return t.Row{
-		Width:  t.Flex(1),
-		Height: t.Flex(1),
+		Width:     t.Flex(1),
+		Height:    t.Flex(1),
+		MainAlign: t.MainAxisCenter,
+		Style: t.Style{
+			BackgroundColor: bgColor,
+			Padding:         t.EdgeInsetsXY(6, 2),
+		},
 		Children: []t.Widget{
 			t.Dock{
-				Width:  t.Flex(1),
-				Height: t.Flex(1),
-				Style: t.Style{
-					BackgroundColor: bgColor,
-					Padding:         t.EdgeInsetsXY(2, 1),
-				},
-				Top: []t.Widget{
-					a.buildHeader(theme),
-					t.Text{Content: ""}, // Spacer
-				},
 				Bottom: []t.Widget{
-					t.Text{Content: ""}, // Spacer
 					a.buildStatusBar(theme),
 					t.KeybindBar{},
 				},
@@ -102,40 +96,30 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 }
 
 // buildMainContainer creates the container with gradient border containing input and list.
-func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.Color) t.Widget {
+func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider) t.Widget {
 	theme := ctx.Theme()
 
 	return t.Column{
-		Width:  t.Flex(1),
-		Height: t.Flex(1),
+		Width:   t.Flex(1),
+		Height:  t.Flex(1),
+		Spacing: 1,
 		Style: t.Style{
 			BackgroundColor: bgColor,
 			Border: t.Border{
 				Style: t.BorderRounded,
-				// Subtle gradient with pink and green tints, fading to background
+				Decorations: []t.BorderDecoration{
+					{"Things need doing", t.DecorationTopLeft, t.NewGradient(theme.Primary, theme.Primary.WithAlpha(0.5)).WithAngle(90)},
+				},
 				Color: t.NewGradient(
-					t.Hex("#5a4d6b"), // Subtle pink tint
-					t.Hex("#4d6b5a"), // Subtle green tint
-					bgColor,          // Fades to background
-				).WithAngle(0), // Top to bottom
+					theme.Surface.Lighten(0.2),
+					theme.Background,
+				).WithAngle(0),
 			},
-			Padding: t.EdgeInsetsXY(1, 0),
+			Padding: t.EdgeInsetsXY(2, 1),
 		},
 		Children: []t.Widget{
 			a.buildInputRow(theme),
-			t.Text{Content: ""}, // Spacer
 			a.buildTaskList(ctx),
-		},
-	}
-}
-
-// buildHeader creates the header with app title.
-func (a *TodoApp) buildHeader(theme t.ThemeData) t.Widget {
-	return t.Text{
-		Content: "Todo",
-		Style: t.Style{
-			ForegroundColor: theme.Primary,
-			Bold:            true,
 		},
 	}
 }
@@ -143,11 +127,17 @@ func (a *TodoApp) buildHeader(theme t.ThemeData) t.Widget {
 // buildInputRow creates the new task input row.
 func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 	return t.Row{
+		Width: t.Flex(1),
+		Style: t.Style{
+			BackgroundColor: theme.Surface,
+			Padding:         t.EdgeInsetsXY(1, 0),
+		},
 		Children: []t.Widget{
 			t.Text{
-				Content: "  ＋ ",
+				Content: " + ",
 				Style: t.Style{
-					ForegroundColor: theme.Accent,
+					ForegroundColor: theme.Primary,
+					Bold:            true,
 				},
 			},
 			t.TextInput{
@@ -155,7 +145,10 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 				State:       a.inputState,
 				Placeholder: "What needs to be done?",
 				Width:       t.Flex(1),
-				OnSubmit:    a.addTask,
+				Style: t.Style{
+					BackgroundColor: theme.Surface,
+				},
+				OnSubmit: a.addTask,
 			},
 		},
 	}
@@ -241,32 +234,40 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 
 		// Normal display mode
 		checkbox := "○"
+		checkboxStyle := t.Style{ForegroundColor: theme.Border}
 		if task.Completed {
 			checkbox = "●"
+			checkboxStyle.ForegroundColor = theme.Success
 		}
 
 		prefix := "  "
 		textStyle := t.Style{ForegroundColor: theme.Text}
-		checkboxStyle := t.Style{ForegroundColor: theme.TextMuted}
+		rowStyle := t.Style{}
 
 		if active && listFocused {
-			// Show cursor and accent color only when list is focused
-			prefix = "▸ "
-			textStyle.ForegroundColor = theme.Accent
-			checkboxStyle.ForegroundColor = theme.Accent
+			// Show cursor and highlight row when list is focused
+			prefix = "› "
+			textStyle.ForegroundColor = theme.Text
+			rowStyle.BackgroundColor = theme.Surface
+			if !task.Completed {
+				checkboxStyle.ForegroundColor = theme.Primary
+			}
 		}
 
 		if task.Completed {
 			textStyle.ForegroundColor = theme.TextMuted
-			checkboxStyle.ForegroundColor = theme.Success
+			textStyle.Strikethrough = true
 		}
 
 		return t.Row{
 			Width: t.Flex(1),
+			Style: rowStyle,
 			Children: []t.Widget{
 				t.Text{
 					Content: prefix,
-					Style:   textStyle,
+					Style: t.Style{
+						ForegroundColor: theme.Primary,
+					},
 				},
 				t.Text{
 					Content: checkbox + "  ",
@@ -377,7 +378,7 @@ func (a *TodoApp) buildStatusBar(theme t.ThemeData) t.Widget {
 	if len(tasks) == 0 {
 		status = "No tasks yet"
 	} else if active == 0 {
-		status = "All done! 🎉"
+		status = "All done!"
 	} else {
 		itemWord := "tasks"
 		if active == 1 {
@@ -385,14 +386,26 @@ func (a *TodoApp) buildStatusBar(theme t.ThemeData) t.Widget {
 		}
 		status = fmt.Sprintf("%d %s remaining", active, itemWord)
 		if completed > 0 {
-			status += fmt.Sprintf(" · %d completed", completed)
+			status += fmt.Sprintf("  ·  %d completed", completed)
 		}
 	}
 
-	return t.Text{
-		Content: status,
-		Style: t.Style{
-			ForegroundColor: theme.TextMuted,
+	return t.Column{
+		Width: t.Flex(1),
+		Children: []t.Widget{
+			t.Text{
+				Content: strings.Repeat("─", 66),
+				Style: t.Style{
+					ForegroundColor: theme.Border,
+				},
+			},
+			t.Text{
+				Content: status,
+				Style: t.Style{
+					ForegroundColor: theme.TextMuted,
+					Padding:         t.EdgeInsetsXY(0, 0),
+				},
+			},
 		},
 	}
 }

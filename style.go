@@ -142,7 +142,7 @@ const (
 type BorderDecoration struct {
 	Text     string
 	Position DecorationPosition
-	Color    Color // If unset (zero value), inherits border color
+	Color    ColorProvider // If unset (zero value), inherits border color
 }
 
 // BorderTitle creates a title decoration at the top-left of the border.

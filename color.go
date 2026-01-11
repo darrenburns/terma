@@ -281,8 +281,9 @@ func (c Color) Blend(other Color, ratio float64) Color {
 	r := uint8(float64(c.r)*invRatio + float64(other.r)*ratio)
 	g := uint8(float64(c.g)*invRatio + float64(other.g)*ratio)
 	b := uint8(float64(c.b)*invRatio + float64(other.b)*ratio)
+	a := c.a*invRatio + other.a*ratio
 
-	return RGB(r, g, b)
+	return RGBA(r, g, b, a)
 }
 
 // BlendOver composites this color over a background color using alpha blending.

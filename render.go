@@ -378,7 +378,7 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		type placedDecoration struct {
 			text  string
 			start int
-			color Color
+			color ColorProvider
 		}
 		var placed []placedDecoration
 
@@ -432,15 +432,20 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 
 		// Draw decoration text
 		for _, p := range placed {
-			for i, r := range p.text {
+			runes := []rune(p.text)
+			textLen := len(runes)
+			for i, r := range runes {
 				if p.start+i < edgeWidth {
 					cellX := x + 1 + p.start + i
 					// Determine foreground color for this decoration character
 					var fgColor Color
-					if p.color.IsSet() {
-						fgColor = p.color
+					if p.color != nil && p.color.IsSet() {
+						// Sample from decoration's color provider
+						// For horizontal gradients use angle=90; vertical (angle=0) on
+						// single-line text falls back to midpoint color
+						fgColor = p.color.ColorAt(textLen, 1, i, 0)
 					} else if borderColorProvider != nil && borderColorProvider.IsSet() {
-						// Sample from border color gradient at this position
+						// Fall back to border color gradient at this position
 						fgColor = borderColorProvider.ColorAt(width, height, cellX-x, edgeY-y)
 					}
 					setCellStyled(cellX, edgeY, string(r), fgColor)
