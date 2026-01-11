@@ -86,9 +86,12 @@ const (
 // Animation animates a value of type T over time.
 // Create with NewAnimation and start with Start().
 // Read the current value with Value().Get() during Build() for reactive updates.
+//
+// Start() can be called before the app is running. The animation will
+// automatically begin when the animation controller becomes available.
+//
+// Animation is not thread-safe; all methods must be called from the main goroutine.
 type Animation[T any] struct {
-	mu sync.Mutex
-
 	// Configuration
 	from         T
 	to           T
@@ -102,6 +105,7 @@ type Animation[T any] struct {
 	elapsed      time.Duration
 	delayElapsed time.Duration
 	current      T
+	pendingStart bool // Start() was called before controller was ready
 
 	// Output signal (updated on each tick)
 	signal AnySignal[T]
@@ -160,10 +164,9 @@ func NewAnimation[T any](config AnimationConfig[T]) *Animation[T] {
 
 // Start begins the animation.
 // The animation will register with the current AnimationController.
+// If called before the app is running, the animation will automatically
+// start when the controller becomes available (on first Value() access).
 func (a *Animation[T]) Start() {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	if a.state == AnimationRunning {
 		return
 	}
@@ -172,17 +175,17 @@ func (a *Animation[T]) Start() {
 	a.elapsed = 0
 	a.delayElapsed = 0
 
-	// Register with global controller
+	// Register with global controller, or mark as pending if not ready
 	if currentController != nil {
 		a.handle = currentController.Register(a)
+		a.pendingStart = false
+	} else {
+		a.pendingStart = true
 	}
 }
 
 // Stop halts the animation without completing.
 func (a *Animation[T]) Stop() {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	if a.handle != nil && currentController != nil {
 		currentController.Unregister(a.handle)
 		a.handle = nil
@@ -192,9 +195,6 @@ func (a *Animation[T]) Stop() {
 
 // Pause temporarily suspends the animation.
 func (a *Animation[T]) Pause() {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	if a.state == AnimationRunning {
 		a.state = AnimationPaused
 	}
@@ -202,9 +202,6 @@ func (a *Animation[T]) Pause() {
 
 // Resume continues a paused animation.
 func (a *Animation[T]) Resume() {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	if a.state == AnimationPaused {
 		a.state = AnimationRunning
 	}
@@ -213,48 +210,42 @@ func (a *Animation[T]) Resume() {
 // Reset restarts the animation from the beginning.
 // Does not automatically start the animation; call Start() after Reset().
 func (a *Animation[T]) Reset() {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	a.elapsed = 0
 	a.delayElapsed = 0
 	a.current = a.from
 	a.signal.Set(a.from)
 	a.state = AnimationPending
+	a.pendingStart = false
 }
 
 // Value returns a signal containing the current animated value.
 // Call Value().Get() during Build() for reactive updates.
 func (a *Animation[T]) Value() AnySignal[T] {
+	// If Start() was called before controller was ready, register now
+	if a.pendingStart && currentController != nil {
+		a.handle = currentController.Register(a)
+		a.pendingStart = false
+	}
 	return a.signal
 }
 
 // Get returns the current value directly without subscribing.
 func (a *Animation[T]) Get() T {
-	a.mu.Lock()
-	defer a.mu.Unlock()
 	return a.current
 }
 
 // IsRunning returns true if the animation is currently active.
 func (a *Animation[T]) IsRunning() bool {
-	a.mu.Lock()
-	defer a.mu.Unlock()
 	return a.state == AnimationRunning
 }
 
 // IsComplete returns true if the animation has finished.
 func (a *Animation[T]) IsComplete() bool {
-	a.mu.Lock()
-	defer a.mu.Unlock()
 	return a.state == AnimationCompleted
 }
 
 // Progress returns the current progress as a value from 0.0 to 1.0.
 func (a *Animation[T]) Progress() float64 {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	if a.duration == 0 {
 		return 1.0
 	}
@@ -268,9 +259,6 @@ func (a *Animation[T]) Progress() float64 {
 // Advance implements the Animator interface.
 // Called by AnimationController on each tick.
 func (a *Animation[T]) Advance(dt time.Duration) bool {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	if a.state != AnimationRunning {
 		return a.state != AnimationCompleted
 	}
@@ -312,8 +300,8 @@ func (a *Animation[T]) Advance(dt time.Duration) bool {
 		if a.onComplete != nil {
 			a.onComplete()
 		}
-		return false // Remove from controller
+		return false
 	}
 
-	return true // Keep running
+	return true
 }

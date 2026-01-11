@@ -129,52 +129,27 @@ func (p ProgressBar) Render(ctx *RenderContext) {
 	// Remaining eighths for the partial cell (0-7)
 	partialEighths := filledEighths % 8
 
-	// Build the progress bar string
+	// Build the filled portion directly
 	var sb strings.Builder
-
-	// Full filled cells
 	for i := 0; i < fullCells; i++ {
 		sb.WriteString(progressBarChars[8]) // █
 	}
-
-	// Partial cell (if any and there's room)
 	if partialEighths > 0 && fullCells < ctx.Width {
 		sb.WriteString(progressBarChars[partialEighths])
 	}
+	filledText := sb.String()
 
-	// Unfilled portion (spaces to fill the rest)
-	filledLen := fullCells
-	if partialEighths > 0 {
-		filledLen++
+	// Calculate filled width in cells
+	filledWidth := fullCells
+	if partialEighths > 0 && fullCells < ctx.Width {
+		filledWidth++
 	}
-	for i := filledLen; i < ctx.Width; i++ {
-		sb.WriteString(" ")
-	}
-
-	barText := sb.String()
 
 	// Render each row (progress bars are typically 1 row, but support multi-row)
 	for row := 0; row < ctx.Height; row++ {
-		// Draw the filled portion
-		filledWidth := fullCells
-		if partialEighths > 0 {
-			filledWidth++
-		}
-
 		// Draw filled part
 		if filledWidth > 0 {
-			filledText := barText[:filledWidth]
-			// Handle potential multi-byte characters
-			actualFilled := ""
-			count := 0
-			for _, r := range barText {
-				if count >= filledWidth {
-					break
-				}
-				actualFilled += string(r)
-				count++
-			}
-			ctx.DrawStyledText(0, row, actualFilled, Style{
+			ctx.DrawStyledText(0, row, filledText, Style{
 				ForegroundColor: filledColor,
 				BackgroundColor: unfilledColor,
 			})
@@ -182,9 +157,8 @@ func (p ProgressBar) Render(ctx *RenderContext) {
 
 		// Draw unfilled part
 		if filledWidth < ctx.Width {
-			unfilledStart := filledWidth
 			unfilledText := strings.Repeat(" ", ctx.Width-filledWidth)
-			ctx.DrawStyledText(unfilledStart, row, unfilledText, Style{
+			ctx.DrawStyledText(filledWidth, row, unfilledText, Style{
 				BackgroundColor: unfilledColor,
 			})
 		}
