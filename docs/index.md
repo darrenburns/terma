@@ -41,7 +41,7 @@ No manual redraws. No event wiring. Just declare your UI and let Terma handle th
 - [Getting Started](getting-started.md) — Installation and building your first app
 - [Widgets](widgets/index.md) — Overview of available widgets
 - [Signals](signals.md) — Reactive state management
-- [Layout](layout.md) — Layout system and dimensions
+- [Layout](layout/index.md) — Layout system and dimensions
 - [Styling](styling.md) — Colors, padding, margins, and theming
 - [Focus & Keyboard](focus-keyboard.md) — Focus management and keybindings
 - [Conditional Rendering](conditional.md) — ShowWhen, Switcher, and visibility control
