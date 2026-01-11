@@ -99,24 +99,30 @@ func (ac *AnimationController) Unregister(handle *animationHandle) {
 // Called from the event loop when Tick() receives.
 func (ac *AnimationController) Update() {
 	ac.mu.Lock()
-	defer ac.mu.Unlock()
-
 	if ac.stopped {
+		ac.mu.Unlock()
 		return
 	}
 
 	dt := time.Duration(float64(time.Second) / float64(ac.fps))
 
-	// Collect handles to remove
-	var toRemove []*animationHandle
-
+	// Copy handles to iterate outside the lock
+	handles := make([]*animationHandle, 0, len(ac.animations))
 	for handle := range ac.animations {
+		handles = append(handles, handle)
+	}
+	ac.mu.Unlock()
+
+	// Advance animations outside the lock (callbacks may call Register/Unregister)
+	var toRemove []*animationHandle
+	for _, handle := range handles {
 		if !handle.animation.Advance(dt) {
 			toRemove = append(toRemove, handle)
 		}
 	}
 
-	// Remove completed animations
+	// Re-acquire lock to clean up
+	ac.mu.Lock()
 	for _, handle := range toRemove {
 		delete(ac.animations, handle)
 	}
@@ -125,6 +131,7 @@ func (ac *AnimationController) Update() {
 	if len(ac.animations) == 0 {
 		ac.stopTicker()
 	}
+	ac.mu.Unlock()
 }
 
 // Stop halts the controller and cleans up resources.
