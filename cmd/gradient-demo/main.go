@@ -408,7 +408,7 @@ func headerExample() t.Widget {
 }
 
 func main() {
-	t.Run(&GradientDemo{
+	_ = t.Run(&GradientDemo{
 		scrollState: t.NewScrollState(),
 	})
 }

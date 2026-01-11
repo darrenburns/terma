@@ -68,9 +68,9 @@ func (a *App) Keybinds() []terma.Keybind {
 }
 
 func main() {
-	terma.InitLogger()
+	_ = terma.InitLogger()
 	terma.SetDebugLogging(true)
-	terma.Run(&App{
+	_ = terma.Run(&App{
 		width:      terma.NewSignal(40),
 		height:     terma.NewSignal(10),
 		mainAlign:  terma.NewSignal(terma.MainAxisEnd),

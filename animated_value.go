@@ -2,7 +2,6 @@ package terma
 
 import (
 	"fmt"
-	"reflect"
 	"sync"
 	"time"
 )
@@ -285,9 +284,4 @@ func (av *AnyAnimatedValue[T]) IsAnimating() bool {
 // Signal returns the underlying signal for advanced use cases.
 func (av *AnyAnimatedValue[T]) Signal() AnySignal[T] {
 	return av.signal
-}
-
-// typeNameOf returns a string identifier for a type.
-func typeNameOf[T any](v T) string {
-	return reflect.TypeOf(v).String()
 }

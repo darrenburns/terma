@@ -236,7 +236,7 @@ func (a *App) Keybinds() []terma.Keybind {
 }
 
 func main() {
-	terma.InitLogger()
+	_ = terma.InitLogger()
 	app := NewApp()
 	if err := terma.Run(app); err != nil {
 		panic(err)

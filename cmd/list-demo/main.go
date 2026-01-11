@@ -204,7 +204,7 @@ func main() {
 	t.SetTheme(themeNames[0])
 	app := NewListDemo()
 	//t.InitDebug()
-	t.InitLogger()
+	_ = t.InitLogger()
 	if err := t.Run(app); err != nil {
 		log.Fatal(err)
 	}

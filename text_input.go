@@ -38,17 +38,6 @@ func graphemeWidth(s string) int {
 	return width
 }
 
-// isWordBoundary returns true if position is at a word boundary.
-// A word boundary is at the start, end, or between word/non-word characters.
-func isWordBoundary(graphemes []string, index int) bool {
-	if index <= 0 || index >= len(graphemes) {
-		return true
-	}
-	prevIsWord := isWordChar(graphemes[index-1])
-	currIsWord := isWordChar(graphemes[index])
-	return prevIsWord != currIsWord
-}
-
 // isWordChar returns true if the grapheme is a word character (letter, digit, underscore).
 func isWordChar(g string) bool {
 	for _, r := range g {

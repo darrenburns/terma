@@ -169,13 +169,6 @@ func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, sc
 	}
 }
 
-// collectFocusable automatically registers a widget if it implements Focusable.
-func (ctx *RenderContext) collectFocusable(widget Widget) {
-	if ctx.focusCollector != nil {
-		ctx.focusCollector.Collect(widget, ctx.buildContext.AutoID())
-	}
-}
-
 // IsFocused returns true if the given widget currently has focus.
 // The widget must implement Identifiable for reliable focus tracking across rebuilds.
 func (ctx *RenderContext) IsFocused(widget Widget) bool {

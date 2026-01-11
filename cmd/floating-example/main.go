@@ -204,7 +204,7 @@ func (d *FloatingDemo) buildModalDialog() t.Widget {
 }
 
 func main() {
-	t.InitLogger()
+	_ = t.InitLogger()
 	app := NewFloatingDemo()
 	if err := t.Run(app); err != nil {
 		log.Fatal(err)

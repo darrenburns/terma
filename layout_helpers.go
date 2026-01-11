@@ -1,8 +1,6 @@
 package terma
 
 import (
-	"strings"
-
 	"terma/layout"
 )
 
@@ -58,15 +56,6 @@ func toLayoutCrossAlign(a CrossAxisAlign) layout.CrossAxisAlignment {
 	default: // CrossAxisStretch
 		return layout.CrossAxisStretch
 	}
-}
-
-// spansToPlainText extracts plain text content from a slice of Spans.
-func spansToPlainText(spans []Span) string {
-	var result strings.Builder
-	for _, span := range spans {
-		result.WriteString(span.Text)
-	}
-	return result.String()
 }
 
 // dimensionToMinMax converts a terma Dimension to min/max constraints.

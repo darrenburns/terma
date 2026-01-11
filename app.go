@@ -47,8 +47,8 @@ func Run(root Widget) error {
 	t.EnterAltScreen()
 
 	// Enable mouse tracking (all mouse events including hover + SGR extended encoding)
-	t.WriteString(ansi.SetModeMouseAnyEvent)
-	t.WriteString(ansi.SetModeMouseExtSgr)
+	_, _ = t.WriteString(ansi.SetModeMouseAnyEvent)
+	_, _ = t.WriteString(ansi.SetModeMouseExtSgr)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	appCancel = cancel
@@ -120,7 +120,7 @@ func Run(root Widget) error {
 			}
 		}
 
-		t.Display()
+		_ = t.Display()
 
 		elapsed := time.Since(startTime)
 
@@ -150,7 +150,7 @@ func Run(root Widget) error {
 				}
 				switch ev := ev.(type) {
 				case uv.WindowSizeEvent:
-					t.Resize(ev.Width, ev.Height)
+					_ = t.Resize(ev.Width, ev.Height)
 					renderer.Resize(ev.Width, ev.Height)
 					t.Erase()
 					display()
@@ -170,25 +170,25 @@ func Run(root Widget) error {
 					// Suspend on Ctrl+Z
 					if ev.MatchString("ctrl+z") {
 						// Disable mouse tracking before suspending
-						t.WriteString(ansi.ResetModeMouseAnyEvent)
-						t.WriteString(ansi.ResetModeMouseExtSgr)
+						_, _ = t.WriteString(ansi.ResetModeMouseAnyEvent)
+						_, _ = t.WriteString(ansi.ResetModeMouseExtSgr)
 
 						// Exit alternate screen to show shell
 						t.ExitAltScreen()
 
 						// Pause input reading and suspend process
-						t.Pause()
-						uv.Suspend() // Blocks until resumed via `fg`
+						_ = t.Pause()
+						_ = uv.Suspend() // Blocks until resumed via `fg`
 
 						// Resume input reading
-						t.Resume()
+						_ = t.Resume()
 
 						// Re-enter alternate screen
 						t.EnterAltScreen()
 
 						// Re-enable mouse tracking
-						t.WriteString(ansi.SetModeMouseAnyEvent)
-						t.WriteString(ansi.SetModeMouseExtSgr)
+						_, _ = t.WriteString(ansi.SetModeMouseAnyEvent)
+						_, _ = t.WriteString(ansi.SetModeMouseExtSgr)
 
 						// Redraw the screen
 						display()
@@ -289,9 +289,6 @@ func Run(root Widget) error {
 					if entry != nil {
 						newHovered = entry.Widget
 						newHoveredID = entry.ID
-						// Log("  Widget at position: ID=%q Type=%T", entry.ID, entry.Widget)
-					} else {
-						// Log("  No widget at position")
 					}
 
 					// Get old hovered widget and its ID
@@ -358,8 +355,8 @@ func Run(root Widget) error {
 	<-ctx.Done()
 
 	// Disable mouse tracking before shutdown
-	t.WriteString(ansi.ResetModeMouseAnyEvent)
-	t.WriteString(ansi.ResetModeMouseExtSgr)
+	_, _ = t.WriteString(ansi.ResetModeMouseAnyEvent)
+	_, _ = t.WriteString(ansi.ResetModeMouseExtSgr)
 
 	return t.Shutdown(context.Background())
 }

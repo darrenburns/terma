@@ -476,7 +476,7 @@ func fgAlphaBlock(color t.Color, alpha float64, label string) t.Widget {
 }
 
 func main() {
-	t.Run(&ColorDemo{
+	_ = t.Run(&ColorDemo{
 		scrollState: t.NewScrollState(),
 	})
 }

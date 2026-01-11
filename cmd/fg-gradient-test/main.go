@@ -256,7 +256,7 @@ func box(text string, angle float64, fgStart, fgEnd, borderStart, borderEnd stri
 }
 
 func main() {
-	t.Run(&App{
+	_ = t.Run(&App{
 		scrollState: t.NewScrollState(),
 	})
 }
