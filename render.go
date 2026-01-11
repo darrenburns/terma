@@ -471,28 +471,8 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 		return
 	}
 
-	// Determine background color: sample from ColorProvider if set
-	var bg Color
-	if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
-		// Sample at (0,0) with size (1,1) - for text, we use a single color
-		bg = style.BackgroundColor.ColorAt(1, 1, 0, 0)
-		if !bg.IsOpaque() {
-			// Semi-transparent: blend over inherited background
-			inherited := Color{}
-			if ctx.inheritedBgAt != nil {
-				inherited = ctx.inheritedBgAt(absX, absY)
-			}
-			if !inherited.IsSet() {
-				inherited = Black
-			}
-			bg = bg.BlendOver(inherited)
-		}
-	} else if ctx.inheritedBgAt != nil {
-		bg = ctx.inheritedBgAt(absX, absY)
-	}
-
-	// Blend foreground if semi-transparent
-	fg := blendForeground(style.ForegroundColor, bg)
+	// Check if we have an explicit background color
+	hasExplicitBg := style.BackgroundColor != nil && style.BackgroundColor.IsSet()
 
 	// Build text attributes bitmask
 	var attrs uint8
@@ -518,17 +498,6 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 		attrs |= uv.AttrStrikethrough
 	}
 
-	// Build the cell style
-	cellStyle := uv.Style{
-		Fg:        fg.toANSI(),
-		Bg:        bg.toANSI(),
-		Attrs:     attrs,
-		Underline: toUVUnderline(style.Underline),
-	}
-	if style.UnderlineColor.IsSet() {
-		cellStyle.UnderlineColor = style.UnderlineColor.toANSI()
-	}
-
 	// Draw each grapheme cluster as a cell, advancing by its display width
 	col := 0
 	remaining := text
@@ -541,6 +510,34 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 		}
 		// Only draw if within horizontal clip bounds
 		if cellX >= ctx.clip.X {
+			// Sample background at this cell's position
+			var bg Color
+			if hasExplicitBg {
+				bg = style.BackgroundColor.ColorAt(1, 1, 0, 0)
+				if !bg.IsOpaque() && ctx.inheritedBgAt != nil {
+					inherited := ctx.inheritedBgAt(cellX, absY)
+					if !inherited.IsSet() {
+						inherited = Black
+					}
+					bg = bg.BlendOver(inherited)
+				}
+			} else if ctx.inheritedBgAt != nil {
+				bg = ctx.inheritedBgAt(cellX, absY)
+			}
+
+			// Blend foreground if semi-transparent
+			fg := blendForeground(style.ForegroundColor, bg)
+
+			cellStyle := uv.Style{
+				Fg:        fg.toANSI(),
+				Bg:        bg.toANSI(),
+				Attrs:     attrs,
+				Underline: toUVUnderline(style.Underline),
+			}
+			if style.UnderlineColor.IsSet() {
+				cellStyle.UnderlineColor = style.UnderlineColor.toANSI()
+			}
+
 			cell := &uv.Cell{Content: grapheme, Width: width, Style: cellStyle}
 			ctx.terminal.SetCell(cellX, absY, cell)
 		}
@@ -561,33 +558,16 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 		return ansi.StringWidth(span.Text)
 	}
 
-	// Determine colors: span style overrides base style, then inherited
+	// Determine foreground color: span style overrides base style
 	fg := span.Style.Foreground
 	if !fg.IsSet() {
 		fg = baseStyle.ForegroundColor
 	}
-	bg := span.Style.Background
-	if !bg.IsSet() && baseStyle.BackgroundColor != nil && baseStyle.BackgroundColor.IsSet() {
-		// Sample from base style's ColorProvider
-		bg = baseStyle.BackgroundColor.ColorAt(1, 1, 0, 0)
-	}
-	// Handle semi-transparent backgrounds or fall back to inherited
-	if bg.IsSet() && !bg.IsOpaque() {
-		// Semi-transparent: blend over inherited background
-		inherited := Color{}
-		if ctx.inheritedBgAt != nil {
-			inherited = ctx.inheritedBgAt(absX, absY)
-		}
-		if !inherited.IsSet() {
-			inherited = Black
-		}
-		bg = bg.BlendOver(inherited)
-	} else if !bg.IsSet() && ctx.inheritedBgAt != nil {
-		bg = ctx.inheritedBgAt(absX, absY)
-	}
 
-	// Blend foreground if semi-transparent
-	fg = blendForeground(fg, bg)
+	// Check if span has explicit background
+	explicitBg := span.Style.Background
+	hasExplicitBg := explicitBg.IsSet()
+	hasBaseBg := baseStyle.BackgroundColor != nil && baseStyle.BackgroundColor.IsSet()
 
 	// Build text attributes bitmask
 	var attrs uint8
@@ -613,17 +593,6 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 		attrs |= uv.AttrStrikethrough
 	}
 
-	// Build the cell style with text attributes
-	cellStyle := uv.Style{
-		Fg:        fg.toANSI(),
-		Bg:        bg.toANSI(),
-		Attrs:     attrs,
-		Underline: toUVUnderline(span.Style.Underline),
-	}
-	if span.Style.UnderlineColor.IsSet() {
-		cellStyle.UnderlineColor = span.Style.UnderlineColor.toANSI()
-	}
-
 	// Draw each grapheme cluster as a cell, advancing by its display width
 	col := 0
 	remaining := span.Text
@@ -636,6 +605,43 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 		}
 		// Only draw if within horizontal clip bounds
 		if cellX >= ctx.clip.X {
+			// Sample background at this cell's position
+			var bg Color
+			if hasExplicitBg {
+				bg = explicitBg
+				if !bg.IsOpaque() && ctx.inheritedBgAt != nil {
+					inherited := ctx.inheritedBgAt(cellX, absY)
+					if !inherited.IsSet() {
+						inherited = Black
+					}
+					bg = bg.BlendOver(inherited)
+				}
+			} else if hasBaseBg {
+				bg = baseStyle.BackgroundColor.ColorAt(1, 1, 0, 0)
+				if !bg.IsOpaque() && ctx.inheritedBgAt != nil {
+					inherited := ctx.inheritedBgAt(cellX, absY)
+					if !inherited.IsSet() {
+						inherited = Black
+					}
+					bg = bg.BlendOver(inherited)
+				}
+			} else if ctx.inheritedBgAt != nil {
+				bg = ctx.inheritedBgAt(cellX, absY)
+			}
+
+			// Blend foreground if semi-transparent
+			cellFg := blendForeground(fg, bg)
+
+			cellStyle := uv.Style{
+				Fg:        cellFg.toANSI(),
+				Bg:        bg.toANSI(),
+				Attrs:     attrs,
+				Underline: toUVUnderline(span.Style.Underline),
+			}
+			if span.Style.UnderlineColor.IsSet() {
+				cellStyle.UnderlineColor = span.Style.UnderlineColor.toANSI()
+			}
+
 			cell := &uv.Cell{Content: grapheme, Width: width, Style: cellStyle}
 			ctx.terminal.SetCell(cellX, absY, cell)
 		}
