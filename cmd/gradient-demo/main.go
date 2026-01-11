@@ -122,7 +122,6 @@ func gradientAngleBox(angle float64, label string) t.Widget {
 						t.Hex("#7c3aed"), // Violet
 						t.Hex("#1e1b4b"), // Indigo 950
 					).WithAngle(angle),
-					Border: t.Border{Style: t.BorderRounded, Color: t.Hex("#4c1d95")},
 				},
 				Children: []t.Widget{
 					t.Text{
@@ -193,8 +192,8 @@ func multiColorBox(colors []t.Color, name string) t.Widget {
 				Height:    t.Cells(3),
 				MainAlign: t.MainAxisCenter,
 				Style: t.Style{
+					Padding:         t.EdgeInsetsXY(1, 0),
 					BackgroundColor: t.NewGradient(colors...).WithAngle(90),
-					Border:          t.Border{Style: t.BorderRounded, Color: colors[0].Darken(0.3)},
 				},
 				Children: []t.Widget{
 					t.Text{
@@ -229,8 +228,6 @@ func transparencySection() t.Widget {
 						t.Hex("#2563eb"),
 						t.Hex("#0891b2"),
 					).WithAngle(90),
-					Border:  t.Border{Style: t.BorderRounded, Color: t.Hex("#4c1d95")},
-					Padding: t.EdgeInsetsXY(2, 1),
 				},
 				Children: []t.Widget{
 					t.Text{
@@ -239,18 +236,18 @@ func transparencySection() t.Widget {
 						Wrap:    t.WrapNone,
 					},
 					t.Text{
-						Content: " 50% transparent background ",
+						Content: " Red with 50% transparent background ",
 						Style: t.Style{
 							ForegroundColor: t.White,
-							BackgroundColor: t.Black.WithAlpha(0.5),
+							BackgroundColor: t.Red.WithAlpha(0.5),
 						},
 						Wrap: t.WrapNone,
 					},
 					t.Text{
-						Content: " 25% transparent background ",
+						Content: " Red with 25% transparent background ",
 						Style: t.Style{
 							ForegroundColor: t.White,
-							BackgroundColor: t.Black.WithAlpha(0.25),
+							BackgroundColor: t.Red.WithAlpha(0.25),
 						},
 						Wrap: t.WrapNone,
 					},
@@ -281,20 +278,14 @@ func cardExample() t.Widget {
 	return t.Column{
 		Children: []t.Widget{
 			t.Column{
-				Width:  t.Cells(20),
-				Height: t.Cells(8),
+				Width:     t.Cells(20),
+				Height:    t.Cells(8),
+				MainAlign: t.MainAxisCenter,
 				Style: t.Style{
 					BackgroundColor: t.NewGradient(
 						t.Hex("#1e293b"),
 						t.Hex("#0f172a"),
 					).WithAngle(90),
-					Border: t.Border{
-						Style: t.BorderRounded,
-						Color: t.Hex("#334155"),
-						Decorations: []t.BorderDecoration{
-							t.BorderTitle("Card"),
-						},
-					},
 					Padding: t.EdgeInsetsXY(1, 0),
 				},
 				Children: []t.Widget{
@@ -328,13 +319,12 @@ func buttonExample() t.Widget {
 								t.Hex("#8b5cf6"),
 								t.Hex("#6366f1"),
 							).WithAngle(90),
-							Border:  t.Border{Style: t.BorderRounded, Color: t.Hex("#7c3aed")},
-							Padding: t.EdgeInsetsXY(2, 0),
+							Padding: t.EdgeInsetsXY(2, 1),
 						},
 						Children: []t.Widget{
 							t.Text{
 								Content: "Primary Button",
-								Style:   t.Style{ForegroundColor: t.White},
+								Style:   t.Style{ForegroundColor: t.Black.WithAlpha(0.63)},
 								Wrap:    t.WrapNone,
 							},
 						},
@@ -345,13 +335,12 @@ func buttonExample() t.Widget {
 								t.Hex("#f43f5e"),
 								t.Hex("#e11d48"),
 							).WithAngle(90),
-							Border:  t.Border{Style: t.BorderRounded, Color: t.Hex("#be123c")},
 							Padding: t.EdgeInsetsXY(2, 0),
 						},
 						Children: []t.Widget{
 							t.Text{
 								Content: "Danger Button",
-								Style:   t.Style{ForegroundColor: t.White},
+								Style:   t.Style{ForegroundColor: t.Hex("#f43f5e").AutoText()},
 								Wrap:    t.WrapNone,
 							},
 						},
@@ -362,13 +351,12 @@ func buttonExample() t.Widget {
 								t.Hex("#22c55e"),
 								t.Hex("#16a34a"),
 							).WithAngle(90),
-							Border:  t.Border{Style: t.BorderRounded, Color: t.Hex("#15803d")},
 							Padding: t.EdgeInsetsXY(2, 0),
 						},
 						Children: []t.Widget{
 							t.Text{
 								Content: "Success Button",
-								Style:   t.Style{ForegroundColor: t.White},
+								Style:   t.Style{ForegroundColor: t.Hex("#22c55e").AutoText()},
 								Wrap:    t.WrapNone,
 							},
 						},
@@ -396,7 +384,6 @@ func headerExample() t.Widget {
 						t.Hex("#7c3aed"),
 						t.Hex("#2563eb"),
 					).WithAngle(45),
-					Border:  t.Border{Style: t.BorderRounded, Color: t.Hex("#4c1d95")},
 					Padding: t.EdgeInsetsXY(1, 0),
 				},
 				Children: []t.Widget{
