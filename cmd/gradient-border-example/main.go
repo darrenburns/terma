@@ -101,11 +101,12 @@ func lightEffectCard(angle float64) t.Widget {
 			BackgroundColor: surfaceColor,
 			Border: t.Border{
 				Style: t.BorderRounded,
-				// Subtle gradient: slightly lighter at top, fading to background
+				// Subtle gradient with pink and green tints, fading to background
 				Color: t.NewGradient(
-					t.Hex("#4d607a"), // Subtle highlight at top
+					t.Hex("#5a4d6b"), // Subtle pink tint
+					t.Hex("#4d6b5a"), // Subtle green tint
 					bgColor,          // Fades to background
-				).WithAngle(angle), // 0° = top to bottom
+				).WithAngle(angle),
 			},
 			Padding: t.EdgeInsetsXY(2, 1),
 		},
