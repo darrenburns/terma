@@ -62,6 +62,7 @@ func (a *TodoApp) generateID() string {
 // Build implements the Widget interface.
 func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
+	bgColor := theme.Background
 
 	// Request focus on edit input when editing starts
 	if a.editingIndex.Get() >= 0 {
@@ -81,16 +82,11 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 				Width:  t.Flex(1),
 				Height: t.Flex(1),
 				Style: t.Style{
-					BackgroundColor: t.NewGradient(
-						theme.Primary.Darken(0.6),
-						theme.Background,
-					),
-					Padding: t.EdgeInsetsXY(2, 1), // Horizontal and vertical padding
+					BackgroundColor: bgColor,
+					Padding:         t.EdgeInsetsXY(2, 1),
 				},
 				Top: []t.Widget{
 					a.buildHeader(theme),
-					t.Text{Content: ""}, // Spacer
-					a.buildInputRow(theme),
 					t.Text{Content: ""}, // Spacer
 				},
 				Bottom: []t.Widget{
@@ -98,9 +94,37 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 					a.buildStatusBar(theme),
 					t.KeybindBar{},
 				},
-				Body: a.buildTaskList(ctx),
+				Body: a.buildMainContainer(ctx, bgColor),
 			},
 			a.buildThemePicker(theme),
+		},
+	}
+}
+
+// buildMainContainer creates the container with gradient border containing input and list.
+func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.Color) t.Widget {
+	theme := ctx.Theme()
+
+	return t.Column{
+		Width:  t.Flex(1),
+		Height: t.Flex(1),
+		Style: t.Style{
+			BackgroundColor: bgColor,
+			Border: t.Border{
+				Style: t.BorderRounded,
+				// Subtle gradient with pink and green tints, fading to background
+				Color: t.NewGradient(
+					t.Hex("#5a4d6b"), // Subtle pink tint
+					t.Hex("#4d6b5a"), // Subtle green tint
+					bgColor,          // Fades to background
+				).WithAngle(0), // Top to bottom
+			},
+			Padding: t.EdgeInsetsXY(1, 0),
+		},
+		Children: []t.Widget{
+			a.buildInputRow(theme),
+			t.Text{Content: ""}, // Spacer
+			a.buildTaskList(ctx),
 		},
 	}
 }

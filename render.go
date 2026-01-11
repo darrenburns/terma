@@ -780,8 +780,7 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 	r.renderTree(ctx, renderTree, 0, 0)
 
 	// Handle floats
-	// Still need to implement this...
-	//r.renderFloats(ctx, buildCtx)
+	r.renderFloats(ctx, buildCtx)
 
 	return r.focusCollector.Focusables()
 }
@@ -1023,6 +1022,145 @@ func (r *Renderer) ScrollableAt(x, y int) *Scrollable {
 // ordered from innermost to outermost.
 func (r *Renderer) ScrollablesAt(x, y int) []*Scrollable {
 	return r.widgetRegistry.ScrollablesAt(x, y)
+}
+
+// renderFloats renders all floating widgets collected during the build phase.
+// Floats are rendered in order (first registered = bottom, last = top).
+// Modal floats render a backdrop before their content.
+func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
+	if r.floatCollector.Len() == 0 {
+		return
+	}
+
+	for i := range r.floatCollector.entries {
+		entry := &r.floatCollector.entries[i]
+
+		// Build the float's widget tree to determine its size
+		// Use loose constraints - floats size to their content
+		constraints := layout.Loose(r.width, r.height)
+		floatTree := BuildRenderTree(entry.Child, buildCtx, constraints, r.focusCollector)
+
+		floatWidth := floatTree.Layout.Box.MarginBoxWidth()
+		floatHeight := floatTree.Layout.Box.MarginBoxHeight()
+
+		// Calculate position based on config
+		var x, y int
+		if entry.Config.AnchorID != "" {
+			// Anchor-based positioning
+			anchor := r.widgetRegistry.WidgetByID(entry.Config.AnchorID)
+			x, y = calculateAnchorPosition(anchor, entry.Config.Anchor, floatWidth, floatHeight, entry.Config.Offset)
+		} else {
+			// Absolute positioning
+			x, y = calculateAbsolutePosition(entry.Config.Position, r.width, r.height, floatWidth, floatHeight, entry.Config.Offset)
+		}
+
+		// Clamp to screen bounds
+		x, y = clampToScreen(x, y, floatWidth, floatHeight, r.width, r.height)
+
+		// Store computed position and size for hit testing
+		entry.X = x
+		entry.Y = y
+		entry.Width = floatWidth
+		entry.Height = floatHeight
+
+		// Render modal backdrop if needed
+		if entry.Config.Modal {
+			r.renderModalBackdrop(ctx, entry.Config.BackdropColor)
+
+			// Track the first focusable in this modal for auto-focus
+			if r.modalFocusTarget == "" {
+				r.modalFocusTarget = r.findFirstFocusableID(entry.Child, buildCtx)
+			}
+		}
+
+		// Render the float at its computed position
+		r.renderTree(ctx, floatTree, x, y)
+	}
+}
+
+// renderModalBackdrop renders a semi-transparent backdrop over the entire screen.
+func (r *Renderer) renderModalBackdrop(ctx *RenderContext, backdropColor Color) {
+	if !backdropColor.IsSet() {
+		backdropColor = DefaultModalBackdropColor
+	}
+
+	for y := 0; y < r.height; y++ {
+		for x := 0; x < r.width; x++ {
+			// Get existing cell to blend with
+			existing := ctx.terminal.CellAt(x, y)
+			var bgColor Color
+			if existing != nil && existing.Style.Bg != nil {
+				bgColor = FromANSI(existing.Style.Bg)
+			}
+			if !bgColor.IsSet() {
+				bgColor = Black
+			}
+
+			// Blend backdrop color over existing background
+			blended := backdropColor.BlendOver(bgColor)
+
+			// Set cell with blended background, preserving content
+			content := " "
+			width := 1
+			if existing != nil && existing.Content != "" {
+				content = existing.Content
+				width = existing.Width
+			}
+
+			cellStyle := uv.Style{Bg: blended.toANSI()}
+			// Dim the foreground text by blending it with the backdrop
+			if existing != nil && existing.Style.Fg != nil {
+				fgColor := FromANSI(existing.Style.Fg)
+				if fgColor.IsSet() {
+					// Reduce foreground opacity to make it appear dimmed
+					dimmedFg := fgColor.WithAlpha(0.3).BlendOver(blended)
+					cellStyle.Fg = dimmedFg.toANSI()
+				}
+			}
+
+			cell := &uv.Cell{Content: content, Width: width, Style: cellStyle}
+			ctx.terminal.SetCell(x, y, cell)
+		}
+	}
+}
+
+// findFirstFocusableID finds the ID of the first focusable widget in a tree.
+func (r *Renderer) findFirstFocusableID(widget Widget, ctx BuildContext) string {
+	// Check if this widget is focusable
+	if _, ok := widget.(Focusable); ok {
+		if identifiable, ok := widget.(Identifiable); ok {
+			return identifiable.WidgetID()
+		}
+		return ctx.AutoID()
+	}
+
+	// Build the widget to get its children
+	built := widget.Build(ctx)
+
+	// Check children based on widget type
+	var children []Widget
+	switch w := built.(type) {
+	case Row:
+		children = w.Children
+	case Column:
+		children = w.Children
+	case Scrollable:
+		if w.Child != nil {
+			children = []Widget{w.Child}
+		}
+	case Dock:
+		children = w.AllChildren()
+	}
+
+	// Recursively search children
+	for i, child := range children {
+		childCtx := ctx.PushChild(i)
+		if id := r.findFirstFocusableID(child, childCtx); id != "" {
+			return id
+		}
+	}
+
+	return ""
 }
 
 // HasFloats returns true if there are any floating widgets.
