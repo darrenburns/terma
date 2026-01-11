@@ -52,9 +52,16 @@ func Run(root Widget) error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	appCancel = cancel
+
+	// Create animation controller for this app
+	animController := NewAnimationController(60)
+	currentController = animController
+
 	defer func() {
 		appCancel = nil
 		appRenderer = nil
+		currentController = nil
+		animController.Stop()
 		cancel()
 	}()
 
@@ -129,209 +136,221 @@ func Run(root Widget) error {
 
 	// Event loop
 	go func() {
-		for ev := range t.Events() {
-			switch ev := ev.(type) {
-			case uv.WindowSizeEvent:
-				t.Resize(ev.Width, ev.Height)
-				renderer.Resize(ev.Width, ev.Height)
-				t.Erase()
+		termEvents := t.Events()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-animController.Tick():
+				animController.Update()
 				display()
-			case uv.KeyPressEvent:
-				// Check for app-level quit keys
-				if ev.MatchString("ctrl+c") {
-					cancel()
+			case ev, ok := <-termEvents:
+				if !ok {
 					return
 				}
-
-				// Screen export keybind
-				if ev.MatchString("ctrl+shift+s") {
-					exportScreenToFile()
-					continue
-				}
-
-				// Suspend on Ctrl+Z
-				if ev.MatchString("ctrl+z") {
-					// Disable mouse tracking before suspending
-					t.WriteString(ansi.ResetModeMouseAnyEvent)
-					t.WriteString(ansi.ResetModeMouseExtSgr)
-
-					// Exit alternate screen to show shell
-					t.ExitAltScreen()
-
-					// Pause input reading and suspend process
-					t.Pause()
-					uv.Suspend() // Blocks until resumed via `fg`
-
-					// Resume input reading
-					t.Resume()
-
-					// Re-enter alternate screen
-					t.EnterAltScreen()
-
-					// Re-enable mouse tracking
-					t.WriteString(ansi.SetModeMouseAnyEvent)
-					t.WriteString(ansi.SetModeMouseExtSgr)
-
-					// Redraw the screen
+				switch ev := ev.(type) {
+				case uv.WindowSizeEvent:
+					t.Resize(ev.Width, ev.Height)
+					renderer.Resize(ev.Width, ev.Height)
+					t.Erase()
 					display()
-					continue
-				}
+				case uv.KeyPressEvent:
+					// Check for app-level quit keys
+					if ev.MatchString("ctrl+c") {
+						cancel()
+						return
+					}
 
-				// Check for Escape to dismiss floats
-				if ev.MatchString("escape") {
-					if topFloat := renderer.TopFloat(); topFloat != nil {
-						if topFloat.Config.shouldDismissOnEsc() && topFloat.Config.OnDismiss != nil {
+					// Screen export keybind
+					if ev.MatchString("ctrl+shift+s") {
+						exportScreenToFile()
+						continue
+					}
+
+					// Suspend on Ctrl+Z
+					if ev.MatchString("ctrl+z") {
+						// Disable mouse tracking before suspending
+						t.WriteString(ansi.ResetModeMouseAnyEvent)
+						t.WriteString(ansi.ResetModeMouseExtSgr)
+
+						// Exit alternate screen to show shell
+						t.ExitAltScreen()
+
+						// Pause input reading and suspend process
+						t.Pause()
+						uv.Suspend() // Blocks until resumed via `fg`
+
+						// Resume input reading
+						t.Resume()
+
+						// Re-enter alternate screen
+						t.EnterAltScreen()
+
+						// Re-enable mouse tracking
+						t.WriteString(ansi.SetModeMouseAnyEvent)
+						t.WriteString(ansi.SetModeMouseExtSgr)
+
+						// Redraw the screen
+						display()
+						continue
+					}
+
+					// Check for Escape to dismiss floats
+					if ev.MatchString("escape") {
+						if topFloat := renderer.TopFloat(); topFloat != nil {
+							if topFloat.Config.shouldDismissOnEsc() && topFloat.Config.OnDismiss != nil {
+								topFloat.Config.OnDismiss()
+								display()
+								continue
+							}
+						}
+					}
+
+					// Route key event through focus manager (bubbles through widget tree)
+					keyEvent := KeyEvent{event: ev}
+					handled := focusManager.HandleKey(keyEvent)
+
+					// If not handled, try root's keybindings and handler directly
+					// (handles case when there are no focusable widgets)
+					if !handled {
+						if rootKeybindProvider != nil {
+							handled = matchKeybind(keyEvent, rootKeybindProvider.Keybinds())
+						}
+						if !handled && rootHandler != nil {
+							rootHandler.OnKey(keyEvent)
+						}
+					}
+
+					// Re-render after key press (for signal updates and focus changes)
+					display()
+
+				case uv.MouseClickEvent:
+					Log("MouseClickEvent at X=%d Y=%d Button=%v", ev.X, ev.Y, ev.Button)
+
+					// Check if click is on a float
+					floatEntry := renderer.FloatAt(ev.X, ev.Y)
+					if floatEntry != nil {
+						// Click is on a float - handle normally
+						Log("  Click on float")
+						entry := renderer.WidgetAt(ev.X, ev.Y)
+						if entry != nil {
+							if clickable, ok := entry.Widget.(Clickable); ok {
+								clickable.OnClick()
+							}
+						}
+						display()
+						continue
+					}
+
+					// Click is outside all floats - check for dismissal
+					if renderer.HasFloats() {
+						topFloat := renderer.TopFloat()
+						if topFloat != nil && topFloat.Config.shouldDismissOnClickOutside() && topFloat.Config.OnDismiss != nil {
+							Log("  Dismissing float on click outside")
 							topFloat.Config.OnDismiss()
 							display()
 							continue
 						}
+
+						// For modal floats, block the click from reaching underlying widgets
+						if renderer.HasModalFloat() {
+							Log("  Modal float blocking click")
+							display()
+							continue
+						}
 					}
-				}
 
-				// Route key event through focus manager (bubbles through widget tree)
-				keyEvent := KeyEvent{event: ev}
-				handled := focusManager.HandleKey(keyEvent)
-
-				// If not handled, try root's keybindings and handler directly
-				// (handles case when there are no focusable widgets)
-				if !handled {
-					if rootKeybindProvider != nil {
-						handled = matchKeybind(keyEvent, rootKeybindProvider.Keybinds())
-					}
-					if !handled && rootHandler != nil {
-						rootHandler.OnKey(keyEvent)
-					}
-				}
-
-				// Re-render after key press (for signal updates and focus changes)
-				display()
-
-			case uv.MouseClickEvent:
-				Log("MouseClickEvent at X=%d Y=%d Button=%v", ev.X, ev.Y, ev.Button)
-
-				// Check if click is on a float
-				floatEntry := renderer.FloatAt(ev.X, ev.Y)
-				if floatEntry != nil {
-					// Click is on a float - handle normally
-					Log("  Click on float")
+					// Find the widget under the cursor
 					entry := renderer.WidgetAt(ev.X, ev.Y)
 					if entry != nil {
+						Log("  Found widget: ID=%q Type=%T", entry.ID, entry.Widget)
+						// If the widget implements Clickable, call OnClick
 						if clickable, ok := entry.Widget.(Clickable); ok {
+							Log("  Widget is Clickable, calling OnClick")
 							clickable.OnClick()
+						} else {
+							Log("  Widget is NOT Clickable")
 						}
-					}
-					display()
-					continue
-				}
-
-				// Click is outside all floats - check for dismissal
-				if renderer.HasFloats() {
-					topFloat := renderer.TopFloat()
-					if topFloat != nil && topFloat.Config.shouldDismissOnClickOutside() && topFloat.Config.OnDismiss != nil {
-						Log("  Dismissing float on click outside")
-						topFloat.Config.OnDismiss()
-						display()
-						continue
-					}
-
-					// For modal floats, block the click from reaching underlying widgets
-					if renderer.HasModalFloat() {
-						Log("  Modal float blocking click")
-						display()
-						continue
-					}
-				}
-
-				// Find the widget under the cursor
-				entry := renderer.WidgetAt(ev.X, ev.Y)
-				if entry != nil {
-					Log("  Found widget: ID=%q Type=%T", entry.ID, entry.Widget)
-					// If the widget implements Clickable, call OnClick
-					if clickable, ok := entry.Widget.(Clickable); ok {
-						Log("  Widget is Clickable, calling OnClick")
-						clickable.OnClick()
 					} else {
-						Log("  Widget is NOT Clickable")
-					}
-				} else {
-					Log("  No widget found at position")
-					LogWidgetRegistry(renderer.widgetRegistry)
-				}
-
-				// Re-render after click
-				display()
-
-			case uv.MouseMotionEvent:
-				// Log("MouseMotionEvent at X=%d Y=%d", ev.X, ev.Y)
-
-				// Find the widget under the cursor
-				entry := renderer.WidgetAt(ev.X, ev.Y)
-				var newHovered Widget
-				newHoveredID := ""
-				if entry != nil {
-					newHovered = entry.Widget
-					newHoveredID = entry.ID
-					// Log("  Widget at position: ID=%q Type=%T", entry.ID, entry.Widget)
-				} else {
-					// Log("  No widget at position")
-				}
-
-				// Get old hovered widget and its ID
-				oldHovered := hoveredSignal.Get()
-				oldHoveredID := ""
-				if oldHovered != nil {
-					if identifiable, ok := oldHovered.(Identifiable); ok {
-						oldHoveredID = identifiable.WidgetID()
-					}
-				}
-
-				// Only update if hover changed (compare by ID to avoid incomparable type issues)
-				if newHoveredID != oldHoveredID {
-					Log("  Hover changed: %q -> %q", oldHoveredID, newHoveredID)
-
-					// Notify old widget it's no longer hovered
-					if oldHovered != nil {
-						if hoverable, ok := oldHovered.(Hoverable); ok {
-							Log("  Calling OnHover(false) on %q", oldHoveredID)
-							hoverable.OnHover(false)
-						}
+						Log("  No widget found at position")
+						LogWidgetRegistry(renderer.widgetRegistry)
 					}
 
-					// Update the hovered signal
-					hoveredSignal.Set(newHovered)
-
-					// Notify new widget it's now hovered
-					if entry != nil {
-						if hoverable, ok := entry.Widget.(Hoverable); ok {
-							Log("  Calling OnHover(true) on %q", newHoveredID)
-							hoverable.OnHover(true)
-						}
-					}
-
-					// Re-render after hover change
+					// Re-render after click
 					display()
-				}
 
-			case uv.MouseWheelEvent:
-				// Find all scrollable widgets under the cursor (innermost to outermost)
-				// and try each until one handles the scroll (bubble up if at limit)
-				for _, scrollable := range renderer.ScrollablesAt(ev.X, ev.Y) {
-					var handled bool
-					switch ev.Button {
-					case uv.MouseWheelUp:
-						handled = scrollable.ScrollUp(1)
-					case uv.MouseWheelDown:
-						handled = scrollable.ScrollDown(1)
-					}
-					if handled {
-						break
-					}
-				}
-				display()
+				case uv.MouseMotionEvent:
+					// Log("MouseMotionEvent at X=%d Y=%d", ev.X, ev.Y)
 
-			default:
-				// Log other event types for debugging
-				Log("Unhandled event: %T %v", ev, ev)
+					// Find the widget under the cursor
+					entry := renderer.WidgetAt(ev.X, ev.Y)
+					var newHovered Widget
+					newHoveredID := ""
+					if entry != nil {
+						newHovered = entry.Widget
+						newHoveredID = entry.ID
+						// Log("  Widget at position: ID=%q Type=%T", entry.ID, entry.Widget)
+					} else {
+						// Log("  No widget at position")
+					}
+
+					// Get old hovered widget and its ID
+					oldHovered := hoveredSignal.Get()
+					oldHoveredID := ""
+					if oldHovered != nil {
+						if identifiable, ok := oldHovered.(Identifiable); ok {
+							oldHoveredID = identifiable.WidgetID()
+						}
+					}
+
+					// Only update if hover changed (compare by ID to avoid incomparable type issues)
+					if newHoveredID != oldHoveredID {
+						Log("  Hover changed: %q -> %q", oldHoveredID, newHoveredID)
+
+						// Notify old widget it's no longer hovered
+						if oldHovered != nil {
+							if hoverable, ok := oldHovered.(Hoverable); ok {
+								Log("  Calling OnHover(false) on %q", oldHoveredID)
+								hoverable.OnHover(false)
+							}
+						}
+
+						// Update the hovered signal
+						hoveredSignal.Set(newHovered)
+
+						// Notify new widget it's now hovered
+						if entry != nil {
+							if hoverable, ok := entry.Widget.(Hoverable); ok {
+								Log("  Calling OnHover(true) on %q", newHoveredID)
+								hoverable.OnHover(true)
+							}
+						}
+
+						// Re-render after hover change
+						display()
+					}
+
+				case uv.MouseWheelEvent:
+					// Find all scrollable widgets under the cursor (innermost to outermost)
+					// and try each until one handles the scroll (bubble up if at limit)
+					for _, scrollable := range renderer.ScrollablesAt(ev.X, ev.Y) {
+						var handled bool
+						switch ev.Button {
+						case uv.MouseWheelUp:
+							handled = scrollable.ScrollUp(1)
+						case uv.MouseWheelDown:
+							handled = scrollable.ScrollDown(1)
+						}
+						if handled {
+							break
+						}
+					}
+					display()
+
+				default:
+					// Log other event types for debugging
+					Log("Unhandled event: %T %v", ev, ev)
+				}
 			}
 		}
 	}()
