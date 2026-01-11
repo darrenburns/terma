@@ -21,10 +21,17 @@ Widgets that display content:
 - Button - Focusable button with press handler
 - List - Generic navigable list
 
+### Conditional & Switching Widgets
+
+- [Switcher](../conditional.md#switcher) - Show one widget at a time from a keyed collection
+- [ShowWhen / HideWhen](../conditional.md#showwhen--hidewhen) - Toggle widget presence
+- [VisibleWhen / InvisibleWhen](../conditional.md#visiblewhen--invisiblewhen) - Toggle visibility while preserving space
+
 ### Utility Widgets
 
 - KeybindBar - Display active keybindings
 - [Spacer](spacer.md) - Empty space for layout control
+- [Spinner](../animation.md#spinner) - Animated loading indicators
 
 ## Creating Custom Widgets
 
