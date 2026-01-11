@@ -5,7 +5,7 @@ import "fmt"
 // Button is a focusable widget that renders as styled text.
 // It can be pressed with Enter or Space when focused.
 type Button struct {
-	ID      string     // Unique identifier for the button (required for focus management)
+	ID      string     // Optional unique identifier for the button
 	Label   string     // Display text for the button
 	OnPress func()     // Callback invoked when button is pressed
 	Width   Dimension  // Optional width (zero value = auto)

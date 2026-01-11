@@ -76,7 +76,7 @@ func (ctx BuildContext) PushChild(index int) BuildContext {
 }
 
 // IsFocused returns true if the given widget currently has focus.
-// The widget should implement Identifiable for reliable focus tracking across rebuilds.
+// Works with both explicit IDs (via Identifiable) and auto-generated IDs.
 func (ctx BuildContext) IsFocused(widget Widget) bool {
 	if ctx.focusManager == nil {
 		return false
@@ -88,11 +88,12 @@ func (ctx BuildContext) IsFocused(widget Widget) bool {
 	}
 
 	// Check if widget has an explicit ID
-	if identifiable, ok := widget.(Identifiable); ok {
+	if identifiable, ok := widget.(Identifiable); ok && identifiable.WidgetID() != "" {
 		return identifiable.WidgetID() == focusedID
 	}
 
-	return false
+	// For auto-ID widgets, check against current path
+	return ctx.AutoID() == focusedID
 }
 
 // Focused returns the currently focused widget, or nil if none.
@@ -122,19 +123,20 @@ func (ctx BuildContext) ActiveKeybinds() []Keybind {
 }
 
 // IsHovered returns true if the given widget is currently being hovered.
-// The widget must implement Identifiable for hover comparison.
+// Works with both explicit IDs (via Identifiable) and auto-generated IDs.
 func (ctx BuildContext) IsHovered(widget Widget) bool {
 	hoveredID := ctx.HoveredID()
 	if hoveredID == "" {
 		return false
 	}
 
-	// Compare by ID to avoid issues with incomparable types (e.g., slices in Column)
-	if identifiable, ok := widget.(Identifiable); ok {
+	// Check if widget has an explicit ID
+	if identifiable, ok := widget.(Identifiable); ok && identifiable.WidgetID() != "" {
 		return identifiable.WidgetID() == hoveredID
 	}
 
-	return false
+	// For auto-ID widgets, check against current path
+	return ctx.AutoID() == hoveredID
 }
 
 // Hovered returns the currently hovered widget, or nil if none.
