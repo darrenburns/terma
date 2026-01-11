@@ -33,6 +33,10 @@ type TodoApp struct {
 	themeScrollState *t.ScrollState
 	originalTheme    string
 
+	// Celebration animation state
+	celebrationAngle *t.Animation[float64]
+	wasCelebrating   bool // Track previous celebration state
+
 	// ID counter for generating unique task IDs
 	nextID int
 }
@@ -52,7 +56,7 @@ func NewTodoApp() *TodoApp {
 		{ID: "task-9", Title: "Become a morning person (unlikely)", Completed: false, CreatedAt: now},
 	}
 
-	return &TodoApp{
+	app := &TodoApp{
 		tasks:            t.NewListState(initialTasks),
 		inputState:       t.NewTextInputState(""),
 		scrollState:      t.NewScrollState(),
@@ -63,6 +67,23 @@ func NewTodoApp() *TodoApp {
 		themeScrollState: t.NewScrollState(),
 		nextID:           10,
 	}
+
+	// Initialize celebration animation (loops continuously when started)
+	app.celebrationAngle = t.NewAnimation(t.AnimationConfig[float64]{
+		From:     0,
+		To:       360,
+		Duration: 4 * time.Second,
+		Easing:   t.EaseLinear,
+		OnComplete: func() {
+			// Loop while still celebrating
+			if app.isAllDone() {
+				app.celebrationAngle.Reset()
+				app.celebrationAngle.Start()
+			}
+		},
+	})
+
+	return app
 }
 
 // generateID creates a unique ID for a new task.
@@ -72,10 +93,36 @@ func (a *TodoApp) generateID() string {
 	return id
 }
 
+// isAllDone returns true if all tasks are completed and there's at least one task.
+func (a *TodoApp) isAllDone() bool {
+	tasks := a.tasks.GetItems()
+	if len(tasks) == 0 {
+		return false
+	}
+	for _, task := range tasks {
+		if !task.Completed {
+			return false
+		}
+	}
+	return true
+}
+
 // Build implements the Widget interface.
 func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
 	bgColor := theme.Background
+
+	// Check celebration state and manage animation
+	celebrating := a.isAllDone()
+	if celebrating && !a.wasCelebrating {
+		// Just completed all tasks - start celebration
+		a.celebrationAngle.Reset()
+		a.celebrationAngle.Start()
+	} else if !celebrating && a.wasCelebrating {
+		// No longer all done - stop celebration
+		a.celebrationAngle.Stop()
+	}
+	a.wasCelebrating = celebrating
 
 	// Request focus on edit input when editing starts
 	if a.editingIndex.Get() >= 0 {
@@ -117,23 +164,54 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider) t.Widget {
 	theme := ctx.Theme()
 
+	// Get celebration animation state
+	celebrating := a.isAllDone()
+	angle := a.celebrationAngle.Value().Get()
+
+	// Build border based on celebration state
+	var border t.Border
+	if celebrating {
+		// Celebration mode: rotating success gradient with subtle background fade
+		border = t.Border{
+			Style: t.BorderRounded,
+			Decorations: []t.BorderDecoration{
+				{"All done!", t.DecorationTopLeft, theme.Success},
+			},
+			Color: t.NewGradient(
+				theme.Primary,
+				theme.Secondary,
+				theme.Background,
+				theme.Background,
+				theme.Background,
+				theme.Background,
+				theme.Background,
+				theme.Background,
+				theme.Primary,
+				theme.Secondary,
+			).WithAngle(angle),
+		}
+	} else {
+		// Normal mode: static gradient
+		border = t.Border{
+			Style: t.BorderRounded,
+			Decorations: []t.BorderDecoration{
+				{"Things need doing", t.DecorationTopLeft, t.NewGradient(theme.Primary, theme.Primary.WithAlpha(0.5)).WithAngle(90)},
+			},
+			Color: t.NewGradient(
+				theme.Surface.Lighten(0.2),
+				theme.Background,
+			).WithAngle(0),
+		}
+	}
+
 	return t.Column{
 		Width:   t.Flex(1),
 		Height:  t.Flex(1),
 		Spacing: 1,
 		Style: t.Style{
 			BackgroundColor: bgColor,
-			Border: t.Border{
-				Style: t.BorderRounded,
-				Decorations: []t.BorderDecoration{
-					{"Things need doing", t.DecorationTopLeft, t.NewGradient(theme.Primary, theme.Primary.WithAlpha(0.5)).WithAngle(90)},
-				},
-				Color: t.NewGradient(
-					theme.Surface.Lighten(0.2),
-					theme.Background,
-				).WithAngle(0),
-			},
-			Padding: t.EdgeInsetsXY(2, 1),
+			Border:          border,
+			Padding:         t.EdgeInsetsXY(2, 1),
 		},
 		Children: []t.Widget{
 			a.buildInputRow(theme),
@@ -309,7 +387,7 @@ func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 			Position:      t.FloatPositionCenter,
 			Modal:         true,
 			OnDismiss:     a.dismissThemePicker,
-			BackdropColor: t.Hex("#000000").WithAlpha(0.25),
+			BackdropColor: t.Hex("#000000").WithAlpha(0.1),
 		},
 		Child: t.Column{
 			Spacing: 1,
@@ -391,7 +469,7 @@ func (a *TodoApp) buildStatusBar(theme t.ThemeData) t.Widget {
 	if len(tasks) == 0 {
 		status = "No tasks yet"
 	} else if active == 0 {
-		status = "All done!"
+		status = ""
 	} else {
 		itemWord := "tasks"
 		if active == 1 {
