@@ -41,26 +41,20 @@ func (d *GradientDemo) Build(ctx t.BuildContext) t.Widget {
 }
 
 func header() t.Widget {
-	title := "GRADIENT BACKGROUNDS"
-
-	gradient := t.NewGradient(
-		t.Hex("#f472b6"), // Pink
-		t.Hex("#c084fc"), // Purple
-		t.Hex("#60a5fa"), // Blue
-	)
-
-	colors := gradient.Steps(len(title))
-	var spans []t.Span
-	for i, ch := range title {
-		spans = append(spans, t.StyledSpan(string(ch), t.SpanStyle{
-			Foreground: colors[i],
-			Bold:       true,
-		}))
-	}
-
 	return t.Column{
 		Children: []t.Widget{
-			t.Text{Spans: spans, Wrap: t.WrapNone},
+			// Gradient text using ForegroundColor as a gradient
+			t.Text{
+				Content: "GRADIENT BACKGROUNDS",
+				Style: t.Style{
+					ForegroundColor: t.NewGradient(
+						t.Hex("#ff0080"), // Hot pink
+						t.Hex("#00ffff"), // Cyan
+					).WithAngle(90),
+					Bold: true,
+				},
+				Wrap: t.WrapNone,
+			},
 			t.Text{
 				Content: "Arbitrary-angle gradients with transparency support",
 				Style:   t.Style{ForegroundColor: t.Hex("#94a3b8")},

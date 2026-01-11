@@ -93,7 +93,7 @@ func BorderSubtitleRight(text string) BorderDecoration {
 // Border defines the border appearance for a widget.
 type Border struct {
 	Style       BorderStyle
-	Color       Color
+	Color       ColorProvider // Can be Color or Gradient
 	Decorations []BorderDecoration
 }
 
@@ -136,7 +136,7 @@ const (
 
 // Style defines the visual appearance of a widget.
 type Style struct {
-	ForegroundColor Color
+	ForegroundColor ColorProvider // Can be Color or Gradient
 	BackgroundColor ColorProvider // Can be Color or Gradient
 
 	// Text attributes
@@ -158,8 +158,9 @@ type Style struct {
 
 // IsZero returns true if the style has no values set.
 func (s Style) IsZero() bool {
+	fgSet := s.ForegroundColor != nil && s.ForegroundColor.IsSet()
 	bgSet := s.BackgroundColor != nil && s.BackgroundColor.IsSet()
-	return !s.ForegroundColor.IsSet() &&
+	return !fgSet &&
 		!bgSet &&
 		!s.Bold &&
 		!s.Faint &&

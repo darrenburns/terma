@@ -45,27 +45,20 @@ func (d *ColorDemo) Build(ctx t.BuildContext) t.Widget {
 }
 
 func header() t.Widget {
-	title := "TERMA COLOR API"
-
-	// Create a subtle gradient for the title
-	gradient := t.NewGradient(
-		t.Hex("#10B981"), // Emerald
-		t.Hex("#3B82F6"), // Blue
-	)
-
-	// Apply gradient colors to each character
-	colors := gradient.Steps(len(title))
-	var spans []t.Span
-	for i, ch := range title {
-		spans = append(spans, t.StyledSpan(string(ch), t.SpanStyle{
-			Foreground: colors[i],
-			Bold:       true,
-		}))
-	}
-
 	return t.Column{
 		Children: []t.Widget{
-			t.Text{Spans: spans, Wrap: t.WrapNone},
+			// Gradient text using ForegroundColor as a gradient
+			t.Text{
+				Content: "TERMA COLOR API",
+				Style: t.Style{
+					ForegroundColor: t.NewGradient(
+						t.Hex("#00ff88"), // Bright green
+						t.Hex("#00aaff"), // Bright blue
+					).WithAngle(90),
+					Bold: true,
+				},
+				Wrap: t.WrapNone,
+			},
 			t.Text{
 				Content: "A beautiful, fluent color manipulation API",
 				Style:   t.Style{ForegroundColor: t.Hex("#94A3B8")},

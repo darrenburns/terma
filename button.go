@@ -60,10 +60,10 @@ func (b *Button) Build(ctx BuildContext) Widget {
 	style := b.Style
 
 	// Apply theme defaults if no explicit colors set
-	if !style.ForegroundColor.IsSet() {
+	if style.ForegroundColor == nil || !style.ForegroundColor.IsSet() {
 		style.ForegroundColor = theme.Text
 	}
-	if !style.BackgroundColor.IsSet() {
+	if style.BackgroundColor == nil || !style.BackgroundColor.IsSet() {
 		style.BackgroundColor = theme.Surface
 	}
 
