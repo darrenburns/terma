@@ -8,11 +8,11 @@ Widgets are the building blocks of Terma applications. Everything in Terma is a 
 
 Widgets that arrange and position other widgets:
 
-- [Row](../layout.md) - Arrange children horizontally
-- [Column](../layout.md) - Arrange children vertically
-- [Dock](../layout.md) - Edge-docking layout
+- [Row & Column](../layout/row-column.md) - Arrange children linearly
+- [Dock](../layout/dock.md) - Edge-docking layout
+- [Scrollable](../layout/scrollable.md) - Scrolling container
 - [Floating](../floating.md) - Overlays, modals, and dropdowns
-- [Spacer](spacer.md) - Empty space for layout control
+- [Spacer](../layout/spacer.md) - Empty space for layout control
 
 ### Content Widgets
 

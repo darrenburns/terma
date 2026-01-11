@@ -39,9 +39,13 @@ nav:
   - Widgets:
     - Overview: widgets/index.md
     - ProgressBar: widgets/progressbar.md
-    - Spacer: widgets/spacer.md
+  - Layout:
+    - Overview: layout/index.md
+    - Row & Column: layout/row-column.md
+    - Dock: layout/dock.md
+    - Scrollable: layout/scrollable.md
+    - Spacer: layout/spacer.md
   - Signals: signals.md
-  - Layout: layout.md
   - Styling: styling.md
   - Focus & Keyboard: focus-keyboard.md
   - Conditional Rendering: conditional.md
