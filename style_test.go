@@ -236,3 +236,158 @@ func TestStyle_IsZero_FalseWhenBorderSet(t *testing.T) {
 		t.Error("expected IsZero() = false when border is set")
 	}
 }
+
+// New Border Type Tests
+
+func TestBorder_AllStyles_WidthReturnsOne(t *testing.T) {
+	white := RGB(255, 255, 255)
+	tests := []struct {
+		name   string
+		border Border
+	}{
+		{"Square", SquareBorder(white)},
+		{"Rounded", RoundedBorder(white)},
+		{"Double", DoubleBorder(white)},
+		{"Heavy", HeavyBorder(white)},
+		{"Dashed", DashedBorder(white)},
+		{"Ascii", AsciiBorder(white)},
+		{"Inner", InnerBorder(white)},
+		{"Outer", OuterBorder(white)},
+		{"Thick", ThickBorder(white)},
+		{"HKey", HKeyBorder(white)},
+		{"VKey", VKeyBorder(white)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.border.Width() != 1 {
+				t.Errorf("%s border Width() = %d, want 1", tt.name, tt.border.Width())
+			}
+		})
+	}
+}
+
+func TestBorder_AllStyles_IsZeroReturnsFalse(t *testing.T) {
+	white := RGB(255, 255, 255)
+	tests := []struct {
+		name   string
+		border Border
+	}{
+		{"Square", SquareBorder(white)},
+		{"Rounded", RoundedBorder(white)},
+		{"Double", DoubleBorder(white)},
+		{"Heavy", HeavyBorder(white)},
+		{"Dashed", DashedBorder(white)},
+		{"Ascii", AsciiBorder(white)},
+		{"Inner", InnerBorder(white)},
+		{"Outer", OuterBorder(white)},
+		{"Thick", ThickBorder(white)},
+		{"HKey", HKeyBorder(white)},
+		{"VKey", VKeyBorder(white)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.border.IsZero() {
+				t.Errorf("%s border IsZero() = true, want false", tt.name)
+			}
+		})
+	}
+}
+
+func TestGetBorderCharSet_ReturnsCorrectCharacters(t *testing.T) {
+	tests := []struct {
+		style   BorderStyle
+		topLeft string
+		top     string
+		left    string
+	}{
+		{BorderSquare, "┌", "─", "│"},
+		{BorderRounded, "╭", "─", "│"},
+		{BorderDouble, "╔", "═", "║"},
+		{BorderHeavy, "┏", "━", "┃"},
+		{BorderDashed, "┏", "╍", "╏"},
+		{BorderAscii, "+", "-", "|"},
+		{BorderInner, "▗", "▄", "▐"},
+		{BorderOuter, "▛", "▀", "▌"},
+		{BorderThick, "█", "▀", "█"},
+		{BorderHKey, "▔", "▔", " "},
+		{BorderVKey, "▏", " ", "▏"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.topLeft, func(t *testing.T) {
+			chars := GetBorderCharSet(tt.style)
+			if chars.TopLeft != tt.topLeft {
+				t.Errorf("TopLeft = %q, want %q", chars.TopLeft, tt.topLeft)
+			}
+			if chars.Top != tt.top {
+				t.Errorf("Top = %q, want %q", chars.Top, tt.top)
+			}
+			if chars.Left != tt.left {
+				t.Errorf("Left = %q, want %q", chars.Left, tt.left)
+			}
+		})
+	}
+}
+
+func TestGetBorderCharSet_BorderNone_ReturnsEmptyCharSet(t *testing.T) {
+	chars := GetBorderCharSet(BorderNone)
+
+	if chars.TopLeft != "" {
+		t.Errorf("expected empty TopLeft for BorderNone, got %q", chars.TopLeft)
+	}
+	if chars.Top != "" {
+		t.Errorf("expected empty Top for BorderNone, got %q", chars.Top)
+	}
+}
+
+func TestBorder_Constructors_SetCorrectStyle(t *testing.T) {
+	white := RGB(255, 255, 255)
+	tests := []struct {
+		name     string
+		border   Border
+		expected BorderStyle
+	}{
+		{"Square", SquareBorder(white), BorderSquare},
+		{"Rounded", RoundedBorder(white), BorderRounded},
+		{"Double", DoubleBorder(white), BorderDouble},
+		{"Heavy", HeavyBorder(white), BorderHeavy},
+		{"Dashed", DashedBorder(white), BorderDashed},
+		{"Ascii", AsciiBorder(white), BorderAscii},
+		{"Inner", InnerBorder(white), BorderInner},
+		{"Outer", OuterBorder(white), BorderOuter},
+		{"Thick", ThickBorder(white), BorderThick},
+		{"HKey", HKeyBorder(white), BorderHKey},
+		{"VKey", VKeyBorder(white), BorderVKey},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.border.Style != tt.expected {
+				t.Errorf("%s border Style = %d, want %d", tt.name, tt.border.Style, tt.expected)
+			}
+		})
+	}
+}
+
+func TestBorder_Constructors_SetColor(t *testing.T) {
+	red := RGB(255, 0, 0)
+	border := DoubleBorder(red)
+
+	if border.Color != red {
+		t.Errorf("expected border color to be set")
+	}
+}
+
+func TestBorder_Constructors_AcceptDecorations(t *testing.T) {
+	white := RGB(255, 255, 255)
+	title := BorderTitle("Test")
+	subtitle := BorderSubtitle("Sub")
+
+	border := DoubleBorder(white, title, subtitle)
+
+	if len(border.Decorations) != 2 {
+		t.Errorf("expected 2 decorations, got %d", len(border.Decorations))
+	}
+}
