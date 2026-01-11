@@ -137,7 +137,7 @@ const (
 // Style defines the visual appearance of a widget.
 type Style struct {
 	ForegroundColor Color
-	BackgroundColor Color
+	BackgroundColor ColorProvider // Can be Color or Gradient
 
 	// Text attributes
 	Bold           bool
@@ -158,8 +158,9 @@ type Style struct {
 
 // IsZero returns true if the style has no values set.
 func (s Style) IsZero() bool {
+	bgSet := s.BackgroundColor != nil && s.BackgroundColor.IsSet()
 	return !s.ForegroundColor.IsSet() &&
-		!s.BackgroundColor.IsSet() &&
+		!bgSet &&
 		!s.Bold &&
 		!s.Faint &&
 		!s.Italic &&

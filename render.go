@@ -58,10 +58,11 @@ type RenderContext struct {
 	buildContext BuildContext
 	// Widget registry for tracking widget positions
 	widgetRegistry *WidgetRegistry
-	// Returns inherited background color at absolute screen Y.
-	// Used for transparent backgrounds to sample from underlying widgets (e.g., GradientBox).
+	// Returns inherited background color at absolute screen position.
+	// Used for transparent backgrounds to sample from underlying widgets with gradient/solid backgrounds.
+	// Takes both X and Y to support arbitrary-angle gradients.
 	// Nil means no inherited background (use terminal default).
-	inheritedBgAt func(absY int) Color
+	inheritedBgAt func(absX, absY int) Color
 }
 
 // NewRenderContext creates a root render context for the terminal.
@@ -210,29 +211,29 @@ func (ctx *RenderContext) FillRect(x, y, width, height int, bgColor Color) {
 			continue
 		}
 
-		// Determine effective background color for this row
-		effectiveBg := bgColor
-		if !bgColor.IsOpaque() {
-			// Semi-transparent: blend over inherited background
-			inherited := Color{}
-			if ctx.inheritedBgAt != nil {
-				inherited = ctx.inheritedBgAt(absY)
-			}
-			if !inherited.IsSet() {
-				inherited = Black
-			}
-			effectiveBg = bgColor.BlendOver(inherited)
-		}
-
-		cellStyle := uv.Style{
-			Bg: effectiveBg.toANSI(),
-		}
-
 		for col := 0; col < width; col++ {
 			absX := ctx.X + x + col
 			// Skip columns outside horizontal clip bounds
 			if absX < ctx.clip.X || absX >= ctx.clip.X+ctx.clip.Width {
 				continue
+			}
+
+			// Determine effective background color for this cell
+			effectiveBg := bgColor
+			if !bgColor.IsOpaque() {
+				// Semi-transparent: blend over inherited background
+				inherited := Color{}
+				if ctx.inheritedBgAt != nil {
+					inherited = ctx.inheritedBgAt(absX, absY)
+				}
+				if !inherited.IsSet() {
+					inherited = Black
+				}
+				effectiveBg = bgColor.BlendOver(inherited)
+			}
+
+			cellStyle := uv.Style{
+				Bg: effectiveBg.toANSI(),
 			}
 			cell := &uv.Cell{Content: " ", Width: 1, Style: cellStyle}
 			ctx.terminal.SetCell(absX, absY, cell)
@@ -329,7 +330,7 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		// Use inherited background if available
 		var bg Color
 		if ctx.inheritedBgAt != nil {
-			bg = ctx.inheritedBgAt(absY)
+			bg = ctx.inheritedBgAt(absX, absY)
 		}
 		// Blend foreground if semi-transparent
 		effectiveFg := blendForeground(fgColor, bg)
@@ -470,21 +471,24 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 		return
 	}
 
-	// Determine background color: use inherited if no explicit background,
-	// or blend if semi-transparent
-	bg := style.BackgroundColor
-	if bg.IsSet() && !bg.IsOpaque() {
-		// Semi-transparent: blend over inherited background
-		inherited := Color{}
-		if ctx.inheritedBgAt != nil {
-			inherited = ctx.inheritedBgAt(absY)
+	// Determine background color: sample from ColorProvider if set
+	var bg Color
+	if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
+		// Sample at (0,0) with size (1,1) - for text, we use a single color
+		bg = style.BackgroundColor.ColorAt(1, 1, 0, 0)
+		if !bg.IsOpaque() {
+			// Semi-transparent: blend over inherited background
+			inherited := Color{}
+			if ctx.inheritedBgAt != nil {
+				inherited = ctx.inheritedBgAt(absX, absY)
+			}
+			if !inherited.IsSet() {
+				inherited = Black
+			}
+			bg = bg.BlendOver(inherited)
 		}
-		if !inherited.IsSet() {
-			inherited = Black
-		}
-		bg = bg.BlendOver(inherited)
-	} else if !bg.IsSet() && ctx.inheritedBgAt != nil {
-		bg = ctx.inheritedBgAt(absY)
+	} else if ctx.inheritedBgAt != nil {
+		bg = ctx.inheritedBgAt(absX, absY)
 	}
 
 	// Blend foreground if semi-transparent
@@ -563,22 +567,23 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 		fg = baseStyle.ForegroundColor
 	}
 	bg := span.Style.Background
-	if !bg.IsSet() {
-		bg = baseStyle.BackgroundColor
+	if !bg.IsSet() && baseStyle.BackgroundColor != nil && baseStyle.BackgroundColor.IsSet() {
+		// Sample from base style's ColorProvider
+		bg = baseStyle.BackgroundColor.ColorAt(1, 1, 0, 0)
 	}
 	// Handle semi-transparent backgrounds or fall back to inherited
 	if bg.IsSet() && !bg.IsOpaque() {
 		// Semi-transparent: blend over inherited background
 		inherited := Color{}
 		if ctx.inheritedBgAt != nil {
-			inherited = ctx.inheritedBgAt(absY)
+			inherited = ctx.inheritedBgAt(absX, absY)
 		}
 		if !inherited.IsSet() {
 			inherited = Black
 		}
 		bg = bg.BlendOver(inherited)
 	} else if !bg.IsSet() && ctx.inheritedBgAt != nil {
-		bg = ctx.inheritedBgAt(absY)
+		bg = ctx.inheritedBgAt(absX, absY)
 	}
 
 	// Blend foreground if semi-transparent
@@ -750,11 +755,15 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 	borderX, borderY := box.BorderOrigin()    // Offset from margin-box to border-box
 	contentX, contentY := box.ContentOrigin() // Offset from margin-box to content
 
-	// Absolute screen positions
+	// Positions relative to context origin (used for SubContext calls)
 	absBorderX := screenX + borderX
 	absBorderY := screenY + borderY
 	absContentX := screenX + contentX
 	absContentY := screenY + contentY
+
+	// True absolute screen positions (for gradient sampling and cell rendering)
+	trueAbsBorderX := ctx.X + absBorderX
+	trueAbsBorderY := ctx.Y + absBorderY
 
 	// Extract style for painting
 	var style Style
@@ -762,19 +771,64 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 		style = styled.GetStyle()
 	}
 
-	// 1. Fill background (border-box area)
-	if style.BackgroundColor.IsSet() {
-		bgCtx := ctx.SubContext(absBorderX, absBorderY, box.Width, box.Height)
-		bgCtx.FillRect(0, 0, box.Width, box.Height, style.BackgroundColor)
+	// 1. Fill background (border-box area) using ColorProvider
+	if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
+		for row := 0; row < box.Height; row++ {
+			absY := trueAbsBorderY + row
+			if absY < ctx.clip.Y || absY >= ctx.clip.Y+ctx.clip.Height {
+				continue
+			}
+
+			for col := 0; col < box.Width; col++ {
+				absX := trueAbsBorderX + col
+				if absX < ctx.clip.X || absX >= ctx.clip.X+ctx.clip.Width {
+					continue
+				}
+
+				// Sample color at this position (works for both solid colors and gradients)
+				cellColor := style.BackgroundColor.ColorAt(box.Width, box.Height, col, row)
+
+				// Blend with inherited background if not opaque
+				if !cellColor.IsOpaque() && ctx.inheritedBgAt != nil {
+					inherited := ctx.inheritedBgAt(absX, absY)
+					if !inherited.IsSet() {
+						inherited = Black
+					}
+					cellColor = cellColor.BlendOver(inherited)
+				}
+
+				cellStyle := uv.Style{Bg: cellColor.toANSI()}
+				cell := &uv.Cell{Content: " ", Width: 1, Style: cellStyle}
+				ctx.terminal.SetCell(absX, absY, cell)
+			}
+		}
 	}
 
 	// 2. Draw border
 	if !style.Border.IsZero() {
 		borderCtx := ctx.SubContext(absBorderX, absBorderY, box.Width, box.Height)
-		// Set inherited background for border cells
-		if style.BackgroundColor.IsSet() {
-			widgetBg := style.BackgroundColor
-			borderCtx.inheritedBgAt = func(absY int) Color { return widgetBg }
+		// Set inherited background for border cells using ColorProvider
+		if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
+			bg := style.BackgroundColor
+			w, h := box.Width, box.Height
+			originX, originY := trueAbsBorderX, trueAbsBorderY
+			parentCallback := ctx.inheritedBgAt
+
+			borderCtx.inheritedBgAt = func(absX, absY int) Color {
+				relX := absX - originX
+				relY := absY - originY
+				cellColor := bg.ColorAt(w, h, relX, relY)
+
+				// Blend with parent if not opaque
+				if !cellColor.IsOpaque() && parentCallback != nil {
+					inherited := parentCallback(absX, absY)
+					if !inherited.IsSet() {
+						inherited = Black
+					}
+					cellColor = cellColor.BlendOver(inherited)
+				}
+				return cellColor
+			}
 		}
 		borderCtx.DrawBorder(0, 0, box.Width, box.Height, style.Border)
 	}
@@ -782,23 +836,27 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 	// 3. Render widget content at content origin
 	if renderable, ok := tree.Widget.(Renderable); ok {
 		contentCtx := ctx.SubContext(absContentX, absContentY, box.ContentWidth(), box.ContentHeight())
-		// Set inherited background for children
-		if style.BackgroundColor.IsSet() {
-			widgetBg := style.BackgroundColor
+		// Set inherited background for content using ColorProvider
+		if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
+			bg := style.BackgroundColor
+			w, h := box.Width, box.Height
+			originX, originY := trueAbsBorderX, trueAbsBorderY
 			parentCallback := ctx.inheritedBgAt
-			if widgetBg.IsOpaque() {
-				contentCtx.inheritedBgAt = func(absY int) Color { return widgetBg }
-			} else {
-				contentCtx.inheritedBgAt = func(absY int) Color {
-					inherited := Black
-					if parentCallback != nil {
-						inherited = parentCallback(absY)
-					}
+
+			contentCtx.inheritedBgAt = func(absX, absY int) Color {
+				relX := absX - originX
+				relY := absY - originY
+				cellColor := bg.ColorAt(w, h, relX, relY)
+
+				// Blend with parent if not opaque
+				if !cellColor.IsOpaque() && parentCallback != nil {
+					inherited := parentCallback(absX, absY)
 					if !inherited.IsSet() {
 						inherited = Black
 					}
-					return widgetBg.BlendOver(inherited)
+					cellColor = cellColor.BlendOver(inherited)
 				}
+				return cellColor
 			}
 		}
 		renderable.Render(contentCtx)
@@ -824,23 +882,27 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 			childClipCtx = ctx.SubContext(absContentX, absContentY, usableWidth, usableHeight)
 		}
 
-		// Set inherited background for children
-		if style.BackgroundColor.IsSet() {
-			widgetBg := style.BackgroundColor
+		// Set inherited background for children using ColorProvider
+		if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
+			bg := style.BackgroundColor
+			w, h := box.Width, box.Height
+			originX, originY := trueAbsBorderX, trueAbsBorderY
 			parentCallback := ctx.inheritedBgAt
-			if widgetBg.IsOpaque() {
-				childClipCtx.inheritedBgAt = func(absY int) Color { return widgetBg }
-			} else {
-				childClipCtx.inheritedBgAt = func(absY int) Color {
-					inherited := Black
-					if parentCallback != nil {
-						inherited = parentCallback(absY)
-					}
+
+			childClipCtx.inheritedBgAt = func(absX, absY int) Color {
+				relX := absX - originX
+				relY := absY - originY
+				cellColor := bg.ColorAt(w, h, relX, relY)
+
+				// Blend with parent if not opaque
+				if !cellColor.IsOpaque() && parentCallback != nil {
+					inherited := parentCallback(absX, absY)
 					if !inherited.IsSet() {
 						inherited = Black
 					}
-					return widgetBg.BlendOver(inherited)
+					cellColor = cellColor.BlendOver(inherited)
 				}
+				return cellColor
 			}
 		}
 
@@ -870,9 +932,15 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 
 			// Create context for scrollbar (at content area, not affected by scroll offset)
 			scrollbarCtx := ctx.SubContext(absContentX, absContentY, box.ContentWidth(), box.ContentHeight())
-			if style.BackgroundColor.IsSet() {
-				widgetBg := style.BackgroundColor
-				scrollbarCtx.inheritedBgAt = func(absY int) Color { return widgetBg }
+			if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
+				bg := style.BackgroundColor
+				w, h := box.Width, box.Height
+				originX, originY := trueAbsBorderX, trueAbsBorderY
+				scrollbarCtx.inheritedBgAt = func(absX, absY int) Color {
+					relX := absX - originX
+					relY := absY - originY
+					return bg.ColorAt(w, h, relX, relY)
+				}
 			}
 			scrollable.renderScrollbar(scrollbarCtx, box.ScrollOffsetY, focused)
 		}

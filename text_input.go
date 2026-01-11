@@ -515,12 +515,13 @@ func (t TextInput) Render(ctx *RenderContext) {
 	if !baseStyle.ForegroundColor.IsSet() {
 		baseStyle.ForegroundColor = theme.Text
 	}
-	if !baseStyle.BackgroundColor.IsSet() {
+	if baseStyle.BackgroundColor == nil || !baseStyle.BackgroundColor.IsSet() {
 		baseStyle.BackgroundColor = theme.Surface
 	}
 
-	// Fill background
-	ctx.FillRect(0, 0, viewportWidth, 1, baseStyle.BackgroundColor)
+	// Fill background - sample from ColorProvider
+	bgColor := baseStyle.BackgroundColor.ColorAt(viewportWidth, 1, 0, 0)
+	ctx.FillRect(0, 0, viewportWidth, 1, bgColor)
 
 	// Show placeholder if empty and not focused
 	if len(graphemes) == 0 && !focused {
