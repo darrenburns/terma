@@ -39,7 +39,7 @@ No manual redraws. No event wiring. Just declare your UI and let Terma handle th
 ## Documentation
 
 - [Getting Started](getting-started.md) — Installation and building your first app
-- [Widgets](widgets.md) — Overview of available widgets
+- [Widgets](widgets/index.md) — Overview of available widgets
 - [Signals](signals.md) — Reactive state management
 - [Layout](layout.md) — Layout system and dimensions
 - [Styling](styling.md) — Colors, padding, margins, and theming
