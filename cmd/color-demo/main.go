@@ -1,8 +1,3 @@
-//go:build ignore
-// +build ignore
-
-// DISABLED: Uses t.GradientBox which doesn't exist yet
-
 package main
 
 import (
@@ -16,36 +11,28 @@ type ColorDemo struct {
 }
 
 func (d *ColorDemo) Build(ctx t.BuildContext) t.Widget {
-	return t.GradientBox{
-		Gradient: t.NewGradient(
-			t.Hex("#0F172A"), // Slate 900
-			t.Hex("#1E293B"), // Slate 800
-		),
-		Width:  t.Flex(1),
-		Height: t.Flex(1),
-		Child: t.Scrollable{
-			ID:                  "color-demo-scroll",
-			State:               d.scrollState,
-			Width:               t.Flex(1),
-			Height:              t.Flex(1),
-			ScrollbarThumbColor: t.Hex("#475569"), // Slate 600
-			ScrollbarTrackColor: t.Hex("#1E293B"), // Slate 800 (matches gradient)
-			Child: t.Column{
-				Spacing: 1,
-				Style: t.Style{
-					Padding: t.EdgeInsetsXY(2, 1),
-				},
-				Children: []t.Widget{
-					header(),
-					constructorsSection(),
-					lightnessSection(),
-					saturationSection(),
-					harmoniesSection(),
-					blendingSection(),
-					autoTextSection(),
-					accessibilitySection(),
-					transparencySection(),
-				},
+	return t.Scrollable{
+		ID:                  "color-demo-scroll",
+		State:               d.scrollState,
+		Width:               t.Flex(1),
+		Height:              t.Flex(1),
+		ScrollbarThumbColor: t.Hex("#475569"), // Slate 600
+		ScrollbarTrackColor: t.Hex("#1E293B"), // Slate 800 (matches gradient)
+		Child: t.Column{
+			Spacing: 1,
+			Style: t.Style{
+				Padding: t.EdgeInsetsXY(2, 1),
+			},
+			Children: []t.Widget{
+				header(),
+				constructorsSection(),
+				lightnessSection(),
+				saturationSection(),
+				harmoniesSection(),
+				blendingSection(),
+				autoTextSection(),
+				accessibilitySection(),
+				transparencySection(),
 			},
 		},
 	}
