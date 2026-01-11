@@ -12,12 +12,18 @@ type ColorDemo struct {
 
 func (d *ColorDemo) Build(ctx t.BuildContext) t.Widget {
 	return t.Scrollable{
-		ID:                  "color-demo-scroll",
-		State:               d.scrollState,
-		Width:               t.Flex(1),
-		Height:              t.Flex(1),
+		ID:     "color-demo-scroll",
+		State:  d.scrollState,
+		Width:  t.Flex(1),
+		Height: t.Flex(1),
+		Style: t.Style{
+			BackgroundColor: t.NewGradient(
+				t.Hex("#334155"), // Slate 700 (lighter, at top-left)
+				t.Hex("#0F172A"), // Slate 900 (darker, at bottom-right)
+			).WithAngle(45),
+		},
 		ScrollbarThumbColor: t.Hex("#475569"), // Slate 600
-		ScrollbarTrackColor: t.Hex("#1E293B"), // Slate 800 (matches gradient)
+		ScrollbarTrackColor: t.Hex("#0F172A"), // Slate 900 (matches darker end of gradient)
 		Child: t.Column{
 			Spacing: 1,
 			Style: t.Style{

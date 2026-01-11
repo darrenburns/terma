@@ -9,11 +9,22 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+// ColorProvider can provide a color at any position within a region.
+// Implemented by Color (returns constant) and Gradient (interpolates by position).
+type ColorProvider interface {
+	// ColorAt returns the color at position (x, y) within a region of given width and height.
+	ColorAt(width, height, x, y int) Color
+	// IsSet returns true if this provider was explicitly set.
+	IsSet() bool
+}
+
 // Color represents a terminal color with full RGB, HSL, and alpha support.
 // The zero value (Color{}) is transparent/default - inherits from terminal.
 // Alpha values < 1.0 enable transparency:
 //   - For background colors: blends with inherited background
 //   - For foreground colors: blends with effective background, creating faded text
+//
+// Color implements ColorProvider by returning itself at any position.
 type Color struct {
 	r, g, b uint8
 	a       float64 // 0.0 = fully transparent, 1.0 = fully opaque
@@ -122,6 +133,12 @@ func (c Color) Hex() string {
 // IsSet returns true if the color was explicitly set.
 func (c Color) IsSet() bool {
 	return c.set
+}
+
+// ColorAt returns the color unchanged (solid colors are constant across the region).
+// This implements ColorProvider.
+func (c Color) ColorAt(width, height, x, y int) Color {
+	return c
 }
 
 // Alpha returns the alpha value (0.0-1.0).
@@ -320,12 +337,19 @@ func (c Color) AutoText() Color {
 // --- Gradient ---
 
 // Gradient represents a smooth color gradient between multiple color stops.
+// It implements ColorProvider to enable gradient backgrounds via Style.BackgroundColor.
+//
+// Example:
+//
+//	Style{BackgroundColor: NewGradient(Hex("#0F172A"), Hex("#1E293B")).WithAngle(45)}
 type Gradient struct {
 	colors []Color
+	angle  float64 // degrees: 0=top-to-bottom, 90=left-to-right
 }
 
 // NewGradient creates a gradient from two or more colors.
 // Colors are evenly distributed along the gradient.
+// Default angle is 0 (top-to-bottom). Use WithAngle() to change direction.
 func NewGradient(colors ...Color) Gradient {
 	if len(colors) < 2 {
 		// Need at least 2 colors for a gradient
@@ -335,6 +359,75 @@ func NewGradient(colors ...Color) Gradient {
 		return Gradient{colors: []Color{RGB(0, 0, 0), RGB(255, 255, 255)}}
 	}
 	return Gradient{colors: colors}
+}
+
+// WithAngle returns a copy of the gradient with the specified angle in degrees.
+// 0 = top-to-bottom (vertical), 90 = left-to-right (horizontal), 45 = diagonal.
+func (g Gradient) WithAngle(degrees float64) Gradient {
+	g.angle = degrees
+	return g
+}
+
+// IsSet returns true if the gradient has colors.
+// This implements ColorProvider.
+func (g Gradient) IsSet() bool {
+	return len(g.colors) > 0
+}
+
+// ColorAt returns the interpolated color at position (x, y) within the region.
+// This implements ColorProvider.
+func (g Gradient) ColorAt(width, height, x, y int) Color {
+	if len(g.colors) == 0 {
+		return Color{}
+	}
+
+	// Handle single-cell case: use midpoint
+	if width <= 1 && height <= 1 {
+		return g.At(0.5)
+	}
+
+	angleRad := g.angle * math.Pi / 180
+	cosA := math.Cos(angleRad)
+	sinA := math.Sin(angleRad)
+
+	// Calculate projections at all four corners to find min/max
+	// Use (width-1, height-1) as the far corner since we're working with cell indices
+	w := float64(width - 1)
+	h := float64(height - 1)
+	if w < 0 {
+		w = 0
+	}
+	if h < 0 {
+		h = 0
+	}
+
+	// Projections at corners: (0,0), (w,0), (0,h), (w,h)
+	p00 := 0.0
+	p10 := w * sinA
+	p01 := h * cosA
+	p11 := w*sinA + h*cosA
+
+	minProj := min(p00, p10, p01, p11)
+	maxProj := max(p00, p10, p01, p11)
+
+	// Avoid division by zero
+	if maxProj == minProj {
+		return g.At(0.5)
+	}
+
+	// Project current position and normalize to [0, 1]
+	proj := float64(x)*sinA + float64(y)*cosA
+	t := (proj - minProj) / (maxProj - minProj)
+
+	// Clamp t to [0, 1]
+	if t < 0 {
+		t = 0
+	}
+	if t > 1 {
+		t = 1
+	}
+
+	return g.At(t)
 }
 
 // At returns the color at position t along the gradient.

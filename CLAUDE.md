@@ -99,7 +99,6 @@ func main() {
 | `Dock` | Edge-docking layout (like WPF DockPanel) | `Top`, `Bottom`, `Left`, `Right`, `Body`, `DockOrder` |
 | `Scrollable` | Scrolling container with scrollbar | `Child`, `State` (required), `DisableScroll` |
 | `Floating` | Overlay/modal positioning | `Visible`, `Config`, `Child` |
-| `GradientBox` | Container with gradient background | `Gradient`, `Child` |
 | `Switcher` | Shows one keyed child at a time | `Active`, `Children` |
 
 ### Content Widgets

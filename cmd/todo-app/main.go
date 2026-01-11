@@ -1,8 +1,3 @@
-//go:build ignore
-// +build ignore
-
-// DISABLED: Uses t.Dock and t.GradientBox which don't exist yet
-
 package main
 
 import (
@@ -82,30 +77,28 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 		Width:  t.Flex(1),
 		Height: t.Flex(1),
 		Children: []t.Widget{
-			t.GradientBox{
-				Gradient: t.NewGradient(
-					theme.Primary.Darken(0.6),
-					theme.Background,
-				),
+			t.Dock{
 				Width:  t.Flex(1),
 				Height: t.Flex(1),
-				Child: t.Dock{
-					Style: t.Style{
-						Padding: t.EdgeInsetsXY(2, 1), // Horizontal and vertical padding
-					},
-					Top: []t.Widget{
-						a.buildHeader(theme),
-						t.Text{Content: ""}, // Spacer
-						a.buildInputRow(theme),
-						t.Text{Content: ""}, // Spacer
-					},
-					Bottom: []t.Widget{
-						t.Text{Content: ""}, // Spacer
-						a.buildStatusBar(theme),
-						t.KeybindBar{},
-					},
-					Body: a.buildTaskList(ctx),
+				Style: t.Style{
+					BackgroundColor: t.NewGradient(
+						theme.Primary.Darken(0.6),
+						theme.Background,
+					),
+					Padding: t.EdgeInsetsXY(2, 1), // Horizontal and vertical padding
 				},
+				Top: []t.Widget{
+					a.buildHeader(theme),
+					t.Text{Content: ""}, // Spacer
+					a.buildInputRow(theme),
+					t.Text{Content: ""}, // Spacer
+				},
+				Bottom: []t.Widget{
+					t.Text{Content: ""}, // Spacer
+					a.buildStatusBar(theme),
+					t.KeybindBar{},
+				},
+				Body: a.buildTaskList(ctx),
 			},
 			a.buildThemePicker(theme),
 		},
