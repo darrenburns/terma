@@ -9,6 +9,13 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+// CellBuffer is the interface for cell-based rendering.
+// Both *uv.Terminal and *uv.Buffer satisfy this interface.
+type CellBuffer interface {
+	SetCell(x, y int, c *uv.Cell)
+	CellAt(x, y int) *uv.Cell
+}
+
 // blendForeground blends a semi-transparent foreground color over a background.
 // Returns the foreground unchanged if it's opaque or not set.
 func blendForeground(fg, bg Color) Color {
@@ -43,7 +50,7 @@ func toUVUnderline(u UnderlineStyle) uv.Underline {
 // RenderContext provides drawing primitives for widgets.
 // It tracks the current region where the widget should render.
 type RenderContext struct {
-	terminal *uv.Terminal
+	terminal CellBuffer
 	// Absolute position in terminal (may be outside clip for virtual/scrolled positioning)
 	X, Y int
 	// Available size for this widget's content
@@ -66,7 +73,7 @@ type RenderContext struct {
 }
 
 // NewRenderContext creates a root render context for the terminal.
-func NewRenderContext(terminal *uv.Terminal, width, height int, fc *FocusCollector, fm *FocusManager, bc BuildContext, wr *WidgetRegistry) *RenderContext {
+func NewRenderContext(terminal CellBuffer, width, height int, fc *FocusCollector, fm *FocusManager, bc BuildContext, wr *WidgetRegistry) *RenderContext {
 	return &RenderContext{
 		terminal:       terminal,
 		X:              0,
@@ -687,7 +694,7 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 
 // Renderer handles the widget tree rendering pipeline.
 type Renderer struct {
-	terminal       *uv.Terminal
+	terminal       CellBuffer
 	width          int
 	height         int
 	focusCollector *FocusCollector
@@ -702,7 +709,7 @@ type Renderer struct {
 }
 
 // NewRenderer creates a new renderer for the given terminal.
-func NewRenderer(terminal *uv.Terminal, width, height int, fm *FocusManager, focusedSignal AnySignal[Focusable], hoveredSignal AnySignal[Widget]) *Renderer {
+func NewRenderer(terminal CellBuffer, width, height int, fm *FocusManager, focusedSignal AnySignal[Focusable], hoveredSignal AnySignal[Widget]) *Renderer {
 	return &Renderer{
 		terminal:       terminal,
 		width:          width,
