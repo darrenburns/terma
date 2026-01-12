@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-
 	"terma"
 )
 
@@ -17,33 +16,37 @@ type App struct {
 }
 
 func (a *App) Build(ctx terma.BuildContext) terma.Widget {
-	return terma.Column{
-		Children: []terma.Widget{
-			terma.Text{Content: fmt.Sprintf("Main: %s  Cross: %s  Size: %dx%d",
-				mainAlignNames[a.mainAlign.Get()],
-				crossAlignNames[a.crossAlign.Get()],
-				a.width.Get(),
-				a.height.Get(),
-			)},
-			terma.Row{
-				ID:         "root",
-				Spacing:    2,
-				Width:      terma.Cells(a.width.Get()),
-				Height:     terma.Cells(a.height.Get()),
-				CrossAlign: a.crossAlign.Get(),
-				MainAlign:  a.mainAlign.Get(),
-				Style: terma.Style{
-					BackgroundColor: terma.Red,
-				},
-				Children: []terma.Widget{
-					terma.Text{Content: "World", Style: terma.Style{BackgroundColor: terma.Blue}},
-					terma.Text{Content: "!", Style: terma.Style{BackgroundColor: terma.Cyan}},
-					terma.Column{
-						Width:  terma.Cells(10),
-						Height: terma.Cells(6),
-						Style:  terma.Style{BackgroundColor: terma.Green},
-						Children: []terma.Widget{
-							terma.Text{Wrap: terma.WrapHard, Content: "Hello", Width: terma.Cells(4), Style: terma.Style{BackgroundColor: terma.Black}},
+	return terma.Dock{
+		Style:  terma.Style{BackgroundColor: terma.Blue},
+		Bottom: []terma.Widget{terma.KeybindBar{}},
+		Body: terma.Column{
+			Children: []terma.Widget{
+				terma.Text{Content: fmt.Sprintf("Main: %s  Cross: %s  Size: %dx%d",
+					mainAlignNames[a.mainAlign.Get()],
+					crossAlignNames[a.crossAlign.Get()],
+					a.width.Get(),
+					a.height.Get(),
+				)},
+				terma.Row{
+					ID:         "root",
+					Spacing:    2,
+					Width:      terma.Cells(a.width.Get()),
+					Height:     terma.Cells(a.height.Get()),
+					CrossAlign: a.crossAlign.Get(),
+					MainAlign:  a.mainAlign.Get(),
+					Style: terma.Style{
+						BackgroundColor: terma.Red,
+					},
+					Children: []terma.Widget{
+						terma.Text{Content: "World", Style: terma.Style{BackgroundColor: terma.Blue}},
+						terma.Text{Content: "!", Style: terma.Style{BackgroundColor: terma.Cyan}},
+						terma.Column{
+							Width:  terma.Cells(10),
+							Height: terma.Cells(6),
+							Style:  terma.Style{BackgroundColor: terma.Green},
+							Children: []terma.Widget{
+								terma.Text{Wrap: terma.WrapHard, Content: "Hello", Width: terma.Cells(4), Style: terma.Style{BackgroundColor: terma.Black}},
+							},
 						},
 					},
 				},
