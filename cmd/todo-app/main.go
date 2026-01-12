@@ -110,7 +110,6 @@ func (a *TodoApp) isAllDone() bool {
 // Build implements the Widget interface.
 func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
-	bgColor := theme.Background
 
 	// Check celebration state and manage animation
 	celebrating := a.isAllDone()
@@ -123,6 +122,17 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 		a.celebrationAngle.Stop()
 	}
 	a.wasCelebrating = celebrating
+
+	// Background: subtle gradient from top-left when celebrating
+	var bgColor t.ColorProvider
+	if celebrating {
+		bgColor = t.NewGradient(
+			theme.Background.Lighten(0.15),
+			theme.Background,
+		).WithAngle(135)
+	} else {
+		bgColor = theme.Background
+	}
 
 	// Request focus on edit input when editing starts
 	if a.editingIndex.Get() >= 0 {
@@ -392,13 +402,13 @@ func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 			Position:      t.FloatPositionCenter,
 			Modal:         true,
 			OnDismiss:     a.dismissThemePicker,
-			BackdropColor: t.Hex("#000000").WithAlpha(0.1),
+			BackdropColor: t.Black.WithAlpha(0.04),
 		},
 		Child: t.Column{
 			Spacing: 1,
-			Width:   t.Cells(50),
+			Width:   t.Cells(43),
 			Style: t.Style{
-				BackgroundColor: t.NewGradient(theme.Surface.Lighten(0.05), theme.Surface).WithAngle(45),
+				BackgroundColor: t.NewGradient(theme.Surface.Lighten(0.3), theme.Surface).WithAngle(45),
 				Padding:         t.EdgeInsetsXY(2, 1),
 			},
 			Children: []t.Widget{
