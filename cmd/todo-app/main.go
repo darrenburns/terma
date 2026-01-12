@@ -134,10 +134,9 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 		t.RequestFocus("theme-list")
 	}
 
-	return t.Row{
-		Width:     t.Flex(1),
-		Height:    t.Flex(1),
-		MainAlign: t.MainAxisCenter,
+	return t.Column{
+		Width:  t.Flex(1),
+		Height: t.Flex(1),
 		Style: t.Style{
 			BackgroundColor: bgColor,
 			Padding:         t.EdgeInsetsXY(6, 2),
@@ -146,9 +145,9 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 			t.Dock{
 				Bottom: []t.Widget{
 					t.Column{
+						Width:      t.Flex(1),
 						CrossAlign: t.CrossAxisCenter,
 						Children: []t.Widget{
-							a.buildStatusBar(theme),
 							t.KeybindBar{},
 						},
 					},
@@ -168,6 +167,16 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 	celebrating := a.isAllDone()
 	angle := a.celebrationAngle.Value().Get()
 
+	// Calculate task counts for the decoration
+	tasks := a.tasks.GetItems()
+	completed := 0
+	for _, task := range tasks {
+		if task.Completed {
+			completed++
+		}
+	}
+	countText := fmt.Sprintf("%d/%d", completed, len(tasks))
+
 	// Build border based on celebration state
 	var border t.Border
 	if celebrating {
@@ -175,19 +184,12 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 		border = t.Border{
 			Style: t.BorderRounded,
 			Decorations: []t.BorderDecoration{
-				{"All done!", t.DecorationTopLeft, theme.Success},
+				{"All done!", t.DecorationTopLeft, nil},
+				{countText, t.DecorationTopRight, nil},
 			},
 			Color: t.NewGradient(
 				theme.Primary,
-				theme.Secondary,
-				theme.Background,
-				theme.Background,
-				theme.Background,
-				theme.Background,
-				theme.Background,
-				theme.Background,
-				theme.Primary,
-				theme.Secondary,
+				theme.Accent,
 			).WithAngle(angle),
 		}
 	} else {
@@ -196,6 +198,7 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 			Style: t.BorderRounded,
 			Decorations: []t.BorderDecoration{
 				{"Things need doing", t.DecorationTopLeft, t.NewGradient(theme.Primary, theme.Primary.WithAlpha(0.5)).WithAngle(90)},
+				{countText, t.DecorationTopRight, nil},
 			},
 			Color: t.NewGradient(
 				theme.Surface.Lighten(0.2),
@@ -256,8 +259,10 @@ func (a *TodoApp) buildTaskList(ctx t.BuildContext) t.Widget {
 	listFocused := ctx.Focused() != nil && ctx.IsFocused(t.List[Task]{ID: "task-list"})
 
 	return t.Scrollable{
-		State:  a.scrollState,
-		Height: t.Flex(1),
+		State:               a.scrollState,
+		ScrollbarThumbColor: ctx.Theme().Surface,
+		ScrollbarTrackColor: ctx.Theme().Background.Darken(0.05),
+		Height:              t.Flex(1),
 		Child: t.List[Task]{
 			ID:          "task-list",
 			State:       a.tasks,
@@ -444,55 +449,37 @@ func (a *TodoApp) renderThemeItem(theme t.ThemeData) func(string, bool, bool) t.
 			}
 		}
 
-		return t.Text{
-			Content: prefix + themeName,
-			Style:   style,
-			Width:   t.Flex(1),
-		}
-	}
-}
-
-// buildStatusBar shows the count of remaining items.
-func (a *TodoApp) buildStatusBar(theme t.ThemeData) t.Widget {
-	tasks := a.tasks.GetItems()
-	active := 0
-	completed := 0
-	for _, task := range tasks {
-		if task.Completed {
-			completed++
-		} else {
-			active++
-		}
-	}
-
-	var status string
-	if len(tasks) == 0 {
-		status = "No tasks yet"
-	} else if active == 0 {
-		status = ""
-	} else {
-		itemWord := "tasks"
-		if active == 1 {
-			itemWord = "task"
-		}
-		status = fmt.Sprintf("%d %s remaining", active, itemWord)
-		if completed > 0 {
-			status += fmt.Sprintf("  ·  %d completed", completed)
-		}
-	}
-
-	return t.Column{
-		CrossAlign: t.CrossAxisCenter,
-		Width:      t.Flex(1),
-		Children: []t.Widget{
+		children := []t.Widget{
 			t.Text{
-				Content: status,
-				Style: t.Style{
-					ForegroundColor: theme.TextMuted,
-					Padding:         t.EdgeInsetsXY(0, 0),
-				},
+				Content: prefix + themeName,
+				Style:   style,
+				Width:   t.Cells(20),
 			},
-		},
+		}
+
+		// Only show color swatches for the active item
+		if active {
+			itemTheme, _ := t.GetTheme(themeName)
+			swatch := func(color t.Color) t.Widget {
+				return t.Text{
+					Content: "██",
+					Style:   t.Style{ForegroundColor: color},
+				}
+			}
+			children = append(children,
+				swatch(itemTheme.Primary),
+				swatch(itemTheme.Secondary),
+				swatch(itemTheme.Accent),
+				swatch(itemTheme.Success),
+				swatch(itemTheme.Error),
+			)
+		}
+
+		return t.Row{
+			Width:    t.Flex(1),
+			Spacing:  1,
+			Children: children,
+		}
 	}
 }
 

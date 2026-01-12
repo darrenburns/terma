@@ -195,25 +195,27 @@ func (c Color) ContrastRatio(other Color) float64 {
 
 // --- Fluent Manipulation Methods ---
 
-// Lighten increases the lightness of the color.
-// amount should be between 0 and 1.
+// Lighten increases the lightness of the color proportionally.
+// amount should be between 0 and 1, representing the percentage to move toward white.
+// For example, Lighten(0.1) moves 10% of the way from current lightness to white.
 func (c Color) Lighten(amount float64) Color {
 	if !c.set {
 		return c
 	}
 	h, s, l := c.HSL()
-	l = clamp01(l + amount)
+	l = clamp01(l + (1-l)*amount)
 	return HSL(h, s, l)
 }
 
-// Darken decreases the lightness of the color.
-// amount should be between 0 and 1.
+// Darken decreases the lightness of the color proportionally.
+// amount should be between 0 and 1, representing the percentage to reduce lightness.
+// For example, Darken(0.1) reduces lightness by 10% of its current value.
 func (c Color) Darken(amount float64) Color {
 	if !c.set {
 		return c
 	}
 	h, s, l := c.HSL()
-	l = clamp01(l - amount)
+	l = clamp01(l * (1 - amount))
 	return HSL(h, s, l)
 }
 

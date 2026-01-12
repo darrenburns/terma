@@ -365,6 +365,13 @@ func ThemeNames() []string {
 	return names
 }
 
+// GetTheme returns the ThemeData for the given theme name.
+// Returns the theme data and true if found, or zero value and false if not found.
+func GetTheme(name string) (ThemeData, bool) {
+	data, ok := themeRegistry[name]
+	return data, ok
+}
+
 // getTheme returns the ThemeData for the active theme.
 // This is called internally by BuildContext.Theme().
 func getTheme() ThemeData {
