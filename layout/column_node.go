@@ -30,24 +30,41 @@ type ColumnNode struct {
 	// Used when the widget's dimension is Flex() to mean "fill available space".
 	ExpandWidth  bool
 	ExpandHeight bool
+
+	// Preserve flags indicate the container should resist stretching on that axis.
+	// Used when the widget's dimension is explicitly Auto to mean "fit content, don't stretch".
+	PreserveWidth  bool
+	PreserveHeight bool
 }
 
 // ComputeLayout computes the column layout by delegating to LinearNode.
 func (c *ColumnNode) ComputeLayout(constraints Constraints) ComputedLayout {
 	return (&LinearNode{
-		Axis:         Vertical,
-		Spacing:      c.Spacing,
-		MainAlign:    c.MainAlign,
-		CrossAlign:   c.CrossAlign,
-		Children:     c.Children,
-		Padding:      c.Padding,
-		Border:       c.Border,
-		Margin:       c.Margin,
-		MinWidth:     c.MinWidth,
-		MaxWidth:     c.MaxWidth,
-		MinHeight:    c.MinHeight,
-		MaxHeight:    c.MaxHeight,
-		ExpandWidth:  c.ExpandWidth,
-		ExpandHeight: c.ExpandHeight,
+		Axis:           Vertical,
+		Spacing:        c.Spacing,
+		MainAlign:      c.MainAlign,
+		CrossAlign:     c.CrossAlign,
+		Children:       c.Children,
+		Padding:        c.Padding,
+		Border:         c.Border,
+		Margin:         c.Margin,
+		MinWidth:       c.MinWidth,
+		MaxWidth:       c.MaxWidth,
+		MinHeight:      c.MinHeight,
+		MaxHeight:      c.MaxHeight,
+		ExpandWidth:    c.ExpandWidth,
+		ExpandHeight:   c.ExpandHeight,
+		PreserveWidth:  c.PreserveWidth,
+		PreserveHeight: c.PreserveHeight,
 	}).ComputeLayout(constraints)
+}
+
+// PreservesWidth implements SizePreserver.
+func (c *ColumnNode) PreservesWidth() bool {
+	return c.PreserveWidth
+}
+
+// PreservesHeight implements SizePreserver.
+func (c *ColumnNode) PreservesHeight() bool {
+	return c.PreserveHeight
 }

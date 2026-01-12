@@ -106,20 +106,26 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minWidth, maxWidth := dimensionToMinMax(r.Width)
 	minHeight, maxHeight := dimensionToMinMax(r.Height)
 
+	// Explicit Auto means "fit content, don't stretch" - set preserve flags
+	preserveWidth := r.Width.IsAuto() && !r.Width.IsUnset()
+	preserveHeight := r.Height.IsAuto() && !r.Height.IsUnset()
+
 	return &layout.RowNode{
-		Spacing:      r.Spacing,
-		MainAlign:    toLayoutMainAlign(r.MainAlign),
-		CrossAlign:   toLayoutCrossAlign(r.CrossAlign),
-		Children:     children,
-		Padding:      toLayoutEdgeInsets(r.Style.Padding),
-		Border:       borderToEdgeInsets(r.Style.Border),
-		Margin:       toLayoutEdgeInsets(r.Style.Margin),
-		MinWidth:     minWidth,
-		MaxWidth:     maxWidth,
-		MinHeight:    minHeight,
-		MaxHeight:    maxHeight,
-		ExpandWidth:  r.Width.IsFlex(),
-		ExpandHeight: r.Height.IsFlex(),
+		Spacing:        r.Spacing,
+		MainAlign:      toLayoutMainAlign(r.MainAlign),
+		CrossAlign:     toLayoutCrossAlign(r.CrossAlign),
+		Children:       children,
+		Padding:        toLayoutEdgeInsets(r.Style.Padding),
+		Border:         borderToEdgeInsets(r.Style.Border),
+		Margin:         toLayoutEdgeInsets(r.Style.Margin),
+		MinWidth:       minWidth,
+		MaxWidth:       maxWidth,
+		MinHeight:      minHeight,
+		MaxHeight:      maxHeight,
+		ExpandWidth:    r.Width.IsFlex(),
+		ExpandHeight:   r.Height.IsFlex(),
+		PreserveWidth:  preserveWidth,
+		PreserveHeight: preserveHeight,
 	}
 }
 
@@ -204,20 +210,26 @@ func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minWidth, maxWidth := dimensionToMinMax(c.Width)
 	minHeight, maxHeight := dimensionToMinMax(c.Height)
 
+	// Explicit Auto means "fit content, don't stretch" - set preserve flags
+	preserveWidth := c.Width.IsAuto() && !c.Width.IsUnset()
+	preserveHeight := c.Height.IsAuto() && !c.Height.IsUnset()
+
 	return &layout.ColumnNode{
-		Spacing:      c.Spacing,
-		MainAlign:    toLayoutMainAlign(c.MainAlign),
-		CrossAlign:   toLayoutCrossAlign(c.CrossAlign),
-		Children:     children,
-		Padding:      toLayoutEdgeInsets(c.Style.Padding),
-		Border:       borderToEdgeInsets(c.Style.Border),
-		Margin:       toLayoutEdgeInsets(c.Style.Margin),
-		MinWidth:     minWidth,
-		MaxWidth:     maxWidth,
-		MinHeight:    minHeight,
-		MaxHeight:    maxHeight,
-		ExpandWidth:  c.Width.IsFlex(),
-		ExpandHeight: c.Height.IsFlex(),
+		Spacing:        c.Spacing,
+		MainAlign:      toLayoutMainAlign(c.MainAlign),
+		CrossAlign:     toLayoutCrossAlign(c.CrossAlign),
+		Children:       children,
+		Padding:        toLayoutEdgeInsets(c.Style.Padding),
+		Border:         borderToEdgeInsets(c.Style.Border),
+		Margin:         toLayoutEdgeInsets(c.Style.Margin),
+		MinWidth:       minWidth,
+		MaxWidth:       maxWidth,
+		MinHeight:      minHeight,
+		MaxHeight:      maxHeight,
+		ExpandWidth:    c.Width.IsFlex(),
+		ExpandHeight:   c.Height.IsFlex(),
+		PreserveWidth:  preserveWidth,
+		PreserveHeight: preserveHeight,
 	}
 }
 

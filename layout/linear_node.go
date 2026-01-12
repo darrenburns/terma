@@ -42,6 +42,13 @@ type LinearNode struct {
 	// This is used when a widget's dimension is Flex() to mean "fill available space".
 	ExpandWidth  bool
 	ExpandHeight bool
+
+	// Preserve flags indicate the container should resist stretching on that axis.
+	// When true, the container keeps its natural (content-fitted) size even when
+	// a parent tries to stretch it via CrossAxisStretch. This is used when a
+	// widget's dimension is explicitly Auto to mean "fit content, don't stretch".
+	PreserveWidth  bool
+	PreserveHeight bool
 }
 
 // ComputeLayout computes the layout for this linear container.
@@ -432,6 +439,19 @@ func (l *LinearNode) positionChildren(
 			crossPos = containerCross - childCross
 
 		case CrossAxisStretch:
+			// Get the actual child (unwrap FlexNode if present)
+			actualChild := l.Children[i]
+			if flex, ok := IsFlexNode(actualChild); ok {
+				actualChild = flex.Child
+			}
+
+			// Check if child wants to preserve its cross-axis size (e.g., has explicit Auto dimension).
+			// If so, skip stretching and keep the child's natural size from the first layout pass.
+			if PreservesCrossSize(actualChild, l.Axis) {
+				crossPos = 0
+				break
+			}
+
 			// Re-layout child with tight cross constraint, accounting for child's margins.
 			// The available space for the border-box is container minus margins.
 			// Stretch forces the child's layout box to match exactly, even if that means
@@ -448,12 +468,6 @@ func (l *LinearNode) positionChildren(
 
 				// Create constraints: tight on main-axis (preserve flex), tight on cross-axis (stretch)
 				stretchedConstraints := l.makeStretchConstraintsPreserveMain(childMainSize, availableCross)
-
-				// Get the actual child (unwrap FlexNode if present)
-				actualChild := l.Children[i]
-				if flex, ok := IsFlexNode(actualChild); ok {
-					actualChild = flex.Child
-				}
 
 				layout = actualChild.ComputeLayout(stretchedConstraints)
 			}
@@ -578,4 +592,16 @@ func (l *LinearNode) makePosition(main, cross int) (x, y int) {
 		return main, cross
 	}
 	return cross, main
+}
+
+// PreservesWidth implements SizePreserver.
+// Returns true if this node should resist horizontal stretching.
+func (l *LinearNode) PreservesWidth() bool {
+	return l.PreserveWidth
+}
+
+// PreservesHeight implements SizePreserver.
+// Returns true if this node should resist vertical stretching.
+func (l *LinearNode) PreservesHeight() bool {
+	return l.PreserveHeight
 }
