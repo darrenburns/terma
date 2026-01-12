@@ -47,6 +47,7 @@ go mod tidy
 | `layout.go` | `Column`, `Row` layout widgets |
 | `context.go` | `BuildContext` for focus/hover state |
 | `focus.go` | Focus management, `Focusable`, `KeyHandler` interfaces |
+| `checkbox.go` | `Checkbox` widget for toggleable options |
 | `list.go` | Generic `List[T]` with keyboard navigation |
 | `scroll.go` | `Scrollable` widget and `ScrollController` |
 | `style.go` | Styling: colors, padding, margins |
@@ -107,6 +108,7 @@ func main() {
 |--------|---------|------------|
 | `Text` | Display text (plain or rich with Spans) | `Content`, `Spans`, `Wrap` |
 | `Button` | Focusable button with press handler | `ID` (required), `Label`, `OnPress` |
+| `Checkbox` | Focusable toggleable checkbox | `ID` (required), `Label`, `Checked`, `OnToggle` |
 | `List[T]` | Generic navigable list | `State` (required), `OnSelect`, `RenderItem`, `MultiSelect` |
 
 ### Utility Widgets
@@ -161,6 +163,15 @@ Floating{
 // KeybindBar at bottom of app
 KeybindBar{
     Style: Style{BackgroundColor: theme.Surface},
+}
+
+// Checkbox with state management
+enabled := a.enabled.Get()  // Read signal value
+&Checkbox{
+    ID:       "enable-feature",
+    Label:    "Enable notifications",
+    Checked:  enabled,
+    OnToggle: func(v bool) { a.enabled.Set(v) },
 }
 ```
 

@@ -20,6 +20,7 @@ Widgets that display content:
 
 - Text - Display plain or rich text
 - Button - Focusable button with press handler
+- [Checkbox](checkbox.md) - Focusable toggleable checkbox
 - List - Generic navigable list
 - [ProgressBar](progressbar.md) - Horizontal progress indicator
 
