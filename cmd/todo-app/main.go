@@ -207,11 +207,11 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 		border = t.Border{
 			Style: t.BorderRounded,
 			Decorations: []t.BorderDecoration{
-				{"Things need doing", t.DecorationTopLeft, t.NewGradient(theme.Primary, theme.Primary.WithAlpha(0.5)).WithAngle(90)},
+				{"Today's tasks", t.DecorationTopLeft, nil},
 				{countText, t.DecorationTopRight, nil},
 			},
 			Color: t.NewGradient(
-				theme.Surface.Lighten(0.2),
+				theme.Background.Blend(theme.Primary, 0.5),
 				theme.Background,
 			).WithAngle(0),
 		}
