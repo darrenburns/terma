@@ -42,11 +42,6 @@ const (
 	BorderHeavy
 	BorderDashed
 	BorderAscii
-	BorderInner
-	BorderOuter
-	BorderThick
-	BorderHKey
-	BorderVKey
 )
 
 // BorderCharSet contains the characters used to render a border.
@@ -94,31 +89,6 @@ func GetBorderCharSet(style BorderStyle) BorderCharSet {
 		return BorderCharSet{
 			TopLeft: "+", TopRight: "+", BottomLeft: "+", BottomRight: "+",
 			Top: "-", Bottom: "-", Left: "|", Right: "|",
-		}
-	case BorderInner:
-		return BorderCharSet{
-			TopLeft: "▗", TopRight: "▖", BottomLeft: "▝", BottomRight: "▘",
-			Top: "▄", Bottom: "▀", Left: "▐", Right: "▌",
-		}
-	case BorderOuter:
-		return BorderCharSet{
-			TopLeft: "▛", TopRight: "▜", BottomLeft: "▙", BottomRight: "▟",
-			Top: "▀", Bottom: "▄", Left: "▌", Right: "▐",
-		}
-	case BorderThick:
-		return BorderCharSet{
-			TopLeft: "█", TopRight: "█", BottomLeft: "█", BottomRight: "█",
-			Top: "▀", Bottom: "▄", Left: "█", Right: "█",
-		}
-	case BorderHKey:
-		return BorderCharSet{
-			TopLeft: "▔", TopRight: "▔", BottomLeft: "▁", BottomRight: "▁",
-			Top: "▔", Bottom: "▁", Left: " ", Right: " ",
-		}
-	case BorderVKey:
-		return BorderCharSet{
-			TopLeft: "▏", TopRight: "▕", BottomLeft: "▏", BottomRight: "▕",
-			Top: " ", Bottom: " ", Left: "▏", Right: "▕",
 		}
 	default:
 		return BorderCharSet{}
@@ -231,45 +201,6 @@ func DashedBorder(color Color, decorations ...BorderDecoration) Border {
 //	+---+
 func AsciiBorder(color Color, decorations ...BorderDecoration) Border {
 	return Border{Style: BorderAscii, Color: color, Decorations: decorations}
-}
-
-// InnerBorder creates an inner shadow border with the given color and optional decorations.
-func InnerBorder(color Color, decorations ...BorderDecoration) Border {
-	return Border{Style: BorderInner, Color: color, Decorations: decorations}
-}
-
-// OuterBorder creates an outer block border with the given color and optional decorations.
-func OuterBorder(color Color, decorations ...BorderDecoration) Border {
-	return Border{Style: BorderOuter, Color: color, Decorations: decorations}
-}
-
-// ThickBorder creates a thick block border with the given color and optional decorations.
-//
-//	█▀▀▀█
-//	█   █
-//	█▄▄▄█
-func ThickBorder(color Color, decorations ...BorderDecoration) Border {
-	return Border{Style: BorderThick, Color: color, Decorations: decorations}
-}
-
-// HKeyBorder creates a horizontal key-cap style border with the given color and optional decorations.
-// Only the top and bottom edges are visible.
-//
-//	▔▔▔▔▔
-//
-//	▁▁▁▁▁
-func HKeyBorder(color Color, decorations ...BorderDecoration) Border {
-	return Border{Style: BorderHKey, Color: color, Decorations: decorations}
-}
-
-// VKeyBorder creates a vertical key-cap style border with the given color and optional decorations.
-// Only the left and right edges are visible.
-//
-//	▏   ▕
-//	▏   ▕
-//	▏   ▕
-func VKeyBorder(color Color, decorations ...BorderDecoration) Border {
-	return Border{Style: BorderVKey, Color: color, Decorations: decorations}
 }
 
 // IsZero returns true if no border is set.
