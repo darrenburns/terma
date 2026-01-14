@@ -69,6 +69,9 @@ type TodoApp struct {
 	themeScrollState *t.ScrollState
 	originalTheme    string
 
+	// Help modal state
+	showHelp t.Signal[bool]
+
 	// Celebration animation state
 	celebrationAngle *t.Animation[float64]
 	wasCelebrating   bool // Track previous celebration state
@@ -105,6 +108,7 @@ func NewTodoApp() *TodoApp {
 		showThemePicker:     t.NewSignal(false),
 		themeListState:      t.NewListState(sortedThemeNames()),
 		themeScrollState:    t.NewScrollState(),
+		showHelp:            t.NewSignal(false),
 		nextID:              10,
 	}
 
@@ -210,6 +214,7 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 				Body: a.buildMainContainer(ctx, bgColor),
 			},
 			a.buildThemePicker(theme),
+			a.buildHelpModal(theme),
 		},
 	}
 }
@@ -493,7 +498,7 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 		var titleWidget t.Widget
 		if a.filterMode.Get() && a.getFilterText() != "" {
 			titleWidget = t.Text{
-				Spans: a.highlightMatches(task.Title, textStyle, theme.Accent),
+				Spans: a.highlightMatches(task.Title, textStyle, theme.Accent, theme.Accent.WithAlpha(0.1)),
 				Width: t.Flex(1),
 			}
 		} else {
@@ -545,7 +550,7 @@ func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 				t.Text{
 					Content: "Select Theme",
 					Style: t.Style{
-						ForegroundColor: theme.Primary,
+						ForegroundColor: t.NewGradient(theme.Primary.Lighten(0.1), theme.Primary).WithAngle(90),
 						Bold:            true,
 					},
 				},
@@ -629,6 +634,15 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 	isEditing := editingIdx >= 0
 	isThemePicker := a.showThemePicker.Peek()
 	isFilterMode := a.filterMode.Peek()
+	isHelp := a.showHelp.Peek()
+
+	// Help modal - any key closes it
+	if isHelp {
+		return []t.Keybind{
+			{Key: "escape", Name: "Close", Action: a.closeHelp},
+			{Key: "?", Name: "Close", Action: a.closeHelp, Hidden: true},
+		}
+	}
 
 	// Theme picker modal has its own keybinds (handled via Float dismiss)
 	if isThemePicker {
@@ -666,6 +680,7 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 			t.Keybind{Key: "/", Name: "Filter", Action: a.enterFilterMode},
 			t.Keybind{Key: "ctrl+j", Name: "Move Down", Action: a.moveTaskDown, Hidden: true},
 			t.Keybind{Key: "ctrl+k", Name: "Move Up", Action: a.moveTaskUp, Hidden: true},
+			t.Keybind{Key: "?", Name: "Help", Action: a.openHelp},
 		)
 	} else {
 		keybinds = append(keybinds,
@@ -890,6 +905,94 @@ func (a *TodoApp) selectTheme(themeName string) {
 	t.RequestFocus("task-list")
 }
 
+// buildHelpModal creates the keyboard shortcuts help modal.
+func (a *TodoApp) buildHelpModal(theme t.ThemeData) t.Widget {
+	// Helper to create a key-action pair
+	keyCell := func(key, action string) t.Widget {
+		return t.Row{
+			Width:   t.Cells(18),
+			Spacing: 1,
+			Children: []t.Widget{
+				t.Text{
+					Content: key,
+					Width:   t.Cells(7),
+					Style: t.Style{
+						ForegroundColor: theme.Accent,
+						Bold:            true,
+					},
+				},
+				t.Text{
+					Content: action,
+					Style: t.Style{
+						ForegroundColor: theme.Text,
+					},
+				},
+			},
+		}
+	}
+
+	return t.Floating{
+		Visible: a.showHelp.Get(),
+		Config: t.FloatConfig{
+			Position:      t.FloatPositionCenter,
+			Modal:         true,
+			OnDismiss:     a.closeHelp,
+			BackdropColor: t.Black.WithAlpha(0.3),
+		},
+		Child: t.Column{
+			Width:   t.Cells(42),
+			Spacing: 1,
+			Style: t.Style{
+				BackgroundColor: t.NewGradient(theme.Surface.Lighten(0.3), theme.Surface).WithAngle(45),
+				Padding:         t.EdgeInsetsXY(2, 1),
+			},
+			Children: []t.Widget{
+				t.Text{
+					Content: "Keyboard Shortcuts",
+					Style: t.Style{
+						ForegroundColor: t.NewGradient(theme.Primary.Lighten(0.1), theme.Primary).WithAngle(90),
+						Bold:            true,
+					},
+				},
+				t.Row{
+					Children: []t.Widget{
+						keyCell("space", "Toggle"),
+						keyCell("ctrl+k", "Move ↑"),
+					},
+				},
+				t.Row{
+					Children: []t.Widget{
+						keyCell("e", "Edit"),
+						keyCell("ctrl+j", "Move ↓"),
+					},
+				},
+				t.Row{
+					Children: []t.Widget{
+						keyCell("d", "Delete"),
+						keyCell("/", "Filter"),
+					},
+				},
+				t.Row{
+					Children: []t.Widget{
+						keyCell("t", "Theme"),
+						keyCell("q", "Quit"),
+					},
+				},
+			},
+		},
+	}
+}
+
+// openHelp shows the help modal.
+func (a *TodoApp) openHelp() {
+	a.showHelp.Set(true)
+}
+
+// closeHelp hides the help modal.
+func (a *TodoApp) closeHelp() {
+	a.showHelp.Set(false)
+}
+
 // enterFilterMode activates filter mode and focuses the filter input.
 func (a *TodoApp) enterFilterMode() {
 	a.filterMode.Set(true)
@@ -981,7 +1084,7 @@ func (a *TodoApp) getFilteredTasks() []Task {
 }
 
 // highlightMatches creates spans with highlighted matching substrings.
-func (a *TodoApp) highlightMatches(title string, baseStyle t.Style, highlightColor t.Color) []t.Span {
+func (a *TodoApp) highlightMatches(title string, baseStyle t.Style, highlightColor t.Color, highlightBackgroundColor t.Color) []t.Span {
 	filterText := a.getFilterText()
 	if filterText == "" {
 		return []t.Span{{Text: title, Style: styleToSpanStyle(baseStyle)}}
@@ -1013,6 +1116,7 @@ func (a *TodoApp) highlightMatches(title string, baseStyle t.Style, highlightCol
 		highlightStyle := styleToSpanStyle(baseStyle)
 		highlightStyle.Underline = t.UnderlineSingle
 		highlightStyle.UnderlineColor = highlightColor
+		highlightStyle.Background = highlightBackgroundColor
 		spans = append(spans, t.Span{Text: title[matchStart:matchEnd], Style: highlightStyle})
 
 		pos = matchEnd
