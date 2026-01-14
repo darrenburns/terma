@@ -17,6 +17,10 @@ var appCancel func()
 // appRenderer holds the current renderer for screen export.
 var appRenderer *Renderer
 
+// renderTrigger signals the event loop to re-render when a signal changes.
+// Buffered with size 1 to avoid blocking signal setters.
+var renderTrigger chan struct{}
+
 // Quit exits the running application gracefully.
 // This performs the same teardown as pressing Ctrl+C.
 func Quit() {
@@ -57,9 +61,13 @@ func Run(root Widget) error {
 	animController := NewAnimationController(60)
 	currentController = animController
 
+	// Create render trigger channel for signal-driven re-renders
+	renderTrigger = make(chan struct{}, 1)
+
 	defer func() {
 		appCancel = nil
 		appRenderer = nil
+		renderTrigger = nil
 		currentController = nil
 		animController.Stop()
 		cancel()
@@ -141,6 +149,8 @@ func Run(root Widget) error {
 			select {
 			case <-ctx.Done():
 				return
+			case <-renderTrigger:
+				display()
 			case <-animController.Tick():
 				animController.Update()
 				display()

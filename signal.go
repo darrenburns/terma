@@ -37,7 +37,7 @@ func (s Signal[T]) Get() T {
 }
 
 // Set updates the value. If the value changed, all subscribed widgets
-// are marked dirty for rebuild.
+// are marked dirty for rebuild and a re-render is scheduled.
 func (s Signal[T]) Set(value T) {
 	if s.core.value == value {
 		return
@@ -46,6 +46,7 @@ func (s Signal[T]) Set(value T) {
 	for listener := range s.core.listeners {
 		listener.markDirty()
 	}
+	scheduleRender()
 }
 
 // Peek returns the current value without subscribing.
@@ -102,12 +103,13 @@ func (s AnySignal[T]) Get() T {
 	return s.core.value
 }
 
-// Set updates the value and notifies all subscribers.
+// Set updates the value, notifies all subscribers, and schedules a re-render.
 func (s AnySignal[T]) Set(value T) {
 	s.core.value = value
 	for listener := range s.core.listeners {
 		listener.markDirty()
 	}
+	scheduleRender()
 }
 
 // Peek returns the current value without subscribing.
@@ -124,4 +126,15 @@ func (s AnySignal[T]) Update(fn func(T) T) {
 // An uninitialized AnySignal (zero value) returns false.
 func (s AnySignal[T]) IsValid() bool {
 	return s.core != nil
+}
+
+// scheduleRender signals the app to re-render.
+// Non-blocking: drops the signal if one is already pending.
+func scheduleRender() {
+	if renderTrigger != nil {
+		select {
+		case renderTrigger <- struct{}{}:
+		default:
+		}
+	}
 }
