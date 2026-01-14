@@ -83,11 +83,15 @@ fmt.Printf("Similarity: %.1f%%\n", stats.Similarity)
 fmt.Printf("Total cells: %d\n", stats.TotalCells)
 fmt.Printf("Mismatched: %d\n", stats.MismatchedCells)
 
-// Include stats in comparison for gallery
+// Generate a diff SVG highlighting differences in magenta
+diffSVG := terma.GenerateDiffSVG(expectedBuf, actualBuf, width, height, opts)
+
+// Include stats and diff SVG in comparison for gallery
 comparison := terma.SnapshotComparison{
     Name:     "My Test",
     Expected: terma.BufferToSVG(expectedBuf, width, height, opts),
     Actual:   terma.BufferToSVG(actualBuf, width, height, opts),
+    DiffSVG:  diffSVG,  // Enables Highlight view mode in gallery
     Passed:   stats.MismatchedCells == 0,
     Stats:    stats,  // Stats will be displayed in the gallery
 }
@@ -123,6 +127,7 @@ The gallery includes:
   - **Overlay** - Stack images with adjustable opacity slider
   - **Slider** - Drag to reveal expected vs actual (like a before/after comparison)
   - **Difference** - Uses CSS blend mode to highlight differences (black = identical, colored = different)
+  - **Highlight** - Shows differing cells in bright magenta (detects even tiny shade differences)
 
 ## Example Test Pattern
 

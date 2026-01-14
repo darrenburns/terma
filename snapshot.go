@@ -318,11 +318,102 @@ func colorsEqual(a, b color.Color) bool {
 	return r1 == r2 && g1 == g2 && b1 == b2 && a1 == a2
 }
 
+// GenerateDiffSVG creates an SVG highlighting cells that differ between two buffers.
+// Matching cells are shown dimmed, differing cells are highlighted in bright magenta.
+func GenerateDiffSVG(expected, actual *uv.Buffer, width, height int, opts SVGOptions) string {
+	// Apply defaults for zero values
+	if opts.FontFamily == "" {
+		opts.FontFamily = "Fira Code, Menlo, Monaco, Consolas, monospace"
+	}
+	if opts.FontSize == 0 {
+		opts.FontSize = 14
+	}
+	if opts.LineHeight == 0 {
+		opts.LineHeight = 1.4
+	}
+	if opts.CellWidth == 0 {
+		opts.CellWidth = float64(opts.FontSize) * 0.6
+	}
+
+	cellHeight := float64(opts.FontSize) * opts.LineHeight
+	svgWidth := float64(opts.Padding*2) + float64(width)*opts.CellWidth
+	svgHeight := float64(opts.Padding*2) + float64(height)*cellHeight
+
+	// Colors for diff visualization
+	bgColor := "#1a1a2e"
+	matchColor := "#333344"    // Dimmed color for matching cells
+	diffBgColor := "#ff00ff"   // Bright magenta background for diffs
+	diffFgColor := "#ffffff"   // White text on diff cells
+
+	var sb strings.Builder
+
+	// SVG header
+	sb.WriteString(fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%.0f" height="%.0f" viewBox="0 0 %.0f %.0f">`,
+		svgWidth, svgHeight, svgWidth, svgHeight))
+	sb.WriteString("\n")
+
+	// Style block
+	sb.WriteString(fmt.Sprintf(`  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+    text { font-family: %s; font-size: %dpx; dominant-baseline: text-before-edge; }
+  </style>`, opts.FontFamily, opts.FontSize))
+	sb.WriteString("\n")
+
+	// Background
+	sb.WriteString(fmt.Sprintf(`  <rect width="100%%" height="100%%" fill="%s"/>`, bgColor))
+	sb.WriteString("\n")
+
+	// Render each cell
+	for y := 0; y < height; y++ {
+		rowY := float64(opts.Padding) + float64(y)*cellHeight
+
+		for x := 0; x < width; x++ {
+			expectedCell := expected.CellAt(x, y)
+			actualCell := actual.CellAt(x, y)
+			cellX := float64(opts.Padding) + float64(x)*opts.CellWidth
+
+			isDiff := !cellsEqual(expectedCell, actualCell)
+
+			// Get content to display (prefer actual, fall back to expected)
+			content := ""
+			if actualCell != nil && actualCell.Content != "" {
+				content = actualCell.Content
+			} else if expectedCell != nil && expectedCell.Content != "" {
+				content = expectedCell.Content
+			}
+
+			if isDiff {
+				// Highlight differing cell with bright background
+				sb.WriteString(fmt.Sprintf(`  <rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="%s"/>`,
+					cellX, rowY, opts.CellWidth, cellHeight, diffBgColor))
+				sb.WriteString("\n")
+
+				if content != "" && content != " " {
+					sb.WriteString(fmt.Sprintf(`  <text x="%.1f" y="%.1f" fill="%s">%s</text>`,
+						cellX, rowY, diffFgColor, html.EscapeString(content)))
+					sb.WriteString("\n")
+				}
+			} else {
+				// Show matching cell dimmed
+				if content != "" && content != " " {
+					sb.WriteString(fmt.Sprintf(`  <text x="%.1f" y="%.1f" fill="%s">%s</text>`,
+						cellX, rowY, matchColor, html.EscapeString(content)))
+					sb.WriteString("\n")
+				}
+			}
+		}
+	}
+
+	sb.WriteString("</svg>\n")
+	return sb.String()
+}
+
 // SnapshotComparison represents a comparison between expected and actual snapshots.
 type SnapshotComparison struct {
 	Name     string        // Test name / description
 	Expected string        // SVG content or path
 	Actual   string        // SVG content or path
+	DiffSVG  string        // SVG highlighting differences (optional)
 	Passed   bool          // Whether they match
 	Stats    SnapshotStats // Comparison statistics (optional)
 }
@@ -444,7 +535,7 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
     .view-overlay .snapshots { display: none; }
     .view-overlay .diff-view { display: block; }
     .diff-view { display: none; }
-    .diff-layers { position: relative; }
+    .diff-layers { position: relative; display: inline-block; }
     .diff-layers .expected-layer,
     .diff-layers .actual-layer {
       border-radius: 4px;
@@ -456,7 +547,8 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
       position: absolute;
       top: 0;
       left: 0;
-      right: 0;
+      width: 100%;
+      height: 100%;
       opacity: 0.5;
       pointer-events: none;
     }
@@ -489,6 +581,19 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
       mix-blend-mode: difference;
     }
     .view-difference .diff-controls { display: none; }
+
+    /* Highlight mode - shows diff SVG */
+    .view-highlight .snapshots { display: none; }
+    .view-highlight .diff-view { display: none; }
+    .view-highlight .highlight-view { display: block; }
+    .highlight-view { display: none; }
+    .highlight-view .snapshot {
+      background: #1a1a2e;
+      border-radius: 4px;
+      overflow: hidden;
+      display: inline-block;
+    }
+    .highlight-view svg { display: block; }
 
     .hidden { display: none !important; }
     .help-text {
@@ -544,6 +649,7 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
       <button class="view-btn" data-view="overlay">Overlay</button>
       <button class="view-btn" data-view="slider">Slider</button>
       <button class="view-btn" data-view="difference">Difference</button>
+      <button class="view-btn" data-view="highlight">Highlight</button>
     </div>
     <span class="help-text">Difference mode: black = identical, colored = different</span>
   </div>
@@ -609,12 +715,19 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
         <span class="opacity-value">50%%</span>
       </div>
     </div>
+    <div class="highlight-view">
+      <div class="snapshot-label">Highlight: Differing cells shown in magenta</div>
+      <div class="snapshot">
+%s
+      </div>
+    </div>
   </div>
 `, status, status, i, html.EscapeString(comp.Name), status, strings.ToUpper(status), statsHTML,
 			indentSVG(comp.Expected, "          "),
 			indentSVG(comp.Actual, "          "),
 			indentSVG(comp.Expected, "        "),
-			indentSVG(comp.Actual, "        ")))
+			indentSVG(comp.Actual, "        "),
+			indentSVG(comp.DiffSVG, "        ")))
 	}
 
 	sb.WriteString(`  <script>
@@ -641,7 +754,7 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
         btn.classList.add('active');
         const view = btn.dataset.view;
         document.querySelectorAll('.comparison').forEach(el => {
-          el.classList.remove('view-sidebyside', 'view-overlay', 'view-slider', 'view-difference');
+          el.classList.remove('view-sidebyside', 'view-overlay', 'view-slider', 'view-difference', 'view-highlight');
           el.classList.add('view-' + view);
 
           // Update mode label
@@ -677,6 +790,8 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
           helpText.textContent = 'Slider mode: drag to reveal expected vs actual';
         } else if (view === 'overlay') {
           helpText.textContent = 'Overlay mode: adjust opacity to compare';
+        } else if (view === 'highlight') {
+          helpText.textContent = 'Highlight mode: magenta cells differ (even by a tiny shade)';
         } else {
           helpText.textContent = '';
         }

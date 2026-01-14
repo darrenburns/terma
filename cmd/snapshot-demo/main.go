@@ -88,6 +88,10 @@ func main() {
 	expectedSVG := terma.BufferToSVG(expectedBuf, width, height, opts)
 	actualSVG := terma.BufferToSVG(actualBuf, width, height, opts)
 
+	// Generate diff SVGs for highlighting differences
+	diffSVG := terma.GenerateDiffSVG(expectedBuf, actualBuf, width, height, opts)
+	sameDiffSVG := terma.GenerateDiffSVG(expectedBuf, expectedBuf, width, height, opts)
+
 	// Save SVGs
 	expectedPath := filepath.Join(outDir, "expected.svg")
 	actualPath := filepath.Join(outDir, "actual.svg")
@@ -110,6 +114,7 @@ func main() {
 			Name:     "Basic Demo Widget",
 			Expected: expectedSVG,
 			Actual:   actualSVG,
+			DiffSVG:  diffSVG,
 			Passed:   diffStats.MismatchedCells == 0,
 			Stats:    diffStats,
 		},
@@ -117,6 +122,7 @@ func main() {
 			Name:     "Same Widget (should pass)",
 			Expected: expectedSVG,
 			Actual:   expectedSVG,
+			DiffSVG:  sameDiffSVG,
 			Passed:   sameStats.MismatchedCells == 0,
 			Stats:    sameStats,
 		},
