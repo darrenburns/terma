@@ -410,3 +410,18 @@ func (fc *FocusCollector) Reset() {
 	fc.focusables = fc.focusables[:0]
 	fc.ancestorStack = fc.ancestorStack[:0]
 }
+
+// Len returns the number of focusables collected so far.
+func (fc *FocusCollector) Len() int {
+	return len(fc.focusables)
+}
+
+// FirstIDAfter returns the ID of the first focusable collected after the given index.
+// Returns empty string if no focusables were collected after that index.
+// This is useful for finding the first focusable in a subtree that was just built.
+func (fc *FocusCollector) FirstIDAfter(index int) string {
+	if index < len(fc.focusables) {
+		return fc.focusables[index].ID
+	}
+	return ""
+}

@@ -17,7 +17,6 @@ var themeNames = []string{
 	t.ThemeNameCatppuccin,
 	t.ThemeNameGruvbox,
 	t.ThemeNameNord,
-	t.ThemeNameOneDark,
 	t.ThemeNameSolarized,
 	t.ThemeNameKanagawa,
 	t.ThemeNameMonokai,

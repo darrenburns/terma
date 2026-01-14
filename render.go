@@ -1040,6 +1040,10 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 	for i := range r.floatCollector.entries {
 		entry := &r.floatCollector.entries[i]
 
+		// Record focusable count before building so we can find the first focusable
+		// in this float's subtree without calling Build() again
+		focusableCountBefore := r.focusCollector.Len()
+
 		// Build the float's widget tree to determine its size
 		// Use loose constraints - floats size to their content
 		constraints := layout.Loose(r.width, r.height)
@@ -1073,8 +1077,9 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 			r.renderModalBackdrop(ctx, entry.Config.BackdropColor)
 
 			// Track the first focusable in this modal for auto-focus
+			// Uses focusables already collected during BuildRenderTree above
 			if r.modalFocusTarget == "" {
-				r.modalFocusTarget = r.findFirstFocusableID(entry.Child, buildCtx)
+				r.modalFocusTarget = r.focusCollector.FirstIDAfter(focusableCountBefore)
 			}
 		}
 
@@ -1133,45 +1138,6 @@ func (r *Renderer) renderModalBackdrop(ctx *RenderContext, backdropColor Color) 
 			x += width
 		}
 	}
-}
-
-// findFirstFocusableID finds the ID of the first focusable widget in a tree.
-func (r *Renderer) findFirstFocusableID(widget Widget, ctx BuildContext) string {
-	// Check if this widget is focusable
-	if _, ok := widget.(Focusable); ok {
-		if identifiable, ok := widget.(Identifiable); ok {
-			return identifiable.WidgetID()
-		}
-		return ctx.AutoID()
-	}
-
-	// Build the widget to get its children
-	built := widget.Build(ctx)
-
-	// Check children based on widget type
-	var children []Widget
-	switch w := built.(type) {
-	case Row:
-		children = w.Children
-	case Column:
-		children = w.Children
-	case Scrollable:
-		if w.Child != nil {
-			children = []Widget{w.Child}
-		}
-	case Dock:
-		children = w.AllChildren()
-	}
-
-	// Recursively search children
-	for i, child := range children {
-		childCtx := ctx.PushChild(i)
-		if id := r.findFirstFocusableID(child, childCtx); id != "" {
-			return id
-		}
-	}
-
-	return ""
 }
 
 // HasFloats returns true if there are any floating widgets.

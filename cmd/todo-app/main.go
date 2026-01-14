@@ -2,11 +2,41 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	t "terma"
 )
+
+// sortedThemeNames returns theme names in a fixed order:
+// Kanagawa first, Rose Pine second, then the rest alphabetically.
+func sortedThemeNames() []string {
+	names := t.ThemeNames()
+
+	priority := map[string]int{
+		"kanagawa":  0,
+		"rose-pine": 1,
+	}
+
+	sort.Slice(names, func(i, j int) bool {
+		pi, hasPi := priority[names[i]]
+		pj, hasPj := priority[names[j]]
+
+		if hasPi && hasPj {
+			return pi < pj
+		}
+		if hasPi {
+			return true
+		}
+		if hasPj {
+			return false
+		}
+		return names[i] < names[j]
+	})
+
+	return names
+}
 
 // Task represents a single TODO item.
 type Task struct {
@@ -23,6 +53,12 @@ type TodoApp struct {
 	inputState  *t.TextInputState
 	scrollState *t.ScrollState
 
+	// Filter state
+	filterMode          t.Signal[bool]
+	filterInputState    *t.TextInputState
+	filteredListState   *t.ListState[Task]
+	filteredScrollState *t.ScrollState
+
 	// Editing state
 	editingIndex   t.Signal[int]
 	editInputState *t.TextInputState
@@ -32,6 +68,9 @@ type TodoApp struct {
 	themeListState   *t.ListState[string]
 	themeScrollState *t.ScrollState
 	originalTheme    string
+
+	// Help modal state
+	showHelp t.Signal[bool]
 
 	// Celebration animation state
 	celebrationAngle *t.Animation[float64]
@@ -57,15 +96,20 @@ func NewTodoApp() *TodoApp {
 	}
 
 	app := &TodoApp{
-		tasks:            t.NewListState(initialTasks),
-		inputState:       t.NewTextInputState(""),
-		scrollState:      t.NewScrollState(),
-		editingIndex:     t.NewSignal(-1),
-		editInputState:   t.NewTextInputState(""),
-		showThemePicker:  t.NewSignal(false),
-		themeListState:   t.NewListState(t.ThemeNames()),
-		themeScrollState: t.NewScrollState(),
-		nextID:           10,
+		tasks:               t.NewListState(initialTasks),
+		inputState:          t.NewTextInputState(""),
+		scrollState:         t.NewScrollState(),
+		filterMode:          t.NewSignal(false),
+		filterInputState:    t.NewTextInputState(""),
+		filteredListState:   t.NewListState([]Task{}),
+		filteredScrollState: t.NewScrollState(),
+		editingIndex:        t.NewSignal(-1),
+		editInputState:      t.NewTextInputState(""),
+		showThemePicker:     t.NewSignal(false),
+		themeListState:      t.NewListState(sortedThemeNames()),
+		themeScrollState:    t.NewScrollState(),
+		showHelp:            t.NewSignal(false),
+		nextID:              10,
 	}
 
 	// Initialize celebration animation (loops continuously when started)
@@ -144,6 +188,11 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 		t.RequestFocus("theme-list")
 	}
 
+	// Update filtered list when in filter mode
+	if a.filterMode.Get() {
+		a.filteredListState.SetItems(a.getFilteredTasks())
+	}
+
 	return t.Column{
 		Width:  t.Flex(1),
 		Height: t.Flex(1),
@@ -165,6 +214,7 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 				Body: a.buildMainContainer(ctx, bgColor),
 			},
 			a.buildThemePicker(theme),
+			a.buildHelpModal(theme),
 		},
 	}
 }
@@ -185,7 +235,15 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 			completed++
 		}
 	}
-	countText := fmt.Sprintf("%d/%d", completed, len(tasks))
+
+	// Show different count text based on filter mode
+	var countText string
+	if a.filterMode.Get() {
+		filteredCount := len(a.getFilteredTasks())
+		countText = fmt.Sprintf("%d of %d", filteredCount, len(tasks))
+	} else {
+		countText = fmt.Sprintf("%d/%d", completed, len(tasks))
+	}
 
 	// Build border based on celebration state
 	var border t.Border
@@ -204,10 +262,14 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 		}
 	} else {
 		// Normal mode: static gradient
+		headerText := "Today's tasks"
+		if a.filterMode.Get() {
+			headerText = "Type to filter"
+		}
 		border = t.Border{
 			Style: t.BorderRounded,
 			Decorations: []t.BorderDecoration{
-				{"Today's tasks", t.DecorationTopLeft, nil},
+				{headerText, t.DecorationTopLeft, nil},
 				{countText, t.DecorationTopRight, nil},
 			},
 			Color: t.NewGradient(
@@ -233,8 +295,37 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 	}
 }
 
-// buildInputRow creates the new task input row.
+// buildInputRow creates the new task input row or filter input row.
 func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
+	if a.filterMode.Get() {
+		return t.Row{
+			Width: t.Flex(1),
+			Style: t.Style{
+				BackgroundColor: theme.Surface,
+				Padding:         t.EdgeInsetsXY(1, 0),
+			},
+			Children: []t.Widget{
+				t.Text{
+					Content: " / ",
+					Style: t.Style{
+						ForegroundColor: theme.Accent,
+						Bold:            true,
+					},
+				},
+				t.TextInput{
+					ID:          "filter-input",
+					State:       a.filterInputState,
+					Placeholder: "Filter tasks...",
+					Width:       t.Flex(1),
+					Style: t.Style{
+						BackgroundColor: theme.Surface,
+					},
+					OnSubmit: a.handleFilterSubmit,
+				},
+			},
+		}
+	}
+
 	return t.Row{
 		Width: t.Flex(1),
 		Style: t.Style{
@@ -265,18 +356,51 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 
 // buildTaskList creates the scrollable task list.
 func (a *TodoApp) buildTaskList(ctx t.BuildContext) t.Widget {
+	theme := ctx.Theme()
+	isFilterMode := a.filterMode.Get()
+
+	// Use filtered list when in filter mode
+	listState := a.tasks
+	scrollState := a.scrollState
+	if isFilterMode {
+		listState = a.filteredListState
+		scrollState = a.filteredScrollState
+	}
+
+	// Show empty state if no items
+	if listState.ItemCount() == 0 {
+		message := "There’s nothing to do."
+		if isFilterMode {
+			message = "Press [b]enter[/] to create this task."
+		}
+		return t.Column{
+			Height:     t.Flex(1),
+			Width:      t.Flex(1),
+			MainAlign:  t.MainAxisCenter,
+			CrossAlign: t.CrossAxisCenter,
+			Children: []t.Widget{
+				t.Text{
+					Spans: t.ParseMarkup(message, theme),
+					Style: t.Style{
+						ForegroundColor: theme.TextMuted.WithAlpha(0.5),
+					},
+				},
+			},
+		}
+	}
+
 	// Check if the list is focused
 	listFocused := ctx.Focused() != nil && ctx.IsFocused(t.List[Task]{ID: "task-list"})
 
 	return t.Scrollable{
-		State:               a.scrollState,
-		ScrollbarThumbColor: ctx.Theme().Surface,
-		ScrollbarTrackColor: ctx.Theme().Background.Darken(0.05),
+		State:               scrollState,
+		ScrollbarThumbColor: theme.Surface,
+		ScrollbarTrackColor: theme.Background.Darken(0.05),
 		Height:              t.Flex(1),
 		Child: t.List[Task]{
 			ID:          "task-list",
-			State:       a.tasks,
-			ScrollState: a.scrollState,
+			State:       listState,
+			ScrollState: scrollState,
 			RenderItem:  a.renderTaskItem(ctx, listFocused),
 			OnSelect:    a.toggleTask,
 		},
@@ -370,6 +494,21 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 			textStyle.Strikethrough = true
 		}
 
+		// Build the title widget - use spans with highlighting when filtering
+		var titleWidget t.Widget
+		if a.filterMode.Get() && a.getFilterText() != "" {
+			titleWidget = t.Text{
+				Spans: a.highlightMatches(task.Title, textStyle, theme.Accent, theme.Accent.WithAlpha(0.1)),
+				Width: t.Flex(1),
+			}
+		} else {
+			titleWidget = t.Text{
+				Content: task.Title,
+				Style:   textStyle,
+				Width:   t.Flex(1),
+			}
+		}
+
 		return t.Row{
 			Width: t.Flex(1),
 			Style: rowStyle,
@@ -384,11 +523,7 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 					Content: checkbox + "  ",
 					Style:   checkboxStyle,
 				},
-				t.Text{
-					Content: task.Title,
-					Style:   textStyle,
-					Width:   t.Flex(1),
-				},
+				titleWidget,
 			},
 		}
 	}
@@ -415,7 +550,7 @@ func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 				t.Text{
 					Content: "Select Theme",
 					Style: t.Style{
-						ForegroundColor: theme.Primary,
+						ForegroundColor: t.NewGradient(theme.Primary.Lighten(0.1), theme.Primary).WithAngle(90),
 						Bold:            true,
 					},
 				},
@@ -498,11 +633,33 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 	editingIdx := a.editingIndex.Peek()
 	isEditing := editingIdx >= 0
 	isThemePicker := a.showThemePicker.Peek()
+	isFilterMode := a.filterMode.Peek()
+	isHelp := a.showHelp.Peek()
+
+	// Help modal - any key closes it
+	if isHelp {
+		return []t.Keybind{
+			{Key: "escape", Name: "Close", Action: a.closeHelp},
+			{Key: "?", Name: "Close", Action: a.closeHelp, Hidden: true},
+		}
+	}
 
 	// Theme picker modal has its own keybinds (handled via Float dismiss)
 	if isThemePicker {
 		return []t.Keybind{
 			{Key: "escape", Name: "Cancel", Action: a.dismissThemePicker},
+		}
+	}
+
+	// Filter mode has its own keybinds
+	if isFilterMode {
+		return []t.Keybind{
+			{Key: "escape", Name: "Clear", Action: a.exitFilterMode},
+			{Key: "enter", Name: "Toggle", Action: a.toggleCurrentTask, Hidden: true},
+			{Key: " ", Name: "Toggle", Action: a.toggleCurrentTask},
+			{Key: "d", Name: "Delete", Action: a.deleteCurrentTask},
+			{Key: "up", Action: a.navigateUp, Hidden: true},
+			{Key: "down", Action: a.navigateDown, Hidden: true},
 		}
 	}
 
@@ -520,6 +677,10 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 			t.Keybind{Key: "e", Name: "Edit", Action: a.startEdit},
 			t.Keybind{Key: "d", Name: "Delete", Action: a.deleteCurrentTask},
 			t.Keybind{Key: "t", Name: "Theme", Action: a.openThemePicker},
+			t.Keybind{Key: "/", Name: "Filter", Action: a.enterFilterMode},
+			t.Keybind{Key: "ctrl+j", Name: "Move Down", Action: a.moveTaskDown, Hidden: true},
+			t.Keybind{Key: "ctrl+k", Name: "Move Up", Action: a.moveTaskUp, Hidden: true},
+			t.Keybind{Key: "?", Name: "Help", Action: a.openHelp},
 		)
 	} else {
 		keybinds = append(keybinds,
@@ -582,13 +743,19 @@ func (a *TodoApp) addTask(title string) {
 		Completed: false,
 		CreatedAt: time.Now(),
 	}
-	a.tasks.Append(task)
+	a.tasks.Prepend(task)
+	a.tasks.SelectIndex(0)
 	a.inputState.SetText("")
 }
 
 // toggleCurrentTask toggles the completion status of the selected task.
 func (a *TodoApp) toggleCurrentTask() {
-	if task, ok := a.tasks.SelectedItem(); ok {
+	// Use the appropriate list state based on filter mode
+	listState := a.tasks
+	if a.filterMode.Peek() {
+		listState = a.filteredListState
+	}
+	if task, ok := listState.SelectedItem(); ok {
 		a.toggleTask(task)
 	}
 }
@@ -607,8 +774,64 @@ func (a *TodoApp) toggleTask(task Task) {
 
 // deleteCurrentTask removes the currently selected task.
 func (a *TodoApp) deleteCurrentTask() {
+	// Use the appropriate list state based on filter mode
+	isFilterMode := a.filterMode.Peek()
+	listState := a.tasks
+	if isFilterMode {
+		listState = a.filteredListState
+	}
+
+	// Get the selected task and find its index in the original list
+	task, ok := listState.SelectedItem()
+	if !ok {
+		return
+	}
+
+	tasks := a.tasks.GetItems()
+	for i, tsk := range tasks {
+		if tsk.ID == task.ID {
+			a.tasks.RemoveAt(i)
+
+			// If in filter mode and no more filtered items, refocus the filter input
+			if isFilterMode && len(a.getFilteredTasks()) == 0 {
+				t.RequestFocus("filter-input")
+			}
+			return
+		}
+	}
+}
+
+// moveTaskUp moves the currently selected task up in the list.
+func (a *TodoApp) moveTaskUp() {
 	idx := a.tasks.CursorIndex.Peek()
-	a.tasks.RemoveAt(idx)
+	if idx <= 0 {
+		return // Already at top or invalid
+	}
+
+	tasks := a.tasks.GetItems()
+	if idx >= len(tasks) {
+		return
+	}
+
+	// Swap with previous item
+	tasks[idx], tasks[idx-1] = tasks[idx-1], tasks[idx]
+	a.tasks.SetItems(tasks)
+	a.tasks.SelectIndex(idx - 1)
+}
+
+// moveTaskDown moves the currently selected task down in the list.
+func (a *TodoApp) moveTaskDown() {
+	idx := a.tasks.CursorIndex.Peek()
+	tasks := a.tasks.GetItems()
+
+	if idx < 0 || idx >= len(tasks)-1 {
+		return // Already at bottom or invalid
+	}
+
+	// Swap with next item
+	tasks[idx], tasks[idx+1] = tasks[idx+1], tasks[idx]
+	a.tasks.SetItems(tasks)
+	a.tasks.SelectIndex(idx + 1)
 }
 
 // startEdit begins inline editing of the current task.
@@ -680,6 +903,247 @@ func (a *TodoApp) selectTheme(themeName string) {
 	t.SetTheme(themeName)
 	a.showThemePicker.Set(false)
 	t.RequestFocus("task-list")
+}
+
+// buildHelpModal creates the keyboard shortcuts help modal.
+func (a *TodoApp) buildHelpModal(theme t.ThemeData) t.Widget {
+	// Helper to create a key-action pair
+	keyCell := func(key, action string) t.Widget {
+		return t.Row{
+			Width:   t.Cells(18),
+			Spacing: 1,
+			Children: []t.Widget{
+				t.Text{
+					Content: key,
+					Width:   t.Cells(7),
+					Style: t.Style{
+						ForegroundColor: theme.Accent,
+						Bold:            true,
+					},
+				},
+				t.Text{
+					Content: action,
+					Style: t.Style{
+						ForegroundColor: theme.Text,
+					},
+				},
+			},
+		}
+	}
+
+	return t.Floating{
+		Visible: a.showHelp.Get(),
+		Config: t.FloatConfig{
+			Position:      t.FloatPositionCenter,
+			Modal:         true,
+			OnDismiss:     a.closeHelp,
+			BackdropColor: t.Black.WithAlpha(0.3),
+		},
+		Child: t.Column{
+			Width:   t.Cells(42),
+			Spacing: 1,
+			Style: t.Style{
+				BackgroundColor: t.NewGradient(theme.Surface.Lighten(0.3), theme.Surface).WithAngle(45),
+				Padding:         t.EdgeInsetsXY(2, 1),
+			},
+			Children: []t.Widget{
+				t.Text{
+					Content: "Keyboard Shortcuts",
+					Style: t.Style{
+						ForegroundColor: t.NewGradient(theme.Primary.Lighten(0.1), theme.Primary).WithAngle(90),
+						Bold:            true,
+					},
+				},
+				t.Row{
+					Children: []t.Widget{
+						keyCell("space", "Toggle"),
+						keyCell("ctrl+k", "Move ↑"),
+					},
+				},
+				t.Row{
+					Children: []t.Widget{
+						keyCell("e", "Edit"),
+						keyCell("ctrl+j", "Move ↓"),
+					},
+				},
+				t.Row{
+					Children: []t.Widget{
+						keyCell("d", "Delete"),
+						keyCell("/", "Filter"),
+					},
+				},
+				t.Row{
+					Children: []t.Widget{
+						keyCell("t", "Theme"),
+						keyCell("q", "Quit"),
+					},
+				},
+			},
+		},
+	}
+}
+
+// openHelp shows the help modal.
+func (a *TodoApp) openHelp() {
+	a.showHelp.Set(true)
+}
+
+// closeHelp hides the help modal.
+func (a *TodoApp) closeHelp() {
+	a.showHelp.Set(false)
+}
+
+// enterFilterMode activates filter mode and focuses the filter input.
+func (a *TodoApp) enterFilterMode() {
+	a.filterMode.Set(true)
+	a.filterInputState.SetText("")
+	t.RequestFocus("filter-input")
+}
+
+// handleFilterSubmit handles enter in the filter input.
+// If no matches, creates a new task with the filter text.
+func (a *TodoApp) handleFilterSubmit(text string) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return
+	}
+
+	// If there are matches, do nothing (user can navigate to them)
+	if len(a.getFilteredTasks()) > 0 {
+		return
+	}
+
+	// No matches - create a new task with the filter text
+	task := Task{
+		ID:        a.generateID(),
+		Title:     text,
+		Completed: false,
+		CreatedAt: time.Now(),
+	}
+	a.tasks.Prepend(task)
+
+	// Select the newly created task (first item)
+	a.tasks.SelectIndex(0)
+
+	// Exit filter mode
+	a.filterMode.Set(false)
+	a.filterInputState.SetText("")
+	t.RequestFocus("task-list")
+}
+
+// exitFilterMode deactivates filter mode and clears the filter.
+func (a *TodoApp) exitFilterMode() {
+	// Remember the selected task from the filtered list
+	selectedTask, hasSelection := a.filteredListState.SelectedItem()
+
+	a.filterMode.Set(false)
+	a.filterInputState.SetText("")
+
+	// Restore cursor to the same task in the main list
+	if hasSelection {
+		tasks := a.tasks.GetItems()
+		for i, task := range tasks {
+			if task.ID == selectedTask.ID {
+				a.tasks.SelectIndex(i)
+				break
+			}
+		}
+	}
+
+	t.RequestFocus("task-list")
+}
+
+// getFilterText returns the current filter text (lowercase for case-insensitive matching).
+func (a *TodoApp) getFilterText() string {
+	return strings.ToLower(a.filterInputState.GetText())
+}
+
+// taskMatchesFilter returns true if the task title contains the filter text.
+func (a *TodoApp) taskMatchesFilter(task Task) bool {
+	filterText := a.getFilterText()
+	if filterText == "" {
+		return true
+	}
+	return strings.Contains(strings.ToLower(task.Title), filterText)
+}
+
+// getFilteredTasks returns only the tasks that match the current filter.
+func (a *TodoApp) getFilteredTasks() []Task {
+	filterText := a.getFilterText()
+	if filterText == "" {
+		return a.tasks.GetItems()
+	}
+
+	var filtered []Task
+	for _, task := range a.tasks.GetItems() {
+		if a.taskMatchesFilter(task) {
+			filtered = append(filtered, task)
+		}
+	}
+	return filtered
+}
+
+// highlightMatches creates spans with highlighted matching substrings.
+func (a *TodoApp) highlightMatches(title string, baseStyle t.Style, highlightColor t.Color, highlightBackgroundColor t.Color) []t.Span {
+	filterText := a.getFilterText()
+	if filterText == "" {
+		return []t.Span{{Text: title, Style: styleToSpanStyle(baseStyle)}}
+	}
+
+	var spans []t.Span
+	titleLower := strings.ToLower(title)
+	pos := 0
+
+	for pos < len(title) {
+		// Find next match
+		matchIdx := strings.Index(titleLower[pos:], filterText)
+		if matchIdx == -1 {
+			// No more matches, add remaining text
+			if pos < len(title) {
+				spans = append(spans, t.Span{Text: title[pos:], Style: styleToSpanStyle(baseStyle)})
+			}
+			break
+		}
+
+		// Add text before match
+		matchStart := pos + matchIdx
+		if matchStart > pos {
+			spans = append(spans, t.Span{Text: title[pos:matchStart], Style: styleToSpanStyle(baseStyle)})
+		}
+
+		// Add highlighted match
+		matchEnd := matchStart + len(filterText)
+		highlightStyle := styleToSpanStyle(baseStyle)
+		highlightStyle.Underline = t.UnderlineSingle
+		highlightStyle.UnderlineColor = highlightColor
+		highlightStyle.Background = highlightBackgroundColor
+		spans = append(spans, t.Span{Text: title[matchStart:matchEnd], Style: highlightStyle})
+
+		pos = matchEnd
+	}
+
+	return spans
+}
+
+// styleToSpanStyle converts a Style to a SpanStyle.
+func styleToSpanStyle(s t.Style) t.SpanStyle {
+	return t.SpanStyle{
+		Foreground:    colorProviderToColor(s.ForegroundColor),
+		Bold:          s.Bold,
+		Italic:        s.Italic,
+		Strikethrough: s.Strikethrough,
+	}
+}
+
+// colorProviderToColor converts a ColorProvider to a Color.
+func colorProviderToColor(cp t.ColorProvider) t.Color {
+	if cp == nil {
+		return t.Color{}
+	}
+	if c, ok := cp.(t.Color); ok {
+		return c
+	}
+	return t.Color{}
 }
 
 func main() {
