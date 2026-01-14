@@ -98,8 +98,9 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
 		}
 
-		// Wrap in FlexNode if child has Fr width (Row's main axis is horizontal)
+		// Wrap in FlexNode or PercentNode if child has Flex/Percent width (Row's main axis is horizontal)
 		mainAxisDim := getChildMainAxisDimension(built, true)
+		childNode = wrapInPercentIfNeeded(childNode, mainAxisDim, layout.Horizontal)
 		children[i] = wrapInFlexIfNeeded(childNode, mainAxisDim)
 	}
 
@@ -202,8 +203,9 @@ func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
 		}
 
-		// Wrap in FlexNode if child has Fr height (Column's main axis is vertical)
+		// Wrap in FlexNode or PercentNode if child has Flex/Percent height (Column's main axis is vertical)
 		mainAxisDim := getChildMainAxisDimension(built, false)
+		childNode = wrapInPercentIfNeeded(childNode, mainAxisDim, layout.Vertical)
 		children[i] = wrapInFlexIfNeeded(childNode, mainAxisDim)
 	}
 

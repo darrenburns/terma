@@ -939,3 +939,148 @@ func TestSnapshot_Stack_MixedPositionedAndAligned(t *testing.T) {
 	}
 	AssertSnapshot(t, widget, 25, 8)
 }
+
+// =============================================================================
+// Percentage Dimension Tests
+// =============================================================================
+
+func TestSnapshot_Dimension_PercentWidth50(t *testing.T) {
+	widget := Row{
+		Width: Cells(20),
+		Children: []Widget{
+			Text{Content: "50%", Width: Percent(50), Style: Style{BackgroundColor: layoutRed}},
+		},
+	}
+	AssertSnapshot(t, widget, 25, 3)
+}
+
+func TestSnapshot_Dimension_PercentWidth100(t *testing.T) {
+	widget := Row{
+		Width: Cells(20),
+		Children: []Widget{
+			Text{Content: "Full", Width: Percent(100), Style: Style{BackgroundColor: layoutBlue}},
+		},
+	}
+	AssertSnapshot(t, widget, 25, 3)
+}
+
+func TestSnapshot_Dimension_PercentTwoChildren(t *testing.T) {
+	// 30% + 70% = 100%
+	widget := Row{
+		Width: Cells(30),
+		Style: Style{BackgroundColor: layoutGray}, // Gray background to show if children fill 100%
+		Children: []Widget{
+			Text{Content: "30%", Width: Percent(30), Style: Style{BackgroundColor: layoutRed}},
+			Text{Content: "70%", Width: Percent(70), Style: Style{BackgroundColor: layoutGreen}},
+		},
+	}
+	AssertSnapshot(t, widget, 35, 3)
+}
+
+func TestSnapshot_Dimension_PercentOverflow(t *testing.T) {
+	// 60% + 60% = 120% (intentional overflow)
+	widget := Row{
+		Width: Cells(20),
+		Children: []Widget{
+			Text{Content: "60%", Width: Percent(60), Style: Style{BackgroundColor: layoutRed}},
+			Text{Content: "60%", Width: Percent(60), Style: Style{BackgroundColor: layoutGreen}},
+		},
+	}
+	AssertSnapshot(t, widget, 30, 3)
+}
+
+func TestSnapshot_Dimension_PercentHeight(t *testing.T) {
+	widget := Column{
+		Height: Cells(10),
+		Children: []Widget{
+			Text{Content: "50%", Height: Percent(50), Style: Style{BackgroundColor: layoutBlue}},
+		},
+	}
+	AssertSnapshot(t, widget, 20, 12)
+}
+
+func TestSnapshot_Dimension_PercentMixedWithCells(t *testing.T) {
+	// Fixed 10 cells + 50% of parent (30 cells = 15 cells)
+	widget := Row{
+		Width: Cells(30),
+		Children: []Widget{
+			Text{Content: "Fixed", Width: Cells(10), Style: Style{BackgroundColor: layoutRed}},
+			Text{Content: "50%", Width: Percent(50), Style: Style{BackgroundColor: layoutGreen}},
+		},
+	}
+	AssertSnapshot(t, widget, 35, 3)
+}
+
+func TestSnapshot_Dimension_PercentMixedWithFlex(t *testing.T) {
+	// 30% takes fixed portion, Flex(1) fills remainder
+	widget := Row{
+		Width: Cells(30),
+		Children: []Widget{
+			Text{Content: "30%", Width: Percent(30), Style: Style{BackgroundColor: layoutRed}},
+			Text{Content: "Flex", Width: Flex(1), Style: Style{BackgroundColor: layoutGreen}},
+		},
+	}
+	AssertSnapshot(t, widget, 35, 3)
+}
+
+func TestSnapshot_Dimension_PercentMixedWithAuto(t *testing.T) {
+	widget := Row{
+		Width: Cells(30),
+		Children: []Widget{
+			Text{Content: "50%", Width: Percent(50), Style: Style{BackgroundColor: layoutRed}},
+			Text{Content: "Auto", Style: Style{BackgroundColor: layoutBlue}},
+		},
+	}
+	AssertSnapshot(t, widget, 35, 3)
+}
+
+func TestSnapshot_Dimension_PercentNested(t *testing.T) {
+	// Outer: 50% of 40 = 20 cells
+	// Inner: 50% of 20 = 10 cells
+	widget := Row{
+		Width: Cells(40),
+		Children: []Widget{
+			Row{
+				Width: Percent(50),
+				Style: Style{BackgroundColor: layoutGray},
+				Children: []Widget{
+					Text{Content: "Nested50%", Width: Percent(50), Style: Style{BackgroundColor: layoutBlue}},
+				},
+			},
+		},
+	}
+	AssertSnapshot(t, widget, 45, 3)
+}
+
+func TestSnapshot_Dimension_PercentZero(t *testing.T) {
+	widget := Row{
+		Width: Cells(20),
+		Children: []Widget{
+			Text{Content: "0%", Width: Percent(0), Style: Style{BackgroundColor: layoutRed}},
+			Text{Content: "Auto", Style: Style{BackgroundColor: layoutBlue}},
+		},
+	}
+	AssertSnapshot(t, widget, 25, 3)
+}
+
+func TestSnapshot_Dimension_PercentInColumn(t *testing.T) {
+	widget := Column{
+		Height: Cells(10),
+		Children: []Widget{
+			Text{Content: "25%", Height: Percent(25), Style: Style{BackgroundColor: layoutRed}},
+			Text{Content: "25%", Height: Percent(25), Style: Style{BackgroundColor: layoutGreen}},
+			Text{Content: "50%", Height: Percent(50), Style: Style{BackgroundColor: layoutBlue}},
+		},
+	}
+	AssertSnapshot(t, widget, 20, 12)
+}
+
+func TestSnapshot_Dimension_PercentInDock(t *testing.T) {
+	widget := Dock{
+		Top: []Widget{
+			Text{Content: "Header", Height: Percent(20), Style: Style{BackgroundColor: layoutRed}},
+		},
+		Body: Text{Content: "Body", Style: Style{BackgroundColor: layoutBlue}},
+	}
+	AssertSnapshot(t, widget, 30, 10)
+}

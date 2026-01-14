@@ -90,6 +90,30 @@ func wrapInFlexIfNeeded(node layout.LayoutNode, mainAxisDim Dimension) layout.La
 	return node
 }
 
+// wrapInPercentIfNeeded wraps a layout node in PercentNode if the dimension is Percent().
+// This is used when building layout trees from widgets - children with Percent dimensions
+// on the main axis should be wrapped in PercentNode so the percentage can be resolved
+// from the parent's constraints.
+//
+// Parameters:
+//   - node: The layout node to potentially wrap
+//   - mainAxisDim: The dimension on the main axis (Width for Row, Height for Column)
+//   - axis: The layout axis (Horizontal for Row, Vertical for Column)
+//
+// Returns:
+//   - The original node if mainAxisDim is not Percent()
+//   - A PercentNode wrapping the original if mainAxisDim is Percent()
+func wrapInPercentIfNeeded(node layout.LayoutNode, mainAxisDim Dimension, axis layout.Axis) layout.LayoutNode {
+	if mainAxisDim.IsPercent() {
+		return &layout.PercentNode{
+			Percent: mainAxisDim.PercentValue(),
+			Child:   node,
+			Axis:    axis,
+		}
+	}
+	return node
+}
+
 // getChildMainAxisDimension returns the main-axis dimension for a widget.
 // For horizontal (Row): returns Width
 // For vertical (Column): returns Height
