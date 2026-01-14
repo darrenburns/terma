@@ -940,8 +940,7 @@ func (a *TodoApp) buildHelpModal(theme t.ThemeData) t.Widget {
 			BackdropColor: t.Black.WithAlpha(0.3),
 		},
 		Child: t.Column{
-			Width:   t.Cells(42),
-			Spacing: 1,
+			Width: t.Cells(42),
 			Style: t.Style{
 				BackgroundColor: t.NewGradient(theme.Surface.Lighten(0.3), theme.Surface).WithAngle(45),
 				Padding:         t.EdgeInsetsXY(2, 1),
