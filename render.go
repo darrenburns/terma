@@ -342,15 +342,12 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 	}
 
 	// Border characters based on style
-	var tl, tr, bl, br, h, v string
-	switch border.Style {
-	case BorderSquare:
-		tl, tr, bl, br, h, v = "┌", "┐", "└", "┘", "─", "│"
-	case BorderRounded:
-		tl, tr, bl, br, h, v = "╭", "╮", "╰", "╯", "─", "│"
-	default:
-		return
+	chars := GetBorderCharSet(border.Style)
+	if chars.TopLeft == "" {
+		return // BorderNone or unknown style
 	}
+	tl, tr, bl, br := chars.TopLeft, chars.TopRight, chars.BottomLeft, chars.BottomRight
+	h, v := chars.Top, chars.Left
 
 	// Check if border color is a ColorProvider (for gradient borders)
 	borderColorProvider := border.Color

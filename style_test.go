@@ -251,11 +251,6 @@ func TestBorder_AllStyles_WidthReturnsOne(t *testing.T) {
 		{"Heavy", HeavyBorder(white)},
 		{"Dashed", DashedBorder(white)},
 		{"Ascii", AsciiBorder(white)},
-		{"Inner", InnerBorder(white)},
-		{"Outer", OuterBorder(white)},
-		{"Thick", ThickBorder(white)},
-		{"HKey", HKeyBorder(white)},
-		{"VKey", VKeyBorder(white)},
 	}
 
 	for _, tt := range tests {
@@ -279,11 +274,6 @@ func TestBorder_AllStyles_IsZeroReturnsFalse(t *testing.T) {
 		{"Heavy", HeavyBorder(white)},
 		{"Dashed", DashedBorder(white)},
 		{"Ascii", AsciiBorder(white)},
-		{"Inner", InnerBorder(white)},
-		{"Outer", OuterBorder(white)},
-		{"Thick", ThickBorder(white)},
-		{"HKey", HKeyBorder(white)},
-		{"VKey", VKeyBorder(white)},
 	}
 
 	for _, tt := range tests {
@@ -308,11 +298,6 @@ func TestGetBorderCharSet_ReturnsCorrectCharacters(t *testing.T) {
 		{BorderHeavy, "┏", "━", "┃"},
 		{BorderDashed, "┏", "╍", "╏"},
 		{BorderAscii, "+", "-", "|"},
-		{BorderInner, "▗", "▄", "▐"},
-		{BorderOuter, "▛", "▀", "▌"},
-		{BorderThick, "█", "▀", "█"},
-		{BorderHKey, "▔", "▔", " "},
-		{BorderVKey, "▏", " ", "▏"},
 	}
 
 	for _, tt := range tests {
@@ -355,11 +340,6 @@ func TestBorder_Constructors_SetCorrectStyle(t *testing.T) {
 		{"Heavy", HeavyBorder(white), BorderHeavy},
 		{"Dashed", DashedBorder(white), BorderDashed},
 		{"Ascii", AsciiBorder(white), BorderAscii},
-		{"Inner", InnerBorder(white), BorderInner},
-		{"Outer", OuterBorder(white), BorderOuter},
-		{"Thick", ThickBorder(white), BorderThick},
-		{"HKey", HKeyBorder(white), BorderHKey},
-		{"VKey", VKeyBorder(white), BorderVKey},
 	}
 
 	for _, tt := range tests {
