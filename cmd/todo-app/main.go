@@ -257,10 +257,14 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 		}
 	} else {
 		// Normal mode: static gradient
+		headerText := "Today's tasks"
+		if a.filterMode.Get() {
+			headerText = "Type to filter"
+		}
 		border = t.Border{
 			Style: t.BorderRounded,
 			Decorations: []t.BorderDecoration{
-				{"Today’s tasks", t.DecorationTopLeft, nil},
+				{headerText, t.DecorationTopLeft, nil},
 				{countText, t.DecorationTopRight, nil},
 			},
 			Color: t.NewGradient(
@@ -311,6 +315,7 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 					Style: t.Style{
 						BackgroundColor: theme.Surface,
 					},
+					OnSubmit: a.handleFilterSubmit,
 				},
 			},
 		}
@@ -361,7 +366,7 @@ func (a *TodoApp) buildTaskList(ctx t.BuildContext) t.Widget {
 	if listState.ItemCount() == 0 {
 		message := "There’s nothing to do."
 		if isFilterMode {
-			message = "Nothing matches your filter."
+			message = "Press [b]enter[/] to create this task."
 		}
 		return t.Column{
 			Height:     t.Flex(1),
@@ -370,7 +375,7 @@ func (a *TodoApp) buildTaskList(ctx t.BuildContext) t.Widget {
 			CrossAlign: t.CrossAxisCenter,
 			Children: []t.Widget{
 				t.Text{
-					Content: message,
+					Spans: t.ParseMarkup(message, theme),
 					Style: t.Style{
 						ForegroundColor: theme.TextMuted.WithAlpha(0.5),
 					},
@@ -659,6 +664,8 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 			t.Keybind{Key: "d", Name: "Delete", Action: a.deleteCurrentTask},
 			t.Keybind{Key: "t", Name: "Theme", Action: a.openThemePicker},
 			t.Keybind{Key: "/", Name: "Filter", Action: a.enterFilterMode},
+			t.Keybind{Key: "ctrl+j", Name: "Move Down", Action: a.moveTaskDown, Hidden: true},
+			t.Keybind{Key: "ctrl+k", Name: "Move Up", Action: a.moveTaskUp, Hidden: true},
 		)
 	} else {
 		keybinds = append(keybinds,
@@ -721,7 +728,8 @@ func (a *TodoApp) addTask(title string) {
 		Completed: false,
 		CreatedAt: time.Now(),
 	}
-	a.tasks.Append(task)
+	a.tasks.Prepend(task)
+	a.tasks.SelectIndex(0)
 	a.inputState.SetText("")
 }
 
@@ -776,6 +784,39 @@ func (a *TodoApp) deleteCurrentTask() {
 			return
 		}
 	}
+}
+
+// moveTaskUp moves the currently selected task up in the list.
+func (a *TodoApp) moveTaskUp() {
+	idx := a.tasks.CursorIndex.Peek()
+	if idx <= 0 {
+		return // Already at top or invalid
+	}
+
+	tasks := a.tasks.GetItems()
+	if idx >= len(tasks) {
+		return
+	}
+
+	// Swap with previous item
+	tasks[idx], tasks[idx-1] = tasks[idx-1], tasks[idx]
+	a.tasks.SetItems(tasks)
+	a.tasks.SelectIndex(idx - 1)
+}
+
+// moveTaskDown moves the currently selected task down in the list.
+func (a *TodoApp) moveTaskDown() {
+	idx := a.tasks.CursorIndex.Peek()
+	tasks := a.tasks.GetItems()
+
+	if idx < 0 || idx >= len(tasks)-1 {
+		return // Already at bottom or invalid
+	}
+
+	// Swap with next item
+	tasks[idx], tasks[idx+1] = tasks[idx+1], tasks[idx]
+	a.tasks.SetItems(tasks)
+	a.tasks.SelectIndex(idx + 1)
 }
 
 // startEdit begins inline editing of the current task.
@@ -854,6 +895,37 @@ func (a *TodoApp) enterFilterMode() {
 	a.filterMode.Set(true)
 	a.filterInputState.SetText("")
 	t.RequestFocus("filter-input")
+}
+
+// handleFilterSubmit handles enter in the filter input.
+// If no matches, creates a new task with the filter text.
+func (a *TodoApp) handleFilterSubmit(text string) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return
+	}
+
+	// If there are matches, do nothing (user can navigate to them)
+	if len(a.getFilteredTasks()) > 0 {
+		return
+	}
+
+	// No matches - create a new task with the filter text
+	task := Task{
+		ID:        a.generateID(),
+		Title:     text,
+		Completed: false,
+		CreatedAt: time.Now(),
+	}
+	a.tasks.Prepend(task)
+
+	// Select the newly created task (first item)
+	a.tasks.SelectIndex(0)
+
+	// Exit filter mode
+	a.filterMode.Set(false)
+	a.filterInputState.SetText("")
+	t.RequestFocus("task-list")
 }
 
 // exitFilterMode deactivates filter mode and clears the filter.
