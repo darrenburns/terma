@@ -68,6 +68,7 @@ func (a *App) buildOverlappingCards(ctx t.BuildContext) t.Widget {
 			t.Stack{
 				Width:  t.Cells(50),
 				Height: t.Cells(8),
+				Style:  t.Style{BackgroundColor: theme.Surface},
 				Children: []t.Widget{
 					// Back card (bottom layer)
 					t.Positioned{
@@ -77,26 +78,24 @@ func (a *App) buildOverlappingCards(ctx t.BuildContext) t.Widget {
 							Width:  t.Cells(30),
 							Height: t.Cells(6),
 							Style: t.Style{
-								BackgroundColor: t.RGB(60, 60, 90),
-								Border:          t.Border{Style: t.BorderRounded, Color: t.RGB(100, 100, 140)},
-								Padding:         t.EdgeInsetsAll(1),
+								BackgroundColor: t.NewGradient(theme.Secondary.WithAlpha(0.1), theme.Surface).WithAngle(45),
+								Padding:         t.EdgeInsetsXY(2, 1),
 							},
 							Children: []t.Widget{
-								t.Text{Content: "Back Card", Style: t.Style{ForegroundColor: t.White}},
-								t.Text{Content: "I'm behind!", Style: t.Style{ForegroundColor: t.RGB(180, 180, 180)}},
+								t.Text{Content: "Back Card", Style: t.Style{ForegroundColor: theme.Secondary.AutoText(), Bold: true}},
+								t.Text{Content: "I'm behind!", Style: t.Style{ForegroundColor: theme.Secondary.AutoText().WithAlpha(0.6)}},
 							},
 						},
 					},
 					// Front card (top layer, offset to show overlap)
 					t.Positioned{
-						Top:  t.IntPtr(2),
-						Left: t.IntPtr(15),
+						Bottom: t.IntPtr(0),
+						Right:  t.IntPtr(0),
 						Child: t.Column{
 							Width:  t.Cells(30),
 							Height: t.Cells(6),
 							Style: t.Style{
-								BackgroundColor: t.RGB(80, 60, 100),
-								Border:          t.Border{Style: t.BorderRounded, Color: t.RGB(140, 100, 160)},
+								BackgroundColor: t.RGB(80, 60, 100).WithAlpha(0.8),
 								Padding:         t.EdgeInsetsAll(1),
 							},
 							Children: []t.Widget{
