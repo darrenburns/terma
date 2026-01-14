@@ -230,7 +230,15 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 			completed++
 		}
 	}
-	countText := fmt.Sprintf("%d/%d", completed, len(tasks))
+
+	// Show different count text based on filter mode
+	var countText string
+	if a.filterMode.Get() {
+		filteredCount := len(a.getFilteredTasks())
+		countText = fmt.Sprintf("%d of %d", filteredCount, len(tasks))
+	} else {
+		countText = fmt.Sprintf("%d/%d", completed, len(tasks))
+	}
 
 	// Build border based on celebration state
 	var border t.Border
@@ -252,7 +260,7 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 		border = t.Border{
 			Style: t.BorderRounded,
 			Decorations: []t.BorderDecoration{
-				{"Today's tasks", t.DecorationTopLeft, nil},
+				{"Today’s tasks", t.DecorationTopLeft, nil},
 				{countText, t.DecorationTopRight, nil},
 			},
 			Color: t.NewGradient(
@@ -353,7 +361,7 @@ func (a *TodoApp) buildTaskList(ctx t.BuildContext) t.Widget {
 	if listState.ItemCount() == 0 {
 		message := "There’s nothing to do."
 		if isFilterMode {
-			message = "No matches"
+			message = "Nothing matches your filter."
 		}
 		return t.Column{
 			Height:     t.Flex(1),
