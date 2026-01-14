@@ -81,10 +81,13 @@ func TestSnapshotWithStyledText(t *testing.T) {
 	widget := testStyledWidget{}
 	svg := Snapshot(widget, 40, 10)
 
-	// Check that colored text is rendered
-	assert.Contains(t, svg, "Hello World")
-	assert.Contains(t, svg, "Bold Text")
-	assert.Contains(t, svg, "With Background")
+	// Check that colored text is rendered (text spans break on spaces)
+	assert.Contains(t, svg, "Hello")
+	assert.Contains(t, svg, "World")
+	assert.Contains(t, svg, "Bold")
+	assert.Contains(t, svg, "Text")
+	assert.Contains(t, svg, "With")
+	assert.Contains(t, svg, "Background")
 
 	// Check for bold class
 	assert.Contains(t, svg, `class="bold"`)
@@ -215,9 +218,11 @@ func TestSnapshotIntegration(t *testing.T) {
 
 	svg := Snapshot(widget, 30, 10)
 
-	// Verify the SVG contains expected elements
+	// Verify the SVG contains expected elements (text spans break on spaces)
 	assert.Contains(t, svg, "Header")
-	assert.Contains(t, svg, "Body text here")
+	assert.Contains(t, svg, "Body")
+	assert.Contains(t, svg, "text")
+	assert.Contains(t, svg, "here")
 	assert.Contains(t, svg, `class="bold"`)
 
 	// Verify it's valid SVG

@@ -5,23 +5,82 @@ Terma includes built-in snapshot testing for capturing terminal UI as SVG images
 ## Quick Start
 
 ```go
-package myapp_test
-
-import (
-    "testing"
-    "terma"
-)
-
 func TestMyWidget(t *testing.T) {
-    widget := MyWidget{Title: "Hello"}
-
-    // Generate SVG snapshot
-    svg := terma.Snapshot(widget, 80, 24)
-
-    // Save to file
-    terma.SaveSnapshot(widget, 80, 24, "testdata/my_widget.svg")
+    widget := Text{Content: "Hello, World!"}
+    terma.AssertSnapshot(t, widget, 20, 5)
 }
 ```
+
+That's it! The `AssertSnapshot` function:
+- Renders the widget to SVG
+- Compares against a golden file in `testdata/<TestName>.svg`
+- Creates the golden file if it doesn't exist (with `UPDATE_SNAPSHOTS=1`)
+- Fails with a helpful diff if there's a mismatch
+
+## Workflow
+
+### Running Tests
+
+```bash
+# Run tests (compare against golden files)
+go test ./...
+
+# Update golden files after intentional UI changes
+UPDATE_SNAPSHOTS=1 go test ./...
+```
+
+### First Time Setup
+
+When you add a new snapshot test, run with `UPDATE_SNAPSHOTS=1` to create the initial golden file:
+
+```bash
+UPDATE_SNAPSHOTS=1 go test -run TestMyNewWidget ./...
+```
+
+### Reviewing Changes
+
+When a test fails, you'll see output like:
+```
+snapshot mismatch for TestMyWidget
+  Golden file: testdata/TestMyWidget.svg
+  Similarity:  95.2%
+  Mismatched:  48 / 1000 cells
+
+Run with UPDATE_SNAPSHOTS=1 to update the golden file if this change is intentional
+```
+
+## AssertSnapshot API
+
+```go
+// Basic usage - uses test name for golden file
+func TestMyWidget(t *testing.T) {
+    widget := Text{Content: "Hello"}
+    terma.AssertSnapshot(t, widget, 20, 5)
+}
+
+// Multiple snapshots in one test - use custom names
+func TestMyWidget_States(t *testing.T) {
+    widget := MyWidget{}
+    terma.AssertSnapshotNamed(t, "initial", widget, 20, 5)
+
+    widget.Update()
+    terma.AssertSnapshotNamed(t, "after_update", widget, 20, 5)
+}
+
+// Custom SVG options
+func TestMyWidget_CustomOptions(t *testing.T) {
+    widget := Text{Content: "Hello"}
+    opts := terma.SVGOptions{
+        FontSize:   16,
+        Background: terma.RGB(30, 30, 46),
+    }
+    terma.AssertSnapshotWithOptions(t, widget, 20, 5, opts)
+}
+```
+
+## Manual Snapshot Generation
+
+For cases where you need more control:
 
 ## API Reference
 
@@ -99,7 +158,25 @@ comparison := terma.SnapshotComparison{
 
 ## Comparison Gallery
 
-Generate an HTML page showing expected vs actual snapshots side-by-side:
+When snapshot tests fail, a combined HTML gallery is automatically generated showing all failures from the test run.
+
+### Setup
+
+Add a `TestMain` to your test package to enable gallery generation:
+
+```go
+func TestMain(m *testing.M) {
+    code := m.Run()
+    terma.SnapshotTestMain("testdata/snapshot_gallery.html")
+    os.Exit(code)
+}
+```
+
+When any snapshot test fails, `SnapshotTestMain` generates a gallery at the specified path containing all failures.
+
+### Manual Gallery Generation
+
+For custom use cases, you can generate galleries manually:
 
 ```go
 comparisons := []terma.SnapshotComparison{

@@ -178,14 +178,17 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 				x++
 			}
 
-			// Look ahead for same-style cells
+			// Look ahead for same-style cells (including same background)
+			baseBg := FromANSI(baseStyle.Bg)
 			for x < width {
 				nextCell := buf.CellAt(x, y)
-				if nextCell == nil || nextCell.Content == "" {
+				if nextCell == nil || nextCell.Content == "" || nextCell.Content == " " {
 					break
 				}
 				nextFg := FromANSI(nextCell.Style.Fg)
-				if !sameStyle(baseStyle, nextCell.Style) || baseFg.Hex() != nextFg.Hex() {
+				nextBg := FromANSI(nextCell.Style.Bg)
+				// Break if foreground, background, or attributes differ
+				if !sameStyle(baseStyle, nextCell.Style) || baseFg.Hex() != nextFg.Hex() || baseBg.Hex() != nextBg.Hex() {
 					break
 				}
 				textContent.WriteString(nextCell.Content)
@@ -406,6 +409,95 @@ func GenerateDiffSVG(expected, actual *uv.Buffer, width, height int, opts SVGOpt
 
 	sb.WriteString("</svg>\n")
 	return sb.String()
+}
+
+// SerializedCell represents a cell that can be JSON serialized.
+type SerializedCell struct {
+	Content string `json:"c,omitempty"` // Cell content
+	Fg      string `json:"f,omitempty"` // Foreground color as hex
+	Bg      string `json:"b,omitempty"` // Background color as hex
+	Attrs   uint8  `json:"a,omitempty"` // Style attributes
+}
+
+// SerializedBuffer represents a buffer that can be JSON serialized.
+type SerializedBuffer struct {
+	Width  int              `json:"w"`
+	Height int              `json:"h"`
+	Cells  []SerializedCell `json:"cells"` // Row-major order
+}
+
+// SerializeBuffer converts a uv.Buffer to a serializable format.
+func SerializeBuffer(buf *uv.Buffer, width, height int) SerializedBuffer {
+	sb := SerializedBuffer{
+		Width:  width,
+		Height: height,
+		Cells:  make([]SerializedCell, width*height),
+	}
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			cell := buf.CellAt(x, y)
+			idx := y*width + x
+			if cell != nil {
+				sb.Cells[idx] = SerializedCell{
+					Content: cell.Content,
+					Fg:      colorToHex(cell.Style.Fg),
+					Bg:      colorToHex(cell.Style.Bg),
+					Attrs:   uint8(cell.Style.Attrs),
+				}
+			}
+		}
+	}
+
+	return sb
+}
+
+// ToBuffer converts a SerializedBuffer back to a uv.Buffer.
+func (sb *SerializedBuffer) ToBuffer() *uv.Buffer {
+	buf := uv.NewBuffer(sb.Width, sb.Height)
+
+	for y := 0; y < sb.Height; y++ {
+		for x := 0; x < sb.Width; x++ {
+			idx := y*sb.Width + x
+			if idx < len(sb.Cells) {
+				cell := sb.Cells[idx]
+				if cell.Content != "" || cell.Fg != "" || cell.Bg != "" || cell.Attrs != 0 {
+					buf.SetCell(x, y, &uv.Cell{
+						Content: cell.Content,
+						Style: uv.Style{
+							Fg:    hexToColor(cell.Fg),
+							Bg:    hexToColor(cell.Bg),
+							Attrs: cell.Attrs,
+						},
+					})
+				}
+			}
+		}
+	}
+
+	return buf
+}
+
+// colorToHex converts a color to a hex string.
+func colorToHex(c color.Color) string {
+	if c == nil {
+		return ""
+	}
+	r, g, b, _ := c.RGBA()
+	return fmt.Sprintf("#%02x%02x%02x", r>>8, g>>8, b>>8)
+}
+
+// hexToColor converts a hex string to a color.
+func hexToColor(hex string) color.Color {
+	if hex == "" {
+		return nil
+	}
+	if len(hex) == 7 && hex[0] == '#' {
+		var r, g, b uint8
+		fmt.Sscanf(hex, "#%02x%02x%02x", &r, &g, &b)
+		return color.RGBA{R: r, G: g, B: b, A: 255}
+	}
+	return nil
 }
 
 // SnapshotComparison represents a comparison between expected and actual snapshots.
