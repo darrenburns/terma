@@ -772,6 +772,14 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
       </div>`, similarityClass, comp.Stats.Similarity, comp.Stats.TotalCells, mismatchClass, comp.Stats.MismatchedCells)
 		}
 
+		// For highlight view: show diff SVG if available, otherwise show actual
+		highlightLabel := "Highlight: Differing cells shown in magenta"
+		highlightContent := comp.DiffSVG
+		if highlightContent == "" {
+			highlightLabel = "Snapshot (no differences to highlight)"
+			highlightContent = comp.Actual
+		}
+
 		sb.WriteString(fmt.Sprintf(`  <div class="comparison %s view-sidebyside" data-status="%s" data-index="%d">
     <div class="comparison-header">
       <span class="comparison-name">%s</span>
@@ -808,7 +816,7 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
       </div>
     </div>
     <div class="highlight-view">
-      <div class="snapshot-label">Highlight: Differing cells shown in magenta</div>
+      <div class="snapshot-label">%s</div>
       <div class="snapshot">
 %s
       </div>
@@ -819,7 +827,8 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
 			indentSVG(comp.Actual, "          "),
 			indentSVG(comp.Expected, "        "),
 			indentSVG(comp.Actual, "        "),
-			indentSVG(comp.DiffSVG, "        ")))
+			highlightLabel,
+			indentSVG(highlightContent, "        ")))
 	}
 
 	sb.WriteString(`  <script>

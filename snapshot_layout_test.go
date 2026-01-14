@@ -335,7 +335,7 @@ func TestSnapshot_Dock_RightOnly(t *testing.T) {
 
 func TestSnapshot_Dock_AllEdges(t *testing.T) {
 	widget := Dock{
-		Top:    []Widget{Text{Content: "Top", Style: Style{BackgroundColor: layoutRed}}},
+		Top:    []Widget{Text{Content: "T0p", Style: Style{BackgroundColor: layoutRed}}},
 		Bottom: []Widget{Text{Content: "Bottom", Style: Style{BackgroundColor: layoutOrange}}},
 		Left:   []Widget{Text{Content: "Left", Style: Style{BackgroundColor: layoutGreen}}},
 		Right:  []Widget{Text{Content: "Right", Style: Style{BackgroundColor: layoutPurple}}},
