@@ -134,6 +134,39 @@ func (ctx *RenderContext) SubContext(xOffset, yOffset, width, height int) *Rende
 	}
 }
 
+// OverflowSubContext creates a child context offset from this one that allows overflow.
+// Unlike SubContext, this keeps the parent's clip rect instead of intersecting with child bounds.
+// This allows children to render outside their container's bounds (e.g., Stack children with
+// negative positioning like badges that overflow their parent).
+func (ctx *RenderContext) OverflowSubContext(xOffset, yOffset, width, height int) *RenderContext {
+	// Ensure non-negative dimensions
+	if width < 0 {
+		width = 0
+	}
+	if height < 0 {
+		height = 0
+	}
+
+	// Child's absolute position
+	childX := ctx.X + xOffset
+	childY := ctx.Y + yOffset
+
+	// Keep parent's clip rect to allow overflow
+	return &RenderContext{
+		terminal:       ctx.terminal,
+		X:              childX,
+		Y:              childY,
+		Width:          width,
+		Height:         height,
+		clip:           ctx.clip, // Don't intersect - allow overflow
+		focusCollector: ctx.focusCollector,
+		focusManager:   ctx.focusManager,
+		buildContext:   ctx.buildContext,
+		widgetRegistry: ctx.widgetRegistry,
+		inheritedBgAt:  ctx.inheritedBgAt,
+	}
+}
+
 // ScrolledSubContext creates a child context with scroll offset applied.
 // The clip rect remains the viewport bounds, but content positions are offset.
 // scrollY is how much the content has been scrolled (content moves up).
@@ -323,6 +356,7 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 	borderColorProvider := border.Color
 
 	// Helper to set a cell with a specific foreground color
+	// Reads existing cell to preserve background from underlying content (for transparency)
 	setCellStyled := func(cx, cy int, content string, fgColor Color) {
 		absX := ctx.X + cx
 		absY := ctx.Y + cy
@@ -330,9 +364,12 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		if !ctx.clip.Contains(absX, absY) {
 			return
 		}
-		// Use inherited background if available
+		// Read existing cell to get actual background (for transparency over siblings)
 		var bg Color
-		if ctx.inheritedBgAt != nil {
+		if existing := ctx.terminal.CellAt(absX, absY); existing != nil {
+			bg = FromANSI(existing.Style.Bg)
+		}
+		if !bg.IsSet() && ctx.inheritedBgAt != nil {
 			bg = ctx.inheritedBgAt(absX, absY)
 		}
 		// Blend foreground if semi-transparent
@@ -533,19 +570,27 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 		}
 		// Only draw if within horizontal clip bounds
 		if cellX >= ctx.clip.X {
+			// Get actual background from terminal buffer (for transparency over siblings)
+			var screenBg Color
+			if existing := ctx.terminal.CellAt(cellX, absY); existing != nil {
+				screenBg = FromANSI(existing.Style.Bg)
+			}
+			if !screenBg.IsSet() && ctx.inheritedBgAt != nil {
+				screenBg = ctx.inheritedBgAt(cellX, absY)
+			}
+
 			// Sample background at this cell's position
 			var bg Color
 			if hasExplicitBg {
 				bg = style.BackgroundColor.ColorAt(1, 1, 0, 0)
-				if !bg.IsOpaque() && ctx.inheritedBgAt != nil {
-					inherited := ctx.inheritedBgAt(cellX, absY)
-					if !inherited.IsSet() {
-						inherited = Black
+				if !bg.IsOpaque() {
+					if !screenBg.IsSet() {
+						screenBg = Black
 					}
-					bg = bg.BlendOver(inherited)
+					bg = bg.BlendOver(screenBg)
 				}
-			} else if ctx.inheritedBgAt != nil {
-				bg = ctx.inheritedBgAt(cellX, absY)
+			} else {
+				bg = screenBg
 			}
 
 			// Sample foreground at this cell's position (supports gradients)
@@ -636,28 +681,35 @@ func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
 		}
 		// Only draw if within horizontal clip bounds
 		if cellX >= ctx.clip.X {
+			// Get actual background from terminal buffer (for transparency over siblings)
+			var screenBg Color
+			if existing := ctx.terminal.CellAt(cellX, absY); existing != nil {
+				screenBg = FromANSI(existing.Style.Bg)
+			}
+			if !screenBg.IsSet() && ctx.inheritedBgAt != nil {
+				screenBg = ctx.inheritedBgAt(cellX, absY)
+			}
+
 			// Sample background at this cell's position
 			var bg Color
 			if hasExplicitBg {
 				bg = explicitBg
-				if !bg.IsOpaque() && ctx.inheritedBgAt != nil {
-					inherited := ctx.inheritedBgAt(cellX, absY)
-					if !inherited.IsSet() {
-						inherited = Black
+				if !bg.IsOpaque() {
+					if !screenBg.IsSet() {
+						screenBg = Black
 					}
-					bg = bg.BlendOver(inherited)
+					bg = bg.BlendOver(screenBg)
 				}
 			} else if hasBaseBg {
 				bg = baseStyle.BackgroundColor.ColorAt(1, 1, 0, 0)
-				if !bg.IsOpaque() && ctx.inheritedBgAt != nil {
-					inherited := ctx.inheritedBgAt(cellX, absY)
-					if !inherited.IsSet() {
-						inherited = Black
+				if !bg.IsOpaque() {
+					if !screenBg.IsSet() {
+						screenBg = Black
 					}
-					bg = bg.BlendOver(inherited)
+					bg = bg.BlendOver(screenBg)
 				}
-			} else if ctx.inheritedBgAt != nil {
-				bg = ctx.inheritedBgAt(cellX, absY)
+			} else {
+				bg = screenBg
 			}
 
 			// Determine foreground color: span style (Color) overrides base style (ColorProvider)
@@ -818,33 +870,37 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 
 	// 1. Fill background (border-box area) using ColorProvider
 	if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
-		for row := 0; row < box.Height; row++ {
-			absY := trueAbsBorderY + row
-			if absY < ctx.clip.Y || absY >= ctx.clip.Y+ctx.clip.Height {
-				continue
-			}
+		// Check if background is semi-transparent (needs backdrop blending)
+		// Sample at (0,0) to check - for gradients this may not be fully accurate
+		// but is a reasonable heuristic
+		sampleColor := style.BackgroundColor.ColorAt(box.Width, box.Height, 0, 0)
+		useBackdrop := !sampleColor.IsOpaque()
 
-			for col := 0; col < box.Width; col++ {
-				absX := trueAbsBorderX + col
-				if absX < ctx.clip.X || absX >= ctx.clip.X+ctx.clip.Width {
+		if useBackdrop {
+			// Use DrawBackdrop to preserve underlying content and blend colors
+			backdropCtx := ctx.SubContext(absBorderX, absBorderY, box.Width, box.Height)
+			backdropCtx.DrawBackdrop(0, 0, box.Width, box.Height, sampleColor)
+		} else {
+			// Opaque background - fill with solid color
+			for row := 0; row < box.Height; row++ {
+				absY := trueAbsBorderY + row
+				if absY < ctx.clip.Y || absY >= ctx.clip.Y+ctx.clip.Height {
 					continue
 				}
 
-				// Sample color at this position (works for both solid colors and gradients)
-				cellColor := style.BackgroundColor.ColorAt(box.Width, box.Height, col, row)
-
-				// Blend with inherited background if not opaque
-				if !cellColor.IsOpaque() && ctx.inheritedBgAt != nil {
-					inherited := ctx.inheritedBgAt(absX, absY)
-					if !inherited.IsSet() {
-						inherited = Black
+				for col := 0; col < box.Width; col++ {
+					absX := trueAbsBorderX + col
+					if absX < ctx.clip.X || absX >= ctx.clip.X+ctx.clip.Width {
+						continue
 					}
-					cellColor = cellColor.BlendOver(inherited)
-				}
 
-				cellStyle := uv.Style{Bg: cellColor.toANSI()}
-				cell := &uv.Cell{Content: " ", Width: 1, Style: cellStyle}
-				ctx.terminal.SetCell(absX, absY, cell)
+					// Sample color at this position (works for both solid colors and gradients)
+					cellColor := style.BackgroundColor.ColorAt(box.Width, box.Height, col, row)
+
+					cellStyle := uv.Style{Bg: cellColor.toANSI()}
+					cell := &uv.Cell{Content: " ", Width: 1, Style: cellStyle}
+					ctx.terminal.SetCell(absX, absY, cell)
+				}
 			}
 		}
 	}
@@ -911,20 +967,25 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 	// If tree.Children is empty but widget has children, the widget handles them in Render() (fallback)
 	// If tree.Children is populated, we handle positioning here (new path)
 	if len(tree.Children) > 0 {
-		// Determine usable content area (accounts for scrollbar space)
-		usableBox := box.UsableContentBox()
-		usableWidth := usableBox.Width
-		usableHeight := usableBox.Height
-
-		// Create a context clipped to this widget's usable content area
-		// For scrollable widgets, use ScrolledSubContext to apply scroll offset
+		// Determine the context for rendering children
 		var childClipCtx *RenderContext
-		if box.IsScrollableY() {
+
+		// Stack positions children relative to border-box, not content-box
+		// Stack allows children to overflow (e.g., badges with negative positioning)
+		_, isStack := tree.Widget.(Stack)
+		if isStack {
+			// Stack: children positioned relative to border-box, can overflow
+			childClipCtx = ctx.OverflowSubContext(absBorderX, absBorderY, box.Width, box.Height)
+		} else if box.IsScrollableY() {
 			// Scrollable: apply scroll offset so content is shifted up
-			childClipCtx = ctx.ScrolledSubContext(absContentX, absContentY, usableWidth, usableHeight, box.ScrollOffsetY)
+			usableBox := box.UsableContentBox()
+			childClipCtx = ctx.ScrolledSubContext(absContentX, absContentY, usableBox.Width, usableBox.Height, box.ScrollOffsetY)
 		} else {
-			// Non-scrollable: use regular SubContext
-			childClipCtx = ctx.SubContext(absContentX, absContentY, usableWidth, usableHeight)
+			// Standard containers: children positioned relative to content area
+			// Use SubContext which clips children to the container bounds
+			// Stack uses OverflowSubContext to allow positioned children to overflow
+			usableBox := box.UsableContentBox()
+			childClipCtx = ctx.SubContext(absContentX, absContentY, usableBox.Width, usableBox.Height)
 		}
 
 		// Set inherited background for children using ColorProvider
@@ -956,7 +1017,7 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 				break
 			}
 			pos := tree.Layout.Children[i]
-			// Pass relative positions - childClipCtx.X/Y already contains absContentX/Y
+			// Pass relative positions - childClipCtx.X/Y already contains the origin offset
 			r.renderTree(childClipCtx, childTree, pos.X, pos.Y)
 		}
 	}

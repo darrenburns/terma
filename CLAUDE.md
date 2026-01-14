@@ -45,6 +45,7 @@ go mod tidy
 | `signal.go` | Reactive `Signal[T]` and `AnySignal[T]` |
 | `widget.go` | Core `Widget`, `Layoutable`, `Renderable` interfaces |
 | `layout.go` | `Column`, `Row` layout widgets |
+| `stack.go` | `Stack` widget for z-order overlays |
 | `context.go` | `BuildContext` for focus/hover state |
 | `focus.go` | Focus management, `Focusable`, `KeyHandler` interfaces |
 | `list.go` | Generic `List[T]` with keyboard navigation |
@@ -96,6 +97,7 @@ func main() {
 |--------|---------|------------|
 | `Column` | Arranges children vertically | `Children`, `Spacing`, `MainAlign`, `CrossAlign` |
 | `Row` | Arranges children horizontally | `Children`, `Spacing`, `MainAlign`, `CrossAlign` |
+| `Stack` | Overlays children in z-order | `Children`, `Alignment` |
 | `Dock` | Edge-docking layout (like WPF DockPanel) | `Top`, `Bottom`, `Left`, `Right`, `Body`, `DockOrder` |
 | `Scrollable` | Scrolling container with scrollbar | `Child`, `State` (required), `DisableScroll` |
 | `Floating` | Overlay/modal positioning | `Visible`, `Config`, `Child` |
@@ -161,6 +163,61 @@ Floating{
 // KeybindBar at bottom of app
 KeybindBar{
     Style: Style{BackgroundColor: theme.Surface},
+}
+
+// Stack with overlapping children (first child at bottom, last on top)
+Stack{
+    Children: []Widget{
+        Card{},  // Base layer - determines Stack size with Auto dimensions
+        Positioned{
+            Top:   IntPtr(-1),  // Overflow above Stack bounds
+            Right: IntPtr(-1),  // Overflow right of Stack bounds
+            Child: Badge{Count: 3},
+        },
+    },
+}
+```
+
+### Stack Widget
+
+`Stack` overlays children on top of each other in z-order (first child at bottom, last on top). Children can be:
+
+- **Regular widgets**: Positioned using the Stack's `Alignment` within the **content area** (inside padding/borders)
+- **`Positioned` wrappers**: Positioned using edge offsets (`Top`, `Right`, `Bottom`, `Left`) relative to the **border-box** (can overlap padding/borders)
+
+**Coordinate systems:** When a Stack has padding or borders, non-positioned children are laid out within the inner content area, while `Positioned` children use the Stack's outer border-box as their reference. This means `Positioned{Top: IntPtr(0), Left: IntPtr(0)}` places a child at the Stack's top-left corner, potentially overlapping any border or padding.
+
+```go
+// Positioned helper functions
+Positioned{Top: IntPtr(0), Left: IntPtr(0), Child: widget}  // Top-left corner
+PositionedAt(5, 10, widget)                                  // At row 5, col 10
+PositionedFill(widget)                                       // Fill entire Stack
+```
+
+**Important caveat**: Stack sizes itself based on the largest **non-positioned** child only. `Positioned` children do not affect Stack's size and can overflow its bounds. If you only have `Positioned` children, the Stack will have zero size with Auto dimensions.
+
+```go
+// ✓ Correct: Non-positioned child defines size, positioned child overlays
+Stack{
+    Children: []Widget{
+        Card{Width: Cells(20), Height: Cells(10)},  // Defines Stack size
+        Positioned{Top: IntPtr(-1), Right: IntPtr(-1), Child: Badge{}},
+    },
+}
+
+// ✗ Problem: Only positioned children = zero size with Auto
+Stack{
+    Children: []Widget{
+        Positioned{Top: IntPtr(0), Left: IntPtr(0), Child: Card{}},
+    },
+}
+// Fix: Use explicit dimensions
+Stack{
+    Width:  Cells(20),
+    Height: Cells(10),
+    Children: []Widget{
+        Positioned{Top: IntPtr(0), Left: IntPtr(0), Child: Card{}},
+    },
 }
 ```
 

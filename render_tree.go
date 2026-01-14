@@ -114,6 +114,8 @@ func extractChildren(widget Widget) []Widget {
 		return nil
 	case Dock:
 		return w.AllChildren()
+	case Stack:
+		return w.AllChildren()
 	default:
 		return nil
 	}
