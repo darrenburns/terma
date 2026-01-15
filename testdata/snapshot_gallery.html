@@ -165,6 +165,25 @@
       font-size: 12px;
       color: #666;
     }
+
+    /* Seen/minimized state */
+    .comparison.seen .snapshots,
+    .comparison.seen .diff-view,
+    .comparison.seen .highlight-view { display: none !important; }
+    .comparison.seen { padding: 12px 20px; }
+    .seen-btn {
+      background: transparent;
+      border: 1px solid #555;
+      color: #888;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-left: auto;
+    }
+    .seen-btn:hover { background: #3d3d54; border-color: #777; color: #ccc; }
+    .comparison.seen .seen-btn { background: #3d3d54; border-color: #5a5a8a; color: #aaa; }
+    .comparison.seen .seen-btn:hover { background: #4d4d64; }
     .header-bar {
       display: flex;
       align-items: center;
@@ -189,7 +208,7 @@
     .summary-count.failed { color: #ff4444; }
   </style>
 </head>
-<body>
+<body data-gallery-id="1e0f3100e5759658">
   <div class="header-bar">
     <h1 style="margin: 0;">Terma Snapshot Gallery</h1>
     <div class="summary">
@@ -214,10 +233,11 @@
     </div>
     <span class="help-text">Difference mode: black = identical, colored = different</span>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="0">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="0" data-name="TestSnapshot_Text_PlainContent">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Text_PlainContent</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -316,10 +336,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="1">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="1" data-name="TestSnapshot_Text_RichSpans">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Text_RichSpans</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -423,10 +444,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="2">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="2" data-name="TestSnapshot_Text_WrapNone">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Text_WrapNone</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -540,10 +562,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="3">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="3" data-name="TestSnapshot_Text_WrapSoft">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Text_WrapSoft</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -682,10 +705,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="4">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="4" data-name="TestSnapshot_Text_WrapHard">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Text_WrapHard</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -794,10 +818,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="5">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="5" data-name="TestSnapshot_Text_BoldItalicUnderline">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Text_BoldItalicUnderline</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -901,10 +926,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="6">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="6" data-name="TestSnapshot_Text_WithBackground">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Text_WithBackground</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -1053,10 +1079,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="7">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="7" data-name="TestSnapshot_Text_Multiline">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Text_Multiline</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -1175,10 +1202,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="8">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="8" data-name="TestSnapshot_Text_WithForegroundColor">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Text_WithForegroundColor</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -1272,10 +1300,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="9">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="9" data-name="TestSnapshot_Button_DefaultState">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Button_DefaultState</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -1414,10 +1443,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="10">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="10" data-name="TestSnapshot_Button_CustomStyle">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Button_CustomStyle</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -1541,10 +1571,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="11">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="11" data-name="TestSnapshot_Button_WithWidth">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Button_WithWidth</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -1713,10 +1744,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="12">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="12" data-name="TestSnapshot_List_SingleSelect">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_List_SingleSelect</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -1840,10 +1872,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="13">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="13" data-name="TestSnapshot_List_ActiveItem">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_List_ActiveItem</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -1952,10 +1985,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="14">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="14" data-name="TestSnapshot_List_Empty">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_List_Empty</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -2044,10 +2078,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="15">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="15" data-name="TestSnapshot_List_CustomRenderItem">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_List_CustomRenderItem</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -2176,10 +2211,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="16">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="16" data-name="TestSnapshot_List_MultiSelect">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_List_MultiSelect</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -2298,10 +2334,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="17">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="17" data-name="TestSnapshot_ProgressBar_ZeroProgress">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_ProgressBar_ZeroProgress</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -2490,10 +2527,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="18">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="18" data-name="TestSnapshot_ProgressBar_HalfProgress">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_ProgressBar_HalfProgress</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -2687,10 +2725,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="19">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="19" data-name="TestSnapshot_ProgressBar_FullProgress">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_ProgressBar_FullProgress</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -2884,10 +2923,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="20">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="20" data-name="TestSnapshot_ProgressBar_WithColors">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_ProgressBar_WithColors</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -3081,10 +3121,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="21">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="21" data-name="TestSnapshot_ProgressBar_QuarterProgress">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_ProgressBar_QuarterProgress</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -3278,10 +3319,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="22">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="22" data-name="TestSnapshot_Spacer_FlexDefault">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Spacer_FlexDefault</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -3380,10 +3422,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="23">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="23" data-name="TestSnapshot_Spacer_FixedCells">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Spacer_FixedCells</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -3482,10 +3525,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="24">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="24" data-name="TestSnapshot_Spacer_InColumn">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Spacer_InColumn</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -3584,10 +3628,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="25">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="25" data-name="TestSnapshot_Spacer_MultipleSpacers">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Spacer_MultipleSpacers</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -3691,10 +3736,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="26">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="26" data-name="TestSnapshot_ShowWhen_True">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_ShowWhen_True</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -3793,10 +3839,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="27">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="27" data-name="TestSnapshot_ShowWhen_False">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_ShowWhen_False</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -3890,10 +3937,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="28">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="28" data-name="TestSnapshot_HideWhen_True">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_HideWhen_True</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -3987,10 +4035,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="29">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="29" data-name="TestSnapshot_HideWhen_False">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_HideWhen_False</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -4089,10 +4138,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="30">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="30" data-name="TestSnapshot_Switcher_ActiveChild">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Switcher_ActiveChild</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -4191,10 +4241,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="31">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="31" data-name="TestSnapshot_Switcher_DifferentActive">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Switcher_DifferentActive</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -4288,10 +4339,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="32">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="32" data-name="TestSnapshot_Switcher_NoActiveMatch">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Switcher_NoActiveMatch</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -4380,10 +4432,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="33">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="33" data-name="TestSnapshot_Column_BasicVerticalLayout">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Column_BasicVerticalLayout</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -4577,10 +4630,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="34">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="34" data-name="TestSnapshot_Column_MainAlignStart">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Column_MainAlignStart</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -4689,10 +4743,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="35">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="35" data-name="TestSnapshot_Column_MainAlignCenter">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Column_MainAlignCenter</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -4826,10 +4881,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="36">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="36" data-name="TestSnapshot_Column_MainAlignEnd">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Column_MainAlignEnd</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -4953,10 +5009,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="37">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="37" data-name="TestSnapshot_Column_CrossAlignStretch">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Column_CrossAlignStretch</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -5150,10 +5207,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="38">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="38" data-name="TestSnapshot_Column_CrossAlignStart">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Column_CrossAlignStart</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -5267,10 +5325,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="39">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="39" data-name="TestSnapshot_Column_CrossAlignCenter">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Column_CrossAlignCenter</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -5399,10 +5458,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="40">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="40" data-name="TestSnapshot_Column_CrossAlignEnd">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Column_CrossAlignEnd</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -5521,10 +5581,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="41">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="41" data-name="TestSnapshot_Column_WithSpacing">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Column_WithSpacing</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -5643,10 +5704,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="42">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="42" data-name="TestSnapshot_Column_NestedColumns">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Column_NestedColumns</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -5815,10 +5877,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="43">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="43" data-name="TestSnapshot_Column_MixedDimensions">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Column_MixedDimensions</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -6172,10 +6235,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="44">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="44" data-name="TestSnapshot_Row_BasicHorizontalLayout">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Row_BasicHorizontalLayout</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -6294,10 +6358,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="45">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="45" data-name="TestSnapshot_Row_MainAlignStart">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Row_MainAlignStart</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -6411,10 +6476,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="46">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="46" data-name="TestSnapshot_Row_MainAlignCenter">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Row_MainAlignCenter</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -6523,10 +6589,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="47">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="47" data-name="TestSnapshot_Row_MainAlignEnd">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Row_MainAlignEnd</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -6645,10 +6712,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="48">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="48" data-name="TestSnapshot_Row_CrossAlignStretch">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Row_CrossAlignStretch</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -6842,10 +6910,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="49">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="49" data-name="TestSnapshot_Row_CrossAlignStart">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Row_CrossAlignStart</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -6954,10 +7023,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="50">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="50" data-name="TestSnapshot_Row_CrossAlignCenter">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Row_CrossAlignCenter</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -7086,10 +7156,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="51">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="51" data-name="TestSnapshot_Row_CrossAlignEnd">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Row_CrossAlignEnd</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -7213,10 +7284,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="52">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="52" data-name="TestSnapshot_Row_WithSpacing">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Row_WithSpacing</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -7335,10 +7407,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="53">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="53" data-name="TestSnapshot_Row_NestedRows">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Row_NestedRows</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -7497,10 +7570,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="54">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="54" data-name="TestSnapshot_Row_MixedDimensions">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Row_MixedDimensions</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -7754,10 +7828,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="55">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="55" data-name="TestSnapshot_Dock_TopOnly">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Dock_TopOnly</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -9356,10 +9431,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="56">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="56" data-name="TestSnapshot_Dock_BottomOnly">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Dock_BottomOnly</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -10958,10 +11034,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="57">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="57" data-name="TestSnapshot_Dock_LeftOnly">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Dock_LeftOnly</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -12560,10 +12637,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="58">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="58" data-name="TestSnapshot_Dock_RightOnly">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Dock_RightOnly</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -14162,10 +14240,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="59">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="59" data-name="TestSnapshot_Dock_AllEdges">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Dock_AllEdges</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -16279,10 +16358,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="60">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="60" data-name="TestSnapshot_Dock_BodyFillsRemainder">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Dock_BodyFillsRemainder</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -17896,10 +17976,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="61">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="61" data-name="TestSnapshot_Dock_MultipleTop">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Dock_MultipleTop</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -19503,10 +19584,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="62">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="62" data-name="TestSnapshot_Dimension_AutoWidth">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Dimension_AutoWidth</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -19655,10 +19737,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="63">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="63" data-name="TestSnapshot_Dimension_CellsFixed">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Dimension_CellsFixed</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -20002,10 +20085,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="64">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="64" data-name="TestSnapshot_Dimension_FlexProportional">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Dimension_FlexProportional</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -20254,10 +20338,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="65">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="65" data-name="TestSnapshot_Dimension_FlexVsCells">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Dimension_FlexVsCells</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -20506,10 +20591,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="66">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="66" data-name="TestSnapshot_Dimension_NestedFlex">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Dimension_NestedFlex</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -21218,10 +21304,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="67">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="67" data-name="TestSnapshot_Layout_RowInColumn">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Layout_RowInColumn</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -21410,10 +21497,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="68">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="68" data-name="TestSnapshot_Layout_ColumnInRow">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Layout_ColumnInRow</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -21637,10 +21725,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="69">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="69" data-name="TestSnapshot_Layout_DockWithRowColumn">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Layout_DockWithRowColumn</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -23244,10 +23333,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="70">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="70" data-name="TestSnapshot_Stack_BasicOverlay">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_BasicOverlay</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -23846,10 +23936,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="71">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="71" data-name="TestSnapshot_Stack_ThreeLayersZOrder">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_ThreeLayersZOrder</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -24698,10 +24789,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="72">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="72" data-name="TestSnapshot_Stack_SizesFromLargestChild">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_SizesFromLargestChild</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -24905,10 +24997,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="73">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="73" data-name="TestSnapshot_Stack_AlignTopStart">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_AlignTopStart</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -25602,10 +25695,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="74">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="74" data-name="TestSnapshot_Stack_AlignCenter">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_AlignCenter</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -26299,10 +26393,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="75">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="75" data-name="TestSnapshot_Stack_AlignBottomEnd">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_AlignBottomEnd</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -26996,10 +27091,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="76">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="76" data-name="TestSnapshot_Stack_AlignBottomCenter">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_AlignBottomCenter</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -27693,10 +27789,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="77">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="77" data-name="TestSnapshot_Stack_PositionedTopLeft">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_PositionedTopLeft</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -28395,10 +28492,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="78">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="78" data-name="TestSnapshot_Stack_PositionedBottomRight">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_PositionedBottomRight</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -29092,10 +29190,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="79">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="79" data-name="TestSnapshot_Stack_PositionedFill">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_PositionedFill</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -29689,10 +29788,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="80">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="80" data-name="TestSnapshot_Stack_PositionedStretchHorizontal">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_PositionedStretchHorizontal</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -30291,10 +30391,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="81">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="81" data-name="TestSnapshot_Stack_PositionedStretchVertical">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_PositionedStretchVertical</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -30988,10 +31089,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="82">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="82" data-name="TestSnapshot_Stack_PositionedOverflowNegativeOffset">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_PositionedOverflowNegativeOffset</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -31460,10 +31562,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="83">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="83" data-name="TestSnapshot_Stack_ChildLargerThanStack">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_ChildLargerThanStack</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -31712,10 +31815,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="84">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="84" data-name="TestSnapshot_Stack_OverlappingWithTransparency">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_OverlappingWithTransparency</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -32319,10 +32423,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="85">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="85" data-name="TestSnapshot_Stack_MultipleOverlappingPositioned">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_MultipleOverlappingPositioned</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -33441,10 +33546,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="86">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="86" data-name="TestSnapshot_Stack_WithBorder">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_WithBorder</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -34083,10 +34189,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="87">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="87" data-name="TestSnapshot_Stack_WithPadding">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_WithPadding</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -34780,10 +34887,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="88">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="88" data-name="TestSnapshot_Stack_WithBorderAndPadding">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_WithBorderAndPadding</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -35712,10 +35820,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="89">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="89" data-name="TestSnapshot_Stack_InsideColumn">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_InsideColumn</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -36419,10 +36528,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="90">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="90" data-name="TestSnapshot_Stack_InsideRow">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_InsideRow</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -36946,10 +37056,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="91">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="91" data-name="TestSnapshot_Stack_NestedStacks">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_NestedStacks</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -38053,10 +38164,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="92">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="92" data-name="TestSnapshot_Stack_MixedPositionedAndAligned">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Stack_MixedPositionedAndAligned</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -38760,10 +38872,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="93">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="93" data-name="TestSnapshot_Style_BorderSquare">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_BorderSquare</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -38897,10 +39010,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="94">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="94" data-name="TestSnapshot_Style_BorderRounded">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_BorderRounded</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -39034,10 +39148,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="95">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="95" data-name="TestSnapshot_Style_BorderDouble">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_BorderDouble</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -39171,10 +39286,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="96">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="96" data-name="TestSnapshot_Style_BorderHeavy">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_BorderHeavy</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -39308,10 +39424,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="97">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="97" data-name="TestSnapshot_Style_BorderAscii">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_BorderAscii</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -39445,10 +39562,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="98">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="98" data-name="TestSnapshot_Style_BorderWithTitle">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_BorderWithTitle</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -39592,10 +39710,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="99">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="99" data-name="TestSnapshot_Style_BorderWithSubtitle">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_BorderWithSubtitle</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -39739,10 +39858,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="100">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="100" data-name="TestSnapshot_Style_PaddingAllSides">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_PaddingAllSides</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -40536,10 +40656,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="101">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="101" data-name="TestSnapshot_Style_PaddingAsymmetric">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_PaddingAsymmetric</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -41333,10 +41454,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="102">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="102" data-name="TestSnapshot_Style_PaddingXY">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_PaddingXY</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -42135,10 +42257,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="103">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="103" data-name="TestSnapshot_Style_MarginAllSides">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_MarginAllSides</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -42657,10 +42780,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="104">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="104" data-name="TestSnapshot_Style_BackgroundColor">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_BackgroundColor</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -42834,10 +42958,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="105">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="105" data-name="TestSnapshot_Style_ForegroundColor">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_ForegroundColor</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -42936,10 +43061,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="106">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="106" data-name="TestSnapshot_Style_BothColors">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_BothColors</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -43088,10 +43214,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="107">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="107" data-name="TestSnapshot_Style_Bold">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_Bold</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -43190,10 +43317,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="108">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="108" data-name="TestSnapshot_Style_Italic">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_Italic</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -43292,10 +43420,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="109">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="109" data-name="TestSnapshot_Style_Underline">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_Underline</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -43394,10 +43523,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="110">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="110" data-name="TestSnapshot_Style_Strikethrough">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_Strikethrough</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -43496,10 +43626,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="111">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="111" data-name="TestSnapshot_Style_CombinedTextStyles">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_CombinedTextStyles</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -43593,10 +43724,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="112">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="112" data-name="TestSnapshot_Style_BorderAndPadding">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_BorderAndPadding</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -43750,10 +43882,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="113">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="113" data-name="TestSnapshot_Style_FullStyleStack">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_FullStyleStack</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -45062,10 +45195,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="114">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="114" data-name="TestSnapshot_Style_SpanForeground">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_SpanForeground</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -45169,10 +45303,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="115">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="115" data-name="TestSnapshot_Style_SpanBold">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_SpanBold</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -45271,10 +45406,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="116">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="116" data-name="TestSnapshot_Style_SpanItalic">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_SpanItalic</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -45373,10 +45509,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="117">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="117" data-name="TestSnapshot_Style_NamedColors">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_NamedColors</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -45495,10 +45632,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="118">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="118" data-name="TestSnapshot_Style_NestedBorders">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_NestedBorders</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -45702,10 +45840,11 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="119">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="119" data-name="TestSnapshot_Style_RowWithStyledChildren">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_Style_RowWithStyledChildren</span>
       <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
     </div>
     <div class="snapshots">
       <div class="snapshot-container">
@@ -45901,6 +46040,58 @@
         valueDisplay.textContent = value + '%';
       }
     }
+
+    // Seen/minimized functionality
+    // Gallery ID ensures seen state is scoped to this specific test run
+    const GALLERY_ID = document.body.dataset.galleryId;
+    const SEEN_STORAGE_KEY = 'terma-snapshot-seen-' + GALLERY_ID;
+
+    function getSeenSnapshots() {
+      try {
+        return JSON.parse(localStorage.getItem(SEEN_STORAGE_KEY)) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveSeenSnapshots(seen) {
+      localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(seen));
+    }
+
+    function updateSeenButton(comparison) {
+      const btn = comparison.querySelector('.seen-btn');
+      const isSeen = comparison.classList.contains('seen');
+      btn.textContent = isSeen ? 'Mark as unseen' : 'Mark as seen';
+    }
+
+    // Initialize seen state from localStorage
+    const seenSnapshots = getSeenSnapshots();
+    document.querySelectorAll('.comparison').forEach(el => {
+      const name = el.dataset.name;
+      if (seenSnapshots[name]) {
+        el.classList.add('seen');
+      }
+      updateSeenButton(el);
+    });
+
+    // Seen button click handlers
+    document.querySelectorAll('.seen-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const comparison = btn.closest('.comparison');
+        const name = comparison.dataset.name;
+        const seen = getSeenSnapshots();
+
+        comparison.classList.toggle('seen');
+        if (comparison.classList.contains('seen')) {
+          seen[name] = true;
+        } else {
+          delete seen[name];
+        }
+        saveSeenSnapshots(seen);
+        updateSeenButton(comparison);
+      });
+    });
   </script>
 </body>
 </html>
