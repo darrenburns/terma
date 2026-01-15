@@ -27,6 +27,12 @@ go build ./cmd/example
 go mod tidy
 ```
 
+## Checking your changes / feedback loop
+
+You cannot run examples, but you can run snapshot tests. This means you can add debug logging,
+write a snapshot test which will exercise the logic and hit the logs, and then you can read the log file
+yourself.
+
 ## Architecture
 
 ### Core Concepts
