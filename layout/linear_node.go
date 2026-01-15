@@ -439,10 +439,13 @@ func (l *LinearNode) positionChildren(
 			crossPos = containerCross - childCross
 
 		case CrossAxisStretch:
-			// Get the actual child (unwrap FlexNode if present)
+			// Get the actual child (unwrap FlexNode/PercentNode if present)
 			actualChild := l.Children[i]
 			if flex, ok := IsFlexNode(actualChild); ok {
 				actualChild = flex.Child
+			}
+			if pct, ok := IsPercentNode(actualChild); ok {
+				actualChild = pct.Child
 			}
 
 			// Check if child wants to preserve its cross-axis size (e.g., has explicit Auto dimension).

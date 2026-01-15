@@ -112,6 +112,9 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 				childNode = buildFallbackLayoutNode(innerBuilt, ctx.PushChild(i))
 			}
 
+			// Wrap in PercentNode for width/height if the inner child has percent dimensions
+			childNode = wrapInPercentNodesForStack(childNode, innerBuilt)
+
 			stackChild = layout.StackChild{
 				Node:         childNode,
 				IsPositioned: true,
@@ -128,6 +131,9 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			} else {
 				childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
 			}
+
+			// Wrap in PercentNode for width/height if child has percent dimensions
+			childNode = wrapInPercentNodesForStack(childNode, built)
 
 			stackChild = layout.StackChild{
 				Node:         childNode,

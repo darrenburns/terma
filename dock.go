@@ -81,13 +81,13 @@ func (d Dock) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	for _, edge := range order {
 		switch edge {
 		case Top:
-			top = d.buildEdgeChildren(ctx, d.Top, &childIndex)
+			top = d.buildEdgeChildren(ctx, d.Top, &childIndex, edge)
 		case Bottom:
-			bottom = d.buildEdgeChildren(ctx, d.Bottom, &childIndex)
+			bottom = d.buildEdgeChildren(ctx, d.Bottom, &childIndex, edge)
 		case Left:
-			left = d.buildEdgeChildren(ctx, d.Left, &childIndex)
+			left = d.buildEdgeChildren(ctx, d.Left, &childIndex, edge)
 		case Right:
-			right = d.buildEdgeChildren(ctx, d.Right, &childIndex)
+			right = d.buildEdgeChildren(ctx, d.Right, &childIndex, edge)
 		}
 	}
 
@@ -123,15 +123,42 @@ func (d Dock) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 }
 
 // buildEdgeChildren converts widgets for a dock edge.
-func (d Dock) buildEdgeChildren(ctx BuildContext, widgets []Widget, index *int) []layout.LayoutNode {
+func (d Dock) buildEdgeChildren(ctx BuildContext, widgets []Widget, index *int, edge Edge) []layout.LayoutNode {
 	nodes := make([]layout.LayoutNode, len(widgets))
 	for i, child := range widgets {
 		built := child.Build(ctx.PushChild(*index))
+		var node layout.LayoutNode
 		if builder, ok := built.(LayoutNodeBuilder); ok {
-			nodes[i] = builder.BuildLayoutNode(ctx.PushChild(*index))
+			node = builder.BuildLayoutNode(ctx.PushChild(*index))
 		} else {
-			nodes[i] = buildFallbackLayoutNode(built, ctx.PushChild(*index))
+			node = buildFallbackLayoutNode(built, ctx.PushChild(*index))
 		}
+
+		// Wrap in PercentNode if the child has a percentage dimension on the relevant axis
+		// Top/Bottom: check Height (Vertical), Left/Right: check Width (Horizontal)
+		if dim, ok := built.(Dimensioned); ok {
+			width, height := dim.GetDimensions()
+			switch edge {
+			case Top, Bottom:
+				if height.IsPercent() {
+					node = &layout.PercentNode{
+						Percent: height.PercentValue(),
+						Child:   node,
+						Axis:    layout.Vertical,
+					}
+				}
+			case Left, Right:
+				if width.IsPercent() {
+					node = &layout.PercentNode{
+						Percent: width.PercentValue(),
+						Child:   node,
+						Axis:    layout.Horizontal,
+					}
+				}
+			}
+		}
+
+		nodes[i] = node
 		*index++
 	}
 	return nodes

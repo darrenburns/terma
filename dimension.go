@@ -7,6 +7,7 @@ const (
 	unitAuto dimensionUnit = iota
 	unitCells
 	unitFlex
+	unitPercent
 )
 
 // Dimension represents a size specification for widgets.
@@ -32,6 +33,14 @@ func Flex(n float64) Dimension {
 	return Dimension{value: n, unit: unitFlex}
 }
 
+// Percent returns a dimension as a percentage of the parent's available space.
+// For example, Percent(50) means 50% of the parent's width or height.
+// Unlike Flex, percentages are calculated from the total available space,
+// not from the remaining space after fixed children.
+func Percent(n float64) Dimension {
+	return Dimension{value: n, unit: unitPercent}
+}
+
 // IsAuto returns true if this is an auto-sizing dimension.
 func (d Dimension) IsAuto() bool {
 	return d.unit == unitAuto
@@ -47,6 +56,11 @@ func (d Dimension) IsFlex() bool {
 	return d.unit == unitFlex
 }
 
+// IsPercent returns true if this is a percentage dimension.
+func (d Dimension) IsPercent() bool {
+	return d.unit == unitPercent
+}
+
 // CellsValue returns the fixed cell count (only valid if IsCells() is true).
 func (d Dimension) CellsValue() int {
 	return int(d.value)
@@ -54,6 +68,11 @@ func (d Dimension) CellsValue() int {
 
 // FlexValue returns the flex value (only valid if IsFlex() is true).
 func (d Dimension) FlexValue() float64 {
+	return d.value
+}
+
+// PercentValue returns the percentage value (only valid if IsPercent() is true).
+func (d Dimension) PercentValue() float64 {
 	return d.value
 }
 
