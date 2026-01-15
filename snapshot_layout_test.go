@@ -1200,3 +1200,75 @@ func TestSnapshot_Dimension_PercentInDock(t *testing.T) {
 	}
 	AssertSnapshot(t, widget, 30, 10)
 }
+
+// --- Percentage in Stack Layout ---
+
+func TestSnapshot_Dimension_PercentInStackWidth(t *testing.T) {
+	// Stack is 20x5, child is 50% width = 10 cells
+	widget := Stack{
+		Width:  Cells(20),
+		Height: Cells(5),
+		Style:  Style{BackgroundColor: layoutGray},
+		Children: []Widget{
+			Text{Content: "50%", Width: Percent(50), Style: Style{BackgroundColor: layoutRed}},
+		},
+	}
+	AssertSnapshot(t, widget, 25, 7)
+}
+
+func TestSnapshot_Dimension_PercentInStackHeight(t *testing.T) {
+	// Stack is 20x10, child is 50% height = 5 rows
+	widget := Stack{
+		Width:  Cells(20),
+		Height: Cells(10),
+		Style:  Style{BackgroundColor: layoutGray},
+		Children: []Widget{
+			Column{
+				Width:  Cells(10),
+				Height: Percent(50),
+				Style:  Style{BackgroundColor: layoutBlue},
+				Children: []Widget{
+					Text{Content: "50%"},
+				},
+			},
+		},
+	}
+	AssertSnapshot(t, widget, 25, 12)
+}
+
+func TestSnapshot_Dimension_PercentInStackBothAxes(t *testing.T) {
+	// Stack is 20x10, child is 50% width (10 cells) and 50% height (5 rows)
+	widget := Stack{
+		Width:  Cells(20),
+		Height: Cells(10),
+		Style:  Style{BackgroundColor: layoutGray},
+		Children: []Widget{
+			Column{
+				Width:  Percent(50),
+				Height: Percent(50),
+				Style:  Style{BackgroundColor: layoutRed},
+				Children: []Widget{
+					Text{Content: "50x50"},
+				},
+			},
+		},
+	}
+	AssertSnapshot(t, widget, 25, 12)
+}
+
+func TestSnapshot_Dimension_PercentInStackPositioned(t *testing.T) {
+	// Stack is 20x10, positioned child at top-left with 50% width
+	widget := Stack{
+		Width:  Cells(20),
+		Height: Cells(10),
+		Style:  Style{BackgroundColor: layoutGray},
+		Children: []Widget{
+			Positioned{
+				Top:  IntPtr(0),
+				Left: IntPtr(0),
+				Child: Text{Content: "50%", Width: Percent(50), Style: Style{BackgroundColor: layoutRed}},
+			},
+		},
+	}
+	AssertSnapshot(t, widget, 25, 12)
+}
