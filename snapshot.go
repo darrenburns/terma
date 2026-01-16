@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"os"
 	"strings"
+	"time"
 
 	uv "github.com/charmbracelet/ultraviolet"
 )
@@ -719,14 +720,16 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
 <body>
 `)
 
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	sb.WriteString(fmt.Sprintf(`  <div class="header-bar">
     <h1 style="margin: 0;">Terma Snapshot Gallery</h1>
     <div class="summary">
+      <div class="summary-item" style="color: #888;">%s</div>
       <div class="summary-item"><span class="summary-count passed">%d</span> passed</div>
       <div class="summary-item"><span class="summary-count failed">%d</span> failed</div>
     </div>
   </div>
-`, passedCount, failedCount))
+`, timestamp, passedCount, failedCount))
 
 	sb.WriteString(`  <div class="toolbar">
     <div class="toolbar-group">
