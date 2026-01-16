@@ -49,6 +49,12 @@ type LayoutNodeBuilder interface {
 	BuildLayoutNode(ctx BuildContext) layout.LayoutNode
 }
 
+// LayoutObserver is implemented by widgets that want to receive
+// their computed layout after the layout phase completes.
+type LayoutObserver interface {
+	OnLayout(layout layout.ComputedLayout)
+}
+
 // widgetNode is an internal node in the widget tree.
 // It tracks the widget instance and dirty state for signal subscriptions.
 type widgetNode struct {

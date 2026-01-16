@@ -1,6 +1,10 @@
 package terma
 
-import "fmt"
+import (
+	"fmt"
+
+	"terma/layout"
+)
 
 // ListState holds the state for a List widget.
 // It is the source of truth for items and cursor position, and must be provided to List.
@@ -11,6 +15,7 @@ type ListState[T any] struct {
 	Selection   AnySignal[map[int]struct{}] // Selected item indices (for multi-select)
 
 	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
+	itemHeights []int
 }
 
 // NewListState creates a new ListState with the given initial items.
@@ -31,6 +36,7 @@ func (s *ListState[T]) SetItems(items []T) {
 		items = []T{}
 	}
 	s.Items.Set(items)
+	s.itemHeights = nil
 	s.clampCursor()
 }
 
@@ -49,6 +55,7 @@ func (s *ListState[T]) Append(item T) {
 	s.Items.Update(func(items []T) []T {
 		return append(items, item)
 	})
+	s.itemHeights = nil
 }
 
 // Prepend adds an item to the beginning of the list.
@@ -56,6 +63,7 @@ func (s *ListState[T]) Prepend(item T) {
 	s.Items.Update(func(items []T) []T {
 		return append([]T{item}, items...)
 	})
+	s.itemHeights = nil
 	// Adjust cursor to keep same item selected
 	s.CursorIndex.Update(func(i int) int {
 		return i + 1
@@ -78,6 +86,7 @@ func (s *ListState[T]) InsertAt(index int, item T) {
 		items[index] = item
 		return items
 	})
+	s.itemHeights = nil
 	// Adjust cursor if insertion was at or before cursor
 	cursorIdx := s.CursorIndex.Peek()
 	if index <= cursorIdx {
@@ -95,6 +104,7 @@ func (s *ListState[T]) RemoveAt(index int) bool {
 	s.Items.Update(func(items []T) []T {
 		return append(items[:index], items[index+1:]...)
 	})
+	s.itemHeights = nil
 	s.clampCursor()
 	return true
 }
@@ -114,6 +124,7 @@ func (s *ListState[T]) RemoveWhere(predicate func(T) bool) int {
 		}
 		return result
 	})
+	s.itemHeights = nil
 	s.clampCursor()
 	return removed
 }
@@ -121,6 +132,7 @@ func (s *ListState[T]) RemoveWhere(predicate func(T) bool) int {
 // Clear removes all items from the list.
 func (s *ListState[T]) Clear() {
 	s.Items.Set([]T{})
+	s.itemHeights = nil
 	s.CursorIndex.Set(0)
 }
 
@@ -323,6 +335,49 @@ func (s *ListState[T]) SelectRange(from, to int) {
 	s.Selection.Set(sel)
 }
 
+func (s *ListState[T]) ensureItemHeights(count int) {
+	if count <= 0 {
+		s.itemHeights = nil
+		return
+	}
+	if len(s.itemHeights) != count {
+		s.itemHeights = make([]int, count)
+	}
+}
+
+func (s *ListState[T]) setItemHeightIfUnset(index, height int) {
+	if s == nil || index < 0 || height <= 0 {
+		return
+	}
+	if len(s.itemHeights) <= index {
+		s.ensureItemHeights(index + 1)
+	}
+	if s.itemHeights[index] == 0 {
+		s.itemHeights[index] = height
+	}
+}
+
+func (s *ListState[T]) setItemHeightAt(index, height int) {
+	if s == nil || index < 0 || height <= 0 {
+		return
+	}
+	if len(s.itemHeights) <= index {
+		s.ensureItemHeights(index + 1)
+	}
+	s.itemHeights[index] = height
+}
+
+func (s *ListState[T]) itemHeightAt(index int) (int, bool) {
+	if s == nil || index < 0 || index >= len(s.itemHeights) {
+		return 0, false
+	}
+	height := s.itemHeights[index]
+	if height <= 0 {
+		return 0, false
+	}
+	return height, true
+}
+
 // List is a generic focusable widget that displays a navigable list of items.
 // It builds a Column of widgets, with the active item (cursor position) highlighted.
 // Use with Scrollable and a shared ScrollState to enable scroll-into-view.
@@ -437,9 +492,16 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 
 	// Build children
 	children := make([]Widget, len(items))
+	l.State.ensureItemHeights(len(items))
 	for i, item := range items {
 		_, selected := Selection[i]
-		children[i] = renderItem(item, i == cursorIdx, selected)
+		widget := renderItem(item, i == cursorIdx, selected)
+		l.State.setItemHeightIfUnset(i, l.resolveItemHeight(widget))
+		children[i] = listItemWrapper{
+			index:    i,
+			child:    widget,
+			recorder: l.State,
+		}
 	}
 
 	// Ensure cursor item is visible whenever we rebuild
@@ -674,15 +736,15 @@ func (l List[T]) scrollCursorIntoView() {
 	}
 	cursorIdx := l.State.CursorIndex.Peek()
 	itemY := l.getItemY(cursorIdx)
-	l.ScrollState.ScrollToView(itemY, l.getItemHeight())
+	l.ScrollState.ScrollToView(itemY, l.getItemHeightAt(cursorIdx))
 }
 
-// getItemHeight returns the uniform height of list items.
+// getFallbackItemHeight returns the uniform height of list items.
 // If ItemHeight is explicitly set, uses that value.
 // Otherwise, attempts to infer height from RenderItem by checking
 // if the returned widget has an explicit Cells height dimension.
 // Falls back to 1 if height cannot be determined.
-func (l List[T]) getItemHeight() int {
+func (l List[T]) getFallbackItemHeight() int {
 	if l.ItemHeight > 0 {
 		return l.ItemHeight
 	}
@@ -708,9 +770,84 @@ func (l List[T]) getItemHeight() int {
 	return 1
 }
 
+func (l List[T]) getItemHeightAt(index int) int {
+	if l.State != nil {
+		if height, ok := l.State.itemHeightAt(index); ok {
+			return height
+		}
+	}
+	return l.getFallbackItemHeight()
+}
+
 // getItemY returns the Y position of the item at the given index.
 func (l List[T]) getItemY(index int) int {
-	return index * l.getItemHeight()
+	if index <= 0 {
+		return 0
+	}
+	offset := 0
+	for i := 0; i < index; i++ {
+		offset += l.getItemHeightAt(i)
+	}
+	return offset
+}
+
+func (l List[T]) resolveItemHeight(widget Widget) int {
+	if l.ItemHeight > 0 {
+		return l.ItemHeight
+	}
+	if dimensioned, ok := widget.(Dimensioned); ok {
+		_, height := dimensioned.GetDimensions()
+		if height.IsCells() {
+			return height.CellsValue()
+		}
+	}
+	return 1
+}
+
+type listItemHeightRecorder interface {
+	setItemHeightAt(index, height int)
+}
+
+type listItemWrapper struct {
+	index    int
+	child    Widget
+	recorder listItemHeightRecorder
+}
+
+func (l listItemWrapper) Build(ctx BuildContext) Widget {
+	return l
+}
+
+func (l listItemWrapper) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
+	built := l.child.Build(ctx.PushChild(0))
+
+	var childNode layout.LayoutNode
+	if builder, ok := built.(LayoutNodeBuilder); ok {
+		childNode = builder.BuildLayoutNode(ctx.PushChild(0))
+	} else {
+		childNode = buildFallbackLayoutNode(built, ctx.PushChild(0))
+	}
+
+	childNode = wrapInPercentNodesForStack(childNode, built)
+
+	return &layout.StackNode{
+		Children: []layout.StackChild{
+			{
+				Node:         childNode,
+				IsPositioned: false,
+			},
+		},
+		DefaultHAlign: layout.HAlignStart,
+		DefaultVAlign: layout.VAlignStart,
+	}
+}
+
+func (l listItemWrapper) OnLayout(computed layout.ComputedLayout) {
+	if l.recorder == nil {
+		return
+	}
+	height := computed.Box.MarginBoxHeight()
+	l.recorder.setItemHeightAt(l.index, height)
 }
 
 // registerScrollCallbacks sets up callbacks on the ScrollState

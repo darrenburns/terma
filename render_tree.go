@@ -59,6 +59,10 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 		computed = layoutFromLayoutable(built, ctx, constraints)
 	}
 
+	if observer, ok := built.(LayoutObserver); ok {
+		observer.OnLayout(computed)
+	}
+
 	// Recursively build children
 	children := buildChildTrees(built, ctx, computed, fc)
 
@@ -116,6 +120,11 @@ func extractChildren(widget Widget) []Widget {
 		return w.AllChildren()
 	case Stack:
 		return w.AllChildren()
+	case listItemWrapper:
+		if w.child != nil {
+			return []Widget{w.child}
+		}
+		return nil
 	default:
 		return nil
 	}
