@@ -265,6 +265,8 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 		headerText := "Today's tasks"
 		if a.filterMode.Get() {
 			headerText = "Type to filter"
+		} else if selectedCount := len(a.tasks.SelectedItems()); selectedCount > 1 {
+			headerText = fmt.Sprintf("%d items selected", selectedCount)
 		}
 		border = t.Border{
 			Style: t.BorderRounded,
