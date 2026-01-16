@@ -11,6 +11,8 @@ type ListState[T any] struct {
 	Selection   AnySignal[map[int]struct{}] // Selected item indices (for multi-select)
 
 	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
+
+	itemLayouts []listItemLayout // Cached layout metrics (per item)
 }
 
 // NewListState creates a new ListState with the given initial items.
@@ -349,13 +351,55 @@ type List[T any] struct {
 	OnCursorChange func(item T)                                    // Callback invoked when cursor moves to a different item
 	ScrollState    *ScrollState                                    // Optional state for scroll-into-view
 	RenderItem     func(item T, active bool, selected bool) Widget // Function to render each item (uses default if nil)
-	ItemHeight     int                                             // Height of each item in cells (default 1, must be uniform)
+	ItemHeight     int                                             // Optional uniform item height override (default 0 = layout metrics / fallback 1)
 	MultiSelect    bool                                            // Enable multi-select mode (space to toggle, shift+move to extend)
 	Width          Dimension                                       // Optional width (zero value = auto)
 	Height         Dimension                                       // Optional height (zero value = auto)
 	Style          Style                                           // Optional styling
 	Click          func()                                          // Optional callback invoked when clicked
 	Hover          func(bool)                                      // Optional callback invoked when hover state changes
+}
+
+type listItemLayout struct {
+	y      int
+	height int
+}
+
+type listContainer[T any] struct {
+	Column
+	list List[T]
+}
+
+func (c listContainer[T]) Build(ctx BuildContext) Widget {
+	return c
+}
+
+func (c listContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
+	if c.list.State == nil {
+		return
+	}
+
+	count := metrics.ChildCount()
+	if count == 0 {
+		c.list.State.itemLayouts = nil
+		return
+	}
+
+	layouts := make([]listItemLayout, count)
+	for i := 0; i < count; i++ {
+		bounds, ok := metrics.ChildBounds(i)
+		if !ok {
+			continue
+		}
+		layouts[i] = listItemLayout{y: bounds.Y, height: bounds.Height}
+	}
+
+	c.list.State.itemLayouts = layouts
+	c.list.scrollCursorIntoView()
+}
+
+func (c listContainer[T]) ChildWidgets() []Widget {
+	return c.Children
 }
 
 // WidgetID returns the widget's unique identifier.
@@ -407,6 +451,7 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 	// Get items (subscribes to changes via signal)
 	items := l.State.Items.Get()
 	if len(items) == 0 {
+		l.State.itemLayouts = nil
 		return Column{}
 	}
 
@@ -443,12 +488,17 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 	}
 
 	// Ensure cursor item is visible whenever we rebuild
-	l.scrollCursorIntoView()
-
-	return Column{
-		Width:    l.Width,
-		Height:   l.Height,
-		Children: children,
+	return listContainer[T]{
+		Column: Column{
+			ID:       l.ID,
+			Width:    l.Width,
+			Height:   l.Height,
+			Style:    l.Style,
+			Children: children,
+			Click:    l.Click,
+			Hover:    l.Hover,
+		},
+		list: l,
 	}
 }
 
@@ -673,44 +723,35 @@ func (l List[T]) scrollCursorIntoView() {
 		return
 	}
 	cursorIdx := l.State.CursorIndex.Peek()
-	itemY := l.getItemY(cursorIdx)
-	l.ScrollState.ScrollToView(itemY, l.getItemHeight())
+	itemY, itemHeight, ok := l.getItemLayout(cursorIdx)
+	if !ok {
+		itemHeight = l.getItemHeight()
+		itemY = cursorIdx * itemHeight
+	}
+	l.ScrollState.ScrollToView(itemY, itemHeight)
 }
 
-// getItemHeight returns the uniform height of list items.
-// If ItemHeight is explicitly set, uses that value.
-// Otherwise, attempts to infer height from RenderItem by checking
-// if the returned widget has an explicit Cells height dimension.
-// Falls back to 1 if height cannot be determined.
+// getItemHeight returns the fallback uniform height of list items.
 func (l List[T]) getItemHeight() int {
 	if l.ItemHeight > 0 {
 		return l.ItemHeight
 	}
-
-	// Try to infer from RenderItem
-	if l.State != nil && l.State.ItemCount() > 0 {
-		items := l.State.Items.Peek()
-		renderItem := l.RenderItem
-		if renderItem == nil {
-			renderItem = defaultRenderItem[T]
-		}
-
-		// Render the first item and check its dimensions
-		widget := renderItem(items[0], false, false)
-		if dimensioned, ok := widget.(Dimensioned); ok {
-			_, height := dimensioned.GetDimensions()
-			if height.IsCells() {
-				return height.CellsValue()
-			}
-		}
-	}
-
 	return 1
 }
 
-// getItemY returns the Y position of the item at the given index.
-func (l List[T]) getItemY(index int) int {
-	return index * l.getItemHeight()
+// getItemLayout returns the cached item layout for the given index.
+func (l List[T]) getItemLayout(index int) (y, height int, ok bool) {
+	if l.State == nil {
+		return 0, 0, false
+	}
+	if index < 0 || index >= len(l.State.itemLayouts) {
+		return 0, 0, false
+	}
+	layout := l.State.itemLayouts[index]
+	if layout.height <= 0 {
+		return 0, 0, false
+	}
+	return layout.y, layout.height, true
 }
 
 // registerScrollCallbacks sets up callbacks on the ScrollState

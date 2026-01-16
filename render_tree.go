@@ -59,6 +59,11 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 		computed = layoutFromLayoutable(built, ctx, constraints)
 	}
 
+	// Provide computed layout to observers before building child render trees.
+	if observer, ok := built.(LayoutObserver); ok {
+		observer.OnLayout(ctx, LayoutMetrics{layout: computed})
+	}
+
 	// Recursively build children
 	children := buildChildTrees(built, ctx, computed, fc)
 
@@ -102,6 +107,9 @@ func buildChildTrees(widget Widget, ctx BuildContext, computed layout.ComputedLa
 
 // extractChildren extracts the child widgets from a container widget.
 func extractChildren(widget Widget) []Widget {
+	if provider, ok := widget.(ChildProvider); ok {
+		return provider.ChildWidgets()
+	}
 	switch w := widget.(type) {
 	case Row:
 		return w.Children

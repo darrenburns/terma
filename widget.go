@@ -49,6 +49,19 @@ type LayoutNodeBuilder interface {
 	BuildLayoutNode(ctx BuildContext) layout.LayoutNode
 }
 
+// LayoutObserver is implemented by widgets that want access to computed layout data.
+// OnLayout is called after layout is computed for the widget, before child render trees are built.
+// Use this to read resolved child positions/sizes without re-measuring.
+type LayoutObserver interface {
+	OnLayout(ctx BuildContext, metrics LayoutMetrics)
+}
+
+// ChildProvider exposes a widget's children for render tree construction.
+// Implement this for custom containers so computed child layouts are rendered.
+type ChildProvider interface {
+	ChildWidgets() []Widget
+}
+
 // widgetNode is an internal node in the widget tree.
 // It tracks the widget instance and dirty state for signal subscriptions.
 type widgetNode struct {

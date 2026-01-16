@@ -495,7 +495,7 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 		}
 
 		// Build the title widget - use spans with highlighting when filtering
-		var titleWidget t.Widget
+		var titleWidget t.Text
 		if a.filterMode.Get() && a.getFilterText() != "" {
 			titleWidget = t.Text{
 				Spans: a.highlightMatches(task.Title, textStyle, theme.Accent, theme.Accent.WithAlpha(0.1)),
@@ -508,6 +508,7 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 				Width:   t.Flex(1),
 			}
 		}
+		titleWidget.Wrap = t.WrapSoft
 
 		return t.Row{
 			Width: t.Flex(1),
