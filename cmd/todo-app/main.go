@@ -480,27 +480,26 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 		textStyle := t.Style{ForegroundColor: theme.Text}
 		rowStyle := t.Style{}
 
-		// Show selection state
-		if selected {
-			rowStyle.BackgroundColor = theme.Primary.WithAlpha(0.2)
-		}
-
+		// Determine background based on state (active+focused takes precedence over selected)
 		if active && listFocused {
 			// Show cursor and highlight row when list is focused
 			prefix = "❯ "
 			textStyle.ForegroundColor = theme.Text
 			if selected {
-				rowStyle.BackgroundColor = t.NewGradient(theme.Primary.WithAlpha(0.35), theme.Primary.WithAlpha(0.2)).WithAngle(90)
+				rowStyle.BackgroundColor = t.NewGradient(theme.Primary.WithAlpha(0.35), theme.Primary.WithAlpha(0.03)).WithAngle(90)
 			} else {
-				rowStyle.BackgroundColor = t.NewGradient(theme.Surface, theme.Surface.WithAlpha(0.15)).WithAngle(90)
+				rowStyle.BackgroundColor = t.NewGradient(theme.Surface, theme.Background).WithAngle(90)
 			}
 			if !task.Completed {
 				checkboxStyle.ForegroundColor = theme.Primary
 			}
+		} else if selected {
+			// Selected but not active - solid background
+			rowStyle.BackgroundColor = t.NewGradient(theme.Primary.WithAlpha(0.15), theme.Primary.WithAlpha(0.03)).WithAngle(90)
 		}
 
 		if task.Completed {
-			textStyle.ForegroundColor = theme.TextMuted.WithAlpha(0.67)
+			textStyle.ForegroundColor = theme.TextMuted.WithAlpha(0.6)
 			textStyle.Strikethrough = true
 		}
 

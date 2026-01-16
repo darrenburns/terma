@@ -278,8 +278,8 @@ func (ctx *RenderContext) FillRect(x, y, width, height int, bgColor Color) {
 // Unlike FillRect, this preserves the underlying characters and blends
 // the backdrop color over both foreground and background colors.
 // This creates a true transparency effect where text behind is still visible.
-func (ctx *RenderContext) DrawBackdrop(x, y, width, height int, backdropColor Color) {
-	if !backdropColor.IsSet() {
+func (ctx *RenderContext) DrawBackdrop(x, y, width, height int, backdrop ColorProvider) {
+	if backdrop == nil || !backdrop.IsSet() {
 		return
 	}
 
@@ -294,6 +294,11 @@ func (ctx *RenderContext) DrawBackdrop(x, y, width, height int, backdropColor Co
 			absX := ctx.X + x + col
 			// Skip columns outside horizontal clip bounds
 			if absX < ctx.clip.X || absX >= ctx.clip.X+ctx.clip.Width {
+				continue
+			}
+
+			backdropColor := backdrop.ColorAt(width, height, col, row)
+			if !backdropColor.IsSet() || backdropColor.Alpha() <= 0 {
 				continue
 			}
 
@@ -876,7 +881,7 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 		if useBackdrop {
 			// Use DrawBackdrop to preserve underlying content and blend colors
 			backdropCtx := ctx.SubContext(absBorderX, absBorderY, box.Width, box.Height)
-			backdropCtx.DrawBackdrop(0, 0, box.Width, box.Height, sampleColor)
+			backdropCtx.DrawBackdrop(0, 0, box.Width, box.Height, style.BackgroundColor)
 		} else {
 			// Opaque background - fill with solid color
 			for row := 0; row < box.Height; row++ {

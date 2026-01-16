@@ -195,6 +195,37 @@ func TestSnapshot_Style_BackgroundColor(t *testing.T) {
 	AssertSnapshot(t, widget, 20, 3)
 }
 
+func TestSnapshot_Style_BackdropGradient(t *testing.T) {
+	widget := Column{
+		Width:  Flex(1),
+		Height: Flex(1),
+		Style: Style{
+			BackgroundColor: RGB(20, 20, 20),
+		},
+		Children: []Widget{
+			Row{
+				Width:  Flex(1),
+				Height: Cells(3),
+				Style: Style{
+					BackgroundColor: NewGradient(
+						RGB(255, 120, 120).WithAlpha(0.5),
+						RGB(120, 120, 255).WithAlpha(0.5),
+					).WithAngle(90),
+				},
+				Children: []Widget{
+					Text{
+						Content: "Gradient",
+						Style: Style{
+							ForegroundColor: RGB(240, 240, 240),
+						},
+					},
+				},
+			},
+		},
+	}
+	AssertSnapshot(t, widget, 20, 5)
+}
+
 func TestSnapshot_Style_ForegroundColor(t *testing.T) {
 	widget := Text{
 		Content: "Colored Text",
