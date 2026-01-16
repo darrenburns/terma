@@ -403,6 +403,7 @@ func (a *TodoApp) buildTaskList(ctx t.BuildContext) t.Widget {
 			ScrollState: scrollState,
 			RenderItem:  a.renderTaskItem(ctx, listFocused),
 			OnSelect:    a.toggleTask,
+			MultiSelect: true,
 		},
 	}
 }
@@ -479,11 +480,20 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 		textStyle := t.Style{ForegroundColor: theme.Text}
 		rowStyle := t.Style{}
 
+		// Show selection state
+		if selected {
+			rowStyle.BackgroundColor = theme.Primary.WithAlpha(0.2)
+		}
+
 		if active && listFocused {
 			// Show cursor and highlight row when list is focused
 			prefix = "❯ "
 			textStyle.ForegroundColor = theme.Text
-			rowStyle.BackgroundColor = t.NewGradient(theme.Surface, theme.Surface.WithAlpha(0.15)).WithAngle(90)
+			if selected {
+				rowStyle.BackgroundColor = t.NewGradient(theme.Primary.WithAlpha(0.35), theme.Primary.WithAlpha(0.2)).WithAngle(90)
+			} else {
+				rowStyle.BackgroundColor = t.NewGradient(theme.Surface, theme.Surface.WithAlpha(0.15)).WithAngle(90)
+			}
 			if !task.Completed {
 				checkboxStyle.ForegroundColor = theme.Primary
 			}
@@ -749,13 +759,38 @@ func (a *TodoApp) addTask(title string) {
 	a.inputState.SetText("")
 }
 
-// toggleCurrentTask toggles the completion status of the selected task.
+// toggleCurrentTask toggles the completion status of selected tasks.
+// If multiple items are selected: sets all to completed if any are uncompleted,
+// otherwise sets all to uncompleted. If no selection, toggles the cursor item.
 func (a *TodoApp) toggleCurrentTask() {
 	// Use the appropriate list state based on filter mode
 	listState := a.tasks
 	if a.filterMode.Peek() {
 		listState = a.filteredListState
 	}
+
+	// Check for multi-select: if items are selected, apply consistent state to all
+	selectedTasks := listState.SelectedItems()
+	if len(selectedTasks) > 0 {
+		// Determine target state: if any are uncompleted, complete all; otherwise uncomplete all
+		anyUncompleted := false
+		for _, task := range selectedTasks {
+			if !task.Completed {
+				anyUncompleted = true
+				break
+			}
+		}
+		targetState := anyUncompleted // true = mark completed, false = mark uncompleted
+
+		for _, task := range selectedTasks {
+			a.setTaskCompleted(task, targetState)
+		}
+		listState.ClearSelection()
+		listState.ClearAnchor()
+		return
+	}
+
+	// No selection - toggle just the cursor item
 	if task, ok := listState.SelectedItem(); ok {
 		a.toggleTask(task)
 	}
@@ -773,7 +808,20 @@ func (a *TodoApp) toggleTask(task Task) {
 	}
 }
 
-// deleteCurrentTask removes the currently selected task.
+// setTaskCompleted sets the completion status of the given task to a specific value.
+func (a *TodoApp) setTaskCompleted(task Task, completed bool) {
+	tasks := a.tasks.GetItems()
+	for i, tsk := range tasks {
+		if tsk.ID == task.ID {
+			tasks[i].Completed = completed
+			a.tasks.SetItems(tasks)
+			return
+		}
+	}
+}
+
+// deleteCurrentTask removes selected tasks.
+// If multiple items are selected, deletes all of them. Otherwise deletes the cursor item.
 func (a *TodoApp) deleteCurrentTask() {
 	// Use the appropriate list state based on filter mode
 	isFilterMode := a.filterMode.Peek()
@@ -782,7 +830,32 @@ func (a *TodoApp) deleteCurrentTask() {
 		listState = a.filteredListState
 	}
 
-	// Get the selected task and find its index in the original list
+	// Check for multi-select: if items are selected, delete all of them
+	selectedTasks := listState.SelectedItems()
+	if len(selectedTasks) > 0 {
+		// Build a set of IDs to delete
+		idsToDelete := make(map[string]struct{}, len(selectedTasks))
+		for _, task := range selectedTasks {
+			idsToDelete[task.ID] = struct{}{}
+		}
+
+		// Remove all matching tasks
+		a.tasks.RemoveWhere(func(task Task) bool {
+			_, shouldDelete := idsToDelete[task.ID]
+			return shouldDelete
+		})
+
+		listState.ClearSelection()
+		listState.ClearAnchor()
+
+		// If in filter mode and no more filtered items, refocus the filter input
+		if isFilterMode && len(a.getFilteredTasks()) == 0 {
+			t.RequestFocus("filter-input")
+		}
+		return
+	}
+
+	// No selection - delete just the cursor item
 	task, ok := listState.SelectedItem()
 	if !ok {
 		return
@@ -802,34 +875,83 @@ func (a *TodoApp) deleteCurrentTask() {
 	}
 }
 
-// moveTaskUp moves the currently selected task up in the list.
+// moveTaskUp moves selected tasks up in the list.
+// If multiple items are selected, moves all of them as a block.
 func (a *TodoApp) moveTaskUp() {
-	idx := a.tasks.CursorIndex.Peek()
-	if idx <= 0 {
-		return // Already at top or invalid
-	}
-
 	tasks := a.tasks.GetItems()
-	if idx >= len(tasks) {
+	selectedIndices := a.tasks.SelectedIndices()
+
+	// If there's a selection, move the entire selection block
+	if len(selectedIndices) > 0 {
+		firstIdx := selectedIndices[0]
+		lastIdx := selectedIndices[len(selectedIndices)-1]
+
+		if firstIdx <= 0 {
+			return // Already at top
+		}
+
+		// Move the item above the selection to below the selection
+		itemAbove := tasks[firstIdx-1]
+		copy(tasks[firstIdx-1:lastIdx], tasks[firstIdx:lastIdx+1])
+		tasks[lastIdx] = itemAbove
+		a.tasks.SetItems(tasks)
+
+		// Update selection indices (all shift up by 1)
+		a.tasks.SelectRange(firstIdx-1, lastIdx-1)
+
+		// Move cursor up
+		cursorIdx := a.tasks.CursorIndex.Peek()
+		a.tasks.SelectIndex(cursorIdx - 1)
 		return
 	}
 
-	// Swap with previous item
+	// No selection - move just the cursor item
+	idx := a.tasks.CursorIndex.Peek()
+	if idx <= 0 || idx >= len(tasks) {
+		return
+	}
+
 	tasks[idx], tasks[idx-1] = tasks[idx-1], tasks[idx]
 	a.tasks.SetItems(tasks)
 	a.tasks.SelectIndex(idx - 1)
 }
 
-// moveTaskDown moves the currently selected task down in the list.
+// moveTaskDown moves selected tasks down in the list.
+// If multiple items are selected, moves all of them as a block.
 func (a *TodoApp) moveTaskDown() {
-	idx := a.tasks.CursorIndex.Peek()
 	tasks := a.tasks.GetItems()
+	selectedIndices := a.tasks.SelectedIndices()
 
-	if idx < 0 || idx >= len(tasks)-1 {
-		return // Already at bottom or invalid
+	// If there's a selection, move the entire selection block
+	if len(selectedIndices) > 0 {
+		firstIdx := selectedIndices[0]
+		lastIdx := selectedIndices[len(selectedIndices)-1]
+
+		if lastIdx >= len(tasks)-1 {
+			return // Already at bottom
+		}
+
+		// Move the item below the selection to above the selection
+		itemBelow := tasks[lastIdx+1]
+		copy(tasks[firstIdx+1:lastIdx+2], tasks[firstIdx:lastIdx+1])
+		tasks[firstIdx] = itemBelow
+		a.tasks.SetItems(tasks)
+
+		// Update selection indices (all shift down by 1)
+		a.tasks.SelectRange(firstIdx+1, lastIdx+1)
+
+		// Move cursor down
+		cursorIdx := a.tasks.CursorIndex.Peek()
+		a.tasks.SelectIndex(cursorIdx + 1)
+		return
 	}
 
-	// Swap with next item
+	// No selection - move just the cursor item
+	idx := a.tasks.CursorIndex.Peek()
+	if idx < 0 || idx >= len(tasks)-1 {
+		return
+	}
+
 	tasks[idx], tasks[idx+1] = tasks[idx+1], tasks[idx]
 	a.tasks.SetItems(tasks)
 	a.tasks.SelectIndex(idx + 1)
