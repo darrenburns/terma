@@ -66,49 +66,71 @@ func SnapshotTestMain(galleryPath string) {
 // All failures are collected and can be viewed in a combined gallery by calling
 // SnapshotTestMain from your TestMain function.
 //
+// An optional description can be provided to explain what should be visible in the snapshot.
+// This description appears in the gallery to help reviewers understand what they're looking at.
+//
 // Example:
 //
 //	func TestMyWidget(t *testing.T) {
 //	    widget := Text{Content: "Hello"}
-//	    AssertSnapshot(t, widget, 20, 5)
+//	    AssertSnapshot(t, widget, 20, 5, "White 'Hello' text left-aligned at top-left corner")
 //	}
 //
 // To update golden files after intentional changes:
 //
 //	UPDATE_SNAPSHOTS=1 go test ./...
-func AssertSnapshot(t *testing.T, widget Widget, width, height int) {
+func AssertSnapshot(t *testing.T, widget Widget, width, height int, description ...string) {
 	t.Helper()
-	AssertSnapshotWithOptions(t, widget, width, height, DefaultSVGOptions())
+	desc := ""
+	if len(description) > 0 {
+		desc = description[0]
+	}
+	assertSnapshotNamed(t, t.Name(), widget, width, height, DefaultSVGOptions(), desc)
 }
 
 // AssertSnapshotWithOptions renders a widget with custom SVG options and compares against a golden file.
-func AssertSnapshotWithOptions(t *testing.T, widget Widget, width, height int, opts SVGOptions) {
+// An optional description can be provided to explain what should be visible in the snapshot.
+func AssertSnapshotWithOptions(t *testing.T, widget Widget, width, height int, opts SVGOptions, description ...string) {
 	t.Helper()
-	assertSnapshotNamed(t, t.Name(), widget, width, height, opts)
+	desc := ""
+	if len(description) > 0 {
+		desc = description[0]
+	}
+	assertSnapshotNamed(t, t.Name(), widget, width, height, opts, desc)
 }
 
 // AssertSnapshotNamed renders a widget and compares against a golden file with a custom name.
 // Use this when you need multiple snapshots in a single test.
+// An optional description can be provided to explain what should be visible in the snapshot.
 //
 // Example:
 //
 //	func TestMyWidget(t *testing.T) {
-//	    AssertSnapshotNamed(t, "initial", widget, 20, 5)
+//	    AssertSnapshotNamed(t, "initial", widget, 20, 5, "Widget in initial state")
 //	    widget.Update()
-//	    AssertSnapshotNamed(t, "after_update", widget, 20, 5)
+//	    AssertSnapshotNamed(t, "after_update", widget, 20, 5, "Widget after state change")
 //	}
-func AssertSnapshotNamed(t *testing.T, name string, widget Widget, width, height int) {
+func AssertSnapshotNamed(t *testing.T, name string, widget Widget, width, height int, description ...string) {
 	t.Helper()
-	assertSnapshotNamed(t, name, widget, width, height, DefaultSVGOptions())
+	desc := ""
+	if len(description) > 0 {
+		desc = description[0]
+	}
+	assertSnapshotNamed(t, name, widget, width, height, DefaultSVGOptions(), desc)
 }
 
 // AssertSnapshotNamedWithOptions renders a widget with custom options and compares against a named golden file.
-func AssertSnapshotNamedWithOptions(t *testing.T, name string, widget Widget, width, height int, opts SVGOptions) {
+// An optional description can be provided to explain what should be visible in the snapshot.
+func AssertSnapshotNamedWithOptions(t *testing.T, name string, widget Widget, width, height int, opts SVGOptions, description ...string) {
 	t.Helper()
-	assertSnapshotNamed(t, name, widget, width, height, opts)
+	desc := ""
+	if len(description) > 0 {
+		desc = description[0]
+	}
+	assertSnapshotNamed(t, name, widget, width, height, opts, desc)
 }
 
-func assertSnapshotNamed(t *testing.T, name string, widget Widget, width, height int, opts SVGOptions) {
+func assertSnapshotNamed(t *testing.T, name string, widget Widget, width, height int, opts SVGOptions, description string) {
 	t.Helper()
 
 	sanitizedName := sanitizeFilename(name)
@@ -148,10 +170,11 @@ func assertSnapshotNamed(t *testing.T, name string, widget Widget, width, height
 	expectedBytes, err := os.ReadFile(goldenPath)
 	if os.IsNotExist(err) {
 		registerComparison(SnapshotComparison{
-			Name:     name,
-			Expected: fmt.Sprintf("<!-- File not found: %s -->", goldenPath),
-			Actual:   actualSVG,
-			Passed:   false,
+			Name:        name,
+			Description: description,
+			Expected:    fmt.Sprintf("<!-- File not found: %s -->", goldenPath),
+			Actual:      actualSVG,
+			Passed:      false,
 		})
 		t.Fatalf("golden file not found: %s\nRun with UPDATE_SNAPSHOTS=1 to create it", goldenPath)
 	}
@@ -180,12 +203,13 @@ func assertSnapshotNamed(t *testing.T, name string, widget Widget, width, height
 
 	// Register comparison for combined gallery
 	registerComparison(SnapshotComparison{
-		Name:     name,
-		Expected: expectedSVG,
-		Actual:   actualSVG,
-		DiffSVG:  diffSVG,
-		Passed:   passed,
-		Stats:    stats,
+		Name:        name,
+		Description: description,
+		Expected:    expectedSVG,
+		Actual:      actualSVG,
+		DiffSVG:     diffSVG,
+		Passed:      passed,
+		Stats:       stats,
 	})
 
 	if !passed {
@@ -243,7 +267,12 @@ func (s *SnapshotSuite) WithOptions(opts SVGOptions) *SnapshotSuite {
 
 // Assert renders a widget and compares against a golden file.
 // Results are collected into the global registry for the combined gallery.
-func (s *SnapshotSuite) Assert(name string, widget Widget, width, height int) {
+// An optional description can be provided to explain what should be visible in the snapshot.
+func (s *SnapshotSuite) Assert(name string, widget Widget, width, height int, description ...string) {
 	s.t.Helper()
-	assertSnapshotNamed(s.t, name, widget, width, height, s.opts)
+	desc := ""
+	if len(description) > 0 {
+		desc = description[0]
+	}
+	assertSnapshotNamed(s.t, name, widget, width, height, s.opts, desc)
 }
