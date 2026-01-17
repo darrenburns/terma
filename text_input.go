@@ -307,6 +307,25 @@ func (t TextInput) IsFocusable() bool {
 	return true
 }
 
+// CapturesKey returns true if this key would be captured by the text input
+// (i.e., typed as text rather than bubbling to ancestors). This is true for
+// printable characters without modifiers.
+func (t TextInput) CapturesKey(key string) bool {
+	// Keys with modifiers are not captured (they may have special handling)
+	if strings.Contains(key, "+") {
+		return false
+	}
+
+	// Single printable rune is captured as typed text
+	runes := []rune(key)
+	if len(runes) == 1 && unicode.IsPrint(runes[0]) {
+		return true
+	}
+
+	// Multi-character key names (like "escape", "enter") are not captured
+	return false
+}
+
 // Keybinds returns the declarative keybindings for this text input.
 // ExtraKeybinds are checked first, allowing custom behavior to override defaults.
 func (t TextInput) Keybinds() []Keybind {

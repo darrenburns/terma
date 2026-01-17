@@ -59,6 +59,27 @@ type Hoverable interface {
 	OnHover(hovered bool)
 }
 
+// KeyCapturer is implemented by widgets that capture certain key events,
+// preventing them from bubbling to ancestors. When a KeyCapturer has focus,
+// ancestor keybinds are filtered based on CapturesKey() - only keybinds
+// for keys that are NOT captured will be shown in the KeybindBar.
+//
+// For example, a text input captures printable characters (typing "q" inserts
+// text rather than triggering a "quit" keybind), but allows "escape" or
+// "ctrl+j" to bubble up.
+type KeyCapturer interface {
+	// CapturesKey returns true if this widget captures the given key,
+	// preventing it from bubbling to ancestors.
+	CapturesKey(key string) bool
+}
+
+// Blurrable is implemented by widgets that want to be notified when they
+// lose keyboard focus. The framework calls OnBlur() when focus moves away
+// from the widget.
+type Blurrable interface {
+	OnBlur()
+}
+
 // FocusableEntry pairs a focusable widget with its identity and ancestor chain.
 type FocusableEntry struct {
 	ID        string
@@ -156,6 +177,10 @@ func (fm *FocusManager) FocusedID() string {
 // based on the focused widget and its ancestors, plus root widget keybinds.
 // Keybindings are returned in order from focused widget to root,
 // matching the order they would be checked when handling key events.
+//
+// If the focused widget implements KeyCapturer, ancestor keybinds are filtered
+// to exclude keys that the focused widget captures (since those keys won't
+// bubble up to trigger the ancestor keybinds).
 func (fm *FocusManager) ActiveKeybinds() []Keybind {
 	// Find the focused entry
 	var focusedEntry *FocusableEntry
@@ -168,34 +193,69 @@ func (fm *FocusManager) ActiveKeybinds() []Keybind {
 
 	var keybinds []Keybind
 
+	// Check if the focused widget captures certain keys
+	var capturer KeyCapturer
 	if focusedEntry != nil {
-		// Collect from focused widget first
+		capturer, _ = focusedEntry.Focusable.(KeyCapturer)
+	}
+
+	if focusedEntry != nil {
+		// Collect from focused widget first (unfiltered)
 		if provider, ok := focusedEntry.Focusable.(KeybindProvider); ok {
 			keybinds = append(keybinds, provider.Keybinds()...)
 		}
 
-		// Then collect from ancestors (innermost to outermost/root)
+		// Collect from ancestors (innermost to outermost/root), filtering if needed
 		for i := len(focusedEntry.Ancestors) - 1; i >= 0; i-- {
 			if provider, ok := focusedEntry.Ancestors[i].(KeybindProvider); ok {
-				keybinds = append(keybinds, provider.Keybinds()...)
+				keybinds = appendFilteredKeybinds(keybinds, provider.Keybinds(), capturer)
 			}
 		}
 	}
 
-	// Always include root widget keybinds (they're the fallback)
+	// Include root widget keybinds (they're the fallback), filtering if needed
 	if fm.rootWidget != nil {
 		if provider, ok := fm.rootWidget.(KeybindProvider); ok {
-			keybinds = append(keybinds, provider.Keybinds()...)
+			keybinds = appendFilteredKeybinds(keybinds, provider.Keybinds(), capturer)
 		}
 	}
 
 	return keybinds
 }
 
+// appendFilteredKeybinds appends keybinds to the slice, filtering out any
+// that would be captured by the given KeyCapturer (if non-nil).
+func appendFilteredKeybinds(dest []Keybind, src []Keybind, capturer KeyCapturer) []Keybind {
+	if capturer == nil {
+		return append(dest, src...)
+	}
+	for _, kb := range src {
+		if !capturer.CapturesKey(kb.Key) {
+			dest = append(dest, kb)
+		}
+	}
+	return dest
+}
+
+// notifyBlur calls OnBlur on the currently focused widget if it implements Blurrable.
+func (fm *FocusManager) notifyBlur() {
+	focused := fm.Focused()
+	if focused == nil {
+		return
+	}
+	if blurrable, ok := focused.(Blurrable); ok {
+		blurrable.OnBlur()
+	}
+}
+
 // FocusByID sets focus to the widget with the given ID.
 func (fm *FocusManager) FocusByID(id string) {
+	if id == fm.focusedID {
+		return // No change
+	}
 	for _, entry := range fm.focusables {
 		if entry.ID == id && entry.Focusable.IsFocusable() {
+			fm.notifyBlur()
 			fm.focusedID = id
 			return
 		}
@@ -219,7 +279,11 @@ func (fm *FocusManager) FocusNext() {
 	for i := 0; i < len(fm.focusables); i++ {
 		nextIndex := (startIndex + 1 + i) % len(fm.focusables)
 		if fm.focusables[nextIndex].Focusable.IsFocusable() {
-			fm.focusedID = fm.focusables[nextIndex].ID
+			newID := fm.focusables[nextIndex].ID
+			if newID != oldID {
+				fm.notifyBlur()
+			}
+			fm.focusedID = newID
 			Log("FocusNext: %q -> %q", oldID, fm.focusedID)
 			return
 		}
@@ -244,7 +308,11 @@ func (fm *FocusManager) FocusPrevious() {
 	for i := 0; i < len(fm.focusables); i++ {
 		prevIndex := (startIndex - 1 - i + len(fm.focusables)) % len(fm.focusables)
 		if fm.focusables[prevIndex].Focusable.IsFocusable() {
-			fm.focusedID = fm.focusables[prevIndex].ID
+			newID := fm.focusables[prevIndex].ID
+			if newID != oldID {
+				fm.notifyBlur()
+			}
+			fm.focusedID = newID
 			Log("FocusPrevious: %q -> %q", oldID, fm.focusedID)
 			return
 		}

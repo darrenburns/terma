@@ -358,6 +358,7 @@ type List[T any] struct {
 	Style          Style                                           // Optional styling
 	Click          func()                                          // Optional callback invoked when clicked
 	Hover          func(bool)                                      // Optional callback invoked when hover state changes
+	Blur           func()                                          // Optional callback invoked when focus leaves this widget
 }
 
 type listItemLayout struct {
@@ -433,6 +434,14 @@ func (l List[T]) OnClick() {
 func (l List[T]) OnHover(hovered bool) {
 	if l.Hover != nil {
 		l.Hover(hovered)
+	}
+}
+
+// OnBlur is called when this widget loses keyboard focus.
+// Implements the Blurrable interface.
+func (l List[T]) OnBlur() {
+	if l.Blur != nil {
+		l.Blur()
 	}
 }
 

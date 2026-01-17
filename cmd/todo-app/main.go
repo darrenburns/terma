@@ -351,6 +351,10 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 					BackgroundColor: theme.Surface,
 				},
 				OnSubmit: a.addTask,
+				ExtraKeybinds: []t.Keybind{
+					{Key: "enter", Name: "Create", Action: func() { a.addTask(a.inputState.GetText()) }},
+					{Key: "tab", Name: "Tasks", Action: func() {}},
+				},
 			},
 		},
 	}
@@ -406,6 +410,7 @@ func (a *TodoApp) buildTaskList(ctx t.BuildContext) t.Widget {
 			RenderItem:  a.renderTaskItem(ctx, listFocused),
 			OnSelect:    a.toggleTask,
 			MultiSelect: true,
+			Blur:        func() { listState.ClearSelection() },
 		},
 	}
 }
@@ -712,6 +717,7 @@ func (a *TodoApp) navigateUp() {
 		// In edit mode: cancel edit and move cursor up (or to input if at top)
 		a.editingIndex.Set(-1)
 		if editingIdx == 0 {
+			a.tasks.ClearSelection()
 			t.RequestFocus("new-task-input")
 		} else {
 			a.tasks.SelectPrevious()
@@ -719,6 +725,7 @@ func (a *TodoApp) navigateUp() {
 		}
 	} else {
 		// List at top or input focused - move to input
+		a.tasks.ClearSelection()
 		t.RequestFocus("new-task-input")
 	}
 }
@@ -963,6 +970,7 @@ func (a *TodoApp) startEdit() {
 	idx := a.tasks.CursorIndex.Peek()
 	tasks := a.tasks.GetItems()
 	if idx >= 0 && idx < len(tasks) {
+		a.tasks.ClearSelection()
 		a.editInputState.SetText(tasks[idx].Title)
 		a.editInputState.CursorEnd() // Position cursor at end of text
 		a.editingIndex.Set(idx)
