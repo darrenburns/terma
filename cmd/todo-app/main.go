@@ -793,8 +793,6 @@ func (a *TodoApp) toggleCurrentTask() {
 		for _, task := range selectedTasks {
 			a.setTaskCompleted(task, targetState)
 		}
-		listState.ClearSelection()
-		listState.ClearAnchor()
 		return
 	}
 
