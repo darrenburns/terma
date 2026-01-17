@@ -252,7 +252,6 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 		Padding:         t.EdgeInsetsXY(1, 0),
 	}
 
-	//cellPadding := t.EdgeInsetsXY(1, 0)
 	columns := []t.TableColumn{
 		{Width: t.Cells(12), Header: t.Text{Content: "Service", Style: headerStyle}},
 		{Width: t.Cells(10), Header: t.Text{Content: "Owner", Style: headerStyle}},
@@ -260,6 +259,7 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 		{Width: t.Flex(1), Header: t.Text{Content: "Notes", Style: headerStyle}},
 	}
 
+	cellPadding := t.EdgeInsetsXY(1, 0)
 	return t.Column{
 		ID:      "table-demo-root",
 		Height:  t.Flex(1),
@@ -302,44 +302,45 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 					Columns:       columns,
 					SelectionMode: mode,
 					MultiSelect:   true,
-					//RenderCell: func(row TableRow, rowIndex int, colIndex int, active bool, selected bool) t.Widget {
-					//	style := t.Style{ForegroundColor: theme.Text}
-					//	if selected {
-					//		style.BackgroundColor = theme.SurfaceHover
-					//	}
-					//	if active {
-					//		style.ForegroundColor = theme.Accent
-					//	}
-					//	style.Padding = cellPadding
-					//
-					//	switch colIndex {
-					//	case 0:
-					//		return t.Text{Content: row.Service, Style: style}
-					//	case 1:
-					//		return t.Text{Content: row.Owner, Style: style}
-					//	case 2:
-					//		statusStyle := style
-					//		if !active {
-					//			switch row.Status {
-					//			case "Warn":
-					//				statusStyle.ForegroundColor = theme.Warning
-					//			case "Degraded":
-					//				statusStyle.ForegroundColor = theme.Error
-					//			default:
-					//				statusStyle.ForegroundColor = theme.Success
-					//			}
-					//		}
-					//		return t.Text{Content: row.Status, Style: statusStyle}
-					//	case 3:
-					//		notesStyle := style
-					//		if !active && !selected {
-					//			notesStyle.ForegroundColor = theme.TextMuted
-					//		}
-					//		return t.Text{Content: row.Notes, Style: notesStyle, Wrap: t.WrapSoft}
-					//	default:
-					//		return t.Text{Content: "", Style: style}
-					//	}
-					//},
+					RenderCell: func(row TableRow, rowIndex int, colIndex int, active bool, selected bool) t.Widget {
+						style := t.Style{ForegroundColor: theme.Text}
+						if selected {
+							style.BackgroundColor = theme.Accent.WithAlpha(0.2)
+						}
+						if active {
+							style.ForegroundColor = theme.Accent.AutoText().WithAlpha(0.8)
+							style.BackgroundColor = theme.Accent
+						}
+						style.Padding = cellPadding
+
+						switch colIndex {
+						case 0:
+							return t.Text{Content: row.Service, Style: style}
+						case 1:
+							return t.Text{Content: row.Owner, Style: style}
+						case 2:
+							statusStyle := style
+							if !active {
+								switch row.Status {
+								case "Warn":
+									statusStyle.ForegroundColor = theme.Warning
+								case "Degraded":
+									statusStyle.ForegroundColor = theme.Error
+								default:
+									statusStyle.ForegroundColor = theme.Success
+								}
+							}
+							return t.Text{Content: row.Status, Style: statusStyle}
+						case 3:
+							notesStyle := style
+							if !active && !selected {
+								notesStyle.ForegroundColor = theme.TextMuted
+							}
+							return t.Text{Content: row.Notes, Style: notesStyle, Wrap: t.WrapSoft}
+						default:
+							return t.Text{Content: "", Style: style}
+						}
+					},
 				},
 			},
 			t.Text{
