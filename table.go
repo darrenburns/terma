@@ -18,6 +18,9 @@ type TableState[T any] struct {
 
 	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
 
+	lastSelectionMode TableSelectionMode
+	hasSelectionMode  bool
+
 	rowLayouts []tableRowLayout // Cached layout metrics (per row)
 }
 
@@ -305,6 +308,20 @@ func (s *TableState[T]) SetAnchor(index int) {
 // ClearAnchor removes the anchor point.
 func (s *TableState[T]) ClearAnchor() {
 	s.anchorIndex = nil
+}
+
+func (s *TableState[T]) syncSelectionMode(mode TableSelectionMode) {
+	if !s.hasSelectionMode {
+		s.lastSelectionMode = mode
+		s.hasSelectionMode = true
+		return
+	}
+	if s.lastSelectionMode == mode {
+		return
+	}
+	s.ClearSelection()
+	s.ClearAnchor()
+	s.lastSelectionMode = mode
 }
 
 // HasAnchor returns true if an anchor point is set.
@@ -1136,12 +1153,17 @@ func (t Table[T]) hasHeader() bool {
 }
 
 func (t Table[T]) selectionMode() TableSelectionMode {
+	mode := TableSelectionCursor
 	switch t.SelectionMode {
 	case TableSelectionRow, TableSelectionColumn:
-		return t.SelectionMode
+		mode = t.SelectionMode
 	default:
-		return TableSelectionCursor
+		mode = TableSelectionCursor
 	}
+	if t.State != nil {
+		t.State.syncSelectionMode(mode)
+	}
+	return mode
 }
 
 func tableCellActive(mode TableSelectionMode, rowIdx, colIdx, cursorRow, cursorCol int) bool {
