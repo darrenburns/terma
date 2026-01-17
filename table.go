@@ -665,7 +665,7 @@ func (t Table[T]) themedDefaultRenderCell(ctx BuildContext) func(row T, rowIndex
 	highlight := SpanStyle{
 		Underline:      UnderlineSingle,
 		UnderlineColor: theme.Accent,
-		Background:     theme.Accent.WithAlpha(0.25),
+		Background:     theme.Selection,
 	}
 	return func(row T, rowIndex int, colIndex int, active bool, selected bool, match MatchResult) Widget {
 		style := tableDefaultCellStyle(theme, active, selected)
@@ -1463,7 +1463,7 @@ func tableDefaultCellContent[T any](row T, colIndex int) (string, bool) {
 func tableDefaultCellStyle(theme ThemeData, active, selected bool) Style {
 	style := Style{ForegroundColor: theme.Text}
 	if selected {
-		style.BackgroundColor = theme.Primary.WithAlpha(0.3)
+		style.BackgroundColor = theme.Selection
 	}
 	if active {
 		style.BackgroundColor = theme.Primary

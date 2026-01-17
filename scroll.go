@@ -383,18 +383,19 @@ func (s Scrollable) renderScrollbar(ctx *RenderContext, scrollOffset int, focuse
 	}
 
 	// Determine scrollbar colors based on focus state and custom settings
+	theme := getTheme()
 	var trackColor, thumbColor Color
 	if s.ScrollbarTrackColor.IsSet() {
 		trackColor = s.ScrollbarTrackColor
 	} else {
-		trackColor = BrightBlack
+		trackColor = theme.ScrollbarTrack
 	}
 	if s.ScrollbarThumbColor.IsSet() {
 		thumbColor = s.ScrollbarThumbColor
 	} else if focused {
-		thumbColor = BrightCyan
+		thumbColor = theme.Primary
 	} else {
-		thumbColor = White
+		thumbColor = theme.ScrollbarThumb
 	}
 
 	// Calculate thumb position and size with floating-point precision
