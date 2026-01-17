@@ -2,6 +2,7 @@ package terma
 
 import (
 	"fmt"
+	"reflect"
 
 	"terma/layout"
 )
@@ -10,9 +11,10 @@ import (
 // It is the source of truth for rows and cursor position, and must be provided to Table.
 // Rows is a reactive Signal - changes trigger automatic re-renders.
 type TableState[T any] struct {
-	Rows        AnySignal[[]T]              // Reactive table rows
-	CursorIndex Signal[int]                 // Cursor position (row index)
-	Selection   AnySignal[map[int]struct{}] // Selected row indices (for multi-select)
+	Rows         AnySignal[[]T]              // Reactive table rows
+	CursorIndex  Signal[int]                 // Cursor position (row index)
+	CursorColumn Signal[int]                 // Cursor position (column index)
+	Selection    AnySignal[map[int]struct{}] // Selected indices (row/column/cell based on selection mode)
 
 	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
 
@@ -25,9 +27,10 @@ func NewTableState[T any](initialRows []T) *TableState[T] {
 		initialRows = []T{}
 	}
 	return &TableState[T]{
-		Rows:        NewAnySignal(initialRows),
-		CursorIndex: NewSignal(0),
-		Selection:   NewAnySignal(make(map[int]struct{})),
+		Rows:         NewAnySignal(initialRows),
+		CursorIndex:  NewSignal(0),
+		CursorColumn: NewSignal(0),
+		Selection:    NewAnySignal(make(map[int]struct{})),
 	}
 }
 
@@ -127,6 +130,7 @@ func (s *TableState[T]) RemoveWhere(predicate func(T) bool) int {
 func (s *TableState[T]) Clear() {
 	s.Rows.Set([]T{})
 	s.CursorIndex.Set(0)
+	s.CursorColumn.Set(0)
 }
 
 // SelectedRow returns the currently selected row (if any).
@@ -179,6 +183,11 @@ func (s *TableState[T]) SelectIndex(index int) {
 	rows := s.Rows.Peek()
 	clamped := clampInt(index, 0, len(rows)-1)
 	s.CursorIndex.Set(clamped)
+}
+
+// SelectColumn sets cursor to a specific column index.
+func (s *TableState[T]) SelectColumn(index int) {
+	s.CursorColumn.Set(index)
 }
 
 // clampCursor ensures cursor is within valid bounds after rows change.
@@ -256,6 +265,7 @@ func (s *TableState[T]) SelectAll() {
 }
 
 // SelectedRows returns all currently selected rows.
+// Note: This assumes row-based selection.
 func (s *TableState[T]) SelectedRows() []T {
 	rows := s.Rows.Peek()
 	sel := s.Selection.Peek()
@@ -269,6 +279,7 @@ func (s *TableState[T]) SelectedRows() []T {
 }
 
 // SelectedIndices returns the indices of all selected rows in ascending order.
+// Note: This assumes row-based selection.
 func (s *TableState[T]) SelectedIndices() []int {
 	sel := s.Selection.Peek()
 	result := make([]int, 0, len(sel))
@@ -334,6 +345,18 @@ type TableColumn struct {
 	Header Widget    // Optional header widget for this column
 }
 
+// TableSelectionMode controls how cursor and selection highlights are applied.
+type TableSelectionMode int
+
+const (
+	// TableSelectionCursor highlights only the cursor cell (default).
+	TableSelectionCursor TableSelectionMode = iota
+	// TableSelectionRow highlights the entire row.
+	TableSelectionRow
+	// TableSelectionColumn highlights the entire column.
+	TableSelectionColumn
+)
+
 // Table is a generic focusable widget that displays a navigable table of rows.
 // Use with Scrollable and a shared ScrollState to enable scroll-into-view.
 type Table[T any] struct {
@@ -348,6 +371,7 @@ type Table[T any] struct {
 	RowHeight      int                                                                        // Optional uniform row height override (default 0 = layout metrics / fallback 1)
 	ColumnSpacing  int                                                                        // Space between columns
 	RowSpacing     int                                                                        // Space between rows
+	SelectionMode  TableSelectionMode                                                         // Cursor/selection highlight mode (row/column/cursor)
 	MultiSelect    bool                                                                       // Enable multi-select mode (shift+move to extend)
 	Width          Dimension                                                                  // Optional width (zero value = auto)
 	Height         Dimension                                                                  // Optional height (zero value = auto)
@@ -419,7 +443,9 @@ func (c tableContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 	}
 
 	c.State.rowLayouts = rowLayouts
-	c.scrollCursorIntoView()
+	if c.selectionMode() != TableSelectionColumn {
+		c.scrollCursorIntoView()
+	}
 }
 
 func (c tableContainer[T]) ChildWidgets() []Widget {
@@ -479,10 +505,12 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 
 	rows := t.State.Rows.Get()
 	columnCount := len(t.Columns)
+	mode := t.selectionMode()
 
+	hasHeader := t.hasHeader()
 	headerRows := 0
 	var headerCells []Widget
-	if t.RenderHeader != nil || tableHasColumnHeaders(t.Columns) {
+	if hasHeader {
 		headerRows = 1
 		headerCells = make([]Widget, columnCount)
 		for colIdx := 0; colIdx < columnCount; colIdx++ {
@@ -510,30 +538,38 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 		children = append(children, headerCells...)
 	}
 
-	cursorIdx := 0
+	cursorRow := 0
+	cursorCol := 0
 	selection := map[int]struct{}{}
 	if len(rows) > 0 {
-		cursorIdx = t.State.CursorIndex.Get()
+		cursorRow = t.State.CursorIndex.Get()
+		cursorCol = t.State.CursorColumn.Get()
 		if t.MultiSelect {
 			selection = t.State.Selection.Get()
 		}
 
-		clamped := clampInt(cursorIdx, 0, len(rows)-1)
-		if clamped != cursorIdx {
-			t.State.CursorIndex.Set(clamped)
-			cursorIdx = clamped
+		clampedRow := clampInt(cursorRow, 0, len(rows)-1)
+		if clampedRow != cursorRow {
+			t.State.CursorIndex.Set(clampedRow)
+			cursorRow = clampedRow
 		}
 
-		t.registerScrollCallbacks()
+		clampedCol := clampInt(cursorCol, 0, columnCount-1)
+		if clampedCol != cursorCol {
+			t.State.CursorColumn.Set(clampedCol)
+			cursorCol = clampedCol
+		}
+
+		t.registerScrollCallbacks(mode, hasHeader)
 	}
 
 	for rowIdx, row := range rows {
-		active := rowIdx == cursorIdx
-		selected := false
-		if t.MultiSelect {
-			_, selected = selection[rowIdx]
-		}
 		for colIdx := 0; colIdx < columnCount; colIdx++ {
+			active := tableCellActive(mode, rowIdx, colIdx, cursorRow, cursorCol)
+			selected := false
+			if t.MultiSelect {
+				selected = tableCellSelected(mode, selection, rowIdx, colIdx, columnCount)
+			}
 			cell := renderCell(row, rowIdx, colIdx, active, selected)
 			if cell == nil {
 				cell = Text{}
@@ -556,20 +592,25 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 func (t Table[T]) themedDefaultRenderCell(ctx BuildContext) func(row T, rowIndex int, colIndex int, active bool, selected bool) Widget {
 	theme := ctx.Theme()
 	return func(row T, rowIndex int, colIndex int, active bool, selected bool) Widget {
+		style := tableDefaultCellStyle(theme, active, selected)
+		if content, ok := tableDefaultCellContent(row, colIndex); ok {
+			return Text{
+				Content: content,
+				Style:   style,
+			}
+		}
+
 		if colIndex != 0 {
-			return Text{Content: "", Style: Style{ForegroundColor: theme.Text}}
+			return Text{Content: "", Style: style}
 		}
 
 		content := fmt.Sprintf("%v", row)
 		prefix := "  "
-		style := Style{ForegroundColor: theme.Text}
 
 		if selected && active {
 			prefix = "▶*"
-			style.ForegroundColor = theme.Accent
 		} else if active {
 			prefix = "▶ "
-			style.ForegroundColor = theme.Accent
 		} else if selected {
 			prefix = " *"
 		}
@@ -588,26 +629,105 @@ func (t Table[T]) OnKey(event KeyEvent) bool {
 		return false
 	}
 
-	cursorIdx := t.State.CursorIndex.Peek()
+	cursorRow := t.State.CursorIndex.Peek()
+	cursorCol := t.State.CursorColumn.Peek()
 	rowCount := t.State.RowCount()
+	columnCount := len(t.Columns)
+	mode := t.selectionMode()
+
+	if rowCount > 0 {
+		clampedRow := clampInt(cursorRow, 0, rowCount-1)
+		if clampedRow != cursorRow {
+			t.State.CursorIndex.Set(clampedRow)
+			cursorRow = clampedRow
+		}
+	}
+	if columnCount > 0 {
+		clampedCol := clampInt(cursorCol, 0, columnCount-1)
+		if clampedCol != cursorCol {
+			t.State.CursorColumn.Set(clampedCol)
+			cursorCol = clampedCol
+		}
+	}
 
 	// Handle multi-select specific keys (shift+movement to extend selection)
 	if t.MultiSelect {
+		switch mode {
+		case TableSelectionRow:
+			switch {
+			case event.MatchString("shift+up", "shift+k"):
+				t.handleShiftMoveRow(-1)
+				return true
+			case event.MatchString("shift+down", "shift+j"):
+				t.handleShiftMoveRow(1)
+				return true
+			case event.MatchString("shift+home"):
+				t.handleShiftMoveRowTo(0)
+				return true
+			case event.MatchString("shift+end"):
+				t.handleShiftMoveRowTo(rowCount - 1)
+				return true
+			}
+		case TableSelectionColumn:
+			switch {
+			case event.MatchString("shift+left", "shift+h"):
+				t.handleShiftMoveColumn(-1, columnCount)
+				return true
+			case event.MatchString("shift+right", "shift+l"):
+				t.handleShiftMoveColumn(1, columnCount)
+				return true
+			case event.MatchString("shift+home"):
+				t.handleShiftMoveColumnTo(0, columnCount)
+				return true
+			case event.MatchString("shift+end"):
+				t.handleShiftMoveColumnTo(columnCount-1, columnCount)
+				return true
+			}
+		case TableSelectionCursor:
+			switch {
+			case event.MatchString("shift+up", "shift+k"):
+				t.handleShiftMoveCell(-1, 0, rowCount, columnCount)
+				return true
+			case event.MatchString("shift+down", "shift+j"):
+				t.handleShiftMoveCell(1, 0, rowCount, columnCount)
+				return true
+			case event.MatchString("shift+left", "shift+h"):
+				t.handleShiftMoveCell(0, -1, rowCount, columnCount)
+				return true
+			case event.MatchString("shift+right", "shift+l"):
+				t.handleShiftMoveCell(0, 1, rowCount, columnCount)
+				return true
+			case event.MatchString("shift+home"):
+				t.handleShiftMoveCellTo(0, 0, rowCount, columnCount)
+				return true
+			case event.MatchString("shift+end"):
+				t.handleShiftMoveCellTo(rowCount-1, columnCount-1, rowCount, columnCount)
+				return true
+			}
+		}
+	}
+
+	if mode == TableSelectionColumn {
 		switch {
-		case event.MatchString("shift+up", "shift+k"):
-			t.handleShiftMove(-1)
+		case event.MatchString("up", "k"):
+			return t.scrollBy(-1)
+		case event.MatchString("down", "j"):
+			return t.scrollBy(1)
+		case event.MatchString("pgup", "ctrl+u"):
+			return t.scrollBy(-10)
+		case event.MatchString("pgdown", "ctrl+d"):
+			return t.scrollBy(10)
+		case event.MatchString("home", "g"):
+			if t.ScrollState == nil {
+				return false
+			}
+			t.ScrollState.SetOffset(0)
 			return true
-
-		case event.MatchString("shift+down", "shift+j"):
-			t.handleShiftMove(1)
-			return true
-
-		case event.MatchString("shift+home"):
-			t.handleShiftMoveTo(0)
-			return true
-
-		case event.MatchString("shift+end"):
-			t.handleShiftMoveTo(rowCount - 1)
+		case event.MatchString("end", "G"):
+			if t.ScrollState == nil {
+				return false
+			}
+			t.ScrollState.SetOffset(maxTableInt())
 			return true
 		}
 	}
@@ -622,10 +742,10 @@ func (t Table[T]) OnKey(event KeyEvent) bool {
 		return true
 
 	case event.MatchString("up", "k"):
-		if cursorIdx == 0 {
+		if cursorRow == 0 {
 			return false
 		}
-		if t.MultiSelect {
+		if t.MultiSelect && mode != TableSelectionColumn {
 			t.State.ClearSelection()
 			t.State.ClearAnchor()
 		}
@@ -635,10 +755,10 @@ func (t Table[T]) OnKey(event KeyEvent) bool {
 		return true
 
 	case event.MatchString("down", "j"):
-		if cursorIdx >= rowCount-1 {
+		if cursorRow >= rowCount-1 {
 			return false
 		}
-		if t.MultiSelect {
+		if t.MultiSelect && mode != TableSelectionColumn {
 			t.State.ClearSelection()
 			t.State.ClearAnchor()
 		}
@@ -648,7 +768,7 @@ func (t Table[T]) OnKey(event KeyEvent) bool {
 		return true
 
 	case event.MatchString("home", "g"):
-		if t.MultiSelect {
+		if t.MultiSelect && mode != TableSelectionColumn {
 			t.State.ClearSelection()
 			t.State.ClearAnchor()
 		}
@@ -658,7 +778,7 @@ func (t Table[T]) OnKey(event KeyEvent) bool {
 		return true
 
 	case event.MatchString("end", "G"):
-		if t.MultiSelect {
+		if t.MultiSelect && mode != TableSelectionColumn {
 			t.State.ClearSelection()
 			t.State.ClearAnchor()
 		}
@@ -668,11 +788,11 @@ func (t Table[T]) OnKey(event KeyEvent) bool {
 		return true
 
 	case event.MatchString("pgup", "ctrl+u"):
-		if t.MultiSelect {
+		if t.MultiSelect && mode != TableSelectionColumn {
 			t.State.ClearSelection()
 			t.State.ClearAnchor()
 		}
-		newCursor := cursorIdx - 10
+		newCursor := cursorRow - 10
 		if newCursor < 0 {
 			newCursor = 0
 		}
@@ -682,11 +802,11 @@ func (t Table[T]) OnKey(event KeyEvent) bool {
 		return true
 
 	case event.MatchString("pgdown", "ctrl+d"):
-		if t.MultiSelect {
+		if t.MultiSelect && mode != TableSelectionColumn {
 			t.State.ClearSelection()
 			t.State.ClearAnchor()
 		}
-		newCursor := cursorIdx + 10
+		newCursor := cursorRow + 10
 		if newCursor >= rowCount {
 			newCursor = rowCount - 1
 		}
@@ -694,17 +814,38 @@ func (t Table[T]) OnKey(event KeyEvent) bool {
 		t.scrollCursorIntoView()
 		t.notifyCursorChange()
 		return true
+
+	case event.MatchString("left", "h"):
+		if mode == TableSelectionRow || columnCount == 0 || cursorCol == 0 {
+			return false
+		}
+		if t.MultiSelect {
+			t.State.ClearSelection()
+			t.State.ClearAnchor()
+		}
+		t.State.CursorColumn.Set(cursorCol - 1)
+		return true
+
+	case event.MatchString("right", "l"):
+		if mode == TableSelectionRow || columnCount == 0 || cursorCol >= columnCount-1 {
+			return false
+		}
+		if t.MultiSelect {
+			t.State.ClearSelection()
+			t.State.ClearAnchor()
+		}
+		t.State.CursorColumn.Set(cursorCol + 1)
+		return true
 	}
 
 	return false
 }
 
-// handleShiftMove extends selection by moving cursor by delta and selecting the range.
-func (t Table[T]) handleShiftMove(delta int) {
-	cursorIdx := t.State.CursorIndex.Peek()
-
+// handleShiftMoveRow extends row selection by moving cursor by delta.
+func (t Table[T]) handleShiftMoveRow(delta int) {
+	cursorRow := t.State.CursorIndex.Peek()
 	if !t.State.HasAnchor() {
-		t.State.SetAnchor(cursorIdx)
+		t.State.SetAnchor(cursorRow)
 	}
 
 	if delta > 0 {
@@ -714,25 +855,103 @@ func (t Table[T]) handleShiftMove(delta int) {
 	}
 
 	newCursor := t.State.CursorIndex.Peek()
-	t.State.SelectRange(t.State.GetAnchor(), newCursor)
-
+	t.setSelectionRange(t.State.GetAnchor(), newCursor, t.State.RowCount())
 	t.scrollCursorIntoView()
 }
 
-// handleShiftMoveTo extends selection to a specific index.
-func (t Table[T]) handleShiftMoveTo(targetIdx int) {
-	cursorIdx := t.State.CursorIndex.Peek()
-
+// handleShiftMoveRowTo extends row selection to a specific index.
+func (t Table[T]) handleShiftMoveRowTo(targetIdx int) {
+	cursorRow := t.State.CursorIndex.Peek()
 	if !t.State.HasAnchor() {
-		t.State.SetAnchor(cursorIdx)
+		t.State.SetAnchor(cursorRow)
 	}
 
 	t.State.SelectIndex(targetIdx)
-
 	newCursor := t.State.CursorIndex.Peek()
-	t.State.SelectRange(t.State.GetAnchor(), newCursor)
-
+	t.setSelectionRange(t.State.GetAnchor(), newCursor, t.State.RowCount())
 	t.scrollCursorIntoView()
+}
+
+// handleShiftMoveColumn extends column selection by moving cursor column by delta.
+func (t Table[T]) handleShiftMoveColumn(delta int, columnCount int) {
+	if columnCount == 0 {
+		return
+	}
+	cursorCol := t.State.CursorColumn.Peek()
+	if !t.State.HasAnchor() {
+		t.State.SetAnchor(cursorCol)
+	}
+
+	target := clampInt(cursorCol+delta, 0, columnCount-1)
+	t.State.CursorColumn.Set(target)
+	t.setSelectionRange(t.State.GetAnchor(), target, columnCount)
+}
+
+// handleShiftMoveColumnTo extends column selection to a specific index.
+func (t Table[T]) handleShiftMoveColumnTo(targetIdx int, columnCount int) {
+	if columnCount == 0 {
+		return
+	}
+	cursorCol := t.State.CursorColumn.Peek()
+	if !t.State.HasAnchor() {
+		t.State.SetAnchor(cursorCol)
+	}
+
+	target := clampInt(targetIdx, 0, columnCount-1)
+	t.State.CursorColumn.Set(target)
+	t.setSelectionRange(t.State.GetAnchor(), target, columnCount)
+}
+
+// handleShiftMoveCell extends cell selection by moving cursor by row/col deltas.
+func (t Table[T]) handleShiftMoveCell(deltaRow, deltaCol, rowCount, columnCount int) {
+	if rowCount == 0 || columnCount == 0 {
+		return
+	}
+	cursorRow := t.State.CursorIndex.Peek()
+	cursorCol := t.State.CursorColumn.Peek()
+	if !t.State.HasAnchor() {
+		t.State.SetAnchor(cellIndex(cursorRow, cursorCol, columnCount))
+	}
+
+	newRow := clampInt(cursorRow+deltaRow, 0, rowCount-1)
+	newCol := clampInt(cursorCol+deltaCol, 0, columnCount-1)
+	t.State.CursorIndex.Set(newRow)
+	t.State.CursorColumn.Set(newCol)
+
+	anchorRow, anchorCol := cellIndexToRowCol(t.State.GetAnchor(), columnCount)
+	t.setSelectionBox(anchorRow, anchorCol, newRow, newCol, rowCount, columnCount)
+	t.scrollCursorIntoView()
+}
+
+// handleShiftMoveCellTo extends cell selection to a specific cell.
+func (t Table[T]) handleShiftMoveCellTo(targetRow, targetCol, rowCount, columnCount int) {
+	if rowCount == 0 || columnCount == 0 {
+		return
+	}
+	cursorRow := t.State.CursorIndex.Peek()
+	cursorCol := t.State.CursorColumn.Peek()
+	if !t.State.HasAnchor() {
+		t.State.SetAnchor(cellIndex(cursorRow, cursorCol, columnCount))
+	}
+
+	newRow := clampInt(targetRow, 0, rowCount-1)
+	newCol := clampInt(targetCol, 0, columnCount-1)
+	t.State.CursorIndex.Set(newRow)
+	t.State.CursorColumn.Set(newCol)
+
+	anchorRow, anchorCol := cellIndexToRowCol(t.State.GetAnchor(), columnCount)
+	t.setSelectionBox(anchorRow, anchorCol, newRow, newCol, rowCount, columnCount)
+	t.scrollCursorIntoView()
+}
+
+func (t Table[T]) scrollBy(lines int) bool {
+	if t.ScrollState == nil {
+		return false
+	}
+	if lines < 0 {
+		return t.ScrollState.ScrollUp(-lines)
+	}
+	return t.ScrollState.ScrollDown(lines)
 }
 
 // scrollCursorIntoView uses the ScrollState to ensure
@@ -776,12 +995,21 @@ func (t Table[T]) getRowLayout(index int) (y, height int, ok bool) {
 // registerScrollCallbacks sets up callbacks on the ScrollState
 // to update cursor position when mouse wheel scrolling occurs.
 // The callbacks move cursor first, then scroll only if needed.
-func (t Table[T]) registerScrollCallbacks() {
+func (t Table[T]) registerScrollCallbacks(mode TableSelectionMode, hasHeader bool) {
 	if t.ScrollState == nil {
 		return
 	}
 
+	if mode == TableSelectionColumn {
+		t.ScrollState.OnScrollUp = nil
+		t.ScrollState.OnScrollDown = nil
+		return
+	}
+
 	t.ScrollState.OnScrollUp = func(lines int) bool {
+		if hasHeader && t.State != nil && t.State.CursorIndex.Peek() == 0 {
+			return false
+		}
 		t.moveCursorUp(lines)
 		t.scrollCursorIntoView()
 		t.notifyCursorChange()
@@ -901,4 +1129,138 @@ func tableHasColumnHeaders(cols []TableColumn) bool {
 		}
 	}
 	return false
+}
+
+func (t Table[T]) hasHeader() bool {
+	return t.RenderHeader != nil || tableHasColumnHeaders(t.Columns)
+}
+
+func (t Table[T]) selectionMode() TableSelectionMode {
+	switch t.SelectionMode {
+	case TableSelectionRow, TableSelectionColumn:
+		return t.SelectionMode
+	default:
+		return TableSelectionCursor
+	}
+}
+
+func tableCellActive(mode TableSelectionMode, rowIdx, colIdx, cursorRow, cursorCol int) bool {
+	switch mode {
+	case TableSelectionColumn:
+		return colIdx == cursorCol
+	case TableSelectionCursor:
+		return rowIdx == cursorRow && colIdx == cursorCol
+	default:
+		return rowIdx == cursorRow
+	}
+}
+
+func tableCellSelected(mode TableSelectionMode, selection map[int]struct{}, rowIdx, colIdx, columnCount int) bool {
+	if len(selection) == 0 {
+		return false
+	}
+	switch mode {
+	case TableSelectionColumn:
+		_, ok := selection[colIdx]
+		return ok
+	case TableSelectionCursor:
+		_, ok := selection[cellIndex(rowIdx, colIdx, columnCount)]
+		return ok
+	default:
+		_, ok := selection[rowIdx]
+		return ok
+	}
+}
+
+func cellIndex(rowIdx, colIdx, columnCount int) int {
+	return rowIdx*columnCount + colIdx
+}
+
+func tableDefaultCellContent[T any](row T, colIndex int) (string, bool) {
+	value := reflect.ValueOf(row)
+	for value.Kind() == reflect.Pointer {
+		if value.IsNil() {
+			return "", false
+		}
+		value = value.Elem()
+	}
+
+	switch value.Kind() {
+	case reflect.Slice, reflect.Array:
+		if colIndex < 0 || colIndex >= value.Len() {
+			return "", true
+		}
+		return fmt.Sprintf("%v", value.Index(colIndex).Interface()), true
+	default:
+		return "", false
+	}
+}
+
+func tableDefaultCellStyle(theme ThemeData, active, selected bool) Style {
+	style := Style{ForegroundColor: theme.Text}
+	if selected {
+		style.BackgroundColor = theme.Primary.WithAlpha(0.3)
+	}
+	if active {
+		style.BackgroundColor = theme.Primary
+		style.ForegroundColor = theme.TextOnPrimary
+	}
+	return style
+}
+
+func cellIndexToRowCol(index, columnCount int) (row, col int) {
+	if columnCount <= 0 {
+		return 0, 0
+	}
+	if index < 0 {
+		index = 0
+	}
+	return index / columnCount, index % columnCount
+}
+
+func (t Table[T]) setSelectionRange(from, to, count int) {
+	if t.State == nil || count <= 0 {
+		return
+	}
+	if from > to {
+		from, to = to, from
+	}
+	if from < 0 {
+		from = 0
+	}
+	if to >= count {
+		to = count - 1
+	}
+	sel := make(map[int]struct{}, to-from+1)
+	for i := from; i <= to; i++ {
+		sel[i] = struct{}{}
+	}
+	t.State.Selection.Set(sel)
+}
+
+func (t Table[T]) setSelectionBox(anchorRow, anchorCol, rowIdx, colIdx, rowCount, columnCount int) {
+	if t.State == nil || rowCount <= 0 || columnCount <= 0 {
+		return
+	}
+	anchorRow = clampInt(anchorRow, 0, rowCount-1)
+	anchorCol = clampInt(anchorCol, 0, columnCount-1)
+	rowIdx = clampInt(rowIdx, 0, rowCount-1)
+	colIdx = clampInt(colIdx, 0, columnCount-1)
+
+	minRow, maxRow := anchorRow, rowIdx
+	if minRow > maxRow {
+		minRow, maxRow = maxRow, minRow
+	}
+	minCol, maxCol := anchorCol, colIdx
+	if minCol > maxCol {
+		minCol, maxCol = maxCol, minCol
+	}
+
+	sel := make(map[int]struct{}, (maxRow-minRow+1)*(maxCol-minCol+1))
+	for row := minRow; row <= maxRow; row++ {
+		for col := minCol; col <= maxCol; col++ {
+			sel[cellIndex(row, col, columnCount)] = struct{}{}
+		}
+	}
+	t.State.Selection.Set(sel)
 }

@@ -30,20 +30,22 @@ type TableRow struct {
 
 // TableDemo showcases the Table widget with variable-height cells and multi-select.
 type TableDemo struct {
-	tableState  *t.TableState[TableRow]
-	scrollState *t.ScrollState
-	counter     int
-	themeIndex  t.Signal[int]
+	tableState    *t.TableState[TableRow]
+	scrollState   *t.ScrollState
+	counter       int
+	themeIndex    t.Signal[int]
+	selectionMode t.Signal[int]
 }
 
 func NewTableDemo() *TableDemo {
 	rows := defaultRows()
 
 	return &TableDemo{
-		tableState:  t.NewTableState(rows),
-		scrollState: t.NewScrollState(),
-		counter:     len(rows),
-		themeIndex:  t.NewSignal(0),
+		tableState:    t.NewTableState(rows),
+		scrollState:   t.NewScrollState(),
+		counter:       len(rows),
+		themeIndex:    t.NewSignal(0),
+		selectionMode: t.NewSignal(int(t.TableSelectionCursor)),
 	}
 }
 
@@ -58,9 +60,10 @@ func (d *TableDemo) cycleTheme() {
 func (d *TableDemo) Keybinds() []t.Keybind {
 	return []t.Keybind{
 		{Key: "space", Name: "Toggle selection", Action: func() {
-			idx := d.tableState.CursorIndex.Peek()
+			idx := d.selectionIndex(d.columnCount())
 			d.tableState.ToggleSelection(idx)
 		}},
+		{Key: "m", Name: "Selection mode", Action: d.cycleSelectionMode},
 		{Key: "a", Name: "Append row", Action: func() {
 			d.counter++
 			d.tableState.Append(d.makeRow(d.counter))
@@ -107,6 +110,35 @@ func (d *TableDemo) makeRow(index int) TableRow {
 		Status:  status,
 		Notes:   note,
 	}
+}
+
+func (d *TableDemo) cycleSelectionMode() {
+	d.selectionMode.Update(func(i int) int {
+		next := (i + 1) % 3
+		return next
+	})
+}
+
+func (d *TableDemo) selectionIndex(columnCount int) int {
+	mode := t.TableSelectionMode(d.selectionMode.Get())
+	rowIdx := d.tableState.CursorIndex.Peek()
+	colIdx := d.tableState.CursorColumn.Peek()
+
+	switch mode {
+	case t.TableSelectionColumn:
+		return colIdx
+	case t.TableSelectionCursor:
+		if columnCount <= 0 {
+			return 0
+		}
+		return rowIdx*columnCount + colIdx
+	default:
+		return rowIdx
+	}
+}
+
+func (d *TableDemo) columnCount() int {
+	return 4
 }
 
 func defaultRows() []TableRow {
@@ -156,29 +188,54 @@ func defaultRows() []TableRow {
 	}
 }
 
-func (d *TableDemo) buildSelectionSummary(theme t.ThemeData) t.Widget {
+func (d *TableDemo) buildSelectionSummary(theme t.ThemeData, mode t.TableSelectionMode, columnCount int) t.Widget {
 	selection := d.tableState.Selection.Get()
 	if len(selection) == 0 {
+		emptyLabel := "No selection"
+		switch mode {
+		case t.TableSelectionColumn:
+			emptyLabel = "No columns selected"
+		case t.TableSelectionRow:
+			emptyLabel = "No rows selected"
+		default:
+			emptyLabel = "No cells selected"
+		}
 		return t.Text{
-			Spans: t.ParseMarkup("[$TextMuted]No rows selected[/]", theme),
+			Spans: t.ParseMarkup(fmt.Sprintf("[$TextMuted]%s[/]", emptyLabel), theme),
 		}
 	}
 
-	rows := d.tableState.Rows.Get()
-	var selected []string
-	for i, row := range rows {
-		if _, ok := selection[i]; ok {
-			selected = append(selected, row.Service)
+	switch mode {
+	case t.TableSelectionColumn:
+		cols := sortedKeys(selection)
+		label := "Columns"
+		if len(cols) == 1 {
+			label = "Column"
 		}
-	}
+		return t.Text{
+			Spans: t.ParseMarkup(fmt.Sprintf("[b $Secondary]%s (%d): [/]%s", label, len(cols), joinInts(cols)), theme),
+		}
+	case t.TableSelectionCursor:
+		return t.Text{
+			Spans: t.ParseMarkup(fmt.Sprintf("[b $Secondary]Cells selected: [/]%d", len(selection)), theme),
+		}
+	default:
+		rows := d.tableState.Rows.Get()
+		var selected []string
+		for i, row := range rows {
+			if _, ok := selection[i]; ok {
+				selected = append(selected, row.Service)
+			}
+		}
 
-	summary := strings.Join(selected, ", ")
-	if len(summary) > 60 {
-		summary = summary[:57] + "..."
-	}
+		summary := strings.Join(selected, ", ")
+		if len(summary) > 60 {
+			summary = summary[:57] + "..."
+		}
 
-	return t.Text{
-		Spans: t.ParseMarkup(fmt.Sprintf("[b $Secondary]Selected (%d): [/]%s", len(selected), summary), theme),
+		return t.Text{
+			Spans: t.ParseMarkup(fmt.Sprintf("[b $Secondary]Selected (%d): [/]%s", len(selected), summary), theme),
+		}
 	}
 }
 
@@ -186,6 +243,7 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
 	themeIdx := d.themeIndex.Get()
 	currentTheme := themeNames[themeIdx]
+	mode := t.TableSelectionMode(d.selectionMode.Get())
 
 	headerStyle := t.Style{
 		ForegroundColor: theme.Text,
@@ -194,7 +252,7 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 		Padding:         t.EdgeInsetsXY(1, 0),
 	}
 
-	cellPadding := t.EdgeInsetsXY(1, 0)
+	//cellPadding := t.EdgeInsetsXY(1, 0)
 	columns := []t.TableColumn{
 		{Width: t.Cells(12), Header: t.Text{Content: "Service", Style: headerStyle}},
 		{Width: t.Cells(10), Header: t.Text{Content: "Owner", Style: headerStyle}},
@@ -223,10 +281,10 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 				Spans: t.ParseMarkup(fmt.Sprintf("[$TextMuted]Theme: [/][$Accent]%s[/][$TextMuted] (press t to change)[/]", currentTheme), theme),
 			},
 			t.Text{
-				Spans: t.ParseMarkup("Navigate: [b $Info]↑/↓[/] or [b $Info]j/k[/] | Select range: [b $Secondary]Shift+↑/↓[/] | Toggle: [b $Secondary]Space[/]", theme),
+				Spans: t.ParseMarkup("Navigate: [b $Info]↑/↓[/] or [b $Info]j/k[/] | Select range: [b $Secondary]Shift+Arrow[/] | Toggle: [b $Secondary]Space[/] | Mode: [b $Secondary]m[/]", theme),
 			},
 			t.Text{
-				Spans: t.ParseMarkup("Modify: [b $Success]a[/]ppend [b $Success]p[/]repend [b $Error]d[/]elete [b $Warning]r[/]eset", theme),
+				Spans: t.ParseMarkup(fmt.Sprintf("Modify: [b $Success]a[/]ppend [b $Success]p[/]repend [b $Error]d[/]elete [b $Warning]r[/]eset  •  Selection: [b $Accent]%s[/]", selectionModeLabel(mode)), theme),
 			},
 			t.Scrollable{
 				ID:           "table-scroll",
@@ -238,57 +296,92 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 					Padding: t.EdgeInsetsXY(1, 0),
 				},
 				Child: t.Table[TableRow]{
-					ID:          "demo-table",
-					State:       d.tableState,
-					ScrollState: d.scrollState,
-					Columns:     columns,
-					MultiSelect: true,
-					RenderCell: func(row TableRow, rowIndex int, colIndex int, active bool, selected bool) t.Widget {
-						style := t.Style{ForegroundColor: theme.Text}
-						if selected {
-							style.BackgroundColor = theme.SurfaceHover
-						}
-						if active {
-							style.ForegroundColor = theme.Accent
-						}
-						style.Padding = cellPadding
-
-						switch colIndex {
-						case 0:
-							return t.Text{Content: row.Service, Style: style}
-						case 1:
-							return t.Text{Content: row.Owner, Style: style}
-						case 2:
-							statusStyle := style
-							if !active {
-								switch row.Status {
-								case "Warn":
-									statusStyle.ForegroundColor = theme.Warning
-								case "Degraded":
-									statusStyle.ForegroundColor = theme.Error
-								default:
-									statusStyle.ForegroundColor = theme.Success
-								}
-							}
-							return t.Text{Content: row.Status, Style: statusStyle}
-						case 3:
-							notesStyle := style
-							if !active && !selected {
-								notesStyle.ForegroundColor = theme.TextMuted
-							}
-							return t.Text{Content: row.Notes, Style: notesStyle, Wrap: t.WrapSoft}
-						default:
-							return t.Text{Content: "", Style: style}
-						}
-					},
+					ID:            "demo-table",
+					State:         d.tableState,
+					ScrollState:   d.scrollState,
+					Columns:       columns,
+					SelectionMode: mode,
+					MultiSelect:   true,
+					//RenderCell: func(row TableRow, rowIndex int, colIndex int, active bool, selected bool) t.Widget {
+					//	style := t.Style{ForegroundColor: theme.Text}
+					//	if selected {
+					//		style.BackgroundColor = theme.SurfaceHover
+					//	}
+					//	if active {
+					//		style.ForegroundColor = theme.Accent
+					//	}
+					//	style.Padding = cellPadding
+					//
+					//	switch colIndex {
+					//	case 0:
+					//		return t.Text{Content: row.Service, Style: style}
+					//	case 1:
+					//		return t.Text{Content: row.Owner, Style: style}
+					//	case 2:
+					//		statusStyle := style
+					//		if !active {
+					//			switch row.Status {
+					//			case "Warn":
+					//				statusStyle.ForegroundColor = theme.Warning
+					//			case "Degraded":
+					//				statusStyle.ForegroundColor = theme.Error
+					//			default:
+					//				statusStyle.ForegroundColor = theme.Success
+					//			}
+					//		}
+					//		return t.Text{Content: row.Status, Style: statusStyle}
+					//	case 3:
+					//		notesStyle := style
+					//		if !active && !selected {
+					//			notesStyle.ForegroundColor = theme.TextMuted
+					//		}
+					//		return t.Text{Content: row.Notes, Style: notesStyle, Wrap: t.WrapSoft}
+					//	default:
+					//		return t.Text{Content: "", Style: style}
+					//	}
+					//},
 				},
 			},
 			t.Text{
 				Spans: t.ParseMarkup(fmt.Sprintf("Rows: [b $Warning]%d[/] | Cursor: [b $Info]%d[/] | Press [b $Error]Ctrl+C[/] to quit", d.tableState.RowCount(), d.tableState.CursorIndex.Get()+1), theme),
 			},
-			d.buildSelectionSummary(theme),
+			d.buildSelectionSummary(theme, mode, d.columnCount()),
 		},
 	}
+}
+
+func selectionModeLabel(mode t.TableSelectionMode) string {
+	switch mode {
+	case t.TableSelectionColumn:
+		return "Column"
+	case t.TableSelectionRow:
+		return "Row"
+	default:
+		return "Cell"
+	}
+}
+
+func sortedKeys(m map[int]struct{}) []int {
+	keys := make([]int, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	for i := 0; i < len(keys)-1; i++ {
+		for j := i + 1; j < len(keys); j++ {
+			if keys[i] > keys[j] {
+				keys[i], keys[j] = keys[j], keys[i]
+			}
+		}
+	}
+	return keys
+}
+
+func joinInts(values []int) string {
+	parts := make([]string, 0, len(values))
+	for _, v := range values {
+		parts = append(parts, fmt.Sprintf("%d", v+1))
+	}
+	return strings.Join(parts, ", ")
 }
 
 func main() {
