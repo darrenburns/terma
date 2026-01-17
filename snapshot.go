@@ -504,12 +504,13 @@ func hexToColor(hex string) color.Color {
 
 // SnapshotComparison represents a comparison between expected and actual snapshots.
 type SnapshotComparison struct {
-	Name     string        // Test name / description
-	Expected string        // SVG content or path
-	Actual   string        // SVG content or path
-	DiffSVG  string        // SVG highlighting differences (optional)
-	Passed   bool          // Whether they match
-	Stats    SnapshotStats // Comparison statistics (optional)
+	Name        string        // Test name / description
+	Description string        // What should be visible in the snapshot (optional)
+	Expected    string        // SVG content or path
+	Actual      string        // SVG content or path
+	DiffSVG     string        // SVG highlighting differences (optional)
+	Passed      bool          // Whether they match
+	Stats       SnapshotStats // Comparison statistics (optional)
 }
 
 // GenerateGallery creates an HTML page comparing actual vs expected snapshots.
@@ -596,6 +597,13 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
       margin-bottom: 15px;
     }
     .comparison-name { font-size: 18px; font-weight: 600; }
+    .comparison-description {
+      font-size: 14px;
+      color: #aaa;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+    .comparison.seen .comparison-description { display: none; }
     .status-badge {
       padding: 4px 8px;
       border-radius: 4px;
@@ -759,12 +767,20 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
   </div>
 `, galleryID, passedCount, failedCount))
 
-	sb.WriteString(`  <div class="toolbar">
+	// Determine which filter should be active by default
+	failedActive := ""
+	allActive := " active"
+	if failedCount > 0 {
+		failedActive = " active"
+		allActive = ""
+	}
+
+	sb.WriteString(fmt.Sprintf(`  <div class="toolbar">
     <div class="toolbar-group">
       <span class="toolbar-label">Filter:</span>
-      <button class="filter-btn active" data-filter="all">All</button>
-      <button class="filter-btn" data-filter="failed">Failed</button>
+      <button class="filter-btn%s" data-filter="failed">Failed</button>
       <button class="filter-btn" data-filter="passed">Passed</button>
+      <button class="filter-btn%s" data-filter="all">All</button>
     </div>
     <div class="toolbar-group">
       <span class="toolbar-label">View:</span>
@@ -776,7 +792,7 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
     </div>
     <span class="help-text">Difference mode: black = identical, colored = different</span>
   </div>
-`)
+`, failedActive, allActive))
 
 	for i, comp := range comparisons {
 		status := "passed"
@@ -811,12 +827,19 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
 			highlightContent = comp.Actual
 		}
 
+		// Build description HTML if provided
+		descriptionHTML := ""
+		if comp.Description != "" {
+			descriptionHTML = fmt.Sprintf(`
+    <div class="comparison-description">%s</div>`, html.EscapeString(comp.Description))
+		}
+
 		sb.WriteString(fmt.Sprintf(`  <div class="comparison %s view-sidebyside" data-status="%s" data-index="%d" data-name="%s">
     <div class="comparison-header">
       <span class="comparison-name">%s</span>
       <span class="status-badge %s">%s</span>%s
       <button class="seen-btn">Mark as seen</button>
-    </div>
+    </div>%s
     <div class="snapshots">
       <div class="snapshot-container">
         <div class="snapshot-label">Expected</div>
@@ -854,7 +877,7 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
       </div>
     </div>
   </div>
-`, status, status, i, html.EscapeString(comp.Name), html.EscapeString(comp.Name), status, strings.ToUpper(status), statsHTML,
+`, status, status, i, html.EscapeString(comp.Name), html.EscapeString(comp.Name), status, strings.ToUpper(status), statsHTML, descriptionHTML,
 			indentSVG(comp.Expected, "          "),
 			indentSVG(comp.Actual, "          "),
 			indentSVG(comp.Expected, "        "),
@@ -1007,6 +1030,15 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
         updateSeenButton(comparison);
       });
     });
+
+    // Apply initial filter based on which button is active on page load
+    const activeFilter = document.querySelector('.filter-btn.active');
+    if (activeFilter && activeFilter.dataset.filter !== 'all') {
+      const filter = activeFilter.dataset.filter;
+      document.querySelectorAll('.comparison').forEach(el => {
+        el.classList.toggle('hidden', el.dataset.status !== filter);
+      });
+    }
   </script>
 </body>
 </html>

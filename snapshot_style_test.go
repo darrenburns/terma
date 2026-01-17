@@ -19,7 +19,8 @@ func TestSnapshot_Style_BorderSquare(t *testing.T) {
 			Text{Content: "Square"},
 		},
 	}
-	AssertSnapshot(t, widget, 15, 5)
+	AssertSnapshot(t, widget, 15, 5,
+		"15x5 column with gray square border (┌─┐│└─┘ characters). 'Square' text inside, inset by 1 cell.")
 }
 
 func TestSnapshot_Style_BorderRounded(t *testing.T) {
@@ -33,7 +34,8 @@ func TestSnapshot_Style_BorderRounded(t *testing.T) {
 			Text{Content: "Rounded"},
 		},
 	}
-	AssertSnapshot(t, widget, 15, 5)
+	AssertSnapshot(t, widget, 15, 5,
+		"15x5 column with gray rounded border (╭─╮│╰─╯ characters). 'Rounded' text inside, corners are curved.")
 }
 
 func TestSnapshot_Style_BorderDouble(t *testing.T) {
@@ -47,7 +49,8 @@ func TestSnapshot_Style_BorderDouble(t *testing.T) {
 			Text{Content: "Double"},
 		},
 	}
-	AssertSnapshot(t, widget, 15, 5)
+	AssertSnapshot(t, widget, 15, 5,
+		"15x5 column with gray double-line border (╔═╗║╚═╝ characters). 'Double' text inside.")
 }
 
 func TestSnapshot_Style_BorderHeavy(t *testing.T) {
@@ -61,7 +64,8 @@ func TestSnapshot_Style_BorderHeavy(t *testing.T) {
 			Text{Content: "Heavy"},
 		},
 	}
-	AssertSnapshot(t, widget, 15, 5)
+	AssertSnapshot(t, widget, 15, 5,
+		"15x5 column with gray heavy/thick border (┏━┓┃┗━┛ characters). 'Heavy' text inside.")
 }
 
 func TestSnapshot_Style_BorderAscii(t *testing.T) {
@@ -75,7 +79,8 @@ func TestSnapshot_Style_BorderAscii(t *testing.T) {
 			Text{Content: "ASCII"},
 		},
 	}
-	AssertSnapshot(t, widget, 15, 5)
+	AssertSnapshot(t, widget, 15, 5,
+		"15x5 column with gray ASCII border (+-+|+-+ characters). 'ASCII' text inside.")
 }
 
 func TestSnapshot_Style_BorderWithTitle(t *testing.T) {
@@ -89,7 +94,8 @@ func TestSnapshot_Style_BorderWithTitle(t *testing.T) {
 			Text{Content: "Content"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"20x5 column with square border. 'Title' text embedded in top border line. 'Content' inside.")
 }
 
 func TestSnapshot_Style_BorderWithSubtitle(t *testing.T) {
@@ -103,7 +109,8 @@ func TestSnapshot_Style_BorderWithSubtitle(t *testing.T) {
 			Text{Content: "Body"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"20x5 column with rounded border. 'Footer' text embedded in bottom border line. 'Body' inside.")
 }
 
 // =============================================================================
@@ -122,7 +129,8 @@ func TestSnapshot_Style_PaddingAllSides(t *testing.T) {
 			Text{Content: "Padded"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 7)
+	AssertSnapshot(t, widget, 20, 7,
+		"20x7 dark blue column with 2-cell padding on all sides. 'Padded' text inset by 2 cells from each edge.")
 }
 
 func TestSnapshot_Style_PaddingAsymmetric(t *testing.T) {
@@ -137,7 +145,8 @@ func TestSnapshot_Style_PaddingAsymmetric(t *testing.T) {
 			Text{Content: "Asymmetric"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 7)
+	AssertSnapshot(t, widget, 20, 7,
+		"20x7 dark green column with asymmetric padding: top=1, right=3, bottom=1, left=2. 'Asymmetric' text offset accordingly.")
 }
 
 func TestSnapshot_Style_PaddingXY(t *testing.T) {
@@ -152,7 +161,8 @@ func TestSnapshot_Style_PaddingXY(t *testing.T) {
 			Text{Content: "XY Padding"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 7)
+	AssertSnapshot(t, widget, 20, 7,
+		"20x7 dark red column with horizontal padding=3, vertical padding=1. 'XY Padding' text inset 3 from sides, 1 from top/bottom.")
 }
 
 // =============================================================================
@@ -178,7 +188,8 @@ func TestSnapshot_Style_MarginAllSides(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 7)
+	AssertSnapshot(t, widget, 20, 7,
+		"Dark blue outer column. Light purple 15x3 inner column with 1-cell margin on all sides. Gap between inner and outer visible.")
 }
 
 // =============================================================================
@@ -192,7 +203,8 @@ func TestSnapshot_Style_BackgroundColor(t *testing.T) {
 			BackgroundColor: RGB(100, 50, 150),
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"White text 'With Background' on purple background (RGB 100,50,150). Background extends to text width.")
 }
 
 func TestSnapshot_Style_ForegroundColor(t *testing.T) {
@@ -202,7 +214,8 @@ func TestSnapshot_Style_ForegroundColor(t *testing.T) {
 			ForegroundColor: RGB(255, 128, 0),
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Orange text 'Colored Text' (RGB 255,128,0) on black background.")
 }
 
 func TestSnapshot_Style_BothColors(t *testing.T) {
@@ -213,7 +226,8 @@ func TestSnapshot_Style_BothColors(t *testing.T) {
 			BackgroundColor: RGB(0, 100, 200),
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"White text 'Full Color' on blue background (RGB 0,100,200). Both foreground and background colors applied.")
 }
 
 // =============================================================================
@@ -225,7 +239,8 @@ func TestSnapshot_Style_Bold(t *testing.T) {
 		Content: "Bold Text",
 		Style:   Style{Bold: true},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"White 'Bold Text' in bold weight at top-left on black background.")
 }
 
 func TestSnapshot_Style_Italic(t *testing.T) {
@@ -233,7 +248,8 @@ func TestSnapshot_Style_Italic(t *testing.T) {
 		Content: "Italic Text",
 		Style:   Style{Italic: true},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"White 'Italic Text' in italic style at top-left on black background.")
 }
 
 func TestSnapshot_Style_Underline(t *testing.T) {
@@ -241,7 +257,8 @@ func TestSnapshot_Style_Underline(t *testing.T) {
 		Content: "Underlined Text",
 		Style:   Style{Underline: UnderlineSingle},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"White 'Underlined Text' with single underline at top-left on black background.")
 }
 
 func TestSnapshot_Style_Strikethrough(t *testing.T) {
@@ -249,7 +266,8 @@ func TestSnapshot_Style_Strikethrough(t *testing.T) {
 		Content: "Struck Text",
 		Style:   Style{Strikethrough: true},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"White 'Struck Text' with strikethrough line at top-left on black background.")
 }
 
 func TestSnapshot_Style_CombinedTextStyles(t *testing.T) {
@@ -260,7 +278,8 @@ func TestSnapshot_Style_CombinedTextStyles(t *testing.T) {
 			Italic: true,
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"White 'Combined' text in both bold and italic at top-left on black background.")
 }
 
 // =============================================================================
@@ -279,7 +298,8 @@ func TestSnapshot_Style_BorderAndPadding(t *testing.T) {
 			Text{Content: "Boxed"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 7)
+	AssertSnapshot(t, widget, 20, 7,
+		"20x7 column with green rounded border. 'Boxed' text inset by border (1 cell) plus padding (1 cell) = 2 cells from each edge.")
 }
 
 func TestSnapshot_Style_FullStyleStack(t *testing.T) {
@@ -301,7 +321,8 @@ func TestSnapshot_Style_FullStyleStack(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 9)
+	AssertSnapshot(t, widget, 25, 9,
+		"25x9 column with gray square border, 'Window' title in top border, dark blue background. Orange bold 'Hello' text inset 2 cells (border+padding).")
 }
 
 // =============================================================================
@@ -316,7 +337,8 @@ func TestSnapshot_Style_SpanForeground(t *testing.T) {
 			ColorSpan("Blue", RGB(0, 0, 255)),
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Single line with mixed colors: 'Red' in red, ' and ' in white, 'Blue' in blue. All on black background.")
 }
 
 func TestSnapshot_Style_SpanBold(t *testing.T) {
@@ -326,7 +348,8 @@ func TestSnapshot_Style_SpanBold(t *testing.T) {
 			PlainSpan(" text"),
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Single line with 'Important' in bold followed by ' text' in normal weight. White on black.")
 }
 
 func TestSnapshot_Style_SpanItalic(t *testing.T) {
@@ -336,7 +359,8 @@ func TestSnapshot_Style_SpanItalic(t *testing.T) {
 			PlainSpan(" here"),
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Single line with 'Emphasis' in italic followed by ' here' in normal style. White on black.")
 }
 
 // =============================================================================
@@ -354,7 +378,8 @@ func TestSnapshot_Style_NamedColors(t *testing.T) {
 			Text{Content: "Cyan", Style: Style{ForegroundColor: Cyan}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 8)
+	AssertSnapshot(t, widget, 20, 8,
+		"Six text rows showing named colors. 'Red' in red on row 1, 'Green' in green on row 2, 'Blue' in blue on row 3, 'Yellow' in yellow on row 4, 'Magenta' in magenta on row 5, 'Cyan' in cyan on row 6.")
 }
 
 // =============================================================================
@@ -379,7 +404,8 @@ func TestSnapshot_Style_NestedBorders(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 10)
+	AssertSnapshot(t, widget, 25, 10,
+		"Outer 25x10 column with blue rounded border. Inner column with red square border nested inside. 'Inner' text inside the inner border.")
 }
 
 func TestSnapshot_Style_RowWithStyledChildren(t *testing.T) {
@@ -390,5 +416,6 @@ func TestSnapshot_Style_RowWithStyledChildren(t *testing.T) {
 			Text{Content: "C", Style: Style{ForegroundColor: Blue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Row with three colored letters: red 'A', green 'B', blue 'C' arranged horizontally from left to right.")
 }
