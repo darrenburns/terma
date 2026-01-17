@@ -12,7 +12,9 @@ type ListState[T any] struct {
 
 	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
 
-	itemLayouts []listItemLayout // Cached layout metrics (per item)
+	itemLayouts       []listItemLayout // Cached layout metrics (per item)
+	viewIndices       []int            // View index -> source index for filtered views
+	viewIndexBySource map[int]int      // Source index -> view index for filtered views
 }
 
 // NewListState creates a new ListState with the given initial items.
@@ -189,6 +191,34 @@ func (s *ListState[T]) clampCursor() {
 	}
 }
 
+func (s *ListState[T]) setViewIndices(indices []int) {
+	s.viewIndices = indices
+	if indices == nil {
+		s.viewIndexBySource = nil
+		return
+	}
+	viewIndexBySource := make(map[int]int, len(indices))
+	for viewIdx, sourceIdx := range indices {
+		viewIndexBySource[sourceIdx] = viewIdx
+	}
+	s.viewIndexBySource = viewIndexBySource
+}
+
+func (s *ListState[T]) viewIndexForSource(sourceIdx int) (int, bool) {
+	if s.viewIndexBySource != nil {
+		viewIdx, ok := s.viewIndexBySource[sourceIdx]
+		return viewIdx, ok
+	}
+	if s.viewIndices != nil {
+		for i, idx := range s.viewIndices {
+			if idx == sourceIdx {
+				return i, true
+			}
+		}
+	}
+	return 0, false
+}
+
 // ToggleSelection toggles the selection state of the item at the given index.
 func (s *ListState[T]) ToggleSelection(index int) {
 	s.Selection.Update(func(sel map[int]struct{}) map[int]struct{} {
@@ -345,20 +375,23 @@ func (s *ListState[T]) SelectRange(from, to int) {
 //	// Remove item at runtime:
 //	state.RemoveAt(0)
 type List[T any] struct {
-	ID             string                                          // Optional unique identifier
-	State          *ListState[T]                                   // Required - holds items and cursor position
-	OnSelect       func(item T)                                    // Callback invoked when Enter is pressed on an item
-	OnCursorChange func(item T)                                    // Callback invoked when cursor moves to a different item
-	ScrollState    *ScrollState                                    // Optional state for scroll-into-view
-	RenderItem     func(item T, active bool, selected bool) Widget // Function to render each item (uses default if nil)
-	ItemHeight     int                                             // Optional uniform item height override (default 0 = layout metrics / fallback 1)
-	MultiSelect    bool                                            // Enable multi-select mode (space to toggle, shift+move to extend)
-	Width          Dimension                                       // Optional width (zero value = auto)
-	Height         Dimension                                       // Optional height (zero value = auto)
-	Style          Style                                           // Optional styling
-	Click          func()                                          // Optional callback invoked when clicked
-	Hover          func(bool)                                      // Optional callback invoked when hover state changes
-	Blur           func()                                          // Optional callback invoked when focus leaves this widget
+	ID                  string                                                             // Optional unique identifier
+	State               *ListState[T]                                                      // Required - holds items and cursor position
+	OnSelect            func(item T)                                                       // Callback invoked when Enter is pressed on an item
+	OnCursorChange      func(item T)                                                       // Callback invoked when cursor moves to a different item
+	ScrollState         *ScrollState                                                       // Optional state for scroll-into-view
+	RenderItem          func(item T, active bool, selected bool) Widget                    // Function to render each item (uses default if nil)
+	RenderItemWithMatch func(item T, active bool, selected bool, match MatchResult) Widget // Optional render function with match data
+	Filter              *FilterState                                                       // Optional filter state for matching items
+	MatchItem           func(item T, query string, options FilterOptions) MatchResult      // Optional matcher for filtering/highlighting
+	ItemHeight          int                                                                // Optional uniform item height override (default 0 = layout metrics / fallback 1)
+	MultiSelect         bool                                                               // Enable multi-select mode (space to toggle, shift+move to extend)
+	Width               Dimension                                                          // Optional width (zero value = auto)
+	Height              Dimension                                                          // Optional height (zero value = auto)
+	Style               Style                                                              // Optional styling
+	Click               func()                                                             // Optional callback invoked when clicked
+	Hover               func(bool)                                                         // Optional callback invoked when hover state changes
+	Blur                func()                                                             // Optional callback invoked when focus leaves this widget
 }
 
 type listItemLayout struct {
@@ -461,6 +494,23 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 	items := l.State.Items.Get()
 	if len(items) == 0 {
 		l.State.itemLayouts = nil
+		l.State.setViewIndices(nil)
+		return Column{}
+	}
+
+	query, options := filterStateValues(l.Filter)
+	matchItem := l.MatchItem
+	if matchItem == nil {
+		matchItem = defaultListMatchItem[T]
+	}
+
+	filtered := ApplyFilter(items, query, func(item T, query string) MatchResult {
+		return matchItem(item, query, options)
+	})
+
+	l.State.setViewIndices(filtered.Indices)
+	if len(filtered.Items) == 0 {
+		l.State.itemLayouts = nil
 		return Column{}
 	}
 
@@ -473,11 +523,16 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 		Selection = l.State.Selection.Get()
 	}
 
-	// Clamp cursor to valid bounds
+	// Clamp cursor to valid bounds for source items
 	clamped := clampInt(cursorIdx, 0, len(items)-1)
 	if clamped != cursorIdx {
 		l.State.CursorIndex.Set(clamped)
 		cursorIdx = clamped
+	}
+
+	if _, ok := l.State.viewIndexForSource(cursorIdx); !ok {
+		cursorIdx = filtered.Indices[0]
+		l.State.CursorIndex.Set(cursorIdx)
 	}
 
 	// Register scroll callbacks for mouse wheel support
@@ -485,15 +540,26 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 
 	// Use default render function if none provided
 	renderItem := l.RenderItem
-	if renderItem == nil {
-		renderItem = l.themedDefaultRenderItem(ctx)
+	renderItemWithMatch := l.RenderItemWithMatch
+	if renderItemWithMatch == nil && renderItem == nil {
+		renderItemWithMatch = l.themedDefaultRenderItem(ctx)
 	}
 
 	// Build children
-	children := make([]Widget, len(items))
-	for i, item := range items {
-		_, selected := Selection[i]
-		children[i] = renderItem(item, i == cursorIdx, selected)
+	children := make([]Widget, len(filtered.Items))
+	for viewIdx, item := range filtered.Items {
+		sourceIdx := filtered.Indices[viewIdx]
+		_, selected := Selection[sourceIdx]
+		active := sourceIdx == cursorIdx
+		match := MatchResult{}
+		if len(filtered.Matches) > 0 {
+			match = filtered.Matches[viewIdx]
+		}
+		if renderItemWithMatch != nil {
+			children[viewIdx] = renderItemWithMatch(item, active, selected, match)
+		} else {
+			children[viewIdx] = renderItem(item, active, selected)
+		}
 	}
 
 	// Ensure cursor item is visible whenever we rebuild
@@ -513,9 +579,14 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 
 // themedDefaultRenderItem returns a themed render function for list items.
 // Captures theme colors from the context for use in the render function.
-func (l List[T]) themedDefaultRenderItem(ctx BuildContext) func(item T, active bool, selected bool) Widget {
+func (l List[T]) themedDefaultRenderItem(ctx BuildContext) func(item T, active bool, selected bool, match MatchResult) Widget {
 	theme := ctx.Theme()
-	return func(item T, active bool, selected bool) Widget {
+	highlight := SpanStyle{
+		Underline:      UnderlineSingle,
+		UnderlineColor: theme.Accent,
+		Background:     theme.Accent.WithAlpha(0.25),
+	}
+	return func(item T, active bool, selected bool, match MatchResult) Widget {
 		content := fmt.Sprintf("%v", item)
 		prefix := "  "
 		style := Style{ForegroundColor: theme.Text}
@@ -530,6 +601,17 @@ func (l List[T]) themedDefaultRenderItem(ctx BuildContext) func(item T, active b
 			prefix = " *"
 		}
 
+		if match.Matched && len(match.Ranges) > 0 {
+			spans := make([]Span, 0, 1+len(match.Ranges)*2)
+			spans = append(spans, Span{Text: prefix})
+			spans = append(spans, HighlightSpans(content, match.Ranges, highlight)...)
+			return Text{
+				Spans: spans,
+				Style: style,
+				Width: Flex(1), // Fill available width for consistent background
+			}
+		}
+
 		return Text{
 			Content: prefix + content,
 			Style:   style,
@@ -538,9 +620,13 @@ func (l List[T]) themedDefaultRenderItem(ctx BuildContext) func(item T, active b
 	}
 }
 
+func defaultListMatchItem[T any](item T, query string, options FilterOptions) MatchResult {
+	return MatchString(fmt.Sprintf("%v", item), query, options)
+}
+
 // defaultRenderItem provides a non-themed default rendering for list items.
 // Deprecated: Use themedDefaultRenderItem instead, which applies theme colors.
-func defaultRenderItem[T any](item T, active bool, selected bool) Widget {
+func defaultRenderItem[T any](item T, active bool, selected bool, match MatchResult) Widget {
 	content := fmt.Sprintf("%v", item)
 	prefix := "  "
 	style := Style{}
@@ -565,12 +651,23 @@ func defaultRenderItem[T any](item T, active bool, selected bool) Widget {
 // OnKey handles navigation keys and selection, updating cursor position and scrolling into view.
 // Implements the Focusable interface.
 func (l List[T]) OnKey(event KeyEvent) bool {
-	if l.State == nil || l.State.ItemCount() == 0 {
+	if l.State == nil {
+		return false
+	}
+
+	view := l.viewIndices()
+	if len(view) == 0 {
 		return false
 	}
 
 	cursorIdx := l.State.CursorIndex.Peek()
-	itemCount := l.State.ItemCount()
+	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
+	if !ok {
+		cursorIdx = view[0]
+		l.State.CursorIndex.Set(cursorIdx)
+		cursorViewIdx = 0
+	}
+	itemCount := len(view)
 
 	// Handle multi-select specific keys (shift+movement to extend selection)
 	if l.MultiSelect {
@@ -605,28 +702,28 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 
 	case event.MatchString("up", "k"):
 		// If at top, don't handle - let it bubble for cross-widget navigation
-		if cursorIdx == 0 {
+		if cursorViewIdx == 0 {
 			return false
 		}
 		if l.MultiSelect {
 			l.State.ClearSelection()
 			l.State.ClearAnchor()
 		}
-		l.State.SelectPrevious()
+		l.setCursorToViewIndex(cursorViewIdx - 1)
 		l.scrollCursorIntoView()
 		l.notifyCursorChange()
 		return true
 
 	case event.MatchString("down", "j"):
 		// If at bottom, don't handle - let it bubble for cross-widget navigation
-		if cursorIdx >= itemCount-1 {
+		if cursorViewIdx >= itemCount-1 {
 			return false
 		}
 		if l.MultiSelect {
 			l.State.ClearSelection()
 			l.State.ClearAnchor()
 		}
-		l.State.SelectNext()
+		l.setCursorToViewIndex(cursorViewIdx + 1)
 		l.scrollCursorIntoView()
 		l.notifyCursorChange()
 		return true
@@ -636,7 +733,7 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 			l.State.ClearSelection()
 			l.State.ClearAnchor()
 		}
-		l.State.SelectFirst()
+		l.setCursorToViewIndex(0)
 		l.scrollCursorIntoView()
 		l.notifyCursorChange()
 		return true
@@ -646,7 +743,7 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 			l.State.ClearSelection()
 			l.State.ClearAnchor()
 		}
-		l.State.SelectLast()
+		l.setCursorToViewIndex(itemCount - 1)
 		l.scrollCursorIntoView()
 		l.notifyCursorChange()
 		return true
@@ -656,11 +753,8 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 			l.State.ClearSelection()
 			l.State.ClearAnchor()
 		}
-		newCursor := cursorIdx - 10
-		if newCursor < 0 {
-			newCursor = 0
-		}
-		l.State.SelectIndex(newCursor)
+		newCursor := cursorViewIdx - 10
+		l.setCursorToViewIndex(newCursor)
 		l.scrollCursorIntoView()
 		l.notifyCursorChange()
 		return true
@@ -670,11 +764,8 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 			l.State.ClearSelection()
 			l.State.ClearAnchor()
 		}
-		newCursor := cursorIdx + 10
-		if newCursor >= itemCount {
-			newCursor = itemCount - 1
-		}
-		l.State.SelectIndex(newCursor)
+		newCursor := cursorViewIdx + 10
+		l.setCursorToViewIndex(newCursor)
 		l.scrollCursorIntoView()
 		l.notifyCursorChange()
 		return true
@@ -685,44 +776,97 @@ func (l List[T]) OnKey(event KeyEvent) bool {
 
 // handleShiftMove extends selection by moving cursor by delta and selecting the range.
 func (l List[T]) handleShiftMove(delta int) {
+	if l.State == nil {
+		return
+	}
+
+	view := l.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+
 	cursorIdx := l.State.CursorIndex.Peek()
+	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
+	if !ok {
+		cursorIdx = view[0]
+		l.State.CursorIndex.Set(cursorIdx)
+		cursorViewIdx = 0
+	}
 
 	// Set anchor if not already set
 	if !l.State.HasAnchor() {
 		l.State.SetAnchor(cursorIdx)
 	}
 
-	// Move cursor
-	if delta > 0 {
-		l.State.SelectNext()
-	} else {
-		l.State.SelectPrevious()
-	}
-
-	// Update selection range from anchor to new cursor
-	newCursor := l.State.CursorIndex.Peek()
-	l.State.SelectRange(l.State.GetAnchor(), newCursor)
-
+	newViewIdx := clampInt(cursorViewIdx+delta, 0, len(view)-1)
+	newCursor := view[newViewIdx]
+	l.State.CursorIndex.Set(newCursor)
+	l.selectViewRange(l.State.GetAnchor(), newCursor)
 	l.scrollCursorIntoView()
 }
 
 // handleShiftMoveTo extends selection to a specific index.
 func (l List[T]) handleShiftMoveTo(targetIdx int) {
-	cursorIdx := l.State.CursorIndex.Peek()
+	if l.State == nil {
+		return
+	}
 
-	// Set anchor if not already set
+	view := l.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+
+	cursorIdx := l.State.CursorIndex.Peek()
 	if !l.State.HasAnchor() {
 		l.State.SetAnchor(cursorIdx)
 	}
 
-	// Move cursor to target
-	l.State.SelectIndex(targetIdx)
-
-	// Update selection range from anchor to new cursor
-	newCursor := l.State.CursorIndex.Peek()
-	l.State.SelectRange(l.State.GetAnchor(), newCursor)
-
+	targetViewIdx := clampInt(targetIdx, 0, len(view)-1)
+	newCursor := view[targetViewIdx]
+	l.State.CursorIndex.Set(newCursor)
+	l.selectViewRange(l.State.GetAnchor(), newCursor)
 	l.scrollCursorIntoView()
+}
+
+func (l List[T]) setCursorToViewIndex(viewIdx int) {
+	if l.State == nil {
+		return
+	}
+	view := l.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+	viewIdx = clampInt(viewIdx, 0, len(view)-1)
+	l.State.SelectIndex(view[viewIdx])
+}
+
+func (l List[T]) selectViewRange(anchorSource, cursorSource int) {
+	if l.State == nil {
+		return
+	}
+	view := l.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+
+	anchorView, ok := l.viewIndexForSource(anchorSource)
+	if !ok {
+		anchorView = 0
+	}
+	cursorView, ok := l.viewIndexForSource(cursorSource)
+	if !ok {
+		cursorView = anchorView
+	}
+
+	if anchorView > cursorView {
+		anchorView, cursorView = cursorView, anchorView
+	}
+
+	sel := make(map[int]struct{}, cursorView-anchorView+1)
+	for i := anchorView; i <= cursorView; i++ {
+		sel[view[i]] = struct{}{}
+	}
+	l.State.Selection.Set(sel)
 }
 
 // scrollCursorIntoView uses the ScrollState to ensure
@@ -732,10 +876,14 @@ func (l List[T]) scrollCursorIntoView() {
 		return
 	}
 	cursorIdx := l.State.CursorIndex.Peek()
+	viewIdx, ok := l.viewIndexForSource(cursorIdx)
+	if !ok {
+		return
+	}
 	itemY, itemHeight, ok := l.getItemLayout(cursorIdx)
 	if !ok {
 		itemHeight = l.getItemHeight()
-		itemY = cursorIdx * itemHeight
+		itemY = viewIdx * itemHeight
 	}
 	l.ScrollState.ScrollToView(itemY, itemHeight)
 }
@@ -753,10 +901,14 @@ func (l List[T]) getItemLayout(index int) (y, height int, ok bool) {
 	if l.State == nil {
 		return 0, 0, false
 	}
-	if index < 0 || index >= len(l.State.itemLayouts) {
+	viewIdx, ok := l.viewIndexForSource(index)
+	if !ok {
 		return 0, 0, false
 	}
-	layout := l.State.itemLayouts[index]
+	if viewIdx < 0 || viewIdx >= len(l.State.itemLayouts) {
+		return 0, 0, false
+	}
+	layout := l.State.itemLayouts[viewIdx]
 	if layout.height <= 0 {
 		return 0, 0, false
 	}
@@ -790,12 +942,17 @@ func (l List[T]) moveCursorUp(count int) {
 	if l.State == nil || l.State.ItemCount() == 0 {
 		return
 	}
-	cursorIdx := l.State.CursorIndex.Peek()
-	newCursor := cursorIdx - count
-	if newCursor < 0 {
-		newCursor = 0
+	view := l.viewIndices()
+	if len(view) == 0 {
+		return
 	}
-	l.State.SelectIndex(newCursor)
+	cursorIdx := l.State.CursorIndex.Peek()
+	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
+	if !ok {
+		cursorViewIdx = 0
+	}
+	newCursor := clampInt(cursorViewIdx-count, 0, len(view)-1)
+	l.State.SelectIndex(view[newCursor])
 }
 
 // moveCursorDown moves the cursor down by the given number of items.
@@ -803,13 +960,17 @@ func (l List[T]) moveCursorDown(count int) {
 	if l.State == nil || l.State.ItemCount() == 0 {
 		return
 	}
-	cursorIdx := l.State.CursorIndex.Peek()
-	itemCount := l.State.ItemCount()
-	newCursor := cursorIdx + count
-	if newCursor >= itemCount {
-		newCursor = itemCount - 1
+	view := l.viewIndices()
+	if len(view) == 0 {
+		return
 	}
-	l.State.SelectIndex(newCursor)
+	cursorIdx := l.State.CursorIndex.Peek()
+	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
+	if !ok {
+		cursorViewIdx = 0
+	}
+	newCursor := clampInt(cursorViewIdx+count, 0, len(view)-1)
+	l.State.SelectIndex(view[newCursor])
 }
 
 // notifyCursorChange calls OnCursorChange with the current item if the callback is set.
@@ -820,6 +981,34 @@ func (l List[T]) notifyCursorChange() {
 	if item, ok := l.State.SelectedItem(); ok {
 		l.OnCursorChange(item)
 	}
+}
+
+func (l List[T]) viewIndices() []int {
+	if l.State == nil {
+		return nil
+	}
+	if l.State.viewIndices != nil {
+		return l.State.viewIndices
+	}
+	count := l.State.ItemCount()
+	indices := make([]int, count)
+	for i := range indices {
+		indices[i] = i
+	}
+	return indices
+}
+
+func (l List[T]) viewIndexForSource(sourceIdx int) (int, bool) {
+	if l.State == nil {
+		return 0, false
+	}
+	if l.State.viewIndices == nil {
+		if sourceIdx >= 0 && sourceIdx < l.State.ItemCount() {
+			return sourceIdx, true
+		}
+		return 0, false
+	}
+	return l.State.viewIndexForSource(sourceIdx)
 }
 
 // clampInt clamps value to the range [min, max].

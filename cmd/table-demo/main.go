@@ -30,22 +30,26 @@ type TableRow struct {
 
 // TableDemo showcases the Table widget with variable-height cells and multi-select.
 type TableDemo struct {
-	tableState    *t.TableState[TableRow]
-	scrollState   *t.ScrollState
-	counter       int
-	themeIndex    t.Signal[int]
-	selectionMode t.Signal[int]
+	tableState       *t.TableState[TableRow]
+	scrollState      *t.ScrollState
+	filterState      *t.FilterState
+	filterInputState *t.TextInputState
+	counter          int
+	themeIndex       t.Signal[int]
+	selectionMode    t.Signal[int]
 }
 
 func NewTableDemo() *TableDemo {
 	rows := defaultRows()
 
 	return &TableDemo{
-		tableState:    t.NewTableState(rows),
-		scrollState:   t.NewScrollState(),
-		counter:       len(rows),
-		themeIndex:    t.NewSignal(0),
-		selectionMode: t.NewSignal(int(t.TableSelectionCursor)),
+		tableState:       t.NewTableState(rows),
+		scrollState:      t.NewScrollState(),
+		filterState:      t.NewFilterState(),
+		filterInputState: t.NewTextInputState(""),
+		counter:          len(rows),
+		themeIndex:       t.NewSignal(0),
+		selectionMode:    t.NewSignal(int(t.TableSelectionCursor)),
 	}
 }
 
@@ -139,6 +143,21 @@ func (d *TableDemo) selectionIndex(columnCount int) int {
 
 func (d *TableDemo) columnCount() int {
 	return 4
+}
+
+func (d *TableDemo) matchCell(row TableRow, rowIndex int, colIndex int, query string, options t.FilterOptions) t.MatchResult {
+	switch colIndex {
+	case 0:
+		return t.MatchString(row.Service, query, options)
+	case 1:
+		return t.MatchString(row.Owner, query, options)
+	case 2:
+		return t.MatchString(row.Status, query, options)
+	case 3:
+		return t.MatchString(row.Notes, query, options)
+	default:
+		return t.MatchResult{}
+	}
 }
 
 func defaultRows() []TableRow {
@@ -260,6 +279,22 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 	}
 
 	cellPadding := t.EdgeInsetsXY(1, 0)
+	highlight := t.SpanStyle{
+		Underline:      t.UnderlineSingle,
+		UnderlineColor: theme.Accent,
+		Background:     theme.Accent.WithAlpha(0.25),
+	}
+	renderCellText := func(content string, style t.Style, match t.MatchResult, wrap t.WrapMode) t.Widget {
+		if match.Matched && len(match.Ranges) > 0 {
+			return t.Text{
+				Spans: t.HighlightSpans(content, match.Ranges, highlight),
+				Style: style,
+				Wrap:  wrap,
+			}
+		}
+		return t.Text{Content: content, Style: style, Wrap: wrap}
+	}
+
 	return t.Column{
 		ID:      "table-demo-root",
 		Height:  t.Flex(1),
@@ -286,6 +321,48 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 			t.Text{
 				Spans: t.ParseMarkup(fmt.Sprintf("Modify: [b $Success]a[/]ppend [b $Success]p[/]repend [b $Error]d[/]elete [b $Warning]r[/]eset  •  Selection: [b $Accent]%s[/]", selectionModeLabel(mode)), theme),
 			},
+			t.Row{
+				Spacing:    1,
+				CrossAlign: t.CrossAxisCenter,
+				Children: []t.Widget{
+					t.Text{
+						Content: "Filter:",
+						Style: t.Style{
+							ForegroundColor: theme.TextMuted,
+						},
+					},
+					t.TextInput{
+						ID:          "table-filter-input",
+						State:       d.filterInputState,
+						Placeholder: "Type to filter...",
+						Width:       t.Flex(1),
+						Style: t.Style{
+							BackgroundColor: theme.Surface,
+							ForegroundColor: theme.Text,
+						},
+						OnChange: func(text string) {
+							d.filterState.Query.Set(text)
+						},
+						OnSubmit: func(text string) {
+							t.RequestFocus("demo-table")
+						},
+						ExtraKeybinds: []t.Keybind{
+							{
+								Key:  "escape",
+								Name: "Clear filter",
+								Action: func() {
+									d.filterInputState.SetText("")
+									d.filterState.Query.Set("")
+									t.RequestFocus("demo-table")
+								},
+							},
+						},
+					},
+					t.Text{
+						Spans: t.ParseMarkup("[$TextMuted]Tab to move focus[/]", theme),
+					},
+				},
+			},
 			t.Scrollable{
 				ID:           "table-scroll",
 				State:        d.scrollState,
@@ -302,7 +379,9 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 					Columns:       columns,
 					SelectionMode: mode,
 					MultiSelect:   true,
-					RenderCell: func(row TableRow, rowIndex int, colIndex int, active bool, selected bool) t.Widget {
+					Filter:        d.filterState,
+					MatchCell:     d.matchCell,
+					RenderCellWithMatch: func(row TableRow, rowIndex int, colIndex int, active bool, selected bool, match t.MatchResult) t.Widget {
 						style := t.Style{ForegroundColor: theme.Text}
 						if selected {
 							style.BackgroundColor = theme.Accent.WithAlpha(0.2)
@@ -315,9 +394,9 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 
 						switch colIndex {
 						case 0:
-							return t.Text{Content: row.Service, Style: style}
+							return renderCellText(row.Service, style, match, t.WrapNone)
 						case 1:
-							return t.Text{Content: row.Owner, Style: style}
+							return renderCellText(row.Owner, style, match, t.WrapNone)
 						case 2:
 							statusStyle := style
 							if !active {
@@ -330,13 +409,13 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 									statusStyle.ForegroundColor = theme.Success
 								}
 							}
-							return t.Text{Content: row.Status, Style: statusStyle}
+							return renderCellText(row.Status, statusStyle, match, t.WrapNone)
 						case 3:
 							notesStyle := style
 							if !active && !selected {
 								notesStyle.ForegroundColor = theme.TextMuted
 							}
-							return t.Text{Content: row.Notes, Style: notesStyle, Wrap: t.WrapSoft}
+							return renderCellText(row.Notes, notesStyle, match, t.WrapSoft)
 						default:
 							return t.Text{Content: "", Style: style}
 						}
