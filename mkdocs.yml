@@ -39,6 +39,7 @@ nav:
   - Widgets:
     - Overview: widgets/index.md
     - ProgressBar: widgets/progressbar.md
+    - Switcher: widgets/switcher.md
   - Layout:
     - Overview: layout/index.md
     - Row & Column: layout/row-column.md

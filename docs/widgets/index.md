@@ -25,7 +25,7 @@ Widgets that display content:
 
 ### Conditional & Switching Widgets
 
-- [Switcher](../conditional.md#switcher) - Show one widget at a time from a keyed collection
+- [Switcher](switcher.md) - Show one widget at a time from a keyed collection
 - [ShowWhen / HideWhen](../conditional.md#showwhen--hidewhen) - Toggle widget presence
 - [VisibleWhen / InvisibleWhen](../conditional.md#visiblewhen--invisiblewhen) - Toggle visibility while preserving space
 
