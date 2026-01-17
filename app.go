@@ -81,6 +81,7 @@ func Run(root Widget) error {
 	focusManager := NewFocusManager()
 	focusManager.SetRootWidget(root)
 	focusedSignal := NewAnySignal[Focusable](nil)
+	lastFocusedID := ""
 
 	// Create hovered widget signal (tracks the currently hovered widget)
 	hoveredSignal := NewAnySignal[Widget](nil)
@@ -89,31 +90,48 @@ func Run(root Widget) error {
 	renderer := NewRenderer(t, width, height, focusManager, focusedSignal, hoveredSignal)
 	appRenderer = renderer
 
+	updateFocusedSignal := func() bool {
+		focusedID := focusManager.FocusedID()
+		if focusedID == lastFocusedID {
+			return false
+		}
+		lastFocusedID = focusedID
+		focusedSignal.Set(focusManager.Focused())
+		return true
+	}
+
 	// Render and update focusables
 	display := func() {
 		startTime := time.Now()
 		screen.Clear(t)
 		// Update the focused signal BEFORE render so widgets can read it
-		focusedSignal.Set(focusManager.Focused())
+		updateFocusedSignal()
 
 		focusables := renderer.Render(root)
 		focusManager.SetFocusables(focusables)
+
+		// If focus changed after render (auto-focus or focus removal), re-render
+		if updateFocusedSignal() {
+			renderer.Render(root)
+		}
 
 		// Apply pending focus request from ctx.RequestFocus()
 		if pendingFocusID != "" {
 			focusManager.FocusByID(pendingFocusID)
 			pendingFocusID = ""
 			// Update the signal and re-render so the focused widget shows focus style
-			focusedSignal.Set(focusManager.Focused())
-			renderer.Render(root)
+			if updateFocusedSignal() {
+				renderer.Render(root)
+			}
 		}
 
 		// Auto-focus into modal floats when they open
 		if modalTarget := renderer.ModalFocusTarget(); modalTarget != "" {
 			focusManager.FocusByID(modalTarget)
 			// Update the signal and re-render so the focused widget shows focus style
-			focusedSignal.Set(focusManager.Focused())
-			renderer.Render(root)
+			if updateFocusedSignal() {
+				renderer.Render(root)
+			}
 		}
 
 		// Position terminal cursor for IME support (emoji picker, input methods)
