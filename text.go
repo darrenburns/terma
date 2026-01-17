@@ -178,6 +178,10 @@ func (t Text) renderPlain(ctx *RenderContext) {
 	if style.ForegroundColor == nil || !style.ForegroundColor.IsSet() {
 		style.ForegroundColor = ctx.buildContext.Theme().Text
 	}
+	drawStyle := style
+	if drawStyle.BackgroundColor != nil && drawStyle.BackgroundColor.IsSet() {
+		drawStyle.BackgroundColor = nil
+	}
 
 	// Get lines with wrapping applied
 	lines := wrapText(t.Content, ctx.Width, t.Wrap)
@@ -201,9 +205,9 @@ func (t Text) renderPlain(ctx *RenderContext) {
 
 		if separatePadding && lineWidth < ctx.Width {
 			// Draw text with full style (including strikethrough/underline)
-			ctx.DrawStyledText(0, i, line, style)
+			ctx.DrawStyledText(0, i, line, drawStyle)
 			// Draw padding without strikethrough/underline
-			paddingStyle := style
+			paddingStyle := drawStyle
 			paddingStyle.Strikethrough = false
 			paddingStyle.Underline = UnderlineNone
 			padding := strings.Repeat(" ", ctx.Width-lineWidth)
@@ -213,7 +217,7 @@ func (t Text) renderPlain(ctx *RenderContext) {
 			if lineWidth < ctx.Width {
 				line = line + strings.Repeat(" ", ctx.Width-lineWidth)
 			}
-			ctx.DrawStyledText(0, i, line, style)
+			ctx.DrawStyledText(0, i, line, drawStyle)
 		}
 	}
 }
@@ -224,6 +228,10 @@ func (t Text) renderSpans(ctx *RenderContext) {
 	baseStyle := t.Style
 	if baseStyle.ForegroundColor == nil || !baseStyle.ForegroundColor.IsSet() {
 		baseStyle.ForegroundColor = ctx.buildContext.Theme().Text
+	}
+	drawBaseStyle := baseStyle
+	if drawBaseStyle.BackgroundColor != nil && drawBaseStyle.BackgroundColor.IsSet() {
+		drawBaseStyle.BackgroundColor = nil
 	}
 
 	x, y := 0, 0
@@ -271,7 +279,7 @@ func (t Text) renderSpans(ctx *RenderContext) {
 					}
 					if len(chunk) > 0 {
 						partSpan := Span{Text: chunk, Style: span.Style}
-						ctx.DrawSpan(x, y, partSpan, baseStyle)
+						ctx.DrawSpan(x, y, partSpan, drawBaseStyle)
 						x += ansi.StringWidth(chunk)
 					}
 					break
@@ -282,7 +290,7 @@ func (t Text) renderSpans(ctx *RenderContext) {
 
 				if len(chunk) > 0 {
 					partSpan := Span{Text: chunk, Style: span.Style}
-					ctx.DrawSpan(x, y, partSpan, baseStyle)
+					ctx.DrawSpan(x, y, partSpan, drawBaseStyle)
 				}
 
 				remaining = rest

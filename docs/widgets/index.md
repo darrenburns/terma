@@ -21,6 +21,7 @@ Widgets that display content:
 - Text - Display plain or rich text
 - Button - Focusable button with press handler
 - List - Generic navigable list
+- Table - Navigable multi-column table
 - [ProgressBar](progressbar.md) - Horizontal progress indicator
 
 ### Conditional & Switching Widgets
