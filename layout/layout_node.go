@@ -187,3 +187,28 @@ type PositionedChild struct {
 	// Layout is the child's computed layout (recursive).
 	Layout ComputedLayout
 }
+
+// SizePreserver is implemented by nodes that can resist stretching on specific axes.
+// This is used when a widget has an explicit Auto dimension, meaning "fit content,
+// don't stretch beyond that" rather than the default "no preference, parent decides".
+type SizePreserver interface {
+	// PreservesWidth returns true if the node should resist horizontal stretching.
+	PreservesWidth() bool
+	// PreservesHeight returns true if the node should resist vertical stretching.
+	PreservesHeight() bool
+}
+
+// PreservesCrossSize checks if a node preserves its cross-axis size for the given axis.
+// For a horizontal parent (Row), cross axis is height.
+// For a vertical parent (Column), cross axis is width.
+// Returns false if node doesn't implement SizePreserver.
+func PreservesCrossSize(node LayoutNode, parentAxis Axis) bool {
+	preserver, ok := node.(SizePreserver)
+	if !ok {
+		return false
+	}
+	if parentAxis == Horizontal {
+		return preserver.PreservesHeight()
+	}
+	return preserver.PreservesWidth()
+}

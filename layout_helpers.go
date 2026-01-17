@@ -1,8 +1,6 @@
 package terma
 
 import (
-	"strings"
-
 	"terma/layout"
 )
 
@@ -60,15 +58,6 @@ func toLayoutCrossAlign(a CrossAxisAlign) layout.CrossAxisAlignment {
 	}
 }
 
-// spansToPlainText extracts plain text content from a slice of Spans.
-func spansToPlainText(spans []Span) string {
-	var result strings.Builder
-	for _, span := range spans {
-		result.WriteString(span.Text)
-	}
-	return result.String()
-}
-
 // dimensionToMinMax converts a terma Dimension to min/max constraints.
 // For Cells (fixed), both min and max are set to the value.
 // For Auto or Fr, returns 0,0 (no constraints from dimension).
@@ -101,6 +90,30 @@ func wrapInFlexIfNeeded(node layout.LayoutNode, mainAxisDim Dimension) layout.La
 	return node
 }
 
+// wrapInPercentIfNeeded wraps a layout node in PercentNode if the dimension is Percent().
+// This is used when building layout trees from widgets - children with Percent dimensions
+// on the main axis should be wrapped in PercentNode so the percentage can be resolved
+// from the parent's constraints.
+//
+// Parameters:
+//   - node: The layout node to potentially wrap
+//   - mainAxisDim: The dimension on the main axis (Width for Row, Height for Column)
+//   - axis: The layout axis (Horizontal for Row, Vertical for Column)
+//
+// Returns:
+//   - The original node if mainAxisDim is not Percent()
+//   - A PercentNode wrapping the original if mainAxisDim is Percent()
+func wrapInPercentIfNeeded(node layout.LayoutNode, mainAxisDim Dimension, axis layout.Axis) layout.LayoutNode {
+	if mainAxisDim.IsPercent() {
+		return &layout.PercentNode{
+			Percent: mainAxisDim.PercentValue(),
+			Child:   node,
+			Axis:    axis,
+		}
+	}
+	return node
+}
+
 // getChildMainAxisDimension returns the main-axis dimension for a widget.
 // For horizontal (Row): returns Width
 // For vertical (Column): returns Height
@@ -113,6 +126,46 @@ func getChildMainAxisDimension(widget Widget, horizontal bool) Dimension {
 		return height
 	}
 	return Dimension{} // unset/auto
+}
+
+// wrapInPercentNodesForStack wraps a layout node in PercentNode(s) for Stack children.
+// Unlike Row/Column which have a single main axis, Stack children can have percent
+// dimensions on both width and height independently.
+//
+// Parameters:
+//   - node: The layout node to potentially wrap
+//   - widget: The widget to check for percent dimensions
+//
+// Returns:
+//   - The original node if no percent dimensions
+//   - A PercentNode (or nested PercentNodes) wrapping the original if percent dimensions exist
+func wrapInPercentNodesForStack(node layout.LayoutNode, widget Widget) layout.LayoutNode {
+	dimensioned, ok := widget.(Dimensioned)
+	if !ok {
+		return node
+	}
+
+	width, height := dimensioned.GetDimensions()
+
+	// Wrap for width percent first
+	if width.IsPercent() {
+		node = &layout.PercentNode{
+			Percent: width.PercentValue(),
+			Child:   node,
+			Axis:    layout.Horizontal,
+		}
+	}
+
+	// Wrap for height percent (wraps around any width percent wrapper)
+	if height.IsPercent() {
+		node = &layout.PercentNode{
+			Percent: height.PercentValue(),
+			Child:   node,
+			Axis:    layout.Vertical,
+		}
+	}
+
+	return node
 }
 
 // buildFallbackLayoutNode creates a BoxNode for widgets that don't implement LayoutNodeBuilder.

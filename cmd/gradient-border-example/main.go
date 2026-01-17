@@ -167,5 +167,5 @@ func rotatingBorderCard(angle float64) t.Widget {
 }
 
 func main() {
-	t.Run(NewApp())
+	_ = t.Run(NewApp())
 }

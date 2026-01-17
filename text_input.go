@@ -38,17 +38,6 @@ func graphemeWidth(s string) int {
 	return width
 }
 
-// isWordBoundary returns true if position is at a word boundary.
-// A word boundary is at the start, end, or between word/non-word characters.
-func isWordBoundary(graphemes []string, index int) bool {
-	if index <= 0 || index >= len(graphemes) {
-		return true
-	}
-	prevIsWord := isWordChar(graphemes[index-1])
-	currIsWord := isWordChar(graphemes[index])
-	return prevIsWord != currIsWord
-}
-
 // isWordChar returns true if the grapheme is a word character (letter, digit, underscore).
 func isWordChar(g string) bool {
 	for _, r := range g {
@@ -316,6 +305,25 @@ func (t TextInput) WidgetID() string {
 // IsFocusable returns true, indicating this widget can receive keyboard focus.
 func (t TextInput) IsFocusable() bool {
 	return true
+}
+
+// CapturesKey returns true if this key would be captured by the text input
+// (i.e., typed as text rather than bubbling to ancestors). This is true for
+// printable characters without modifiers.
+func (t TextInput) CapturesKey(key string) bool {
+	// Keys with modifiers are not captured (they may have special handling)
+	if strings.Contains(key, "+") {
+		return false
+	}
+
+	// Single printable rune is captured as typed text
+	runes := []rune(key)
+	if len(runes) == 1 && unicode.IsPrint(runes[0]) {
+		return true
+	}
+
+	// Multi-character key names (like "escape", "enter") are not captured
+	return false
 }
 
 // Keybinds returns the declarative keybindings for this text input.

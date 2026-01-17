@@ -17,6 +17,10 @@ var appCancel func()
 // appRenderer holds the current renderer for screen export.
 var appRenderer *Renderer
 
+// renderTrigger signals the event loop to re-render when a signal changes.
+// Buffered with size 1 to avoid blocking signal setters.
+var renderTrigger chan struct{}
+
 // Quit exits the running application gracefully.
 // This performs the same teardown as pressing Ctrl+C.
 func Quit() {
@@ -47,8 +51,8 @@ func Run(root Widget) error {
 	t.EnterAltScreen()
 
 	// Enable mouse tracking (all mouse events including hover + SGR extended encoding)
-	t.WriteString(ansi.SetModeMouseAnyEvent)
-	t.WriteString(ansi.SetModeMouseExtSgr)
+	_, _ = t.WriteString(ansi.SetModeMouseAnyEvent)
+	_, _ = t.WriteString(ansi.SetModeMouseExtSgr)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	appCancel = cancel
@@ -57,9 +61,13 @@ func Run(root Widget) error {
 	animController := NewAnimationController(60)
 	currentController = animController
 
+	// Create render trigger channel for signal-driven re-renders
+	renderTrigger = make(chan struct{}, 1)
+
 	defer func() {
 		appCancel = nil
 		appRenderer = nil
+		renderTrigger = nil
 		currentController = nil
 		animController.Stop()
 		cancel()
@@ -73,6 +81,7 @@ func Run(root Widget) error {
 	focusManager := NewFocusManager()
 	focusManager.SetRootWidget(root)
 	focusedSignal := NewAnySignal[Focusable](nil)
+	lastFocusedID := ""
 
 	// Create hovered widget signal (tracks the currently hovered widget)
 	hoveredSignal := NewAnySignal[Widget](nil)
@@ -81,31 +90,48 @@ func Run(root Widget) error {
 	renderer := NewRenderer(t, width, height, focusManager, focusedSignal, hoveredSignal)
 	appRenderer = renderer
 
+	updateFocusedSignal := func() bool {
+		focusedID := focusManager.FocusedID()
+		if focusedID == lastFocusedID {
+			return false
+		}
+		lastFocusedID = focusedID
+		focusedSignal.Set(focusManager.Focused())
+		return true
+	}
+
 	// Render and update focusables
 	display := func() {
 		startTime := time.Now()
 		screen.Clear(t)
 		// Update the focused signal BEFORE render so widgets can read it
-		focusedSignal.Set(focusManager.Focused())
+		updateFocusedSignal()
 
 		focusables := renderer.Render(root)
 		focusManager.SetFocusables(focusables)
+
+		// If focus changed after render (auto-focus or focus removal), re-render
+		if updateFocusedSignal() {
+			renderer.Render(root)
+		}
 
 		// Apply pending focus request from ctx.RequestFocus()
 		if pendingFocusID != "" {
 			focusManager.FocusByID(pendingFocusID)
 			pendingFocusID = ""
 			// Update the signal and re-render so the focused widget shows focus style
-			focusedSignal.Set(focusManager.Focused())
-			renderer.Render(root)
+			if updateFocusedSignal() {
+				renderer.Render(root)
+			}
 		}
 
 		// Auto-focus into modal floats when they open
 		if modalTarget := renderer.ModalFocusTarget(); modalTarget != "" {
 			focusManager.FocusByID(modalTarget)
 			// Update the signal and re-render so the focused widget shows focus style
-			focusedSignal.Set(focusManager.Focused())
-			renderer.Render(root)
+			if updateFocusedSignal() {
+				renderer.Render(root)
+			}
 		}
 
 		// Position terminal cursor for IME support (emoji picker, input methods)
@@ -120,7 +146,7 @@ func Run(root Widget) error {
 			}
 		}
 
-		t.Display()
+		_ = t.Display()
 
 		elapsed := time.Since(startTime)
 
@@ -141,6 +167,8 @@ func Run(root Widget) error {
 			select {
 			case <-ctx.Done():
 				return
+			case <-renderTrigger:
+				display()
 			case <-animController.Tick():
 				animController.Update()
 				display()
@@ -150,7 +178,7 @@ func Run(root Widget) error {
 				}
 				switch ev := ev.(type) {
 				case uv.WindowSizeEvent:
-					t.Resize(ev.Width, ev.Height)
+					_ = t.Resize(ev.Width, ev.Height)
 					renderer.Resize(ev.Width, ev.Height)
 					t.Erase()
 					display()
@@ -170,25 +198,25 @@ func Run(root Widget) error {
 					// Suspend on Ctrl+Z
 					if ev.MatchString("ctrl+z") {
 						// Disable mouse tracking before suspending
-						t.WriteString(ansi.ResetModeMouseAnyEvent)
-						t.WriteString(ansi.ResetModeMouseExtSgr)
+						_, _ = t.WriteString(ansi.ResetModeMouseAnyEvent)
+						_, _ = t.WriteString(ansi.ResetModeMouseExtSgr)
 
 						// Exit alternate screen to show shell
 						t.ExitAltScreen()
 
 						// Pause input reading and suspend process
-						t.Pause()
-						uv.Suspend() // Blocks until resumed via `fg`
+						_ = t.Pause()
+						_ = uv.Suspend() // Blocks until resumed via `fg`
 
 						// Resume input reading
-						t.Resume()
+						_ = t.Resume()
 
 						// Re-enter alternate screen
 						t.EnterAltScreen()
 
 						// Re-enable mouse tracking
-						t.WriteString(ansi.SetModeMouseAnyEvent)
-						t.WriteString(ansi.SetModeMouseExtSgr)
+						_, _ = t.WriteString(ansi.SetModeMouseAnyEvent)
+						_, _ = t.WriteString(ansi.SetModeMouseExtSgr)
 
 						// Redraw the screen
 						display()
@@ -289,9 +317,6 @@ func Run(root Widget) error {
 					if entry != nil {
 						newHovered = entry.Widget
 						newHoveredID = entry.ID
-						// Log("  Widget at position: ID=%q Type=%T", entry.ID, entry.Widget)
-					} else {
-						// Log("  No widget at position")
 					}
 
 					// Get old hovered widget and its ID
@@ -358,8 +383,8 @@ func Run(root Widget) error {
 	<-ctx.Done()
 
 	// Disable mouse tracking before shutdown
-	t.WriteString(ansi.ResetModeMouseAnyEvent)
-	t.WriteString(ansi.ResetModeMouseExtSgr)
+	_, _ = t.WriteString(ansi.ResetModeMouseAnyEvent)
+	_, _ = t.WriteString(ansi.ResetModeMouseExtSgr)
 
 	return t.Shutdown(context.Background())
 }

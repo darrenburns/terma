@@ -1,7 +1,5 @@
 package terma
 
-import "fmt"
-
 // Button is a focusable widget that renders as styled text.
 // It can be pressed with Enter or Space when focused.
 type Button struct {
@@ -55,7 +53,7 @@ func (b *Button) OnKey(event KeyEvent) bool {
 // When focused, the button is highlighted with theme colors.
 // If no explicit style colors are set, theme defaults are applied.
 func (b *Button) Build(ctx BuildContext) Widget {
-	label := fmt.Sprintf("%s", b.Label)
+	label := b.Label
 	theme := ctx.Theme()
 	style := b.Style
 

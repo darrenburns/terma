@@ -195,25 +195,31 @@ func (c Color) ContrastRatio(other Color) float64 {
 
 // --- Fluent Manipulation Methods ---
 
-// Lighten increases the lightness of the color.
-// amount should be between 0 and 1.
+// Lighten increases the lightness of the color proportionally.
+// amount should be between 0 and 1. This is the inverse of Darken, so
+// color.Darken(x).Lighten(x) returns approximately the original color.
 func (c Color) Lighten(amount float64) Color {
 	if !c.set {
 		return c
 	}
 	h, s, l := c.HSL()
-	l = clamp01(l + amount)
+	if amount >= 1 {
+		l = 1
+	} else {
+		l = clamp01(l / (1 - amount))
+	}
 	return HSL(h, s, l)
 }
 
-// Darken decreases the lightness of the color.
-// amount should be between 0 and 1.
+// Darken decreases the lightness of the color proportionally.
+// amount should be between 0 and 1, representing the percentage to reduce lightness.
+// For example, Darken(0.1) reduces lightness by 10% of its current value.
 func (c Color) Darken(amount float64) Color {
 	if !c.set {
 		return c
 	}
 	h, s, l := c.HSL()
-	l = clamp01(l - amount)
+	l = clamp01(l * (1 - amount))
 	return HSL(h, s, l)
 }
 
@@ -281,8 +287,9 @@ func (c Color) Blend(other Color, ratio float64) Color {
 	r := uint8(float64(c.r)*invRatio + float64(other.r)*ratio)
 	g := uint8(float64(c.g)*invRatio + float64(other.g)*ratio)
 	b := uint8(float64(c.b)*invRatio + float64(other.b)*ratio)
+	a := c.a*invRatio + other.a*ratio
 
-	return RGB(r, g, b)
+	return RGBA(r, g, b, a)
 }
 
 // BlendOver composites this color over a background color using alpha blending.

@@ -49,17 +49,24 @@ type LayoutNodeBuilder interface {
 	BuildLayoutNode(ctx BuildContext) layout.LayoutNode
 }
 
-// widgetNode is an internal node in the widget tree.
-// It tracks the widget instance, layout info, and dirty state.
-type widgetNode struct {
-	widget   Widget
-	dirty    bool
-	built    Widget // Result of calling Build()
-	children []*widgetNode
+// LayoutObserver is implemented by widgets that want access to computed layout data.
+// OnLayout is called after layout is computed for the widget, before child render trees are built.
+// Use this to read resolved child positions/sizes without re-measuring.
+type LayoutObserver interface {
+	OnLayout(ctx BuildContext, metrics LayoutMetrics)
+}
 
-	// Layout info
-	x, y          int
-	width, height int
+// ChildProvider exposes a widget's children for render tree construction.
+// Implement this for custom containers so computed child layouts are rendered.
+type ChildProvider interface {
+	ChildWidgets() []Widget
+}
+
+// widgetNode is an internal node in the widget tree.
+// It tracks the widget instance and dirty state for signal subscriptions.
+type widgetNode struct {
+	widget Widget
+	dirty  bool
 }
 
 // newWidgetNode creates a new widget node.
@@ -73,46 +80,4 @@ func newWidgetNode(widget Widget) *widgetNode {
 // markDirty marks this node for rebuild.
 func (n *widgetNode) markDirty() {
 	n.dirty = true
-}
-
-// build rebuilds this node if dirty, tracking signal subscriptions.
-func (n *widgetNode) build(ctx BuildContext) Widget {
-	if !n.dirty && n.built != nil {
-		return n.built
-	}
-
-	// Set this node as the current building node so signals can subscribe
-	previousNode := currentBuildingNode
-	currentBuildingNode = n
-
-	// Call Build() on the widget
-	n.built = n.widget.Build(ctx)
-
-	// Restore previous node
-	currentBuildingNode = previousNode
-
-	n.dirty = false
-	return n.built
-}
-
-// layout computes the size and position of this node and its children.
-func (n *widgetNode) layout(ctx BuildContext, constraints Constraints, x, y int) Size {
-	n.x = x
-	n.y = y
-
-	// Build the widget first
-	built := n.build(ctx)
-
-	// If the built widget implements Layoutable, use it
-	if layoutable, ok := built.(Layoutable); ok {
-		size := layoutable.Layout(ctx, constraints)
-		n.width = size.Width
-		n.height = size.Height
-		return size
-	}
-
-	// Default size
-	n.width = constraints.MaxWidth
-	n.height = constraints.MaxHeight
-	return Size{Width: n.width, Height: n.height}
 }

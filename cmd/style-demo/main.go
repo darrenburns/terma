@@ -212,7 +212,7 @@ func (a *App) styledUnderlineRow(label string, underlineStyle UnderlineStyle, un
 }
 
 func main() {
-	Run(&App{
+	_ = Run(&App{
 		scrollState: NewScrollState(),
 	})
 }

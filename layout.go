@@ -98,28 +98,35 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
 		}
 
-		// Wrap in FlexNode if child has Fr width (Row's main axis is horizontal)
+		// Wrap in FlexNode or PercentNode if child has Flex/Percent width (Row's main axis is horizontal)
 		mainAxisDim := getChildMainAxisDimension(built, true)
+		childNode = wrapInPercentIfNeeded(childNode, mainAxisDim, layout.Horizontal)
 		children[i] = wrapInFlexIfNeeded(childNode, mainAxisDim)
 	}
 
 	minWidth, maxWidth := dimensionToMinMax(r.Width)
 	minHeight, maxHeight := dimensionToMinMax(r.Height)
 
+	// Explicit Auto means "fit content, don't stretch" - set preserve flags
+	preserveWidth := r.Width.IsAuto() && !r.Width.IsUnset()
+	preserveHeight := r.Height.IsAuto() && !r.Height.IsUnset()
+
 	return &layout.RowNode{
-		Spacing:      r.Spacing,
-		MainAlign:    toLayoutMainAlign(r.MainAlign),
-		CrossAlign:   toLayoutCrossAlign(r.CrossAlign),
-		Children:     children,
-		Padding:      toLayoutEdgeInsets(r.Style.Padding),
-		Border:       borderToEdgeInsets(r.Style.Border),
-		Margin:       toLayoutEdgeInsets(r.Style.Margin),
-		MinWidth:     minWidth,
-		MaxWidth:     maxWidth,
-		MinHeight:    minHeight,
-		MaxHeight:    maxHeight,
-		ExpandWidth:  r.Width.IsFlex(),
-		ExpandHeight: r.Height.IsFlex(),
+		Spacing:        r.Spacing,
+		MainAlign:      toLayoutMainAlign(r.MainAlign),
+		CrossAlign:     toLayoutCrossAlign(r.CrossAlign),
+		Children:       children,
+		Padding:        toLayoutEdgeInsets(r.Style.Padding),
+		Border:         borderToEdgeInsets(r.Style.Border),
+		Margin:         toLayoutEdgeInsets(r.Style.Margin),
+		MinWidth:       minWidth,
+		MaxWidth:       maxWidth,
+		MinHeight:      minHeight,
+		MaxHeight:      maxHeight,
+		ExpandWidth:    r.Width.IsFlex(),
+		ExpandHeight:   r.Height.IsFlex(),
+		PreserveWidth:  preserveWidth,
+		PreserveHeight: preserveHeight,
 	}
 }
 
@@ -196,28 +203,35 @@ func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
 		}
 
-		// Wrap in FlexNode if child has Fr height (Column's main axis is vertical)
+		// Wrap in FlexNode or PercentNode if child has Flex/Percent height (Column's main axis is vertical)
 		mainAxisDim := getChildMainAxisDimension(built, false)
+		childNode = wrapInPercentIfNeeded(childNode, mainAxisDim, layout.Vertical)
 		children[i] = wrapInFlexIfNeeded(childNode, mainAxisDim)
 	}
 
 	minWidth, maxWidth := dimensionToMinMax(c.Width)
 	minHeight, maxHeight := dimensionToMinMax(c.Height)
 
+	// Explicit Auto means "fit content, don't stretch" - set preserve flags
+	preserveWidth := c.Width.IsAuto() && !c.Width.IsUnset()
+	preserveHeight := c.Height.IsAuto() && !c.Height.IsUnset()
+
 	return &layout.ColumnNode{
-		Spacing:      c.Spacing,
-		MainAlign:    toLayoutMainAlign(c.MainAlign),
-		CrossAlign:   toLayoutCrossAlign(c.CrossAlign),
-		Children:     children,
-		Padding:      toLayoutEdgeInsets(c.Style.Padding),
-		Border:       borderToEdgeInsets(c.Style.Border),
-		Margin:       toLayoutEdgeInsets(c.Style.Margin),
-		MinWidth:     minWidth,
-		MaxWidth:     maxWidth,
-		MinHeight:    minHeight,
-		MaxHeight:    maxHeight,
-		ExpandWidth:  c.Width.IsFlex(),
-		ExpandHeight: c.Height.IsFlex(),
+		Spacing:        c.Spacing,
+		MainAlign:      toLayoutMainAlign(c.MainAlign),
+		CrossAlign:     toLayoutCrossAlign(c.CrossAlign),
+		Children:       children,
+		Padding:        toLayoutEdgeInsets(c.Style.Padding),
+		Border:         borderToEdgeInsets(c.Style.Border),
+		Margin:         toLayoutEdgeInsets(c.Style.Margin),
+		MinWidth:       minWidth,
+		MaxWidth:       maxWidth,
+		MinHeight:      minHeight,
+		MaxHeight:      maxHeight,
+		ExpandWidth:    c.Width.IsFlex(),
+		ExpandHeight:   c.Height.IsFlex(),
+		PreserveWidth:  preserveWidth,
+		PreserveHeight: preserveHeight,
 	}
 }
 

@@ -153,7 +153,7 @@ func (a *App) buildRowDemo(ctx t.BuildContext, mainAlign t.MainAxisAlign, crossA
 		Width: t.Flex(1),
 		Children: []t.Widget{
 			t.Text{
-				Content: fmt.Sprintf("Row (main=horiz, cross=vert)"),
+				Content: "Row (main=horiz, cross=vert)",
 				Style:   t.Style{ForegroundColor: borderColor},
 			},
 			t.Row{
@@ -203,7 +203,7 @@ func (a *App) buildColumnDemo(ctx t.BuildContext, mainAlign t.MainAxisAlign, cro
 		Width: t.Flex(1),
 		Children: []t.Widget{
 			t.Text{
-				Content: fmt.Sprintf("Column (main=vert, cross=horiz)"),
+				Content: "Column (main=vert, cross=horiz)",
 				Style:   t.Style{ForegroundColor: borderColor},
 			},
 			t.Column{

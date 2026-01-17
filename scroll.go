@@ -286,13 +286,6 @@ func (s Scrollable) maxScrollOffset() int {
 	return s.State.maxOffset()
 }
 
-// clampScrollOffset ensures the scroll offset is within valid bounds.
-func (s Scrollable) clampScrollOffset() {
-	if s.State != nil {
-		s.State.SetOffset(s.State.Offset.Peek())
-	}
-}
-
 // ScrollUp scrolls the content up by the given number of lines.
 // Returns true if scrolling was handled, false if scroll is disabled or at limit.
 func (s Scrollable) ScrollUp(lines int) bool {

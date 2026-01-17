@@ -178,9 +178,18 @@ func (t Text) renderPlain(ctx *RenderContext) {
 	if style.ForegroundColor == nil || !style.ForegroundColor.IsSet() {
 		style.ForegroundColor = ctx.buildContext.Theme().Text
 	}
+	drawStyle := style
+	if drawStyle.BackgroundColor != nil && drawStyle.BackgroundColor.IsSet() {
+		drawStyle.BackgroundColor = nil
+	}
 
 	// Get lines with wrapping applied
 	lines := wrapText(t.Content, ctx.Width, t.Wrap)
+
+	// Check if we need to draw text and padding separately
+	// (when strikethrough/underline is set but FillLine is false)
+	hasLineDecoration := style.Strikethrough || style.Underline != UnderlineNone
+	separatePadding := hasLineDecoration && !style.FillLine
 
 	for i := 0; i < ctx.Height; i++ {
 		var line string
@@ -193,11 +202,23 @@ func (t Text) renderPlain(ctx *RenderContext) {
 			line = ansi.Truncate(line, ctx.Width, "")
 			lineWidth = ctx.Width
 		}
-		// Pad line to fill the full width (for background colors)
-		if lineWidth < ctx.Width {
-			line = line + strings.Repeat(" ", ctx.Width-lineWidth)
+
+		if separatePadding && lineWidth < ctx.Width {
+			// Draw text with full style (including strikethrough/underline)
+			ctx.DrawStyledText(0, i, line, drawStyle)
+			// Draw padding without strikethrough/underline
+			paddingStyle := drawStyle
+			paddingStyle.Strikethrough = false
+			paddingStyle.Underline = UnderlineNone
+			padding := strings.Repeat(" ", ctx.Width-lineWidth)
+			ctx.DrawStyledText(lineWidth, i, padding, paddingStyle)
+		} else {
+			// Pad line to fill the full width (for background colors)
+			if lineWidth < ctx.Width {
+				line = line + strings.Repeat(" ", ctx.Width-lineWidth)
+			}
+			ctx.DrawStyledText(0, i, line, drawStyle)
 		}
-		ctx.DrawStyledText(0, i, line, style)
 	}
 }
 
@@ -207,6 +228,10 @@ func (t Text) renderSpans(ctx *RenderContext) {
 	baseStyle := t.Style
 	if baseStyle.ForegroundColor == nil || !baseStyle.ForegroundColor.IsSet() {
 		baseStyle.ForegroundColor = ctx.buildContext.Theme().Text
+	}
+	drawBaseStyle := baseStyle
+	if drawBaseStyle.BackgroundColor != nil && drawBaseStyle.BackgroundColor.IsSet() {
+		drawBaseStyle.BackgroundColor = nil
 	}
 
 	x, y := 0, 0
@@ -254,7 +279,7 @@ func (t Text) renderSpans(ctx *RenderContext) {
 					}
 					if len(chunk) > 0 {
 						partSpan := Span{Text: chunk, Style: span.Style}
-						ctx.DrawSpan(x, y, partSpan, baseStyle)
+						ctx.DrawSpan(x, y, partSpan, drawBaseStyle)
 						x += ansi.StringWidth(chunk)
 					}
 					break
@@ -265,7 +290,7 @@ func (t Text) renderSpans(ctx *RenderContext) {
 
 				if len(chunk) > 0 {
 					partSpan := Span{Text: chunk, Style: span.Style}
-					ctx.DrawSpan(x, y, partSpan, baseStyle)
+					ctx.DrawSpan(x, y, partSpan, drawBaseStyle)
 				}
 
 				remaining = rest

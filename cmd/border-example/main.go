@@ -15,7 +15,6 @@ var themeNames = []string{
 	t.ThemeNameCatppuccin,
 	t.ThemeNameGruvbox,
 	t.ThemeNameNord,
-	t.ThemeNameOneDark,
 	t.ThemeNameSolarized,
 	t.ThemeNameKanagawa,
 	t.ThemeNameMonokai,
@@ -97,25 +96,6 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 				Children: []t.Widget{
 					borderBox("Dashed", t.DashedBorder(theme.Secondary)),
 					borderBox("Ascii", t.AsciiBorder(theme.Secondary)),
-				},
-			},
-
-			// Row 3: Block element borders
-			t.Row{
-				Spacing: 2,
-				Children: []t.Widget{
-					borderBox("Inner", t.InnerBorder(theme.Info)),
-					borderBox("Outer", t.OuterBorder(theme.Info)),
-					borderBox("Thick", t.ThickBorder(theme.Info)),
-				},
-			},
-
-			// Row 4: Key-cap borders
-			t.Row{
-				Spacing: 2,
-				Children: []t.Widget{
-					borderBox("HKey", t.HKeyBorder(theme.Warning)),
-					borderBox("VKey", t.VKeyBorder(theme.Warning)),
 				},
 			},
 

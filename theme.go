@@ -6,10 +6,9 @@ const (
 	ThemeNameDracula    = "dracula"
 	ThemeNameTokyoNight = "tokyo-night"
 	ThemeNameCatppuccin = "catppuccin"
-	ThemeNameGruvbox    = "gruvbox"
-	ThemeNameNord       = "nord"
-	ThemeNameOneDark    = "one-dark"
-	ThemeNameSolarized  = "solarized"
+	ThemeNameGruvbox   = "gruvbox"
+	ThemeNameNord      = "nord"
+	ThemeNameSolarized = "solarized"
 	ThemeNameKanagawa   = "kanagawa"
 	ThemeNameMonokai    = "monokai"
 )
@@ -203,32 +202,6 @@ var nordThemeData = ThemeData{
 	Info:    Hex("#5e81ac"), // Nord10 - frost
 }
 
-// oneDarkThemeData - Atom's iconic One Dark theme
-// https://github.com/atom/atom/tree/master/packages/one-dark-syntax
-var oneDarkThemeData = ThemeData{
-	Name: ThemeNameOneDark,
-
-	Primary:   Hex("#61afef"), // Blue
-	Secondary: Hex("#c678dd"), // Purple
-	Accent:    Hex("#56b6c2"), // Cyan
-
-	Background:   Hex("#282c34"), // Background
-	Surface:      Hex("#21252b"), // Gutter
-	SurfaceHover: Hex("#2c313c"), // Selection
-
-	Text:          Hex("#abb2bf"), // Foreground
-	TextMuted:     Hex("#7f848e"), // Lightened comment for better visibility
-	TextOnPrimary: Hex("#282c34"), // Background
-
-	Border:    Hex("#3e4451"), // Guide
-	FocusRing: Hex("#61afef"), // Blue
-
-	Error:   Hex("#e06c75"), // Red
-	Warning: Hex("#e5c07b"), // Yellow
-	Success: Hex("#98c379"), // Green
-	Info:    Hex("#61afef"), // Blue
-}
-
 // solarizedThemeData - Precision colors for machines and people (Dark)
 // https://ethanschoonover.com/solarized/
 var solarizedThemeData = ThemeData{
@@ -313,10 +286,9 @@ var themeRegistry = map[string]ThemeData{
 	ThemeNameDracula:    draculaThemeData,
 	ThemeNameTokyoNight: tokyoNightThemeData,
 	ThemeNameCatppuccin: catppuccinThemeData,
-	ThemeNameGruvbox:    gruvboxThemeData,
-	ThemeNameNord:       nordThemeData,
-	ThemeNameOneDark:    oneDarkThemeData,
-	ThemeNameSolarized:  solarizedThemeData,
+	ThemeNameGruvbox:   gruvboxThemeData,
+	ThemeNameNord:      nordThemeData,
+	ThemeNameSolarized: solarizedThemeData,
 	ThemeNameKanagawa:   kanagawaThemeData,
 	ThemeNameMonokai:    monokaiThemeData,
 }
@@ -363,6 +335,13 @@ func ThemeNames() []string {
 		names = append(names, name)
 	}
 	return names
+}
+
+// GetTheme returns the ThemeData for the given theme name.
+// Returns the theme data and true if found, or zero value and false if not found.
+func GetTheme(name string) (ThemeData, bool) {
+	data, ok := themeRegistry[name]
+	return data, ok
 }
 
 // getTheme returns the ThemeData for the active theme.

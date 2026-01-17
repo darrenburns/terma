@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="226" height="212" viewBox="0 0 226 212">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    .bold { font-weight: bold; }
+    .italic { font-style: italic; }
+    .underline { text-decoration: underline; }
+    .strikethrough { text-decoration: line-through; }
+  </style>
+  <rect width="100%" height="100%" fill="#000000"/>
+  <text x="8.0" y="8.0" fill="#6464C8">╭───────────────────────╮</text>
+  <text x="8.0" y="27.6" fill="#6464C8">│</text>
+  <text x="16.4" y="27.6" fill="#C86464">┌─────────────────────┐</text>
+  <text x="209.6" y="27.6" fill="#6464C8">│</text>
+  <text x="8.0" y="47.2" fill="#6464C8">│</text>
+  <text x="16.4" y="47.2" fill="#C86464">│</text>
+  <text x="24.8" y="47.2" fill="#E0DEF4">Inner</text>
+  <text x="201.2" y="47.2" fill="#C86464">│</text>
+  <text x="209.6" y="47.2" fill="#6464C8">│</text>
+  <text x="8.0" y="66.8" fill="#6464C8">│</text>
+  <text x="16.4" y="66.8" fill="#C86464">└─────────────────────┘</text>
+  <text x="209.6" y="66.8" fill="#6464C8">│</text>
+  <text x="8.0" y="86.4" fill="#6464C8">│</text>
+  <text x="209.6" y="86.4" fill="#6464C8">│</text>
+  <text x="8.0" y="106.0" fill="#6464C8">│</text>
+  <text x="209.6" y="106.0" fill="#6464C8">│</text>
+  <text x="8.0" y="125.6" fill="#6464C8">│</text>
+  <text x="209.6" y="125.6" fill="#6464C8">│</text>
+  <text x="8.0" y="145.2" fill="#6464C8">│</text>
+  <text x="209.6" y="145.2" fill="#6464C8">│</text>
+  <text x="8.0" y="164.8" fill="#6464C8">│</text>
+  <text x="209.6" y="164.8" fill="#6464C8">│</text>
+  <text x="8.0" y="184.4" fill="#6464C8">╰───────────────────────╯</text>
+</svg>

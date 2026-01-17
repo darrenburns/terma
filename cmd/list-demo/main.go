@@ -8,7 +8,6 @@ import (
 	t "terma"
 )
 
-
 // Theme names for cycling
 var themeNames = []string{
 	t.ThemeNameRosePine,
@@ -17,7 +16,6 @@ var themeNames = []string{
 	t.ThemeNameCatppuccin,
 	t.ThemeNameGruvbox,
 	t.ThemeNameNord,
-	t.ThemeNameOneDark,
 	t.ThemeNameSolarized,
 	t.ThemeNameKanagawa,
 	t.ThemeNameMonokai,
@@ -35,10 +33,12 @@ var themeNames = []string{
 //	t - Cycle theme
 //	q - Quit
 type ListDemo struct {
-	listState   *t.ListState[string]
-	scrollState *t.ScrollState
-	counter     int // For generating unique item names
-	themeIndex  t.Signal[int]
+	listState        *t.ListState[string]
+	scrollState      *t.ScrollState
+	filterState      *t.FilterState
+	filterInputState *t.TextInputState
+	counter          int // For generating unique item names
+	themeIndex       t.Signal[int]
 }
 
 func NewListDemo() *ListDemo {
@@ -48,9 +48,11 @@ func NewListDemo() *ListDemo {
 			"Banana",
 			"Cherry",
 		}),
-		scrollState: t.NewScrollState(),
-		counter:     3, // Start after initial items
-		themeIndex:  t.NewSignal(0),
+		scrollState:      t.NewScrollState(),
+		filterState:      t.NewFilterState(),
+		filterInputState: t.NewTextInputState(""),
+		counter:          3, // Start after initial items
+		themeIndex:       t.NewSignal(0),
 	}
 }
 
@@ -170,6 +172,48 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 			t.Text{
 				Spans: t.ParseMarkup("Modify: [b $Success]a[/]ppend [b $Success]A[/]+10 [b $Success]![/]+1000 [b $Success]p[/]repend [b $Success]i[/]nsert [b $Error]d[/]elete [b $Error]c[/]lear [b $Warning]r[/]eset", theme),
 			},
+			t.Row{
+				Spacing:    1,
+				CrossAlign: t.CrossAxisCenter,
+				Children: []t.Widget{
+					t.Text{
+						Content: "Filter:",
+						Style: t.Style{
+							ForegroundColor: theme.TextMuted,
+						},
+					},
+					t.TextInput{
+						ID:          "list-filter-input",
+						State:       d.filterInputState,
+						Placeholder: "Type to filter...",
+						Width:       t.Flex(1),
+						Style: t.Style{
+							BackgroundColor: theme.Surface,
+							ForegroundColor: theme.Text,
+						},
+						OnChange: func(text string) {
+							d.filterState.Query.Set(text)
+						},
+						OnSubmit: func(text string) {
+							t.RequestFocus("demo-list")
+						},
+						ExtraKeybinds: []t.Keybind{
+							{
+								Key:  "escape",
+								Name: "Clear filter",
+								Action: func() {
+									d.filterInputState.SetText("")
+									d.filterState.Query.Set("")
+									t.RequestFocus("demo-list")
+								},
+							},
+						},
+					},
+					t.Text{
+						Spans: t.ParseMarkup("[$TextMuted]Tab to move focus[/]", theme),
+					},
+				},
+			},
 
 			// The list with scrolling
 			t.Scrollable{
@@ -185,6 +229,7 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 					ID:          "demo-list",
 					State:       d.listState,
 					ScrollState: d.scrollState,
+					Filter:      d.filterState,
 					MultiSelect: true,
 				},
 			},
@@ -204,7 +249,7 @@ func main() {
 	t.SetTheme(themeNames[0])
 	app := NewListDemo()
 	//t.InitDebug()
-	t.InitLogger()
+	_ = t.InitLogger()
 	if err := t.Run(app); err != nil {
 		log.Fatal(err)
 	}

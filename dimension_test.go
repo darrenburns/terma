@@ -79,6 +79,93 @@ func TestFlex_LargeValue(t *testing.T) {
 	}
 }
 
+func TestPercent_ReturnsPercentageDimension(t *testing.T) {
+	d := Percent(50)
+
+	if !d.IsPercent() {
+		t.Error("expected IsPercent() to be true")
+	}
+	if d.PercentValue() != 50 {
+		t.Errorf("expected PercentValue() = 50, got %f", d.PercentValue())
+	}
+}
+
+func TestPercent_ZeroValue(t *testing.T) {
+	d := Percent(0)
+
+	if !d.IsPercent() {
+		t.Error("expected IsPercent() to be true for Percent(0)")
+	}
+	if d.PercentValue() != 0 {
+		t.Errorf("expected PercentValue() = 0, got %f", d.PercentValue())
+	}
+}
+
+func TestPercent_100Value(t *testing.T) {
+	d := Percent(100)
+
+	if !d.IsPercent() {
+		t.Error("expected IsPercent() to be true")
+	}
+	if d.PercentValue() != 100 {
+		t.Errorf("expected PercentValue() = 100, got %f", d.PercentValue())
+	}
+}
+
+func TestPercent_Over100Value(t *testing.T) {
+	d := Percent(150)
+
+	if !d.IsPercent() {
+		t.Error("expected IsPercent() to be true for values over 100")
+	}
+	if d.PercentValue() != 150 {
+		t.Errorf("expected PercentValue() = 150, got %f", d.PercentValue())
+	}
+}
+
+func TestPercent_FractionalValue(t *testing.T) {
+	d := Percent(33.33)
+
+	if !d.IsPercent() {
+		t.Error("expected IsPercent() to be true")
+	}
+	if d.PercentValue() != 33.33 {
+		t.Errorf("expected PercentValue() = 33.33, got %f", d.PercentValue())
+	}
+}
+
+func TestPercent_IsNotAuto(t *testing.T) {
+	d := Percent(50)
+
+	if d.IsAuto() {
+		t.Error("expected Percent(50).IsAuto() to be false")
+	}
+}
+
+func TestPercent_IsNotCells(t *testing.T) {
+	d := Percent(50)
+
+	if d.IsCells() {
+		t.Error("expected Percent(50).IsCells() to be false")
+	}
+}
+
+func TestPercent_IsNotFlex(t *testing.T) {
+	d := Percent(50)
+
+	if d.IsFlex() {
+		t.Error("expected Percent(50).IsFlex() to be false")
+	}
+}
+
+func TestPercent_IsNotUnset(t *testing.T) {
+	d := Percent(50)
+
+	if d.IsUnset() {
+		t.Error("expected Percent(50) to not be unset")
+	}
+}
+
 func TestAuto_IsAutoTrue(t *testing.T) {
 	if !Auto.IsAuto() {
 		t.Error("expected Auto.IsAuto() to be true")
@@ -172,18 +259,23 @@ func TestFlex_IsNotUnset(t *testing.T) {
 // Table-driven test for dimension type exclusivity
 func TestDimension_TypeExclusivity(t *testing.T) {
 	tests := []struct {
-		name    string
-		dim     Dimension
-		isAuto  bool
-		isCells bool
-		isFlex  bool
+		name      string
+		dim       Dimension
+		isAuto    bool
+		isCells   bool
+		isFlex    bool
+		isPercent bool
 	}{
-		{"Auto", Auto, true, false, false},
-		{"Cells(0)", Cells(0), false, true, false},
-		{"Cells(10)", Cells(10), false, true, false},
-		{"Flex(0)", Flex(0), false, false, true},
-		{"Flex(1)", Flex(1), false, false, true},
-		{"Flex(2.5)", Flex(2.5), false, false, true},
+		{"Auto", Auto, true, false, false, false},
+		{"Cells(0)", Cells(0), false, true, false, false},
+		{"Cells(10)", Cells(10), false, true, false, false},
+		{"Flex(0)", Flex(0), false, false, true, false},
+		{"Flex(1)", Flex(1), false, false, true, false},
+		{"Flex(2.5)", Flex(2.5), false, false, true, false},
+		{"Percent(0)", Percent(0), false, false, false, true},
+		{"Percent(50)", Percent(50), false, false, false, true},
+		{"Percent(100)", Percent(100), false, false, false, true},
+		{"Percent(150)", Percent(150), false, false, false, true},
 	}
 
 	for _, tt := range tests {
@@ -196,6 +288,9 @@ func TestDimension_TypeExclusivity(t *testing.T) {
 			}
 			if tt.dim.IsFlex() != tt.isFlex {
 				t.Errorf("IsFlex() = %v, want %v", tt.dim.IsFlex(), tt.isFlex)
+			}
+			if tt.dim.IsPercent() != tt.isPercent {
+				t.Errorf("IsPercent() = %v, want %v", tt.dim.IsPercent(), tt.isPercent)
 			}
 		})
 	}
