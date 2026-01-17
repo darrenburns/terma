@@ -1,6 +1,8 @@
 package terma
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"html"
 	"image/color"
@@ -503,26 +505,37 @@ func hexToColor(hex string) color.Color {
 
 // SnapshotComparison represents a comparison between expected and actual snapshots.
 type SnapshotComparison struct {
-	Name     string        // Test name / description
-	Expected string        // SVG content or path
-	Actual   string        // SVG content or path
-	DiffSVG  string        // SVG highlighting differences (optional)
-	Passed   bool          // Whether they match
-	Stats    SnapshotStats // Comparison statistics (optional)
+	Name        string        // Test name / description
+	Description string        // What should be visible in the snapshot (optional)
+	Expected    string        // SVG content or path
+	Actual      string        // SVG content or path
+	DiffSVG     string        // SVG highlighting differences (optional)
+	Passed      bool          // Whether they match
+	Stats       SnapshotStats // Comparison statistics (optional)
 }
 
 // GenerateGallery creates an HTML page comparing actual vs expected snapshots.
 func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error {
-	// Calculate pass/fail counts
+	// Calculate pass/fail counts and generate gallery ID
 	passedCount := 0
 	failedCount := 0
+	var galleryHashInput strings.Builder
 	for _, comp := range comparisons {
 		if comp.Passed {
 			passedCount++
 		} else {
 			failedCount++
 		}
+		// Include name and pass/fail status in hash to create unique gallery ID per test run
+		galleryHashInput.WriteString(comp.Name)
+		if comp.Passed {
+			galleryHashInput.WriteString(":pass;")
+		} else {
+			galleryHashInput.WriteString(":fail;")
+		}
 	}
+	hash := md5.Sum([]byte(galleryHashInput.String()))
+	galleryID := hex.EncodeToString(hash[:8]) // First 8 bytes = 16 hex chars
 
 	var sb strings.Builder
 
@@ -585,6 +598,13 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
       margin-bottom: 15px;
     }
     .comparison-name { font-size: 18px; font-weight: 600; }
+    .comparison-description {
+      font-size: 14px;
+      color: #aaa;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+    .comparison.seen .comparison-description { display: none; }
     .status-badge {
       padding: 4px 8px;
       border-radius: 4px;
@@ -693,6 +713,25 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
       font-size: 12px;
       color: #666;
     }
+
+    /* Seen/minimized state */
+    .comparison.seen .snapshots,
+    .comparison.seen .diff-view,
+    .comparison.seen .highlight-view { display: none !important; }
+    .comparison.seen { padding: 12px 20px; }
+    .seen-btn {
+      background: transparent;
+      border: 1px solid #555;
+      color: #888;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-left: auto;
+    }
+    .seen-btn:hover { background: #3d3d54; border-color: #777; color: #ccc; }
+    .comparison.seen .seen-btn { background: #3d3d54; border-color: #5a5a8a; color: #aaa; }
+    .comparison.seen .seen-btn:hover { background: #4d4d64; }
     .header-bar {
       display: flex;
       align-items: center;
@@ -717,11 +756,11 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
     .summary-count.failed { color: #ff4444; }
   </style>
 </head>
-<body>
 `)
 
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
-	sb.WriteString(fmt.Sprintf(`  <div class="header-bar">
+	sb.WriteString(fmt.Sprintf(`<body data-gallery-id="%s">
+  <div class="header-bar">
     <h1 style="margin: 0;">Terma Snapshot Gallery</h1>
     <div class="summary">
       <div class="summary-item" style="color: #888;">%s</div>
@@ -729,14 +768,22 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
       <div class="summary-item"><span class="summary-count failed">%d</span> failed</div>
     </div>
   </div>
-`, timestamp, passedCount, failedCount))
+`, galleryID, timestamp, passedCount, failedCount))
 
-	sb.WriteString(`  <div class="toolbar">
+	// Determine which filter should be active by default
+	failedActive := ""
+	allActive := " active"
+	if failedCount > 0 {
+		failedActive = " active"
+		allActive = ""
+	}
+
+	sb.WriteString(fmt.Sprintf(`  <div class="toolbar">
     <div class="toolbar-group">
       <span class="toolbar-label">Filter:</span>
-      <button class="filter-btn active" data-filter="all">All</button>
-      <button class="filter-btn" data-filter="failed">Failed</button>
+      <button class="filter-btn%s" data-filter="failed">Failed</button>
       <button class="filter-btn" data-filter="passed">Passed</button>
+      <button class="filter-btn%s" data-filter="all">All</button>
     </div>
     <div class="toolbar-group">
       <span class="toolbar-label">View:</span>
@@ -748,7 +795,7 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
     </div>
     <span class="help-text">Difference mode: black = identical, colored = different</span>
   </div>
-`)
+`, failedActive, allActive))
 
 	for i, comp := range comparisons {
 		status := "passed"
@@ -783,11 +830,19 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
 			highlightContent = comp.Actual
 		}
 
-		sb.WriteString(fmt.Sprintf(`  <div class="comparison %s view-sidebyside" data-status="%s" data-index="%d">
+		// Build description HTML if provided
+		descriptionHTML := ""
+		if comp.Description != "" {
+			descriptionHTML = fmt.Sprintf(`
+    <div class="comparison-description">%s</div>`, html.EscapeString(comp.Description))
+		}
+
+		sb.WriteString(fmt.Sprintf(`  <div class="comparison %s view-sidebyside" data-status="%s" data-index="%d" data-name="%s">
     <div class="comparison-header">
       <span class="comparison-name">%s</span>
       <span class="status-badge %s">%s</span>%s
-    </div>
+      <button class="seen-btn">Mark as seen</button>
+    </div>%s
     <div class="snapshots">
       <div class="snapshot-container">
         <div class="snapshot-label">Expected</div>
@@ -825,7 +880,7 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
       </div>
     </div>
   </div>
-`, status, status, i, html.EscapeString(comp.Name), status, strings.ToUpper(status), statsHTML,
+`, status, status, i, html.EscapeString(comp.Name), html.EscapeString(comp.Name), status, strings.ToUpper(status), statsHTML, descriptionHTML,
 			indentSVG(comp.Expected, "          "),
 			indentSVG(comp.Actual, "          "),
 			indentSVG(comp.Expected, "        "),
@@ -925,6 +980,67 @@ func GenerateGallery(comparisons []SnapshotComparison, outputPath string) error 
         actualLayer.style.opacity = value / 100;
         valueDisplay.textContent = value + '%';
       }
+    }
+
+    // Seen/minimized functionality
+    // Gallery ID ensures seen state is scoped to this specific test run
+    const GALLERY_ID = document.body.dataset.galleryId;
+    const SEEN_STORAGE_KEY = 'terma-snapshot-seen-' + GALLERY_ID;
+
+    function getSeenSnapshots() {
+      try {
+        return JSON.parse(localStorage.getItem(SEEN_STORAGE_KEY)) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveSeenSnapshots(seen) {
+      localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(seen));
+    }
+
+    function updateSeenButton(comparison) {
+      const btn = comparison.querySelector('.seen-btn');
+      const isSeen = comparison.classList.contains('seen');
+      btn.textContent = isSeen ? 'Mark as unseen' : 'Mark as seen';
+    }
+
+    // Initialize seen state from localStorage
+    const seenSnapshots = getSeenSnapshots();
+    document.querySelectorAll('.comparison').forEach(el => {
+      const name = el.dataset.name;
+      if (seenSnapshots[name]) {
+        el.classList.add('seen');
+      }
+      updateSeenButton(el);
+    });
+
+    // Seen button click handlers
+    document.querySelectorAll('.seen-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const comparison = btn.closest('.comparison');
+        const name = comparison.dataset.name;
+        const seen = getSeenSnapshots();
+
+        comparison.classList.toggle('seen');
+        if (comparison.classList.contains('seen')) {
+          seen[name] = true;
+        } else {
+          delete seen[name];
+        }
+        saveSeenSnapshots(seen);
+        updateSeenButton(comparison);
+      });
+    });
+
+    // Apply initial filter based on which button is active on page load
+    const activeFilter = document.querySelector('.filter-btn.active');
+    if (activeFilter && activeFilter.dataset.filter !== 'all') {
+      const filter = activeFilter.dataset.filter;
+      document.querySelectorAll('.comparison').forEach(el => {
+        el.classList.toggle('hidden', el.dataset.status !== filter);
+      });
     }
   </script>
 </body>

@@ -10,7 +10,8 @@ import (
 
 func TestSnapshot_Text_PlainContent(t *testing.T) {
 	widget := Text{Content: "Hello, World!!"}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"White 'Hello, World!!' text at top-left. Width auto-sized to 14 characters.")
 }
 
 func TestSnapshot_Text_RichSpans(t *testing.T) {
@@ -21,7 +22,8 @@ func TestSnapshot_Text_RichSpans(t *testing.T) {
 			{Text: "Italic", Style: SpanStyle{Italic: true}},
 		},
 	}
-	AssertSnapshot(t, widget, 30, 3)
+	AssertSnapshot(t, widget, 30, 3,
+		"Rich text: 'Bold' in bold, ' and ' in normal, 'Italic' in italic. All white on black, single line.")
 }
 
 func TestSnapshot_Text_WrapNone(t *testing.T) {
@@ -29,7 +31,8 @@ func TestSnapshot_Text_WrapNone(t *testing.T) {
 		Content: "This is a very long line that should not wrap",
 		Wrap:    WrapNone,
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Long text extends beyond 20-cell boundary, no wrapping. Only first 20 characters visible: 'This is a very long '.")
 }
 
 func TestSnapshot_Text_WrapSoft(t *testing.T) {
@@ -38,7 +41,8 @@ func TestSnapshot_Text_WrapSoft(t *testing.T) {
 		Wrap:    WrapSoft,
 		Width:   Cells(15),
 	}
-	AssertSnapshot(t, widget, 15, 5)
+	AssertSnapshot(t, widget, 15, 5,
+		"Text wraps at word boundaries within 15-cell width. Multiple lines, words not broken mid-word.")
 }
 
 func TestSnapshot_Text_WrapHard(t *testing.T) {
@@ -47,7 +51,8 @@ func TestSnapshot_Text_WrapHard(t *testing.T) {
 		Wrap:    WrapHard,
 		Width:   Cells(10),
 	}
-	AssertSnapshot(t, widget, 10, 5)
+	AssertSnapshot(t, widget, 10, 5,
+		"Long word broken at exactly 10 characters per line. Word split mid-character across multiple lines.")
 }
 
 func TestSnapshot_Text_BoldItalicUnderline(t *testing.T) {
@@ -58,7 +63,8 @@ func TestSnapshot_Text_BoldItalicUnderline(t *testing.T) {
 			Text{Content: "Underline", Style: Style{Underline: UnderlineSingle}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Three text rows showing style variations. 'Bold' in bold on row 1, 'Italic' in italic on row 2, 'Underline' underlined on row 3.")
 }
 
 func TestSnapshot_Text_WithBackground(t *testing.T) {
@@ -68,12 +74,14 @@ func TestSnapshot_Text_WithBackground(t *testing.T) {
 			BackgroundColor: RGB(100, 100, 200),
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"White 'Highlighted' text on purple/blue background. Background extends to text width only.")
 }
 
 func TestSnapshot_Text_Multiline(t *testing.T) {
 	widget := Text{Content: "Line 1\nLine 2\nLine 3"}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Three lines of text from explicit newlines. 'Line 1' on row 1, 'Line 2' on row 2, 'Line 3' on row 3.")
 }
 
 func TestSnapshot_Text_WithForegroundColor(t *testing.T) {
@@ -83,7 +91,8 @@ func TestSnapshot_Text_WithForegroundColor(t *testing.T) {
 			ForegroundColor: RGB(255, 100, 100),
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Red/pink 'Colored' text on black background. Text color is RGB(255,100,100).")
 }
 
 // =============================================================================
@@ -95,7 +104,8 @@ func TestSnapshot_Button_DefaultState(t *testing.T) {
 		ID:    "btn1",
 		Label: "Click Me",
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Button with 'Click Me' label. Default styling, width auto-sized to label.")
 }
 
 func TestSnapshot_Button_CustomStyle(t *testing.T) {
@@ -107,7 +117,8 @@ func TestSnapshot_Button_CustomStyle(t *testing.T) {
 			BackgroundColor: RGB(100, 50, 150),
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Button with 'Styled' label. White text on purple background (RGB 100,50,150).")
 }
 
 func TestSnapshot_Button_WithWidth(t *testing.T) {
@@ -116,7 +127,8 @@ func TestSnapshot_Button_WithWidth(t *testing.T) {
 		Label: "Wide",
 		Width: Cells(15),
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Button 'Wide' with fixed 15-cell width. Label centered within the button area.")
 }
 
 // =============================================================================
@@ -129,7 +141,8 @@ func TestSnapshot_List_SingleSelect(t *testing.T) {
 		ID:    "list1",
 		State: state,
 	}
-	AssertSnapshot(t, widget, 30, 5)
+	AssertSnapshot(t, widget, 30, 5,
+		"List with 3 items vertically stacked. First item 'Item 1' is active (highlighted). Items 2 and 3 below.")
 }
 
 func TestSnapshot_List_ActiveItem(t *testing.T) {
@@ -139,7 +152,8 @@ func TestSnapshot_List_ActiveItem(t *testing.T) {
 		ID:    "list2",
 		State: state,
 	}
-	AssertSnapshot(t, widget, 30, 5)
+	AssertSnapshot(t, widget, 30, 5,
+		"List with 3 items. 'Second' (index 1) is active and highlighted. 'First' above, 'Third' below.")
 }
 
 func TestSnapshot_List_Empty(t *testing.T) {
@@ -148,7 +162,8 @@ func TestSnapshot_List_Empty(t *testing.T) {
 		ID:    "list3",
 		State: state,
 	}
-	AssertSnapshot(t, widget, 30, 5)
+	AssertSnapshot(t, widget, 30, 5,
+		"Empty list with no items. Should render as empty space with no visible content.")
 }
 
 func TestSnapshot_List_CustomRenderItem(t *testing.T) {
@@ -164,7 +179,8 @@ func TestSnapshot_List_CustomRenderItem(t *testing.T) {
 			return Text{Content: prefix + item}
 		},
 	}
-	AssertSnapshot(t, widget, 30, 5)
+	AssertSnapshot(t, widget, 30, 5,
+		"List with custom render showing checkboxes. '[*] A' active on row 1, '[ ] B' and '[ ] C' below.")
 }
 
 func TestSnapshot_List_MultiSelect(t *testing.T) {
@@ -176,7 +192,8 @@ func TestSnapshot_List_MultiSelect(t *testing.T) {
 		State:       state,
 		MultiSelect: true,
 	}
-	AssertSnapshot(t, widget, 30, 5)
+	AssertSnapshot(t, widget, 30, 5,
+		"Multi-select list with items 0 and 2 selected. 'Option 1' and 'Option 3' shown as selected, 'Option 2' unselected.")
 }
 
 // =============================================================================
@@ -188,7 +205,8 @@ func TestSnapshot_ProgressBar_ZeroProgress(t *testing.T) {
 		Progress: 0.0,
 		Width:    Cells(20),
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"20-cell progress bar at 0%. Entire bar shows unfilled/empty state.")
 }
 
 func TestSnapshot_ProgressBar_HalfProgress(t *testing.T) {
@@ -196,7 +214,8 @@ func TestSnapshot_ProgressBar_HalfProgress(t *testing.T) {
 		Progress: 0.5,
 		Width:    Cells(20),
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"20-cell progress bar at 50%. Left 10 cells filled, right 10 cells unfilled.")
 }
 
 func TestSnapshot_ProgressBar_FullProgress(t *testing.T) {
@@ -204,7 +223,8 @@ func TestSnapshot_ProgressBar_FullProgress(t *testing.T) {
 		Progress: 1.0,
 		Width:    Cells(20),
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"20-cell progress bar at 100%. Entire bar shows filled state.")
 }
 
 func TestSnapshot_ProgressBar_WithColors(t *testing.T) {
@@ -214,7 +234,8 @@ func TestSnapshot_ProgressBar_WithColors(t *testing.T) {
 		FilledColor:   RGB(0, 200, 100),
 		UnfilledColor: RGB(50, 50, 50),
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"20-cell progress bar at 75%. Green filled portion (15 cells), dark gray unfilled (5 cells).")
 }
 
 func TestSnapshot_ProgressBar_QuarterProgress(t *testing.T) {
@@ -222,7 +243,8 @@ func TestSnapshot_ProgressBar_QuarterProgress(t *testing.T) {
 		Progress: 0.25,
 		Width:    Cells(20),
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"20-cell progress bar at 25%. Left 5 cells filled, right 15 cells unfilled.")
 }
 
 // =============================================================================
@@ -238,7 +260,8 @@ func TestSnapshot_Spacer_FlexDefault(t *testing.T) {
 			Text{Content: "Right"},
 		},
 	}
-	AssertSnapshot(t, widget, 30, 3)
+	AssertSnapshot(t, widget, 30, 3,
+		"30-cell row with 'Left' at column 1 and 'Right' at far right. Spacer fills gap between them.")
 }
 
 func TestSnapshot_Spacer_FixedCells(t *testing.T) {
@@ -249,7 +272,8 @@ func TestSnapshot_Spacer_FixedCells(t *testing.T) {
 			Text{Content: "B"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Row with 'A' at column 1, 5-cell fixed gap, then 'B' at column 7. Total width is 7 cells.")
 }
 
 func TestSnapshot_Spacer_InColumn(t *testing.T) {
@@ -261,7 +285,8 @@ func TestSnapshot_Spacer_InColumn(t *testing.T) {
 			Text{Content: "Bottom"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 10)
+	AssertSnapshot(t, widget, 20, 10,
+		"10-row column with 'Top' at row 1 and 'Bottom' at row 10. Spacer fills 8 rows between them.")
 }
 
 func TestSnapshot_Spacer_MultipleSpacers(t *testing.T) {
@@ -275,7 +300,8 @@ func TestSnapshot_Spacer_MultipleSpacers(t *testing.T) {
 			Text{Content: "C"},
 		},
 	}
-	AssertSnapshot(t, widget, 40, 3)
+	AssertSnapshot(t, widget, 40, 3,
+		"40-cell row with 'A', 'B', 'C' evenly distributed. Two spacers split remaining space equally.")
 }
 
 // =============================================================================
@@ -289,7 +315,8 @@ func TestSnapshot_ShowWhen_True(t *testing.T) {
 			Text{Content: "Always"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Column with 'Visible' on row 1 (shown because condition is true), 'Always' on row 2.")
 }
 
 func TestSnapshot_ShowWhen_False(t *testing.T) {
@@ -299,7 +326,8 @@ func TestSnapshot_ShowWhen_False(t *testing.T) {
 			Text{Content: "Always"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Column with only 'Always' on row 1. 'Hidden' is removed (condition false), takes no space.")
 }
 
 func TestSnapshot_HideWhen_True(t *testing.T) {
@@ -309,7 +337,8 @@ func TestSnapshot_HideWhen_True(t *testing.T) {
 			Text{Content: "Always"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Column with only 'Always' on row 1. 'Hidden' is removed (hide condition true), takes no space.")
 }
 
 func TestSnapshot_HideWhen_False(t *testing.T) {
@@ -319,7 +348,8 @@ func TestSnapshot_HideWhen_False(t *testing.T) {
 			Text{Content: "Always"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Column with 'Visible' on row 1 (shown because hide condition is false), 'Always' on row 2.")
 }
 
 // =============================================================================
@@ -334,7 +364,8 @@ func TestSnapshot_Switcher_ActiveChild(t *testing.T) {
 			"page2": Text{Content: "Page Two"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Only 'Page One' visible (active key is 'page1'). 'Page Two' not rendered.")
 }
 
 func TestSnapshot_Switcher_DifferentActive(t *testing.T) {
@@ -346,7 +377,8 @@ func TestSnapshot_Switcher_DifferentActive(t *testing.T) {
 			"page3": Text{Content: "Third"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Only 'Second' visible (active key is 'page2'). 'First' and 'Third' not rendered.")
 }
 
 func TestSnapshot_Switcher_NoActiveMatch(t *testing.T) {
@@ -356,5 +388,6 @@ func TestSnapshot_Switcher_NoActiveMatch(t *testing.T) {
 			"page1": Text{Content: "Page One"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Empty/no content visible. Active key 'nonexistent' doesn't match any child key.")
 }

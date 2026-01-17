@@ -27,7 +27,8 @@ func TestSnapshot_Column_BasicVerticalLayout(t *testing.T) {
 			Text{Content: "Third", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Three text items stacked vertically at top-left. Red 'First' on row 1, green 'Second' on row 2, blue 'Third' on row 3. Each sized to content width.")
 }
 
 func TestSnapshot_Column_MainAlignStart(t *testing.T) {
@@ -38,7 +39,8 @@ func TestSnapshot_Column_MainAlignStart(t *testing.T) {
 			Text{Content: "Top", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 10)
+	AssertSnapshot(t, widget, 20, 10,
+		"Blue 'Top' text at row 1 (top edge). Column is 10 rows tall with empty space below the text.")
 }
 
 func TestSnapshot_Column_MainAlignCenter(t *testing.T) {
@@ -49,7 +51,8 @@ func TestSnapshot_Column_MainAlignCenter(t *testing.T) {
 			Text{Content: "Centered", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 10)
+	AssertSnapshot(t, widget, 20, 10,
+		"Blue 'Centered' text vertically centered around row 5. Equal empty space above and below.")
 }
 
 func TestSnapshot_Column_MainAlignEnd(t *testing.T) {
@@ -60,7 +63,8 @@ func TestSnapshot_Column_MainAlignEnd(t *testing.T) {
 			Text{Content: "Bottom", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 10)
+	AssertSnapshot(t, widget, 20, 10,
+		"Blue 'Bottom' text at row 10 (bottom edge). Column is 10 rows tall with empty space above the text.")
 }
 
 func TestSnapshot_Column_CrossAlignStretch(t *testing.T) {
@@ -71,7 +75,8 @@ func TestSnapshot_Column_CrossAlignStretch(t *testing.T) {
 			Text{Content: "Stretched", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Blue text background stretches full 20-cell width. Text 'Stretched' left-aligned within the stretched area.")
 }
 
 func TestSnapshot_Column_CrossAlignStart(t *testing.T) {
@@ -82,7 +87,8 @@ func TestSnapshot_Column_CrossAlignStart(t *testing.T) {
 			Text{Content: "Left", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Blue 'Left' text at left edge (column 1). Text width matches content, not stretched. Column is 20 cells wide.")
 }
 
 func TestSnapshot_Column_CrossAlignCenter(t *testing.T) {
@@ -93,7 +99,8 @@ func TestSnapshot_Column_CrossAlignCenter(t *testing.T) {
 			Text{Content: "CenterH", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Blue 'CenterH' text horizontally centered in 20-cell column. Equal empty space on left and right.")
 }
 
 func TestSnapshot_Column_CrossAlignEnd(t *testing.T) {
@@ -104,7 +111,8 @@ func TestSnapshot_Column_CrossAlignEnd(t *testing.T) {
 			Text{Content: "Right", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Blue 'Right' text at right edge of 20-cell column. Empty space on left, text aligned to column 20.")
 }
 
 func TestSnapshot_Column_WithSpacing(t *testing.T) {
@@ -116,7 +124,8 @@ func TestSnapshot_Column_WithSpacing(t *testing.T) {
 			Text{Content: "C", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 10)
+	AssertSnapshot(t, widget, 20, 10,
+		"Three items stacked vertically with 2-row gaps. Red 'A' at row 1, green 'B' at row 4, blue 'C' at row 7.")
 }
 
 func TestSnapshot_Column_NestedColumns(t *testing.T) {
@@ -137,7 +146,8 @@ func TestSnapshot_Column_NestedColumns(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Gray outer column with two nested columns stacked. Red column with 'Nested1' on row 1, blue column with 'Nested2' on row 2.")
 }
 
 func TestSnapshot_Column_MixedDimensions(t *testing.T) {
@@ -149,7 +159,8 @@ func TestSnapshot_Column_MixedDimensions(t *testing.T) {
 			Text{Content: "Auto", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 10)
+	AssertSnapshot(t, widget, 20, 10,
+		"10-row column with mixed heights. Red 'Fixed' takes 2 rows, green 'Flex' expands to fill 7 rows, blue 'Auto' takes 1 row at bottom.")
 }
 
 // =============================================================================
@@ -164,7 +175,8 @@ func TestSnapshot_Row_BasicHorizontalLayout(t *testing.T) {
 			Text{Content: "C", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Three single-char items in a horizontal row. Red 'A' at column 1, green 'B' at column 2, blue 'C' at column 3. All on row 1.")
 }
 
 func TestSnapshot_Row_MainAlignStart(t *testing.T) {
@@ -175,7 +187,8 @@ func TestSnapshot_Row_MainAlignStart(t *testing.T) {
 			Text{Content: "Left", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Blue 'Left' text at left edge (column 1). Row is 20 cells wide with empty space to the right.")
 }
 
 func TestSnapshot_Row_MainAlignCenter(t *testing.T) {
@@ -186,7 +199,8 @@ func TestSnapshot_Row_MainAlignCenter(t *testing.T) {
 			Text{Content: "Mid", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Blue 'Mid' text horizontally centered in 20-cell row. Equal empty space on left and right.")
 }
 
 func TestSnapshot_Row_MainAlignEnd(t *testing.T) {
@@ -197,7 +211,8 @@ func TestSnapshot_Row_MainAlignEnd(t *testing.T) {
 			Text{Content: "Right", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Blue 'Right' text at right edge of 20-cell row. Empty space on left, text ends at column 20.")
 }
 
 func TestSnapshot_Row_CrossAlignStretch(t *testing.T) {
@@ -208,7 +223,8 @@ func TestSnapshot_Row_CrossAlignStretch(t *testing.T) {
 			Text{Content: "Tall", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Blue background stretches full 5-row height. Text 'Tall' at top within the stretched area.")
 }
 
 func TestSnapshot_Row_CrossAlignStart(t *testing.T) {
@@ -219,7 +235,8 @@ func TestSnapshot_Row_CrossAlignStart(t *testing.T) {
 			Text{Content: "Top", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Blue 'Top' text at row 1 (top edge). Row is 5 rows tall, text height matches content.")
 }
 
 func TestSnapshot_Row_CrossAlignCenter(t *testing.T) {
@@ -230,7 +247,8 @@ func TestSnapshot_Row_CrossAlignCenter(t *testing.T) {
 			Text{Content: "CenterV", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Blue 'CenterV' text vertically centered in 5-row container. Equal empty space above and below.")
 }
 
 func TestSnapshot_Row_CrossAlignEnd(t *testing.T) {
@@ -241,7 +259,8 @@ func TestSnapshot_Row_CrossAlignEnd(t *testing.T) {
 			Text{Content: "Bottom", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Blue 'Bottom' text at row 5 (bottom edge). Empty space above the text.")
 }
 
 func TestSnapshot_Row_WithSpacing(t *testing.T) {
@@ -253,7 +272,8 @@ func TestSnapshot_Row_WithSpacing(t *testing.T) {
 			Text{Content: "Z", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Three items in horizontal row with 2-column gaps. Red 'X' at column 1, green 'Y' at column 4, blue 'Z' at column 7.")
 }
 
 func TestSnapshot_Row_NestedRows(t *testing.T) {
@@ -274,7 +294,8 @@ func TestSnapshot_Row_NestedRows(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 30, 3)
+	AssertSnapshot(t, widget, 30, 3,
+		"Gray outer row with two nested rows side by side. Red row with 'Inner1' on left, blue row with 'Inner2' on right.")
 }
 
 func TestSnapshot_Row_MixedDimensions(t *testing.T) {
@@ -286,7 +307,8 @@ func TestSnapshot_Row_MixedDimensions(t *testing.T) {
 			Text{Content: "Auto", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 30, 3)
+	AssertSnapshot(t, widget, 30, 3,
+		"30-cell row with mixed widths. Red 'Fixed' takes 5 columns, green 'Flex' expands to fill remaining space, blue 'Auto' sized to content.")
 }
 
 // =============================================================================
@@ -300,7 +322,8 @@ func TestSnapshot_Dock_TopOnly(t *testing.T) {
 		},
 		Body: Text{Content: "Body", Style: Style{BackgroundColor: layoutBlue}},
 	}
-	AssertSnapshot(t, widget, 30, 10)
+	AssertSnapshot(t, widget, 30, 10,
+		"Red 'Header' docked at top (row 1, full width). Blue 'Body' fills remaining space below.")
 }
 
 func TestSnapshot_Dock_BottomOnly(t *testing.T) {
@@ -310,7 +333,8 @@ func TestSnapshot_Dock_BottomOnly(t *testing.T) {
 		},
 		Body: Text{Content: "Body", Style: Style{BackgroundColor: layoutBlue}},
 	}
-	AssertSnapshot(t, widget, 30, 10)
+	AssertSnapshot(t, widget, 30, 10,
+		"Red 'Footer' docked at bottom (row 10, full width). Blue 'Body' fills remaining space above.")
 }
 
 func TestSnapshot_Dock_LeftOnly(t *testing.T) {
@@ -320,7 +344,8 @@ func TestSnapshot_Dock_LeftOnly(t *testing.T) {
 		},
 		Body: Text{Content: "Main", Style: Style{BackgroundColor: layoutBlue}},
 	}
-	AssertSnapshot(t, widget, 30, 10)
+	AssertSnapshot(t, widget, 30, 10,
+		"Red 'Side' docked at left (full height). Blue 'Main' fills remaining space to the right.")
 }
 
 func TestSnapshot_Dock_RightOnly(t *testing.T) {
@@ -330,7 +355,8 @@ func TestSnapshot_Dock_RightOnly(t *testing.T) {
 		},
 		Body: Text{Content: "Main", Style: Style{BackgroundColor: layoutBlue}},
 	}
-	AssertSnapshot(t, widget, 30, 10)
+	AssertSnapshot(t, widget, 30, 10,
+		"Red 'Aside' docked at right (full height). Blue 'Main' fills remaining space to the left.")
 }
 
 func TestSnapshot_Dock_AllEdges(t *testing.T) {
@@ -341,7 +367,8 @@ func TestSnapshot_Dock_AllEdges(t *testing.T) {
 		Right:  []Widget{Text{Content: "Right", Style: Style{BackgroundColor: layoutPurple}}},
 		Body:   Text{Content: "Center", Style: Style{BackgroundColor: layoutBlue}},
 	}
-	AssertSnapshot(t, widget, 40, 10)
+	AssertSnapshot(t, widget, 40, 10,
+		"All edges docked. Red top, orange bottom, green left, purple right. Blue 'Center' fills middle area.")
 }
 
 func TestSnapshot_Dock_BodyFillsRemainder(t *testing.T) {
@@ -351,7 +378,8 @@ func TestSnapshot_Dock_BodyFillsRemainder(t *testing.T) {
 		},
 		Body: Text{Content: "Content fills the rest", Style: Style{BackgroundColor: layoutBlue}},
 	}
-	AssertSnapshot(t, widget, 30, 10)
+	AssertSnapshot(t, widget, 30, 10,
+		"Red 'Header' takes 2 rows at top. Blue body with text fills remaining 8 rows.")
 }
 
 func TestSnapshot_Dock_MultipleTop(t *testing.T) {
@@ -362,7 +390,8 @@ func TestSnapshot_Dock_MultipleTop(t *testing.T) {
 		},
 		Body: Text{Content: "Content", Style: Style{BackgroundColor: layoutBlue}},
 	}
-	AssertSnapshot(t, widget, 30, 10)
+	AssertSnapshot(t, widget, 30, 10,
+		"Two widgets docked at top: red 'Toolbar1' on row 1, orange 'Toolbar2' on row 2. Blue 'Content' below.")
 }
 
 // =============================================================================
@@ -371,7 +400,8 @@ func TestSnapshot_Dock_MultipleTop(t *testing.T) {
 
 func TestSnapshot_Dimension_AutoWidth(t *testing.T) {
 	widget := Text{Content: "Auto sized", Style: Style{BackgroundColor: layoutBlue}}
-	AssertSnapshot(t, widget, 20, 3)
+	AssertSnapshot(t, widget, 20, 3,
+		"Blue text 'Auto sized' at top-left. Width automatically sized to 10 characters (content width).")
 }
 
 func TestSnapshot_Dimension_CellsFixed(t *testing.T) {
@@ -383,7 +413,8 @@ func TestSnapshot_Dimension_CellsFixed(t *testing.T) {
 			Text{Content: "Fixed"},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 10)
+	AssertSnapshot(t, widget, 20, 10,
+		"Blue column exactly 10 cells wide by 5 cells tall. 'Fixed' text at top-left of column.")
 }
 
 func TestSnapshot_Dimension_FlexProportional(t *testing.T) {
@@ -394,7 +425,8 @@ func TestSnapshot_Dimension_FlexProportional(t *testing.T) {
 			Text{Content: "2", Width: Flex(2), Style: Style{BackgroundColor: layoutGreen}},
 		},
 	}
-	AssertSnapshot(t, widget, 30, 3)
+	AssertSnapshot(t, widget, 30, 3,
+		"30-cell row split proportionally. Red '1' takes 10 cells (1/3), green '2' takes 20 cells (2/3).")
 }
 
 func TestSnapshot_Dimension_FlexVsCells(t *testing.T) {
@@ -405,7 +437,8 @@ func TestSnapshot_Dimension_FlexVsCells(t *testing.T) {
 			Text{Content: "Flex", Width: Flex(1), Style: Style{BackgroundColor: layoutGreen}},
 		},
 	}
-	AssertSnapshot(t, widget, 30, 3)
+	AssertSnapshot(t, widget, 30, 3,
+		"30-cell row. Red 'Fixed' takes exactly 10 cells. Green 'Flex' expands to fill remaining 20 cells.")
 }
 
 func TestSnapshot_Dimension_NestedFlex(t *testing.T) {
@@ -428,7 +461,8 @@ func TestSnapshot_Dimension_NestedFlex(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 10)
+	AssertSnapshot(t, widget, 20, 10,
+		"10-row column split equally. Red row with 'Nested Flex' takes top 5 rows, blue row with 'Another Flex' takes bottom 5 rows.")
 }
 
 // =============================================================================
@@ -449,7 +483,8 @@ func TestSnapshot_Layout_RowInColumn(t *testing.T) {
 			Text{Content: "Below", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Gray column containing red row on top, blue text below. Red row has 'Left' and 'Right' side by side.")
 }
 
 func TestSnapshot_Layout_ColumnInRow(t *testing.T) {
@@ -466,7 +501,8 @@ func TestSnapshot_Layout_ColumnInRow(t *testing.T) {
 			Text{Content: "Beside", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 5)
+	AssertSnapshot(t, widget, 20, 5,
+		"Gray row containing red column on left, blue 'Beside' on right. Red column has 'Top' and 'Bottom' stacked.")
 }
 
 func TestSnapshot_Layout_DockWithRowColumn(t *testing.T) {
@@ -488,7 +524,8 @@ func TestSnapshot_Layout_DockWithRowColumn(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 30, 10)
+	AssertSnapshot(t, widget, 30, 10,
+		"Dock with red header row containing 'Logo' and 'Menu'. Blue column body with 'Section1' and 'Section2' stacked below.")
 }
 
 // =============================================================================
@@ -506,7 +543,8 @@ func TestSnapshot_Stack_BasicOverlay(t *testing.T) {
 			Text{Content: "Top", Style: Style{BackgroundColor: layoutGreen}},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 7)
+	AssertSnapshot(t, widget, 25, 7,
+		"Gray 20x5 stack. Green 'Top' overlays red 'Bottom', both at top-left. Green fully covers red since they overlap at same position.")
 }
 
 func TestSnapshot_Stack_ThreeLayersZOrder(t *testing.T) {
@@ -521,7 +559,8 @@ func TestSnapshot_Stack_ThreeLayersZOrder(t *testing.T) {
 			Text{Content: "Layer3-Top", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 30, 8)
+	AssertSnapshot(t, widget, 30, 8,
+		"Gray 25x6 stack with three overlapping layers. Blue 'Layer3-Top' visible on top, covering green and red beneath.")
 }
 
 func TestSnapshot_Stack_SizesFromLargestChild(t *testing.T) {
@@ -533,7 +572,8 @@ func TestSnapshot_Stack_SizesFromLargestChild(t *testing.T) {
 			Text{Content: "This is much longer", Style: Style{BackgroundColor: layoutGreen}},
 		},
 	}
-	AssertSnapshot(t, widget, 30, 5)
+	AssertSnapshot(t, widget, 30, 5,
+		"Stack auto-sized to fit longest child. Green 'This is much longer' visible, red 'Short' hidden beneath. Stack width matches green text.")
 }
 
 // Alignment tests for non-positioned children
@@ -541,14 +581,15 @@ func TestSnapshot_Stack_SizesFromLargestChild(t *testing.T) {
 func TestSnapshot_Stack_AlignTopStart(t *testing.T) {
 	widget := Stack{
 		Width:     Cells(20),
-		Height:   Cells(6),
+		Height:    Cells(6),
 		Alignment: AlignTopStart,
 		Style:     Style{BackgroundColor: layoutGray},
 		Children: []Widget{
 			Text{Content: "TopLeft", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 8)
+	AssertSnapshot(t, widget, 25, 8,
+		"Gray 20x6 stack. Blue 'TopLeft' at top-left corner (row 1, column 1).")
 }
 
 func TestSnapshot_Stack_AlignCenter(t *testing.T) {
@@ -561,7 +602,8 @@ func TestSnapshot_Stack_AlignCenter(t *testing.T) {
 			Text{Content: "Center", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 8)
+	AssertSnapshot(t, widget, 25, 8,
+		"Gray 20x6 stack. Blue 'Center' at center of stack, both horizontally and vertically.")
 }
 
 func TestSnapshot_Stack_AlignBottomEnd(t *testing.T) {
@@ -574,7 +616,8 @@ func TestSnapshot_Stack_AlignBottomEnd(t *testing.T) {
 			Text{Content: "BotRight", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 8)
+	AssertSnapshot(t, widget, 25, 8,
+		"Gray 20x6 stack. Blue 'BotRight' at bottom-right corner (row 6, right-aligned).")
 }
 
 func TestSnapshot_Stack_AlignBottomCenter(t *testing.T) {
@@ -587,7 +630,8 @@ func TestSnapshot_Stack_AlignBottomCenter(t *testing.T) {
 			Text{Content: "BotMid", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 8)
+	AssertSnapshot(t, widget, 25, 8,
+		"Gray 20x6 stack. Blue 'BotMid' at bottom, horizontally centered (row 6).")
 }
 
 // Positioned children tests
@@ -605,7 +649,8 @@ func TestSnapshot_Stack_PositionedTopLeft(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 8)
+	AssertSnapshot(t, widget, 25, 8,
+		"Gray 20x6 stack. Blue 'At 2,1' positioned at row 2 (1 from top), column 3 (2 from left).")
 }
 
 func TestSnapshot_Stack_PositionedBottomRight(t *testing.T) {
@@ -621,7 +666,8 @@ func TestSnapshot_Stack_PositionedBottomRight(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 8)
+	AssertSnapshot(t, widget, 25, 8,
+		"Gray 20x6 stack. Blue 'BotRight' positioned 1 row from bottom, 2 columns from right edge.")
 }
 
 func TestSnapshot_Stack_PositionedFill(t *testing.T) {
@@ -634,7 +680,8 @@ func TestSnapshot_Stack_PositionedFill(t *testing.T) {
 			PositionedFill(Text{Content: "Fills", Style: Style{BackgroundColor: layoutBlue}}),
 		},
 	}
-	AssertSnapshot(t, widget, 25, 7)
+	AssertSnapshot(t, widget, 25, 7,
+		"Gray 20x5 stack completely filled by blue background. Text 'Fills' at top-left, blue covers entire stack area.")
 }
 
 func TestSnapshot_Stack_PositionedStretchHorizontal(t *testing.T) {
@@ -652,7 +699,8 @@ func TestSnapshot_Stack_PositionedStretchHorizontal(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 7)
+	AssertSnapshot(t, widget, 25, 7,
+		"Gray 20x5 stack. Blue text at row 2, stretched horizontally with 2-cell margins on left and right (16 cells wide).")
 }
 
 func TestSnapshot_Stack_PositionedStretchVertical(t *testing.T) {
@@ -670,7 +718,8 @@ func TestSnapshot_Stack_PositionedStretchVertical(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 8)
+	AssertSnapshot(t, widget, 25, 8,
+		"Gray 20x6 stack. Blue 'V' stretched vertically from row 2 to row 5 (4 rows), starting at column 3.")
 }
 
 // Overflow tests
@@ -690,7 +739,8 @@ func TestSnapshot_Stack_PositionedOverflowNegativeOffset(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 20, 7)
+	AssertSnapshot(t, widget, 20, 7,
+		"Gray 15x5 stack with blue 'Base' at top-left. Red 'Badge' overflows stack bounds: 1 row above top, 2 columns right of stack edge.")
 }
 
 func TestSnapshot_Stack_ChildLargerThanStack(t *testing.T) {
@@ -703,7 +753,8 @@ func TestSnapshot_Stack_ChildLargerThanStack(t *testing.T) {
 			Text{Content: "This text is too long for container", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 15, 5)
+	AssertSnapshot(t, widget, 15, 5,
+		"Gray 10x3 stack. Blue text exceeds stack width, content overflows and is clipped at stack boundary.")
 }
 
 // Transparency / layering interaction tests
@@ -742,7 +793,8 @@ func TestSnapshot_Stack_OverlappingWithTransparency(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 7)
+	AssertSnapshot(t, widget, 25, 7,
+		"Gray 20x5 stack with layered content. Red 15x4 column at origin with 'Background' and 'Content'. Blue 12x3 'Overlay' partially covers red, offset to row 2, column 6.")
 }
 
 func TestSnapshot_Stack_MultipleOverlappingPositioned(t *testing.T) {
@@ -790,7 +842,8 @@ func TestSnapshot_Stack_MultipleOverlappingPositioned(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 30, 10)
+	AssertSnapshot(t, widget, 30, 10,
+		"Gray 25x8 stack with three cascading cards. Red 'Card 1' at top-left, green 'Card 2' overlaps at row 3/col 7, blue 'Card 3' overlaps at row 5/col 13. Each card partially visible.")
 }
 
 // Styling tests
@@ -807,7 +860,8 @@ func TestSnapshot_Stack_WithBorder(t *testing.T) {
 			Text{Content: "Bordered Stack", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 7)
+	AssertSnapshot(t, widget, 25, 7,
+		"Gray 20x5 stack with purple rounded border. Blue 'Bordered Stack' at top-left inside border. Border adds 1 cell each side.")
 }
 
 func TestSnapshot_Stack_WithPadding(t *testing.T) {
@@ -822,7 +876,8 @@ func TestSnapshot_Stack_WithPadding(t *testing.T) {
 			Text{Content: "Padded", Style: Style{BackgroundColor: layoutBlue}},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 8)
+	AssertSnapshot(t, widget, 25, 8,
+		"Gray 20x6 stack with 1-cell padding. Blue 'Padded' inset by 1 cell from all edges, gray padding visible around content.")
 }
 
 func TestSnapshot_Stack_WithBorderAndPadding(t *testing.T) {
@@ -842,7 +897,8 @@ func TestSnapshot_Stack_WithBorderAndPadding(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 27, 9)
+	AssertSnapshot(t, widget, 27, 9,
+		"Gray 22x7 stack with purple square border and 1-cell padding. Blue 'At origin' positioned at border-box origin, overlapping the border/padding area.")
 }
 
 // Combined with other layouts
@@ -863,7 +919,8 @@ func TestSnapshot_Stack_InsideColumn(t *testing.T) {
 			Text{Content: "Footer", Style: Style{BackgroundColor: layoutOrange}},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 8)
+	AssertSnapshot(t, widget, 25, 8,
+		"Gray column with three children stacked vertically. Red 'Header' at top, teal 20x4 stack with blue 'Stacked' in middle, orange 'Footer' at bottom.")
 }
 
 func TestSnapshot_Stack_InsideRow(t *testing.T) {
@@ -882,7 +939,8 @@ func TestSnapshot_Stack_InsideRow(t *testing.T) {
 			Text{Content: "Right", Style: Style{BackgroundColor: layoutOrange}},
 		},
 	}
-	AssertSnapshot(t, widget, 30, 6)
+	AssertSnapshot(t, widget, 30, 6,
+		"Gray row with three children side by side. Red 'Left' on left, teal 12x4 stack with blue 'Stack' in middle, orange 'Right' on right.")
 }
 
 func TestSnapshot_Stack_NestedStacks(t *testing.T) {
@@ -910,7 +968,8 @@ func TestSnapshot_Stack_NestedStacks(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 30, 10)
+	AssertSnapshot(t, widget, 30, 10,
+		"Gray 25x8 outer stack. Red 15x5 inner stack at top-left with blue 'Inner Stack'. Green 'Outer' at bottom-right of outer stack.")
 }
 
 // Mixed positioned and non-positioned children
@@ -937,7 +996,8 @@ func TestSnapshot_Stack_MixedPositionedAndAligned(t *testing.T) {
 			},
 		},
 	}
-	AssertSnapshot(t, widget, 25, 8)
+	AssertSnapshot(t, widget, 25, 8,
+		"Gray 20x6 stack with center alignment. Blue 'Centered' at center (uses alignment). Red 'TR' at top-right corner, green 'BL' at bottom-left (positioned, ignore alignment).")
 }
 
 // =============================================================================
