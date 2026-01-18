@@ -93,25 +93,33 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 				Children: []t.Widget{
 					t.Text{
 						Content: " Error ",
-						Style:   t.Style{BackgroundColor: theme.Error, ForegroundColor: theme.TextOnPrimary},
+						Style:   t.Style{BackgroundColor: theme.Error, ForegroundColor: theme.TextOnError},
 					},
 					t.Text{Content: " "},
 					t.Text{
 						Content: " Warning ",
-						Style:   t.Style{BackgroundColor: theme.Warning, ForegroundColor: theme.TextOnPrimary},
+						Style:   t.Style{BackgroundColor: theme.Warning, ForegroundColor: theme.TextOnWarning},
 					},
 					t.Text{Content: " "},
 					t.Text{
 						Content: " Success ",
-						Style:   t.Style{BackgroundColor: theme.Success, ForegroundColor: theme.TextOnPrimary},
+						Style:   t.Style{BackgroundColor: theme.Success, ForegroundColor: theme.TextOnSuccess},
 					},
 					t.Text{Content: " "},
 					t.Text{
 						Content: " Info ",
-						Style:   t.Style{BackgroundColor: theme.Info, ForegroundColor: theme.TextOnPrimary},
+						Style:   t.Style{BackgroundColor: theme.Info, ForegroundColor: theme.TextOnInfo},
 					},
 				},
 			},
+			t.Text{Content: ""},
+
+			// Additional colors (new)
+			t.Text{
+				Content: "Additional Colors:",
+				Style:   t.Style{ForegroundColor: theme.TextMuted},
+			},
+			a.buildAdditionalSwatches(theme),
 			t.Text{Content: ""},
 
 			// Instructions
@@ -134,17 +142,66 @@ func (a *App) buildColorSwatches(theme t.ThemeData) t.Widget {
 			t.Text{Content: " "},
 			t.Text{
 				Content: " Secondary ",
-				Style:   t.Style{BackgroundColor: theme.Secondary, ForegroundColor: theme.TextOnPrimary},
+				Style:   t.Style{BackgroundColor: theme.Secondary, ForegroundColor: theme.TextOnSecondary},
 			},
 			t.Text{Content: " "},
 			t.Text{
 				Content: " Accent ",
-				Style:   t.Style{BackgroundColor: theme.Accent, ForegroundColor: theme.TextOnPrimary},
+				Style:   t.Style{BackgroundColor: theme.Accent, ForegroundColor: theme.TextOnAccent},
 			},
 			t.Text{Content: " "},
 			t.Text{
 				Content: " Surface ",
 				Style:   t.Style{BackgroundColor: theme.Surface, ForegroundColor: theme.Text},
+			},
+		},
+	}
+}
+
+// buildAdditionalSwatches creates a row of additional color swatches showing new theme colors.
+func (a *App) buildAdditionalSwatches(theme t.ThemeData) t.Widget {
+	return t.Column{
+		Children: []t.Widget{
+			t.Row{
+				Children: []t.Widget{
+					t.Text{
+						Content: " Surface2 ",
+						Style:   t.Style{BackgroundColor: theme.Surface2, ForegroundColor: theme.Text},
+					},
+					t.Text{Content: " "},
+					t.Text{
+						Content: " Surface3 ",
+						Style:   t.Style{BackgroundColor: theme.Surface3, ForegroundColor: theme.Text},
+					},
+					t.Text{Content: " "},
+					t.Text{
+						Content: " Selection ",
+						Style:   t.Style{BackgroundColor: theme.Selection, ForegroundColor: theme.SelectionText},
+					},
+					t.Text{Content: " "},
+					t.Text{
+						Content: " Link ",
+						Style:   t.Style{ForegroundColor: theme.Link},
+					},
+				},
+			},
+			t.Row{
+				Children: []t.Widget{
+					t.Text{
+						Content: " Scrollbar ",
+						Style:   t.Style{BackgroundColor: theme.ScrollbarTrack, ForegroundColor: theme.ScrollbarThumb},
+					},
+					t.Text{Content: " "},
+					t.Text{
+						Content: " Disabled ",
+						Style:   t.Style{ForegroundColor: theme.TextDisabled},
+					},
+					t.Text{Content: " "},
+					t.Text{
+						Content: " Placeholder ",
+						Style:   t.Style{ForegroundColor: theme.Placeholder},
+					},
+				},
 			},
 		},
 	}
@@ -168,8 +225,9 @@ func (a *App) cycleTheme() {
 }
 
 func main() {
-	// Get available theme names
+	// Get available theme names (dark themes followed by light themes)
 	themeNames := []string{
+		// Dark themes
 		t.ThemeNameRosePine,
 		t.ThemeNameDracula,
 		t.ThemeNameTokyoNight,
@@ -179,6 +237,16 @@ func main() {
 		t.ThemeNameSolarized,
 		t.ThemeNameKanagawa,
 		t.ThemeNameMonokai,
+		// Light themes
+		t.ThemeNameRosePineDawn,
+		t.ThemeNameDraculaLight,
+		t.ThemeNameTokyoNightDay,
+		t.ThemeNameCatppuccinLatte,
+		t.ThemeNameGruvboxLight,
+		t.ThemeNameNordLight,
+		t.ThemeNameSolarizedLight,
+		t.ThemeNameKanagawaLotus,
+		t.ThemeNameMonokaiLight,
 	}
 
 	// Create list state with sample items

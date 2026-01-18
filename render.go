@@ -1153,7 +1153,7 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 // renderModalBackdrop renders a semi-transparent backdrop over the entire screen.
 func (r *Renderer) renderModalBackdrop(ctx *RenderContext, backdropColor Color) {
 	if !backdropColor.IsSet() {
-		backdropColor = DefaultModalBackdropColor
+		backdropColor = getTheme().Overlay
 	}
 
 	for y := 0; y < r.height; y++ {

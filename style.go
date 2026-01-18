@@ -354,3 +354,22 @@ func StrikethroughSpan(text string, fg ...Color) Span {
 func StyledSpan(text string, style SpanStyle) Span {
 	return Span{Text: text, Style: style}
 }
+
+// CursorStyle configures the visual appearance of cursor and selection in list-like widgets.
+// Embed this anonymously in widgets to get CursorPrefix/SelectedPrefix fields.
+//
+// By default, no prefixes are shown - the cursor and selection are indicated via background
+// color highlighting only. Users who prefer or need visual indicators (e.g., for accessibility)
+// can set CursorPrefix to "▶ " or similar.
+//
+// Example:
+//
+//	List[string]{
+//	    CursorPrefix:   "▶ ",  // Show arrow on cursor row
+//	    SelectedPrefix: "* ",  // Show asterisk on selected rows
+//	    State: myState,
+//	}
+type CursorStyle struct {
+	CursorPrefix   string // Prefix shown on active/cursor item (default: "")
+	SelectedPrefix string // Prefix shown on selected items in multi-select (default: "")
+}
