@@ -374,15 +374,17 @@ func (t TabBar) Keybinds() []Keybind {
 	}
 
 	keybinds := []Keybind{
-		{Key: "left", Name: "Prev Tab", Action: t.selectPrevious},
-		{Key: "right", Name: "Next Tab", Action: t.selectNext},
+		{Key: "left", Name: "Prev Tab", Action: t.selectPrevious, Hidden: true},
+		{Key: "h", Name: "Prev Tab", Action: t.selectPrevious},
+		{Key: "right", Name: "Next Tab", Action: t.selectNext, Hidden: true},
+		{Key: "l", Name: "Next Tab", Action: t.selectNext},
 	}
 
 	// Reorder keybinds (if enabled)
 	if t.AllowReorder {
 		keybinds = append(keybinds,
-			Keybind{Key: "ctrl+left", Name: "Move Left", Action: t.moveActiveLeft},
-			Keybind{Key: "ctrl+right", Name: "Move Right", Action: t.moveActiveRight},
+			Keybind{Key: "ctrl+h", Name: "Move Left", Action: t.moveActiveLeft},
+			Keybind{Key: "ctrl+l", Name: "Move Right", Action: t.moveActiveRight},
 		)
 	}
 
@@ -539,21 +541,49 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 		}
 
 		// Build tab content
-		label := tab.Label
-		if t.Closable {
-			label = label + " ×"
-		}
+		if t.Closable && t.OnTabClose != nil {
+			// Tab with separate close button
+			labelStyle := style
+			labelStyle.Padding = EdgeInsets{Left: style.Padding.Left, Right: 1}
 
-		children = append(children, Text{
-			Content: label,
-			Style:   style,
-			Click: func(MouseEvent) {
-				t.State.SetActiveKey(tabKey)
-				if t.OnTabChange != nil {
-					t.OnTabChange(tabKey)
-				}
-			},
-		})
+			closeStyle := style
+			closeStyle.Padding = EdgeInsets{Right: style.Padding.Right}
+
+			children = append(children, Row{
+				Style: Style{BackgroundColor: style.BackgroundColor},
+				Children: []Widget{
+					Text{
+						Content: tab.Label,
+						Style:   labelStyle,
+						Click: func(MouseEvent) {
+							t.State.SetActiveKey(tabKey)
+							if t.OnTabChange != nil {
+								t.OnTabChange(tabKey)
+							}
+						},
+					},
+					Text{
+						Content: "×",
+						Style:   closeStyle,
+						Click: func(MouseEvent) {
+							t.OnTabClose(tabKey)
+						},
+					},
+				},
+			})
+		} else {
+			// Tab without close button
+			children = append(children, Text{
+				Content: tab.Label,
+				Style:   style,
+				Click: func(MouseEvent) {
+					t.State.SetActiveKey(tabKey)
+					if t.OnTabChange != nil {
+						t.OnTabChange(tabKey)
+					}
+				},
+			})
+		}
 	}
 
 	return Row{

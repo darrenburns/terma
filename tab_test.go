@@ -358,8 +358,8 @@ func TestTabBar_Keybinds(t *testing.T) {
 	// Should have left, right, and number keybinds
 	assert.True(t, len(keybinds) >= 4)
 
-	// Check that arrow keys are present
-	var hasLeft, hasRight bool
+	// Check that navigation keys are present
+	var hasLeft, hasRight, hasH, hasL bool
 	for _, kb := range keybinds {
 		if kb.Key == "left" {
 			hasLeft = true
@@ -367,9 +367,17 @@ func TestTabBar_Keybinds(t *testing.T) {
 		if kb.Key == "right" {
 			hasRight = true
 		}
+		if kb.Key == "h" {
+			hasH = true
+		}
+		if kb.Key == "l" {
+			hasL = true
+		}
 	}
 	assert.True(t, hasLeft)
 	assert.True(t, hasRight)
+	assert.True(t, hasH)
+	assert.True(t, hasL)
 
 	// Check that number keybinds are present
 	var has1, has2 bool
@@ -445,17 +453,17 @@ func TestTabBar_Keybinds_Reorder(t *testing.T) {
 
 	keybinds := tabBar.Keybinds()
 
-	var hasCtrlLeft, hasCtrlRight bool
+	var hasCtrlH, hasCtrlL bool
 	for _, kb := range keybinds {
-		if kb.Key == "ctrl+left" {
-			hasCtrlLeft = true
+		if kb.Key == "ctrl+h" {
+			hasCtrlH = true
 		}
-		if kb.Key == "ctrl+right" {
-			hasCtrlRight = true
+		if kb.Key == "ctrl+l" {
+			hasCtrlL = true
 		}
 	}
-	assert.True(t, hasCtrlLeft)
-	assert.True(t, hasCtrlRight)
+	assert.True(t, hasCtrlH)
+	assert.True(t, hasCtrlL)
 }
 
 func TestTabBar_Keybinds_NoReorder(t *testing.T) {
@@ -472,17 +480,17 @@ func TestTabBar_Keybinds_NoReorder(t *testing.T) {
 
 	keybinds := tabBar.Keybinds()
 
-	var hasCtrlLeft, hasCtrlRight bool
+	var hasCtrlH, hasCtrlL bool
 	for _, kb := range keybinds {
-		if kb.Key == "ctrl+left" {
-			hasCtrlLeft = true
+		if kb.Key == "ctrl+h" {
+			hasCtrlH = true
 		}
-		if kb.Key == "ctrl+right" {
-			hasCtrlRight = true
+		if kb.Key == "ctrl+l" {
+			hasCtrlL = true
 		}
 	}
-	assert.False(t, hasCtrlLeft)
-	assert.False(t, hasCtrlRight)
+	assert.False(t, hasCtrlH)
+	assert.False(t, hasCtrlL)
 }
 
 func TestTabBar_NilState(t *testing.T) {

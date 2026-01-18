@@ -125,13 +125,13 @@ func (d *TabDemo) buildHomeTab(ctx t.BuildContext) t.Widget {
 				Style:   t.Style{ForegroundColor: theme.Primary},
 			},
 			t.Text{
-				Spans: t.ParseMarkup("Use [b $Accent]←/→[/] arrows to switch tabs", theme),
+				Spans: t.ParseMarkup("Use [b $Accent]h/l[/] or [b $Accent]←/→[/] to switch tabs", theme),
 			},
 			t.Text{
 				Spans: t.ParseMarkup("Press [b $Accent]1-4[/] to jump to specific tabs", theme),
 			},
 			t.Text{
-				Spans: t.ParseMarkup("Use [b $Accent]ctrl+←/→[/] to reorder tabs", theme),
+				Spans: t.ParseMarkup("Use [b $Accent]ctrl+h/l[/] to reorder tabs", theme),
 			},
 			t.Text{
 				Spans: t.ParseMarkup("Press [b $Accent]ctrl+w[/] to close the active tab", theme),
