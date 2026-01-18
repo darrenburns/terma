@@ -376,6 +376,7 @@ func (s *ListState[T]) SelectRange(from, to int) {
 //	state.RemoveAt(0)
 type List[T any] struct {
 	ID                  string                                                             // Optional unique identifier
+	CursorStyle                                                                            // Embedded - CursorPrefix/SelectedPrefix fields for customizable indicators
 	State               *ListState[T]                                                      // Required - holds items and cursor position
 	OnSelect            func(item T)                                                       // Callback invoked when Enter is pressed on an item
 	OnCursorChange      func(item T)                                                       // Callback invoked when cursor moves to a different item
@@ -578,9 +579,14 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 }
 
 // themedDefaultRenderItem returns a themed render function for list items.
-// Captures theme colors from the context for use in the render function.
+// Captures theme colors and widget focus state from the context for use in the render function.
+// Cursor highlighting is only shown when the widget has focus.
 func (l List[T]) themedDefaultRenderItem(ctx BuildContext) func(item T, active bool, selected bool, match MatchResult) Widget {
 	theme := ctx.Theme()
+	widgetFocused := ctx.IsFocused(l)
+	cursorPrefix := l.CursorPrefix
+	selectedPrefix := l.SelectedPrefix
+
 	highlight := SpanStyle{
 		Underline:      UnderlineSingle,
 		UnderlineColor: theme.Accent,
@@ -588,22 +594,29 @@ func (l List[T]) themedDefaultRenderItem(ctx BuildContext) func(item T, active b
 	}
 	return func(item T, active bool, selected bool, match MatchResult) Widget {
 		content := fmt.Sprintf("%v", item)
-		prefix := "  "
+		prefix := ""
 		style := Style{ForegroundColor: theme.Text}
 
-		if selected && active {
-			prefix = "▶*"
-			style.ForegroundColor = theme.Accent
-		} else if active {
-			prefix = "▶ "
-			style.ForegroundColor = theme.Accent
-		} else if selected {
-			prefix = " *"
+		// Only show cursor highlight when widget has focus
+		showCursor := active && widgetFocused
+
+		if showCursor {
+			prefix = cursorPrefix
+			style.BackgroundColor = theme.Selection
+			style.ForegroundColor = theme.SelectionText
+		}
+
+		// Selection highlight shown regardless of focus (user's selection persists)
+		if selected && !showCursor {
+			prefix = selectedPrefix
+			style.BackgroundColor = theme.Selection
 		}
 
 		if match.Matched && len(match.Ranges) > 0 {
 			spans := make([]Span, 0, 1+len(match.Ranges)*2)
-			spans = append(spans, Span{Text: prefix})
+			if prefix != "" {
+				spans = append(spans, Span{Text: prefix})
+			}
 			spans = append(spans, HighlightSpans(content, match.Ranges, highlight)...)
 			return Text{
 				Spans: spans,
@@ -628,21 +641,19 @@ func defaultListMatchItem[T any](item T, query string, options FilterOptions) Ma
 // Deprecated: Use themedDefaultRenderItem instead, which applies theme colors.
 func defaultRenderItem[T any](item T, active bool, selected bool, match MatchResult) Widget {
 	content := fmt.Sprintf("%v", item)
-	prefix := "  "
 	style := Style{}
 
-	if selected && active {
-		prefix = "▶*"
-		style.ForegroundColor = Magenta
-	} else if active {
-		prefix = "▶ "
-		style.ForegroundColor = Magenta
+	// Note: This deprecated function doesn't have access to focus state,
+	// so it always shows cursor highlighting when active.
+	if active {
+		style.BackgroundColor = Magenta.WithAlpha(0.3)
+		style.ForegroundColor = White
 	} else if selected {
-		prefix = " *"
+		style.BackgroundColor = Magenta.WithAlpha(0.2)
 	}
 
 	return Text{
-		Content: prefix + content,
+		Content: content,
 		Style:   style,
 		Width:   Flex(1), // Fill available width for consistent background
 	}
