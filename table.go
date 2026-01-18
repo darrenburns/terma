@@ -408,6 +408,7 @@ const (
 // Use with Scrollable and a shared ScrollState to enable scroll-into-view.
 type Table[T any] struct {
 	ID                  string                                                                                        // Optional unique identifier
+	CursorStyle                                                                                                       // Embedded - CursorPrefix/SelectedPrefix fields for customizable indicators
 	State               *TableState[T]                                                                                // Required - holds rows and cursor position
 	Columns             []TableColumn                                                                                 // Required - defines column count and widths
 	RenderCell          func(row T, rowIndex int, colIndex int, active bool, selected bool) Widget                    // Cell renderer (default uses fmt)
@@ -426,7 +427,9 @@ type Table[T any] struct {
 	Width               Dimension                                                                                     // Optional width (zero value = auto)
 	Height              Dimension                                                                                     // Optional height (zero value = auto)
 	Style               Style                                                                                         // Optional styling
-	Click               func()                                                                                        // Optional callback invoked when clicked
+	Click               func(MouseEvent)                                                                              // Optional callback invoked when clicked
+	MouseDown           func(MouseEvent)                                                                              // Optional callback invoked when mouse is pressed
+	MouseUp             func(MouseEvent)                                                                              // Optional callback invoked when mouse is released
 	Hover               func(bool)                                                                                    // Optional callback invoked when hover state changes
 }
 
@@ -522,9 +525,25 @@ func (t Table[T]) GetStyle() Style {
 
 // OnClick is called when the widget is clicked.
 // Implements the Clickable interface.
-func (t Table[T]) OnClick() {
+func (t Table[T]) OnClick(event MouseEvent) {
 	if t.Click != nil {
-		t.Click()
+		t.Click(event)
+	}
+}
+
+// OnMouseDown is called when the mouse is pressed on the widget.
+// Implements the MouseDownHandler interface.
+func (t Table[T]) OnMouseDown(event MouseEvent) {
+	if t.MouseDown != nil {
+		t.MouseDown(event)
+	}
+}
+
+// OnMouseUp is called when the mouse is released on the widget.
+// Implements the MouseUpHandler interface.
+func (t Table[T]) OnMouseUp(event MouseEvent) {
+	if t.MouseUp != nil {
+		t.MouseUp(event)
 	}
 }
 
@@ -659,16 +678,21 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 }
 
 // themedDefaultRenderCell returns a themed render function for table cells.
-// Captures theme colors from the context for use in the render function.
+// Captures theme colors and widget focus state from the context for use in the render function.
+// Cursor highlighting is only shown when the widget has focus.
 func (t Table[T]) themedDefaultRenderCell(ctx BuildContext) func(row T, rowIndex int, colIndex int, active bool, selected bool, match MatchResult) Widget {
 	theme := ctx.Theme()
+	widgetFocused := ctx.IsFocused(t)
+	cursorPrefix := t.CursorPrefix
+	selectedPrefix := t.SelectedPrefix
+
 	highlight := SpanStyle{
 		Underline:      UnderlineSingle,
 		UnderlineColor: theme.Accent,
-		Background:     theme.Accent.WithAlpha(0.25),
+		Background:     theme.Selection,
 	}
 	return func(row T, rowIndex int, colIndex int, active bool, selected bool, match MatchResult) Widget {
-		style := tableDefaultCellStyle(theme, active, selected)
+		style := tableDefaultCellStyle(theme, active, selected, widgetFocused)
 		if content, ok := tableDefaultCellContent(row, colIndex); ok {
 			if match.Matched && len(match.Ranges) > 0 {
 				return Text{
@@ -687,19 +711,22 @@ func (t Table[T]) themedDefaultRenderCell(ctx BuildContext) func(row T, rowIndex
 		}
 
 		content := fmt.Sprintf("%v", row)
-		prefix := "  "
+		prefix := ""
 
-		if selected && active {
-			prefix = "▶*"
-		} else if active {
-			prefix = "▶ "
+		// Only show cursor prefix when widget has focus
+		showCursor := active && widgetFocused
+
+		if showCursor {
+			prefix = cursorPrefix
 		} else if selected {
-			prefix = " *"
+			prefix = selectedPrefix
 		}
 
 		if match.Matched && len(match.Ranges) > 0 {
 			spans := make([]Span, 0, 1+len(match.Ranges)*2)
-			spans = append(spans, Span{Text: prefix})
+			if prefix != "" {
+				spans = append(spans, Span{Text: prefix})
+			}
 			spans = append(spans, HighlightSpans(content, match.Ranges, highlight)...)
 			return Text{
 				Spans: spans,
@@ -1460,14 +1487,18 @@ func tableDefaultCellContent[T any](row T, colIndex int) (string, bool) {
 	}
 }
 
-func tableDefaultCellStyle(theme ThemeData, active, selected bool) Style {
+func tableDefaultCellStyle(theme ThemeData, active, selected, widgetFocused bool) Style {
 	style := Style{ForegroundColor: theme.Text}
-	if selected {
-		style.BackgroundColor = theme.Primary.WithAlpha(0.3)
-	}
-	if active {
-		style.BackgroundColor = theme.Primary
-		style.ForegroundColor = theme.TextOnPrimary
+
+	// Only show cursor highlight when widget has focus
+	showCursor := active && widgetFocused
+
+	if showCursor {
+		style.BackgroundColor = theme.Selection
+		style.ForegroundColor = theme.SelectionText
+	} else if selected {
+		// Selection highlight shown regardless of focus (user's selection persists)
+		style.BackgroundColor = theme.Selection
 	}
 	return style
 }

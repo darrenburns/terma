@@ -20,6 +20,7 @@ type FrameAnimation[T any] struct {
 	currentFrame int
 	elapsed      time.Duration
 	signal       AnySignal[T]
+	pendingStart bool // Start() was called before controller was ready
 
 	// Callbacks
 	onComplete func()
@@ -55,6 +56,8 @@ func NewFrameAnimation[T any](config FrameAnimationConfig[T]) *FrameAnimation[T]
 }
 
 // Start begins the frame animation.
+// If called before the app is running, the animation will automatically
+// start when the controller becomes available (on first Value() access).
 func (fa *FrameAnimation[T]) Start() {
 	fa.mu.Lock()
 	defer fa.mu.Unlock()
@@ -68,8 +71,12 @@ func (fa *FrameAnimation[T]) Start() {
 	fa.currentFrame = 0
 	fa.signal.Set(fa.frames[0])
 
+	// Register with global controller, or mark as pending if not ready
 	if currentController != nil {
 		fa.handle = currentController.Register(fa)
+		fa.pendingStart = false
+	} else {
+		fa.pendingStart = true
 	}
 }
 
@@ -100,6 +107,14 @@ func (fa *FrameAnimation[T]) Reset() {
 // Value returns a signal containing the current frame.
 // Call Value().Get() during Build() for reactive updates.
 func (fa *FrameAnimation[T]) Value() AnySignal[T] {
+	fa.mu.Lock()
+	defer fa.mu.Unlock()
+
+	// If Start() was called before controller was ready, register now
+	if fa.pendingStart && currentController != nil {
+		fa.handle = currentController.Register(fa)
+		fa.pendingStart = false
+	}
 	return fa.signal
 }
 

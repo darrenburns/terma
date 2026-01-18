@@ -13,12 +13,12 @@ import (
 type HoverText struct {
 	ID              string
 	Content         string
-	Click           func()
+	Click           func(t.MouseEvent)
 	BaseColor       t.Color
 	backgroundColor t.Signal[t.Color]
 }
 
-func NewHoverText(id, content string, baseColor t.Color, click func()) *HoverText {
+func NewHoverText(id, content string, baseColor t.Color, click func(t.MouseEvent)) *HoverText {
 	return &HoverText{
 		ID:              id,
 		Content:         content,
@@ -29,6 +29,10 @@ func NewHoverText(id, content string, baseColor t.Color, click func()) *HoverTex
 }
 
 func (h *HoverText) Key() string {
+	return h.ID
+}
+
+func (h *HoverText) WidgetID() string {
 	return h.ID
 }
 
@@ -55,9 +59,9 @@ func (h *HoverText) OnHover(hovered bool) {
 	}
 }
 
-func (h *HoverText) OnClick() {
+func (h *HoverText) OnClick(event t.MouseEvent) {
 	if h.Click != nil {
-		h.Click()
+		h.Click(event)
 	}
 }
 
@@ -74,10 +78,10 @@ func NewNestedSpacing() *NestedSpacing {
 		clickedKey: t.NewSignal(""),
 	}
 	// Create HoverText widgets that manage their own hover state
-	n.text1 = NewHoverText("text-1", "text-1\nclick me", t.Red, func() { n.clickedKey.Set("text-1") })
-	n.text2 = NewHoverText("text-2", "text-2", t.Red, func() { n.clickedKey.Set("text-2") })
-	n.text3 = NewHoverText("text-3", "text-3", t.Red, func() { n.clickedKey.Set("text-3") })
-	n.text4 = NewHoverText("text-4", "text-4", t.Red, func() { n.clickedKey.Set("text-4") })
+	n.text1 = NewHoverText("text-1", "text-1\nclick me", t.Red, func(t.MouseEvent) { n.clickedKey.Set("text-1") })
+	n.text2 = NewHoverText("text-2", "text-2", t.Red, func(t.MouseEvent) { n.clickedKey.Set("text-2") })
+	n.text3 = NewHoverText("text-3", "text-3", t.Red, func(t.MouseEvent) { n.clickedKey.Set("text-3") })
+	n.text4 = NewHoverText("text-4", "text-4", t.Red, func(t.MouseEvent) { n.clickedKey.Set("text-4") })
 	return n
 }
 

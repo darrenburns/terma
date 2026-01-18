@@ -99,7 +99,7 @@ func (d *DockDemo) buildSidebar(ctx t.BuildContext) t.Widget {
 				ForegroundColor: ctx.Theme().Text,
 				BackgroundColor: bg,
 			},
-			Click: func() {
+			Click: func(t.MouseEvent) {
 				d.selectedItem.Set(itemCopy)
 			},
 		}

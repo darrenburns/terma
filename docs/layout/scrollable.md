@@ -27,7 +27,9 @@ Scrollable{
 | `Style` | `Style` | — | Padding, border, colors |
 | `ScrollbarThumbColor` | `Color` | White/BrightCyan | Scrollbar thumb color |
 | `ScrollbarTrackColor` | `Color` | BrightBlack | Scrollbar track color |
-| `Click` | `func()` | — | Click callback |
+| `Click` | `func(MouseEvent)` | — | Click callback |
+| `MouseDown` | `func(MouseEvent)` | — | Mouse down callback |
+| `MouseUp` | `func(MouseEvent)` | — | Mouse up callback |
 | `Hover` | `func(bool)` | — | Hover callback |
 
 ## ScrollState

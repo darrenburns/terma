@@ -55,8 +55,10 @@ type Stack struct {
 	Width     Dimension // Optional width (zero value = auto, Flex(1) = fill)
 	Height    Dimension // Optional height (zero value = auto, Flex(1) = fill)
 	Style     Style     // Optional styling
-	Click     func()    // Optional callback invoked when clicked
-	Hover     func(bool)// Optional callback invoked when hover state changes
+	Click     func(MouseEvent) // Optional callback invoked when clicked
+	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
+	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
+	Hover     func(bool)       // Optional callback invoked when hover state changes
 }
 
 // GetDimensions returns the width and height dimension preferences.
@@ -75,9 +77,25 @@ func (s Stack) WidgetID() string {
 }
 
 // OnClick is called when the widget is clicked.
-func (s Stack) OnClick() {
+func (s Stack) OnClick(event MouseEvent) {
 	if s.Click != nil {
-		s.Click()
+		s.Click(event)
+	}
+}
+
+// OnMouseDown is called when the mouse is pressed on the widget.
+// Implements the MouseDownHandler interface.
+func (s Stack) OnMouseDown(event MouseEvent) {
+	if s.MouseDown != nil {
+		s.MouseDown(event)
+	}
+}
+
+// OnMouseUp is called when the mouse is released on the widget.
+// Implements the MouseUpHandler interface.
+func (s Stack) OnMouseUp(event MouseEvent) {
+	if s.MouseUp != nil {
+		s.MouseUp(event)
 	}
 }
 

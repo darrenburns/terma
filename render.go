@@ -965,7 +965,19 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 		renderable.Render(contentCtx)
 	}
 
-	// 4. Render children at their computed positions
+	// 4. Register for hit testing before rendering children so children win in z-order.
+	eventWidget := tree.EventWidget
+	if eventWidget == nil {
+		eventWidget = tree.Widget
+	}
+	r.widgetRegistry.Record(tree.Widget, eventWidget, tree.EventID, Rect{
+		X:      trueAbsBorderX,
+		Y:      trueAbsBorderY,
+		Width:  box.Width,
+		Height: box.Height,
+	})
+
+	// 5. Render children at their computed positions
 	// If tree.Children is empty but widget has children, the widget handles them in Render() (fallback)
 	// If tree.Children is populated, we handle positioning here (new path)
 	if len(tree.Children) > 0 {
@@ -1024,7 +1036,7 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 		}
 	}
 
-	// 4b. Render scrollbar and update ScrollState if widget is scrollable
+	// 5b. Render scrollbar and update ScrollState if widget is scrollable
 	if scrollable, ok := tree.Widget.(Scrollable); ok {
 		// Update ScrollState with computed dimensions from layout
 		// This enables keyboard scrolling to work correctly
@@ -1053,19 +1065,6 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 			scrollable.renderScrollbar(scrollbarCtx, box.ScrollOffsetY, focused)
 		}
 	}
-
-	// 5. Register for hit testing
-	// Get widget ID if available
-	var widgetID string
-	if identifiable, ok := tree.Widget.(Identifiable); ok {
-		widgetID = identifiable.WidgetID()
-	}
-	r.widgetRegistry.Record(tree.Widget, widgetID, Rect{
-		X:      absBorderX,
-		Y:      absBorderY,
-		Width:  box.Width,
-		Height: box.Height,
-	})
 }
 
 // WidgetAt returns the topmost widget at the given terminal coordinates.
@@ -1154,7 +1153,7 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 // renderModalBackdrop renders a semi-transparent backdrop over the entire screen.
 func (r *Renderer) renderModalBackdrop(ctx *RenderContext, backdropColor Color) {
 	if !backdropColor.IsSet() {
-		backdropColor = DefaultModalBackdropColor
+		backdropColor = getTheme().Overlay
 	}
 
 	for y := 0; y < r.height; y++ {

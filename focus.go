@@ -25,6 +25,15 @@ func (k KeyEvent) Text() string {
 	return uv.Key(k.event).Text
 }
 
+// MouseEvent wraps a mouse interaction with click-chain metadata.
+type MouseEvent struct {
+	X, Y       int
+	Button     uv.MouseButton
+	Mod        uv.KeyMod
+	ClickCount int // 1=single, 2=double, 3=triple, etc
+	WidgetID   string
+}
+
 // Identifiable is implemented by widgets that provide a stable identity.
 // The ID must be unique among siblings and persist across rebuilds.
 type Identifiable interface {
@@ -51,7 +60,17 @@ type KeyHandler interface {
 
 // Clickable is implemented by widgets that respond to mouse clicks.
 type Clickable interface {
-	OnClick()
+	OnClick(event MouseEvent)
+}
+
+// MouseDownHandler is implemented by widgets that respond to mouse button presses.
+type MouseDownHandler interface {
+	OnMouseDown(event MouseEvent)
+}
+
+// MouseUpHandler is implemented by widgets that respond to mouse button releases.
+type MouseUpHandler interface {
+	OnMouseUp(event MouseEvent)
 }
 
 // Hoverable is implemented by widgets that respond to mouse hover.
