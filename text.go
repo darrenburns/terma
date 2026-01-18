@@ -28,7 +28,9 @@ type Text struct {
 	Height  Dimension  // Optional height (zero value = auto)
 	Wrap    WrapMode   // Wrapping mode (default = WrapNone)
 	Style   Style      // Optional styling (colors, inherited by spans)
-	Click   func()     // Optional callback invoked when clicked
+	Click   func(MouseEvent) // Optional callback invoked when clicked
+	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
+	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
 	Hover   func(bool) // Optional callback invoked when hover state changes
 }
 
@@ -45,9 +47,25 @@ func (t Text) WidgetID() string {
 
 // OnClick is called when the widget is clicked.
 // Implements the Clickable interface.
-func (t Text) OnClick() {
+func (t Text) OnClick(event MouseEvent) {
 	if t.Click != nil {
-		t.Click()
+		t.Click(event)
+	}
+}
+
+// OnMouseDown is called when the mouse is pressed on the widget.
+// Implements the MouseDownHandler interface.
+func (t Text) OnMouseDown(event MouseEvent) {
+	if t.MouseDown != nil {
+		t.MouseDown(event)
+	}
+}
+
+// OnMouseUp is called when the mouse is released on the widget.
+// Implements the MouseUpHandler interface.
+func (t Text) OnMouseUp(event MouseEvent) {
+	if t.MouseUp != nil {
+		t.MouseUp(event)
 	}
 }
 

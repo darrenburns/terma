@@ -426,7 +426,9 @@ type Table[T any] struct {
 	Width               Dimension                                                                                     // Optional width (zero value = auto)
 	Height              Dimension                                                                                     // Optional height (zero value = auto)
 	Style               Style                                                                                         // Optional styling
-	Click               func()                                                                                        // Optional callback invoked when clicked
+	Click               func(MouseEvent)                                                                              // Optional callback invoked when clicked
+	MouseDown           func(MouseEvent)                                                                              // Optional callback invoked when mouse is pressed
+	MouseUp             func(MouseEvent)                                                                              // Optional callback invoked when mouse is released
 	Hover               func(bool)                                                                                    // Optional callback invoked when hover state changes
 }
 
@@ -522,9 +524,25 @@ func (t Table[T]) GetStyle() Style {
 
 // OnClick is called when the widget is clicked.
 // Implements the Clickable interface.
-func (t Table[T]) OnClick() {
+func (t Table[T]) OnClick(event MouseEvent) {
 	if t.Click != nil {
-		t.Click()
+		t.Click(event)
+	}
+}
+
+// OnMouseDown is called when the mouse is pressed on the widget.
+// Implements the MouseDownHandler interface.
+func (t Table[T]) OnMouseDown(event MouseEvent) {
+	if t.MouseDown != nil {
+		t.MouseDown(event)
+	}
+}
+
+// OnMouseUp is called when the mouse is released on the widget.
+// Implements the MouseUpHandler interface.
+func (t Table[T]) OnMouseUp(event MouseEvent) {
+	if t.MouseUp != nil {
+		t.MouseUp(event)
 	}
 }
 

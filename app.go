@@ -21,6 +21,58 @@ var appRenderer *Renderer
 // Buffered with size 1 to avoid blocking signal setters.
 var renderTrigger chan struct{}
 
+const clickChainTimeout = 500 * time.Millisecond
+
+type mouseClickTracker struct {
+	lastClickTime time.Time
+	lastTargetID  string
+	lastButton    uv.MouseButton
+	clickCount    int
+
+	lastDownTargetID string
+	lastDownButton   uv.MouseButton
+	lastDownCount    int
+}
+
+func (t *mouseClickTracker) nextClick(targetID string, button uv.MouseButton, now time.Time) int {
+	if targetID == t.lastTargetID && button == t.lastButton && now.Sub(t.lastClickTime) <= clickChainTimeout {
+		t.clickCount++
+	} else {
+		t.clickCount = 1
+	}
+	t.lastTargetID = targetID
+	t.lastButton = button
+	t.lastClickTime = now
+
+	t.lastDownTargetID = targetID
+	t.lastDownButton = button
+	t.lastDownCount = t.clickCount
+
+	return t.clickCount
+}
+
+func (t *mouseClickTracker) releaseCount(targetID string, button uv.MouseButton) int {
+	if targetID == t.lastDownTargetID && (button == t.lastDownButton || button == uv.MouseNone) {
+		return t.lastDownCount
+	}
+	return 1
+}
+
+func buildMouseEvent(m uv.Mouse, entry *WidgetEntry, clickCount int) MouseEvent {
+	widgetID := ""
+	if entry != nil {
+		widgetID = entry.ID
+	}
+	return MouseEvent{
+		X:          m.X,
+		Y:          m.Y,
+		Button:     m.Button,
+		Mod:        m.Mod,
+		ClickCount: clickCount,
+		WidgetID:   widgetID,
+	}
+}
+
 // Quit exits the running application gracefully.
 // This performs the same teardown as pressing Ctrl+C.
 func Quit() {
@@ -50,8 +102,10 @@ func Run(root Widget) error {
 
 	t.EnterAltScreen()
 
-	// Enable mouse tracking (all mouse events including hover + SGR extended encoding)
+	// Enable mouse tracking (normal + button + motion + SGR extended encoding)
+	_, _ = t.WriteString(ansi.SetModeMouseNormal)
 	_, _ = t.WriteString(ansi.SetModeMouseAnyEvent)
+	_, _ = t.WriteString(ansi.SetModeMouseButtonEvent)
 	_, _ = t.WriteString(ansi.SetModeMouseExtSgr)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -150,7 +204,44 @@ func Run(root Widget) error {
 
 		elapsed := time.Since(startTime)
 
-		Log("Render complete in %.3fms, %d widgets registered", float64(elapsed.Microseconds())/1000.0, len(renderer.widgetRegistry.entries))
+	Log("Render complete in %.3fms, %d widgets registered", float64(elapsed.Microseconds())/1000.0, len(renderer.widgetRegistry.entries))
+	}
+
+	clickTracker := &mouseClickTracker{}
+	currentHoveredID := ""
+
+	resolveMouseTarget := func(x, y int, allowDismiss bool) (*WidgetEntry, bool) {
+		// Check if click is on a float
+		if renderer.FloatAt(x, y) != nil {
+			return renderer.WidgetAt(x, y), false
+		}
+
+		// Click is outside all floats - check for dismissal or modal blocking
+		if renderer.HasFloats() {
+			if allowDismiss {
+				topFloat := renderer.TopFloat()
+				if topFloat != nil && topFloat.Config.shouldDismissOnClickOutside() && topFloat.Config.OnDismiss != nil {
+					topFloat.Config.OnDismiss()
+					return nil, true
+				}
+			}
+
+			// For modal floats, block the click from reaching underlying widgets
+			if renderer.HasModalFloat() {
+				return nil, true
+			}
+		}
+
+		return renderer.WidgetAt(x, y), false
+	}
+
+	focusEntry := func(entry *WidgetEntry) {
+		if entry == nil || entry.EventWidget == nil {
+			return
+		}
+		if focusable, ok := entry.EventWidget.(Focusable); ok && focusable.IsFocusable() {
+			focusManager.FocusByID(entry.ID)
+		}
 	}
 
 	// Get root's key handling interfaces (if any) for the no-focusables case
@@ -198,7 +289,9 @@ func Run(root Widget) error {
 					// Suspend on Ctrl+Z
 					if ev.MatchString("ctrl+z") {
 						// Disable mouse tracking before suspending
+						_, _ = t.WriteString(ansi.ResetModeMouseNormal)
 						_, _ = t.WriteString(ansi.ResetModeMouseAnyEvent)
+						_, _ = t.WriteString(ansi.ResetModeMouseButtonEvent)
 						_, _ = t.WriteString(ansi.ResetModeMouseExtSgr)
 
 						// Exit alternate screen to show shell
@@ -215,7 +308,9 @@ func Run(root Widget) error {
 						t.EnterAltScreen()
 
 						// Re-enable mouse tracking
+						_, _ = t.WriteString(ansi.SetModeMouseNormal)
 						_, _ = t.WriteString(ansi.SetModeMouseAnyEvent)
+						_, _ = t.WriteString(ansi.SetModeMouseButtonEvent)
 						_, _ = t.WriteString(ansi.SetModeMouseExtSgr)
 
 						// Redraw the screen
@@ -255,47 +350,27 @@ func Run(root Widget) error {
 				case uv.MouseClickEvent:
 					Log("MouseClickEvent at X=%d Y=%d Button=%v", ev.X, ev.Y, ev.Button)
 
-					// Check if click is on a float
-					floatEntry := renderer.FloatAt(ev.X, ev.Y)
-					if floatEntry != nil {
-						// Click is on a float - handle normally
-						Log("  Click on float")
-						entry := renderer.WidgetAt(ev.X, ev.Y)
-						if entry != nil {
-							if clickable, ok := entry.Widget.(Clickable); ok {
-								clickable.OnClick()
-							}
-						}
+					entry, handled := resolveMouseTarget(ev.X, ev.Y, true)
+					if handled {
+						Log("  Mouse click handled by float logic")
 						display()
 						continue
 					}
 
-					// Click is outside all floats - check for dismissal
-					if renderer.HasFloats() {
-						topFloat := renderer.TopFloat()
-						if topFloat != nil && topFloat.Config.shouldDismissOnClickOutside() && topFloat.Config.OnDismiss != nil {
-							Log("  Dismissing float on click outside")
-							topFloat.Config.OnDismiss()
-							display()
-							continue
-						}
-
-						// For modal floats, block the click from reaching underlying widgets
-						if renderer.HasModalFloat() {
-							Log("  Modal float blocking click")
-							display()
-							continue
-						}
-					}
-
-					// Find the widget under the cursor
-					entry := renderer.WidgetAt(ev.X, ev.Y)
 					if entry != nil {
-						Log("  Found widget: ID=%q Type=%T", entry.ID, entry.Widget)
-						// If the widget implements Clickable, call OnClick
-						if clickable, ok := entry.Widget.(Clickable); ok {
+						Log("  Found widget: ID=%q Type=%T", entry.ID, entry.EventWidget)
+						focusEntry(entry)
+						clickCount := clickTracker.nextClick(entry.ID, ev.Button, time.Now())
+						mouseEvent := buildMouseEvent(uv.Mouse(ev), entry, clickCount)
+
+						if downHandler, ok := entry.EventWidget.(MouseDownHandler); ok {
+							Log("  Widget has OnMouseDown")
+							downHandler.OnMouseDown(mouseEvent)
+						}
+
+						if clickable, ok := entry.EventWidget.(Clickable); ok {
 							Log("  Widget is Clickable, calling OnClick")
-							clickable.OnClick()
+							clickable.OnClick(mouseEvent)
 						} else {
 							Log("  Widget is NOT Clickable")
 						}
@@ -307,6 +382,32 @@ func Run(root Widget) error {
 					// Re-render after click
 					display()
 
+				case uv.MouseReleaseEvent:
+					Log("MouseReleaseEvent at X=%d Y=%d Button=%v", ev.X, ev.Y, ev.Button)
+
+					entry, handled := resolveMouseTarget(ev.X, ev.Y, false)
+					if handled {
+						Log("  Mouse release blocked by float logic")
+						display()
+						continue
+					}
+
+					if entry != nil {
+						Log("  Found widget: ID=%q Type=%T", entry.ID, entry.EventWidget)
+						clickCount := clickTracker.releaseCount(entry.ID, ev.Button)
+						mouseEvent := buildMouseEvent(uv.Mouse(ev), entry, clickCount)
+
+						if upHandler, ok := entry.EventWidget.(MouseUpHandler); ok {
+							Log("  Widget has OnMouseUp")
+							upHandler.OnMouseUp(mouseEvent)
+						}
+					} else {
+						Log("  No widget found at position")
+					}
+
+					// Re-render after mouse up
+					display()
+
 				case uv.MouseMotionEvent:
 					// Log("MouseMotionEvent at X=%d Y=%d", ev.X, ev.Y)
 
@@ -315,37 +416,30 @@ func Run(root Widget) error {
 					var newHovered Widget
 					newHoveredID := ""
 					if entry != nil {
-						newHovered = entry.Widget
+						newHovered = entry.EventWidget
 						newHoveredID = entry.ID
 					}
 
-					// Get old hovered widget and its ID
-					oldHovered := hoveredSignal.Get()
-					oldHoveredID := ""
-					if oldHovered != nil {
-						if identifiable, ok := oldHovered.(Identifiable); ok {
-							oldHoveredID = identifiable.WidgetID()
-						}
-					}
-
 					// Only update if hover changed (compare by ID to avoid incomparable type issues)
-					if newHoveredID != oldHoveredID {
-						Log("  Hover changed: %q -> %q", oldHoveredID, newHoveredID)
+					if newHoveredID != currentHoveredID {
+						Log("  Hover changed: %q -> %q", currentHoveredID, newHoveredID)
 
 						// Notify old widget it's no longer hovered
+						oldHovered := hoveredSignal.Get()
 						if oldHovered != nil {
 							if hoverable, ok := oldHovered.(Hoverable); ok {
-								Log("  Calling OnHover(false) on %q", oldHoveredID)
+								Log("  Calling OnHover(false) on %q", currentHoveredID)
 								hoverable.OnHover(false)
 							}
 						}
 
 						// Update the hovered signal
 						hoveredSignal.Set(newHovered)
+						currentHoveredID = newHoveredID
 
 						// Notify new widget it's now hovered
 						if entry != nil {
-							if hoverable, ok := entry.Widget.(Hoverable); ok {
+							if hoverable, ok := entry.EventWidget.(Hoverable); ok {
 								Log("  Calling OnHover(true) on %q", newHoveredID)
 								hoverable.OnHover(true)
 							}
@@ -383,7 +477,9 @@ func Run(root Widget) error {
 	<-ctx.Done()
 
 	// Disable mouse tracking before shutdown
+	_, _ = t.WriteString(ansi.ResetModeMouseNormal)
 	_, _ = t.WriteString(ansi.ResetModeMouseAnyEvent)
+	_, _ = t.WriteString(ansi.ResetModeMouseButtonEvent)
 	_, _ = t.WriteString(ansi.ResetModeMouseExtSgr)
 
 	return t.Shutdown(context.Background())
