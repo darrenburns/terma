@@ -655,28 +655,6 @@ func defaultListMatchItem[T any](item T, query string, options FilterOptions) Ma
 	return MatchString(fmt.Sprintf("%v", item), query, options)
 }
 
-// defaultRenderItem provides a non-themed default rendering for list items.
-// Deprecated: Use themedDefaultRenderItem instead, which applies theme colors.
-func defaultRenderItem[T any](item T, active bool, selected bool, match MatchResult) Widget {
-	content := fmt.Sprintf("%v", item)
-	style := Style{}
-
-	// Note: This deprecated function doesn't have access to focus state,
-	// so it always shows cursor highlighting when active.
-	if active {
-		style.BackgroundColor = Magenta.WithAlpha(0.3)
-		style.ForegroundColor = White
-	} else if selected {
-		style.BackgroundColor = Magenta.WithAlpha(0.2)
-	}
-
-	return Text{
-		Content: content,
-		Style:   style,
-		Width:   Flex(1), // Fill available width for consistent background
-	}
-}
-
 // OnKey handles navigation keys and selection, updating cursor position and scrolling into view.
 // Implements the Focusable interface.
 func (l List[T]) OnKey(event KeyEvent) bool {

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	t "terma"
@@ -74,7 +75,7 @@ func (a *TreeExampleApp) Build(ctx t.BuildContext) t.Widget {
 						Padding:         t.EdgeInsetsXY(2, 0),
 					},
 				},
-				t.ParseMarkupToText("Use [b $Accent]Up/Down[/] or [b $Accent]j/k[/] to navigate | [b $Accent]Left/Right[/] or [b $Accent]h/l[/] to collapse/expand | [b $Accent]Space[/] to toggle | [b $Accent]Enter[/] to select", theme),
+				t.ParseMarkupToText("Use [b $Accent]Up/Down[/] or [b $Accent]j/k[/] to navigate | [b $Accent]Left/Right[/] or [b $Accent]h/l[/] to collapse/expand | [b $Accent]Shift+Up/Down[/] to extend selection | [b $Accent]Space[/] to toggle | [b $Accent]Enter[/] to select", theme),
 				t.Row{
 					Spacing:    1,
 					CrossAlign: t.CrossAxisCenter,
@@ -124,15 +125,16 @@ func (a *TreeExampleApp) Build(ctx t.BuildContext) t.Widget {
 							HasChildren: func(info FileInfo) bool {
 								return info.IsDir
 							},
-							OnExpand: a.handleExpand,
+							MultiSelect: true,
+							OnExpand:    a.handleExpand,
 							MatchNode: func(info FileInfo, query string, options t.FilterOptions) t.MatchResult {
 								return t.MatchString(info.Name, query, options)
 							},
 							OnSelect: func(info FileInfo) {
-								a.status.Set(fmt.Sprintf("Selected: %s", info.Path))
+								a.updateSelectStatus(info)
 							},
 							OnCursorChange: func(info FileInfo) {
-								a.status.Set(fmt.Sprintf("Cursor: %s", info.Path))
+								a.updateCursorStatus(info)
 							},
 						}
 						widgetFocused := ctx.IsFocused(treeWidget)
@@ -164,6 +166,12 @@ func (a *TreeExampleApp) Build(ctx t.BuildContext) t.Widget {
 				},
 				t.Text{
 					Content: a.status.Get(),
+					Style: t.Style{
+						ForegroundColor: theme.TextMuted,
+					},
+				},
+				t.Text{
+					Content: a.selectionSummaryText(),
 					Style: t.Style{
 						ForegroundColor: theme.TextMuted,
 					},
@@ -202,6 +210,52 @@ func treeNodeStyle(theme t.ThemeData, nodeCtx t.TreeNodeContext, widgetFocused b
 		style.BackgroundColor = theme.Selection
 	}
 	return style
+}
+
+func (a *TreeExampleApp) updateSelectStatus(info FileInfo) {
+	if summary, ok := a.selectionSummary(); ok {
+		a.status.Set(summary)
+		return
+	}
+	a.status.Set(fmt.Sprintf("Selected: %s", info.Path))
+}
+
+func (a *TreeExampleApp) updateCursorStatus(info FileInfo) {
+	if summary, ok := a.selectionSummary(); ok {
+		a.status.Set(fmt.Sprintf("Cursor: %s | %s", info.Path, summary))
+		return
+	}
+	a.status.Set(fmt.Sprintf("Cursor: %s", info.Path))
+}
+
+func (a *TreeExampleApp) selectionSummaryText() string {
+	if summary, ok := a.selectionSummary(); ok {
+		return summary
+	}
+	return "Selected: (none)"
+}
+
+func (a *TreeExampleApp) selectionSummary() (string, bool) {
+	if a.treeState == nil || !a.treeState.Selection.IsValid() {
+		return "", false
+	}
+	a.treeState.Selection.Get()
+	paths := a.treeState.SelectedPaths()
+	if len(paths) == 0 {
+		return "", false
+	}
+	labels := make([]string, 0, len(paths))
+	for _, path := range paths {
+		if node, ok := a.treeState.NodeAtPath(path); ok {
+			labels = append(labels, node.Data.Path)
+		} else {
+			labels = append(labels, fmt.Sprintf("%v", path))
+		}
+	}
+	if len(labels) == 0 {
+		return "", false
+	}
+	return fmt.Sprintf("Selected: %s", strings.Join(labels, ", ")), true
 }
 
 func sampleTree() ([]t.TreeNode[FileInfo], map[string][]t.TreeNode[FileInfo]) {
