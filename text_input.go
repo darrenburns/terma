@@ -284,15 +284,15 @@ func (s *TextInputState) clampCursor() {
 
 // TextInput is a single-line focusable text entry widget.
 type TextInput struct {
-	ID             string           // Required for focus management
-	State          *TextInputState  // Required - holds text and cursor position
-	Placeholder    string           // Text shown when empty and unfocused
-	Width          Dimension        // Optional width
-	Height         Dimension        // Ignored (always 1 for single-line)
-	Style          Style            // Optional styling
-	OnChange       func(text string) // Callback when text changes
-	OnSubmit       func(text string) // Callback when Enter pressed
-	Click          func(MouseEvent) // Optional click callback
+	ID            string            // Required for focus management
+	State         *TextInputState   // Required - holds text and cursor position
+	Placeholder   string            // Text shown when empty and unfocused
+	Width         Dimension         // Optional width
+	Height        Dimension         // Ignored (always 1 for single-line)
+	Style         Style             // Optional styling
+	OnChange      func(text string) // Callback when text changes
+	OnSubmit      func(text string) // Callback when Enter pressed
+	Click         func(MouseEvent) // Optional click callback
 	MouseDown      func(MouseEvent) // Optional mouse down callback
 	MouseUp        func(MouseEvent) // Optional mouse up callback
 	Hover          func(bool)       // Optional hover callback

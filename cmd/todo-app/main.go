@@ -2,40 +2,46 @@ package main
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
 	t "terma"
 )
 
-// sortedThemeNames returns theme names in a fixed order:
-// Kanagawa first, Rose Pine second, then the rest alphabetically.
-func sortedThemeNames() []string {
-	names := t.ThemeNames()
+// darkThemeNames are the dark theme names in display order.
+var darkThemeNames = []string{
+	t.ThemeNameKanagawa,
+	t.ThemeNameRosePine,
+	t.ThemeNameCatppuccin,
+	t.ThemeNameDracula,
+	t.ThemeNameGruvbox,
+	t.ThemeNameMonokai,
+	t.ThemeNameNord,
+	t.ThemeNameSolarized,
+	t.ThemeNameTokyoNight,
+}
 
-	priority := map[string]int{
-		"kanagawa":  0,
-		"rose-pine": 1,
-	}
+// lightThemeNames are the light theme names in display order.
+var lightThemeNames = []string{
+	t.ThemeNameKanagawaLotus,
+	t.ThemeNameRosePineDawn,
+	t.ThemeNameCatppuccinLatte,
+	t.ThemeNameDraculaLight,
+	t.ThemeNameGruvboxLight,
+	t.ThemeNameMonokaiLight,
+	t.ThemeNameNordLight,
+	t.ThemeNameSolarizedLight,
+	t.ThemeNameTokyoNightDay,
+}
 
-	sort.Slice(names, func(i, j int) bool {
-		pi, hasPi := priority[names[i]]
-		pj, hasPj := priority[names[j]]
-
-		if hasPi && hasPj {
-			return pi < pj
-		}
-		if hasPi {
+// isLightTheme returns true if the theme name is a light theme.
+func isLightTheme(name string) bool {
+	for _, n := range lightThemeNames {
+		if n == name {
 			return true
 		}
-		if hasPj {
-			return false
-		}
-		return names[i] < names[j]
-	})
-
-	return names
+	}
+	return false
 }
 
 // Task represents a single TODO item.
@@ -64,10 +70,13 @@ type TodoApp struct {
 	editInputState *t.TextInputState
 
 	// Theme picker state
-	showThemePicker  t.Signal[bool]
-	themeListState   *t.ListState[string]
-	themeScrollState *t.ScrollState
-	originalTheme    string
+	showThemePicker       t.Signal[bool]
+	themeCategory         t.Signal[string] // "dark" or "light"
+	darkThemeListState    *t.ListState[string]
+	lightThemeListState   *t.ListState[string]
+	darkThemeScrollState  *t.ScrollState
+	lightThemeScrollState *t.ScrollState
+	originalTheme         string
 
 	// Help modal state
 	showHelp t.Signal[bool]
@@ -105,9 +114,12 @@ func NewTodoApp() *TodoApp {
 		filteredScrollState: t.NewScrollState(),
 		editingIndex:        t.NewSignal(-1),
 		editInputState:      t.NewTextInputState(""),
-		showThemePicker:     t.NewSignal(false),
-		themeListState:      t.NewListState(sortedThemeNames()),
-		themeScrollState:    t.NewScrollState(),
+		showThemePicker:       t.NewSignal(false),
+		themeCategory:         t.NewSignal("dark"),
+		darkThemeListState:    t.NewListState(darkThemeNames),
+		lightThemeListState:   t.NewListState(lightThemeNames),
+		darkThemeScrollState:  t.NewScrollState(),
+		lightThemeScrollState: t.NewScrollState(),
 		showHelp:            t.NewSignal(false),
 		nextID:              10,
 	}
@@ -185,7 +197,11 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 
 	// Request focus on theme list when picker opens
 	if a.showThemePicker.Get() {
-		t.RequestFocus("theme-list")
+		if a.themeCategory.Get() == "light" {
+			t.RequestFocus("light-theme-list")
+		} else {
+			t.RequestFocus("dark-theme-list")
+		}
 	}
 
 	// Update filtered list when in filter mode
@@ -546,8 +562,28 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 	}
 }
 
-// buildThemePicker creates the theme picker modal.
+// buildThemePicker creates the theme picker modal with dark/light switcher.
 func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
+	category := a.themeCategory.Get()
+	isDark := category == "dark"
+
+	// Tab style helpers
+	activeTabStyle := t.Style{
+		ForegroundColor: theme.Primary,
+		Bold:            true,
+	}
+	inactiveTabStyle := t.Style{
+		ForegroundColor: theme.TextMuted,
+	}
+
+	darkTabStyle := inactiveTabStyle
+	lightTabStyle := inactiveTabStyle
+	if isDark {
+		darkTabStyle = activeTabStyle
+	} else {
+		lightTabStyle = activeTabStyle
+	}
+
 	return t.Floating{
 		Visible: a.showThemePicker.Get(),
 		Config: t.FloatConfig{
@@ -571,19 +607,46 @@ func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 						Bold:            true,
 					},
 				},
-				t.Scrollable{
-					State: a.themeScrollState,
-					Child: t.List[string]{
-						ID:             "theme-list",
-						State:          a.themeListState,
-						ScrollState:    a.themeScrollState,
-						OnSelect:       a.selectTheme,
-						OnCursorChange: a.previewTheme,
-						RenderItem:     a.renderThemeItem(theme),
+				// Category tabs
+				t.Row{
+					Spacing: 2,
+					Children: []t.Widget{
+						t.Text{Content: "← Dark", Style: darkTabStyle},
+						t.Text{Content: "Light →", Style: lightTabStyle},
+					},
+				},
+				// Theme list switcher
+				t.Switcher{
+					Active: category,
+					Children: map[string]t.Widget{
+						"dark": t.Scrollable{
+							State:  a.darkThemeScrollState,
+							Height: t.Cells(12),
+							Child: t.List[string]{
+								ID:             "dark-theme-list",
+								State:          a.darkThemeListState,
+								ScrollState:    a.darkThemeScrollState,
+								OnSelect:       a.selectTheme,
+								OnCursorChange: a.previewTheme,
+								RenderItem:     a.renderThemeItem(theme),
+							},
+						},
+						"light": t.Scrollable{
+							State:  a.lightThemeScrollState,
+							Height: t.Cells(12),
+							Child: t.List[string]{
+								ID:             "light-theme-list",
+								State:          a.lightThemeListState,
+								ScrollState:    a.lightThemeScrollState,
+								OnSelect:       a.selectTheme,
+								OnCursorChange: a.previewTheme,
+								RenderItem:     a.renderThemeItem(theme),
+							},
+						},
 					},
 				},
 				t.Text{
-					Content: "↑↓ navigate · enter select · esc cancel",
+					Content: "←→ dark/light · ↑↓ navigate · enter select · esc cancel",
 					Style: t.Style{
 						ForegroundColor: theme.TextMuted,
 					},
@@ -661,10 +724,12 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 		}
 	}
 
-	// Theme picker modal has its own keybinds (handled via Float dismiss)
+	// Theme picker modal has its own keybinds
 	if isThemePicker {
 		return []t.Keybind{
 			{Key: "escape", Name: "Cancel", Action: a.dismissThemePicker},
+			{Key: "left", Name: "Dark", Action: a.showDarkThemes},
+			{Key: "right", Name: "Light", Action: a.showLightThemes},
 		}
 	}
 
@@ -1003,13 +1068,25 @@ func (a *TodoApp) openThemePicker() {
 	// Store original theme to restore on cancel
 	a.originalTheme = t.CurrentThemeName()
 
-	// Find and select current theme in list
-	themes := a.themeListState.GetItems()
-	for i, name := range themes {
-		if name == a.originalTheme {
-			a.themeListState.SelectIndex(i)
-			break
+	// Determine which category and select current theme
+	if isLightTheme(a.originalTheme) {
+		a.themeCategory.Set("light")
+		for i, name := range lightThemeNames {
+			if name == a.originalTheme {
+				a.lightThemeListState.SelectIndex(i)
+				break
+			}
 		}
+		t.RequestFocus("light-theme-list")
+	} else {
+		a.themeCategory.Set("dark")
+		for i, name := range darkThemeNames {
+			if name == a.originalTheme {
+				a.darkThemeListState.SelectIndex(i)
+				break
+			}
+		}
+		t.RequestFocus("dark-theme-list")
 	}
 
 	a.showThemePicker.Set(true)
@@ -1033,6 +1110,32 @@ func (a *TodoApp) selectTheme(themeName string) {
 	t.SetTheme(themeName)
 	a.showThemePicker.Set(false)
 	t.RequestFocus("task-list")
+}
+
+// showDarkThemes switches to the dark themes category.
+func (a *TodoApp) showDarkThemes() {
+	if a.themeCategory.Peek() == "dark" {
+		return
+	}
+	a.themeCategory.Set("dark")
+	// Preview the currently selected dark theme
+	if idx := a.darkThemeListState.CursorIndex.Peek(); idx >= 0 && idx < len(darkThemeNames) {
+		t.SetTheme(darkThemeNames[idx])
+	}
+	t.RequestFocus("dark-theme-list")
+}
+
+// showLightThemes switches to the light themes category.
+func (a *TodoApp) showLightThemes() {
+	if a.themeCategory.Peek() == "light" {
+		return
+	}
+	a.themeCategory.Set("light")
+	// Preview the currently selected light theme
+	if idx := a.lightThemeListState.CursorIndex.Peek(); idx >= 0 && idx < len(lightThemeNames) {
+		t.SetTheme(lightThemeNames[idx])
+	}
+	t.RequestFocus("light-theme-list")
 }
 
 // buildHelpModal creates the keyboard shortcuts help modal.
