@@ -108,6 +108,12 @@ func (s *SpinnerState) IsRunning() bool {
 	return s.animation.IsRunning()
 }
 
+// Frame returns the current animation frame. Call this in Build() to subscribe
+// to animation updates and trigger rebuilds when the frame changes.
+func (s *SpinnerState) Frame() string {
+	return s.animation.Value().Get()
+}
+
 // Spinner displays an animated loading indicator.
 // Use pure composition to add labels:
 //
