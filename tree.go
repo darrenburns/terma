@@ -487,6 +487,7 @@ type Tree[T any] struct {
 	Height              Dimension
 	Style               Style
 	MultiSelect         bool
+	CursorStyle         // Embedded - CursorPrefix/SelectedPrefix for optional indicators
 	Indent              int
 	ExpandIndicator     string
 	CollapseIndicator   string
@@ -598,6 +599,9 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 	if renderNodeWithMatch == nil && renderNode == nil {
 		renderNodeWithMatch = t.themedDefaultRenderNode(ctx)
 	}
+	widgetFocused := ctx.IsFocused(t)
+	cursorPrefix := t.CursorPrefix
+	selectedPrefix := t.SelectedPrefix
 
 	indent := t.Indent
 	if indent <= 0 {
@@ -625,6 +629,13 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 				selected = true
 			}
 		}
+		showCursor := active && widgetFocused
+		rowPrefix := ""
+		if showCursor {
+			rowPrefix = cursorPrefix
+		} else if selected {
+			rowPrefix = selectedPrefix
+		}
 		nodeCtx := TreeNodeContext{
 			Path:             clonePath(entry.path),
 			Depth:            entry.depth,
@@ -642,8 +653,8 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 			nodeWidget = renderNode(entry.node.Data, nodeCtx)
 		}
 
-		prefix := t.prefixForEntry(entry, indent, expandIndicator, collapseIndicator, leafIndicator)
-		prefixStyle := t.styleForContext(ctx, nodeCtx)
+		prefix := t.prefixForEntry(entry, rowPrefix, indent, expandIndicator, collapseIndicator, leafIndicator)
+		prefixStyle := t.styleForContext(ctx, nodeCtx, widgetFocused)
 
 		children[i] = Row{
 			Spacing: 0,
@@ -813,11 +824,11 @@ func (t Tree[T]) themedDefaultRenderNode(ctx BuildContext) func(node T, nodeCtx 
 	highlight := SpanStyle{
 		Underline:      UnderlineSingle,
 		UnderlineColor: theme.Accent,
-		Background:     theme.Accent.WithAlpha(0.25),
+		Background:     theme.Selection,
 	}
 	return func(node T, nodeCtx TreeNodeContext, match MatchResult) Widget {
 		content := fmt.Sprintf("%v", node)
-		style := t.styleForContext(ctx, nodeCtx)
+		style := t.styleForContext(ctx, nodeCtx, ctx.IsFocused(t))
 		if match.Matched && len(match.Ranges) > 0 {
 			spans := HighlightSpans(content, match.Ranges, highlight)
 			return Text{
@@ -834,22 +845,25 @@ func (t Tree[T]) themedDefaultRenderNode(ctx BuildContext) func(node T, nodeCtx 
 	}
 }
 
-func (t Tree[T]) styleForContext(ctx BuildContext, nodeCtx TreeNodeContext) Style {
+func (t Tree[T]) styleForContext(ctx BuildContext, nodeCtx TreeNodeContext, widgetFocused bool) Style {
 	theme := ctx.Theme()
 	style := Style{ForegroundColor: theme.Text}
 	if nodeCtx.FilteredAncestor {
 		style.ForegroundColor = theme.TextMuted
 	}
-	if nodeCtx.Selected {
-		style.ForegroundColor = theme.Secondary
+	showCursor := nodeCtx.Active && widgetFocused
+	if showCursor {
+		style.BackgroundColor = theme.Selection
+		style.ForegroundColor = theme.SelectionText
+		return style
 	}
-	if nodeCtx.Active {
-		style.ForegroundColor = theme.Accent
+	if nodeCtx.Selected {
+		style.BackgroundColor = theme.Selection
 	}
 	return style
 }
 
-func (t Tree[T]) prefixForEntry(entry treeViewEntry[T], indent int, expandedIndicator, collapsedIndicator, leafIndicator string) string {
+func (t Tree[T]) prefixForEntry(entry treeViewEntry[T], rowPrefix string, indent int, expandedIndicator, collapsedIndicator, leafIndicator string) string {
 	indentation := ""
 	if indent > 0 && entry.depth > 0 {
 		indentation = strings.Repeat(" ", indent*entry.depth)
@@ -862,7 +876,7 @@ func (t Tree[T]) prefixForEntry(entry treeViewEntry[T], indent int, expandedIndi
 			indicator = collapsedIndicator
 		}
 	}
-	return indentation + indicator + " "
+	return rowPrefix + indentation + indicator + " "
 }
 
 func (t Tree[T]) buildViewEntries(nodes []TreeNode[T], query string, options FilterOptions) []treeViewEntry[T] {

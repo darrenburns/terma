@@ -115,31 +115,39 @@ func (a *TreeExampleApp) Build(ctx t.BuildContext) t.Widget {
 						Border:  t.RoundedBorder(theme.Border, t.BorderTitle("Project Files")),
 						Padding: t.EdgeInsetsAll(1),
 					},
-					Child: t.Tree[FileInfo]{
-						ID:          "file-tree",
-						State:       a.treeState,
-						Filter:      a.filterState,
-						ScrollState: a.scrollState,
-						HasChildren: func(info FileInfo) bool {
-							return info.IsDir
-						},
-						OnExpand: a.handleExpand,
-						MatchNode: func(info FileInfo, query string, options t.FilterOptions) t.MatchResult {
-							return t.MatchString(info.Name, query, options)
-						},
-						RenderNodeWithMatch: func(info FileInfo, nodeCtx t.TreeNodeContext, match t.MatchResult) t.Widget {
-							style := treeNodeStyle(theme, nodeCtx)
+					Child: func() t.Widget {
+						treeWidget := t.Tree[FileInfo]{
+							ID:          "file-tree",
+							State:       a.treeState,
+							Filter:      a.filterState,
+							ScrollState: a.scrollState,
+							HasChildren: func(info FileInfo) bool {
+								return info.IsDir
+							},
+							OnExpand: a.handleExpand,
+							MatchNode: func(info FileInfo, query string, options t.FilterOptions) t.MatchResult {
+								return t.MatchString(info.Name, query, options)
+							},
+							OnSelect: func(info FileInfo) {
+								a.status.Set(fmt.Sprintf("Selected: %s", info.Path))
+							},
+							OnCursorChange: func(info FileInfo) {
+								a.status.Set(fmt.Sprintf("Cursor: %s", info.Path))
+							},
+						}
+						widgetFocused := ctx.IsFocused(treeWidget)
+						treeWidget.RenderNodeWithMatch = func(info FileInfo, nodeCtx t.TreeNodeContext, match t.MatchResult) t.Widget {
+							style := treeNodeStyle(theme, nodeCtx, widgetFocused)
 							icon := "F"
 							if info.IsDir {
 								icon = "D"
 							}
-							prefix := icon + " "
-							spans := []t.Span{{Text: prefix}}
+							spans := []t.Span{{Text: icon + " "}}
 							if match.Matched && len(match.Ranges) > 0 {
 								highlight := t.SpanStyle{
 									Underline:      t.UnderlineSingle,
 									UnderlineColor: theme.Accent,
-									Background:     theme.Accent.WithAlpha(0.25),
+									Background:     theme.Selection,
 								}
 								spans = append(spans, t.HighlightSpans(info.Name, match.Ranges, highlight)...)
 							} else {
@@ -150,14 +158,9 @@ func (a *TreeExampleApp) Build(ctx t.BuildContext) t.Widget {
 								Style: style,
 								Width: t.Flex(1),
 							}
-						},
-						OnSelect: func(info FileInfo) {
-							a.status.Set(fmt.Sprintf("Selected: %s", info.Path))
-						},
-						OnCursorChange: func(info FileInfo) {
-							a.status.Set(fmt.Sprintf("Cursor: %s", info.Path))
-						},
-					},
+						}
+						return treeWidget
+					}(),
 				},
 				t.Text{
 					Content: a.status.Get(),
@@ -184,16 +187,19 @@ func (a *TreeExampleApp) handleExpand(info FileInfo, path []int, setChildren fun
 	}()
 }
 
-func treeNodeStyle(theme t.ThemeData, nodeCtx t.TreeNodeContext) t.Style {
+func treeNodeStyle(theme t.ThemeData, nodeCtx t.TreeNodeContext, widgetFocused bool) t.Style {
 	style := t.Style{ForegroundColor: theme.Text}
 	if nodeCtx.FilteredAncestor {
 		style.ForegroundColor = theme.TextMuted
 	}
-	if nodeCtx.Selected {
-		style.ForegroundColor = theme.Secondary
+	showCursor := nodeCtx.Active && widgetFocused
+	if showCursor {
+		style.BackgroundColor = theme.Selection
+		style.ForegroundColor = theme.SelectionText
+		return style
 	}
-	if nodeCtx.Active {
-		style.ForegroundColor = theme.Accent
+	if nodeCtx.Selected {
+		style.BackgroundColor = theme.Selection
 	}
 	return style
 }
