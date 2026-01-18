@@ -215,12 +215,12 @@
     .summary-count.failed { color: #ff4444; }
   </style>
 </head>
-<body data-gallery-id="8e5d58aa50a6b029">
+<body data-gallery-id="d2b4b0c9dd8df942">
   <div class="header-bar">
     <h1 style="margin: 0;">Terma Snapshot Gallery</h1>
     <div class="summary">
-      <div class="summary-item" style="color: #888;">2026-01-18 20:50:40</div>
-      <div class="summary-item"><span class="summary-count passed">20</span> passed</div>
+      <div class="summary-item" style="color: #888;">2026-01-18 20:57:12</div>
+      <div class="summary-item"><span class="summary-count passed">30</span> passed</div>
       <div class="summary-item"><span class="summary-count failed">0</span> failed</div>
     </div>
   </div>
@@ -241,7 +241,1947 @@
     </div>
     <span class="help-text">Difference mode: black = identical, colored = different</span>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="0" data-name="TestSnapshot_TabBar_Basic">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="0" data-name="TestSnapshot_Table_Filter_Contains">
+    <div class="comparison-header">
+      <span class="comparison-name">TestSnapshot_Table_Filter_Contains</span>
+      <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
+    </div>
+    <div class="comparison-description">Two rows visible: Alice and Charlie, both with &#39;Engineer&#39; highlighted in the role column</div>
+    <div class="snapshots">
+      <div class="snapshot-container">
+        <div class="snapshot-label">Expected</div>
+        <div class="snapshot expected">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="134.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="8.0" fill="#191724">Alice</text>
+            <text x="92.0" y="8.0" class="underline" fill="#E0DEF4">Engineer</text>
+            <text x="192.8" y="8.0" fill="#E0DEF4">NYC</text>
+            <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="27.6" fill="#E0DEF4">Charlie</text>
+            <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+            <text x="192.8" y="27.6" fill="#E0DEF4">SF</text>
+          </svg>
+        </div>
+      </div>
+      <div class="snapshot-container">
+        <div class="snapshot-label">Actual</div>
+        <div class="snapshot actual">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="134.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="8.0" fill="#191724">Alice</text>
+            <text x="92.0" y="8.0" class="underline" fill="#E0DEF4">Engineer</text>
+            <text x="192.8" y="8.0" fill="#E0DEF4">NYC</text>
+            <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="27.6" fill="#E0DEF4">Charlie</text>
+            <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+            <text x="192.8" y="27.6" fill="#E0DEF4">SF</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="diff-view">
+      <div class="snapshot-label"><span class="diff-mode-label">Overlay</span>: Expected + Actual</div>
+      <div class="diff-layers">
+        <div class="expected-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="8.0" fill="#191724">Alice</text>
+          <text x="92.0" y="8.0" class="underline" fill="#E0DEF4">Engineer</text>
+          <text x="192.8" y="8.0" fill="#E0DEF4">NYC</text>
+          <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" fill="#E0DEF4">Charlie</text>
+          <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+          <text x="192.8" y="27.6" fill="#E0DEF4">SF</text>
+        </svg>
+        </div>
+        <div class="actual-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="8.0" fill="#191724">Alice</text>
+          <text x="92.0" y="8.0" class="underline" fill="#E0DEF4">Engineer</text>
+          <text x="192.8" y="8.0" fill="#E0DEF4">NYC</text>
+          <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" fill="#E0DEF4">Charlie</text>
+          <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+          <text x="192.8" y="27.6" fill="#E0DEF4">SF</text>
+        </svg>
+        </div>
+      </div>
+      <div class="diff-controls">
+        <label class="slider-label-text">Actual opacity:</label>
+        <input type="range" min="0" max="100" value="50" class="opacity-slider">
+        <span class="opacity-value">50%</span>
+      </div>
+    </div>
+    <div class="highlight-view">
+      <div class="snapshot-label">Snapshot (no differences to highlight)</div>
+      <div class="snapshot">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="8.0" fill="#191724">Alice</text>
+          <text x="92.0" y="8.0" class="underline" fill="#E0DEF4">Engineer</text>
+          <text x="192.8" y="8.0" fill="#E0DEF4">NYC</text>
+          <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" fill="#E0DEF4">Charlie</text>
+          <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+          <text x="192.8" y="27.6" fill="#E0DEF4">SF</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="1" data-name="TestSnapshot_Table_Filter_CaseSensitive">
+    <div class="comparison-header">
+      <span class="comparison-name">TestSnapshot_Table_Filter_CaseSensitive</span>
+      <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
+    </div>
+    <div class="comparison-description">Only first row visible with &#39;Alice&#39; highlighted - case-sensitive match excludes &#39;ALICE&#39; row</div>
+    <div class="snapshots">
+      <div class="snapshot-container">
+        <div class="snapshot-label">Expected</div>
+        <div class="snapshot expected">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <text x="8.0" y="8.0" class="underline" fill="#191724">Alice</text>
+            <text x="92.0" y="8.0" fill="#E0DEF4">alice@example.com</text>
+          </svg>
+        </div>
+      </div>
+      <div class="snapshot-container">
+        <div class="snapshot-label">Actual</div>
+        <div class="snapshot actual">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <text x="8.0" y="8.0" class="underline" fill="#191724">Alice</text>
+            <text x="92.0" y="8.0" fill="#E0DEF4">alice@example.com</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="diff-view">
+      <div class="snapshot-label"><span class="diff-mode-label">Overlay</span>: Expected + Actual</div>
+      <div class="diff-layers">
+        <div class="expected-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <text x="8.0" y="8.0" class="underline" fill="#191724">Alice</text>
+          <text x="92.0" y="8.0" fill="#E0DEF4">alice@example.com</text>
+        </svg>
+        </div>
+        <div class="actual-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <text x="8.0" y="8.0" class="underline" fill="#191724">Alice</text>
+          <text x="92.0" y="8.0" fill="#E0DEF4">alice@example.com</text>
+        </svg>
+        </div>
+      </div>
+      <div class="diff-controls">
+        <label class="slider-label-text">Actual opacity:</label>
+        <input type="range" min="0" max="100" value="50" class="opacity-slider">
+        <span class="opacity-value">50%</span>
+      </div>
+    </div>
+    <div class="highlight-view">
+      <div class="snapshot-label">Snapshot (no differences to highlight)</div>
+      <div class="snapshot">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <text x="8.0" y="8.0" class="underline" fill="#191724">Alice</text>
+          <text x="92.0" y="8.0" fill="#E0DEF4">alice@example.com</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="2" data-name="TestSnapshot_Table_Filter_Fuzzy">
+    <div class="comparison-header">
+      <span class="comparison-name">TestSnapshot_Table_Filter_Fuzzy</span>
+      <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
+    </div>
+    <div class="comparison-description">One row visible: &#39;JavaScript&#39; with fuzzy-matched characters &#39;J&#39;, &#39;S&#39;, &#39;c&#39; highlighted</div>
+    <div class="snapshots">
+      <div class="snapshot-container">
+        <div class="snapshot-label">Expected</div>
+        <div class="snapshot expected">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <text x="8.0" y="8.0" class="underline" fill="#191724">J</text>
+            <text x="16.4" y="8.0" fill="#191724">ava</text>
+            <text x="41.6" y="8.0" class="underline" fill="#191724">Sc</text>
+            <text x="58.4" y="8.0" fill="#191724">ript</text>
+            <text x="134.0" y="8.0" fill="#E0DEF4">Frontend</text>
+          </svg>
+        </div>
+      </div>
+      <div class="snapshot-container">
+        <div class="snapshot-label">Actual</div>
+        <div class="snapshot actual">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <text x="8.0" y="8.0" class="underline" fill="#191724">J</text>
+            <text x="16.4" y="8.0" fill="#191724">ava</text>
+            <text x="41.6" y="8.0" class="underline" fill="#191724">Sc</text>
+            <text x="58.4" y="8.0" fill="#191724">ript</text>
+            <text x="134.0" y="8.0" fill="#E0DEF4">Frontend</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="diff-view">
+      <div class="snapshot-label"><span class="diff-mode-label">Overlay</span>: Expected + Actual</div>
+      <div class="diff-layers">
+        <div class="expected-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <text x="8.0" y="8.0" class="underline" fill="#191724">J</text>
+          <text x="16.4" y="8.0" fill="#191724">ava</text>
+          <text x="41.6" y="8.0" class="underline" fill="#191724">Sc</text>
+          <text x="58.4" y="8.0" fill="#191724">ript</text>
+          <text x="134.0" y="8.0" fill="#E0DEF4">Frontend</text>
+        </svg>
+        </div>
+        <div class="actual-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <text x="8.0" y="8.0" class="underline" fill="#191724">J</text>
+          <text x="16.4" y="8.0" fill="#191724">ava</text>
+          <text x="41.6" y="8.0" class="underline" fill="#191724">Sc</text>
+          <text x="58.4" y="8.0" fill="#191724">ript</text>
+          <text x="134.0" y="8.0" fill="#E0DEF4">Frontend</text>
+        </svg>
+        </div>
+      </div>
+      <div class="diff-controls">
+        <label class="slider-label-text">Actual opacity:</label>
+        <input type="range" min="0" max="100" value="50" class="opacity-slider">
+        <span class="opacity-value">50%</span>
+      </div>
+    </div>
+    <div class="highlight-view">
+      <div class="snapshot-label">Snapshot (no differences to highlight)</div>
+      <div class="snapshot">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <text x="8.0" y="8.0" class="underline" fill="#191724">J</text>
+          <text x="16.4" y="8.0" fill="#191724">ava</text>
+          <text x="41.6" y="8.0" class="underline" fill="#191724">Sc</text>
+          <text x="58.4" y="8.0" fill="#191724">ript</text>
+          <text x="134.0" y="8.0" fill="#E0DEF4">Frontend</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="3" data-name="TestSnapshot_Table_Filter_NoMatches">
+    <div class="comparison-header">
+      <span class="comparison-name">TestSnapshot_Table_Filter_NoMatches</span>
+      <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
+    </div>
+    <div class="comparison-description">Empty table - no rows match the query &#39;xyz&#39;</div>
+    <div class="snapshots">
+      <div class="snapshot-container">
+        <div class="snapshot-label">Expected</div>
+        <div class="snapshot expected">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="134" viewBox="0 0 436 134">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+          </svg>
+        </div>
+      </div>
+      <div class="snapshot-container">
+        <div class="snapshot-label">Actual</div>
+        <div class="snapshot actual">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="134" viewBox="0 0 436 134">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="diff-view">
+      <div class="snapshot-label"><span class="diff-mode-label">Overlay</span>: Expected + Actual</div>
+      <div class="diff-layers">
+        <div class="expected-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="134" viewBox="0 0 436 134">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+        </svg>
+        </div>
+        <div class="actual-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="134" viewBox="0 0 436 134">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+        </svg>
+        </div>
+      </div>
+      <div class="diff-controls">
+        <label class="slider-label-text">Actual opacity:</label>
+        <input type="range" min="0" max="100" value="50" class="opacity-slider">
+        <span class="opacity-value">50%</span>
+      </div>
+    </div>
+    <div class="highlight-view">
+      <div class="snapshot-label">Snapshot (no differences to highlight)</div>
+      <div class="snapshot">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="134" viewBox="0 0 436 134">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="4" data-name="TestSnapshot_Table_Filter_EmptyQuery">
+    <div class="comparison-header">
+      <span class="comparison-name">TestSnapshot_Table_Filter_EmptyQuery</span>
+      <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
+    </div>
+    <div class="comparison-description">All three rows visible - empty query shows unfiltered table</div>
+    <div class="snapshots">
+      <div class="snapshot-container">
+        <div class="snapshot-label">Expected</div>
+        <div class="snapshot expected">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <text x="8.0" y="8.0" fill="#191724">Alice</text>
+            <text x="92.0" y="8.0" fill="#E0DEF4">Engineer</text>
+            <text x="8.0" y="27.6" fill="#E0DEF4">Bob</text>
+            <text x="92.0" y="27.6" fill="#E0DEF4">Designer</text>
+            <text x="8.0" y="47.2" fill="#E0DEF4">Charlie</text>
+            <text x="92.0" y="47.2" fill="#E0DEF4">Manager</text>
+          </svg>
+        </div>
+      </div>
+      <div class="snapshot-container">
+        <div class="snapshot-label">Actual</div>
+        <div class="snapshot actual">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <text x="8.0" y="8.0" fill="#191724">Alice</text>
+            <text x="92.0" y="8.0" fill="#E0DEF4">Engineer</text>
+            <text x="8.0" y="27.6" fill="#E0DEF4">Bob</text>
+            <text x="92.0" y="27.6" fill="#E0DEF4">Designer</text>
+            <text x="8.0" y="47.2" fill="#E0DEF4">Charlie</text>
+            <text x="92.0" y="47.2" fill="#E0DEF4">Manager</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="diff-view">
+      <div class="snapshot-label"><span class="diff-mode-label">Overlay</span>: Expected + Actual</div>
+      <div class="diff-layers">
+        <div class="expected-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <text x="8.0" y="8.0" fill="#191724">Alice</text>
+          <text x="92.0" y="8.0" fill="#E0DEF4">Engineer</text>
+          <text x="8.0" y="27.6" fill="#E0DEF4">Bob</text>
+          <text x="92.0" y="27.6" fill="#E0DEF4">Designer</text>
+          <text x="8.0" y="47.2" fill="#E0DEF4">Charlie</text>
+          <text x="92.0" y="47.2" fill="#E0DEF4">Manager</text>
+        </svg>
+        </div>
+        <div class="actual-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <text x="8.0" y="8.0" fill="#191724">Alice</text>
+          <text x="92.0" y="8.0" fill="#E0DEF4">Engineer</text>
+          <text x="8.0" y="27.6" fill="#E0DEF4">Bob</text>
+          <text x="92.0" y="27.6" fill="#E0DEF4">Designer</text>
+          <text x="8.0" y="47.2" fill="#E0DEF4">Charlie</text>
+          <text x="92.0" y="47.2" fill="#E0DEF4">Manager</text>
+        </svg>
+        </div>
+      </div>
+      <div class="diff-controls">
+        <label class="slider-label-text">Actual opacity:</label>
+        <input type="range" min="0" max="100" value="50" class="opacity-slider">
+        <span class="opacity-value">50%</span>
+      </div>
+    </div>
+    <div class="highlight-view">
+      <div class="snapshot-label">Snapshot (no differences to highlight)</div>
+      <div class="snapshot">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <text x="8.0" y="8.0" fill="#191724">Alice</text>
+          <text x="92.0" y="8.0" fill="#E0DEF4">Engineer</text>
+          <text x="8.0" y="27.6" fill="#E0DEF4">Bob</text>
+          <text x="92.0" y="27.6" fill="#E0DEF4">Designer</text>
+          <text x="8.0" y="47.2" fill="#E0DEF4">Charlie</text>
+          <text x="92.0" y="47.2" fill="#E0DEF4">Manager</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="5" data-name="TestSnapshot_Table_Filter_WithSelection">
+    <div class="comparison-header">
+      <span class="comparison-name">TestSnapshot_Table_Filter_WithSelection</span>
+      <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
+    </div>
+    <div class="comparison-description">Two filtered rows with Alice row highlighted (active), both showing &#39;Engineer&#39; with match highlighting</div>
+    <div class="snapshots">
+      <div class="snapshot-container">
+        <div class="snapshot-label">Expected</div>
+        <div class="snapshot expected">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="134.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="8.0" fill="#191724">Alice</text>
+            <text x="92.0" y="8.0" class="underline" fill="#E0DEF4">Engineer</text>
+            <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="27.6" fill="#E0DEF4">Charlie</text>
+            <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+          </svg>
+        </div>
+      </div>
+      <div class="snapshot-container">
+        <div class="snapshot-label">Actual</div>
+        <div class="snapshot actual">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="134.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="8.0" fill="#191724">Alice</text>
+            <text x="92.0" y="8.0" class="underline" fill="#E0DEF4">Engineer</text>
+            <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="27.6" fill="#E0DEF4">Charlie</text>
+            <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="diff-view">
+      <div class="snapshot-label"><span class="diff-mode-label">Overlay</span>: Expected + Actual</div>
+      <div class="diff-layers">
+        <div class="expected-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="8.0" fill="#191724">Alice</text>
+          <text x="92.0" y="8.0" class="underline" fill="#E0DEF4">Engineer</text>
+          <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" fill="#E0DEF4">Charlie</text>
+          <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+        </svg>
+        </div>
+        <div class="actual-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="8.0" fill="#191724">Alice</text>
+          <text x="92.0" y="8.0" class="underline" fill="#E0DEF4">Engineer</text>
+          <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" fill="#E0DEF4">Charlie</text>
+          <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+        </svg>
+        </div>
+      </div>
+      <div class="diff-controls">
+        <label class="slider-label-text">Actual opacity:</label>
+        <input type="range" min="0" max="100" value="50" class="opacity-slider">
+        <span class="opacity-value">50%</span>
+      </div>
+    </div>
+    <div class="highlight-view">
+      <div class="snapshot-label">Snapshot (no differences to highlight)</div>
+      <div class="snapshot">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="8.0" fill="#191724">Alice</text>
+          <text x="92.0" y="8.0" class="underline" fill="#E0DEF4">Engineer</text>
+          <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" fill="#E0DEF4">Charlie</text>
+          <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="6" data-name="TestSnapshot_Table_Filter_WithHeaders">
+    <div class="comparison-header">
+      <span class="comparison-name">TestSnapshot_Table_Filter_WithHeaders</span>
+      <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
+    </div>
+    <div class="comparison-description">Header row visible (Name, Role, City) followed by two filtered data rows with &#39;Engineer&#39; highlighted</div>
+    <div class="snapshots">
+      <div class="snapshot-container">
+        <div class="snapshot-label">Expected</div>
+        <div class="snapshot expected">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <text x="8.0" y="8.0" fill="#E0DEF4">Name</text>
+            <text x="92.0" y="8.0" fill="#E0DEF4">Role</text>
+            <text x="192.8" y="8.0" fill="#E0DEF4">City</text>
+            <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="50.0" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="27.6" fill="#191724">Alice</text>
+            <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+            <text x="192.8" y="27.6" fill="#E0DEF4">NYC</text>
+            <rect x="92.0" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="100.4" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="108.8" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="117.2" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="125.6" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="134.0" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="142.4" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="150.8" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="47.2" fill="#E0DEF4">Charlie</text>
+            <text x="92.0" y="47.2" class="underline" fill="#E0DEF4">Engineer</text>
+            <text x="192.8" y="47.2" fill="#E0DEF4">SF</text>
+          </svg>
+        </div>
+      </div>
+      <div class="snapshot-container">
+        <div class="snapshot-label">Actual</div>
+        <div class="snapshot actual">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <text x="8.0" y="8.0" fill="#E0DEF4">Name</text>
+            <text x="92.0" y="8.0" fill="#E0DEF4">Role</text>
+            <text x="192.8" y="8.0" fill="#E0DEF4">City</text>
+            <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="50.0" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="27.6" fill="#191724">Alice</text>
+            <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+            <text x="192.8" y="27.6" fill="#E0DEF4">NYC</text>
+            <rect x="92.0" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="100.4" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="108.8" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="117.2" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="125.6" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="134.0" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="142.4" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="150.8" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="47.2" fill="#E0DEF4">Charlie</text>
+            <text x="92.0" y="47.2" class="underline" fill="#E0DEF4">Engineer</text>
+            <text x="192.8" y="47.2" fill="#E0DEF4">SF</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="diff-view">
+      <div class="snapshot-label"><span class="diff-mode-label">Overlay</span>: Expected + Actual</div>
+      <div class="diff-layers">
+        <div class="expected-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <text x="8.0" y="8.0" fill="#E0DEF4">Name</text>
+          <text x="92.0" y="8.0" fill="#E0DEF4">Role</text>
+          <text x="192.8" y="8.0" fill="#E0DEF4">City</text>
+          <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" fill="#191724">Alice</text>
+          <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+          <text x="192.8" y="27.6" fill="#E0DEF4">NYC</text>
+          <rect x="92.0" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="47.2" fill="#E0DEF4">Charlie</text>
+          <text x="92.0" y="47.2" class="underline" fill="#E0DEF4">Engineer</text>
+          <text x="192.8" y="47.2" fill="#E0DEF4">SF</text>
+        </svg>
+        </div>
+        <div class="actual-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <text x="8.0" y="8.0" fill="#E0DEF4">Name</text>
+          <text x="92.0" y="8.0" fill="#E0DEF4">Role</text>
+          <text x="192.8" y="8.0" fill="#E0DEF4">City</text>
+          <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" fill="#191724">Alice</text>
+          <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+          <text x="192.8" y="27.6" fill="#E0DEF4">NYC</text>
+          <rect x="92.0" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="47.2" fill="#E0DEF4">Charlie</text>
+          <text x="92.0" y="47.2" class="underline" fill="#E0DEF4">Engineer</text>
+          <text x="192.8" y="47.2" fill="#E0DEF4">SF</text>
+        </svg>
+        </div>
+      </div>
+      <div class="diff-controls">
+        <label class="slider-label-text">Actual opacity:</label>
+        <input type="range" min="0" max="100" value="50" class="opacity-slider">
+        <span class="opacity-value">50%</span>
+      </div>
+    </div>
+    <div class="highlight-view">
+      <div class="snapshot-label">Snapshot (no differences to highlight)</div>
+      <div class="snapshot">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="173" viewBox="0 0 436 173">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <text x="8.0" y="8.0" fill="#E0DEF4">Name</text>
+          <text x="92.0" y="8.0" fill="#E0DEF4">Role</text>
+          <text x="192.8" y="8.0" fill="#E0DEF4">City</text>
+          <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="27.6" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" fill="#191724">Alice</text>
+          <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
+          <text x="192.8" y="27.6" fill="#E0DEF4">NYC</text>
+          <rect x="92.0" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="100.4" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="108.8" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="117.2" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="125.6" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="134.0" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="142.4" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="150.8" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="47.2" fill="#E0DEF4">Charlie</text>
+          <text x="92.0" y="47.2" class="underline" fill="#E0DEF4">Engineer</text>
+          <text x="192.8" y="47.2" fill="#E0DEF4">SF</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="7" data-name="TestSnapshot_Table_Filter_CustomMatcher">
+    <div class="comparison-header">
+      <span class="comparison-name">TestSnapshot_Table_Filter_CustomMatcher</span>
+      <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
+    </div>
+    <div class="comparison-description">Only Alice row visible - custom renderer shows plain text without highlighting</div>
+    <div class="snapshots">
+      <div class="snapshot-container">
+        <div class="snapshot-label">Expected</div>
+        <div class="snapshot expected">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="134" viewBox="0 0 436 134">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <text x="8.0" y="8.0" fill="#E0DEF4">Alice</text>
+            <text x="92.0" y="8.0" fill="#E0DEF4">30</text>
+          </svg>
+        </div>
+      </div>
+      <div class="snapshot-container">
+        <div class="snapshot-label">Actual</div>
+        <div class="snapshot actual">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="134" viewBox="0 0 436 134">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <text x="8.0" y="8.0" fill="#E0DEF4">Alice</text>
+            <text x="92.0" y="8.0" fill="#E0DEF4">30</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="diff-view">
+      <div class="snapshot-label"><span class="diff-mode-label">Overlay</span>: Expected + Actual</div>
+      <div class="diff-layers">
+        <div class="expected-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="134" viewBox="0 0 436 134">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <text x="8.0" y="8.0" fill="#E0DEF4">Alice</text>
+          <text x="92.0" y="8.0" fill="#E0DEF4">30</text>
+        </svg>
+        </div>
+        <div class="actual-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="134" viewBox="0 0 436 134">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <text x="8.0" y="8.0" fill="#E0DEF4">Alice</text>
+          <text x="92.0" y="8.0" fill="#E0DEF4">30</text>
+        </svg>
+        </div>
+      </div>
+      <div class="diff-controls">
+        <label class="slider-label-text">Actual opacity:</label>
+        <input type="range" min="0" max="100" value="50" class="opacity-slider">
+        <span class="opacity-value">50%</span>
+      </div>
+    </div>
+    <div class="highlight-view">
+      <div class="snapshot-label">Snapshot (no differences to highlight)</div>
+      <div class="snapshot">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="134" viewBox="0 0 436 134">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <text x="8.0" y="8.0" fill="#E0DEF4">Alice</text>
+          <text x="92.0" y="8.0" fill="#E0DEF4">30</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="8" data-name="TestSnapshot_Table_Filter_Highlighting">
+    <div class="comparison-header">
+      <span class="comparison-name">TestSnapshot_Table_Filter_Highlighting</span>
+      <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
+    </div>
+    <div class="comparison-description">Two rows visible with &#39;ap&#39; highlighted in accent color in first column of each row</div>
+    <div class="snapshots">
+      <div class="snapshot-container">
+        <div class="snapshot-label">Expected</div>
+        <div class="snapshot expected">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <text x="8.0" y="8.0" class="underline" fill="#191724">Ap</text>
+            <text x="24.8" y="8.0" fill="#191724">ple</text>
+            <text x="58.4" y="8.0" fill="#191724">Inc</text>
+            <text x="134.0" y="8.0" fill="#E0DEF4">Technology</text>
+            <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="27.6" class="underline" fill="#E0DEF4">Ap</text>
+            <text x="24.8" y="27.6" fill="#E0DEF4">ricot</text>
+            <text x="75.2" y="27.6" fill="#E0DEF4">Co</text>
+            <text x="134.0" y="27.6" fill="#E0DEF4">Food</text>
+          </svg>
+        </div>
+      </div>
+      <div class="snapshot-container">
+        <div class="snapshot-label">Actual</div>
+        <div class="snapshot actual">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <text x="8.0" y="8.0" class="underline" fill="#191724">Ap</text>
+            <text x="24.8" y="8.0" fill="#191724">ple</text>
+            <text x="58.4" y="8.0" fill="#191724">Inc</text>
+            <text x="134.0" y="8.0" fill="#E0DEF4">Technology</text>
+            <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="27.6" class="underline" fill="#E0DEF4">Ap</text>
+            <text x="24.8" y="27.6" fill="#E0DEF4">ricot</text>
+            <text x="75.2" y="27.6" fill="#E0DEF4">Co</text>
+            <text x="134.0" y="27.6" fill="#E0DEF4">Food</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="diff-view">
+      <div class="snapshot-label"><span class="diff-mode-label">Overlay</span>: Expected + Actual</div>
+      <div class="diff-layers">
+        <div class="expected-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <text x="8.0" y="8.0" class="underline" fill="#191724">Ap</text>
+          <text x="24.8" y="8.0" fill="#191724">ple</text>
+          <text x="58.4" y="8.0" fill="#191724">Inc</text>
+          <text x="134.0" y="8.0" fill="#E0DEF4">Technology</text>
+          <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" class="underline" fill="#E0DEF4">Ap</text>
+          <text x="24.8" y="27.6" fill="#E0DEF4">ricot</text>
+          <text x="75.2" y="27.6" fill="#E0DEF4">Co</text>
+          <text x="134.0" y="27.6" fill="#E0DEF4">Food</text>
+        </svg>
+        </div>
+        <div class="actual-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <text x="8.0" y="8.0" class="underline" fill="#191724">Ap</text>
+          <text x="24.8" y="8.0" fill="#191724">ple</text>
+          <text x="58.4" y="8.0" fill="#191724">Inc</text>
+          <text x="134.0" y="8.0" fill="#E0DEF4">Technology</text>
+          <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" class="underline" fill="#E0DEF4">Ap</text>
+          <text x="24.8" y="27.6" fill="#E0DEF4">ricot</text>
+          <text x="75.2" y="27.6" fill="#E0DEF4">Co</text>
+          <text x="134.0" y="27.6" fill="#E0DEF4">Food</text>
+        </svg>
+        </div>
+      </div>
+      <div class="diff-controls">
+        <label class="slider-label-text">Actual opacity:</label>
+        <input type="range" min="0" max="100" value="50" class="opacity-slider">
+        <span class="opacity-value">50%</span>
+      </div>
+    </div>
+    <div class="highlight-view">
+      <div class="snapshot-label">Snapshot (no differences to highlight)</div>
+      <div class="snapshot">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#D0ADCB"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <text x="8.0" y="8.0" class="underline" fill="#191724">Ap</text>
+          <text x="24.8" y="8.0" fill="#191724">ple</text>
+          <text x="58.4" y="8.0" fill="#191724">Inc</text>
+          <text x="134.0" y="8.0" fill="#E0DEF4">Technology</text>
+          <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" class="underline" fill="#E0DEF4">Ap</text>
+          <text x="24.8" y="27.6" fill="#E0DEF4">ricot</text>
+          <text x="75.2" y="27.6" fill="#E0DEF4">Co</text>
+          <text x="134.0" y="27.6" fill="#E0DEF4">Food</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="9" data-name="TestSnapshot_Table_Filter_MatchAcrossCells">
+    <div class="comparison-header">
+      <span class="comparison-name">TestSnapshot_Table_Filter_MatchAcrossCells</span>
+      <span class="status-badge passed">PASSED</span>
+      <button class="seen-btn">Mark as seen</button>
+    </div>
+    <div class="comparison-description">Two rows visible: Alice (NYC in city column) and NYC Admin (NYC in both name and city columns)</div>
+    <div class="snapshots">
+      <div class="snapshot-container">
+        <div class="snapshot-label">Expected</div>
+        <div class="snapshot expected">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="209.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="218.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="226.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="8.0" fill="#191724">Alice</text>
+            <text x="108.8" y="8.0" fill="#E0DEF4">Engineer</text>
+            <text x="209.6" y="8.0" class="underline" fill="#E0DEF4">NYC</text>
+            <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="209.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="218.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="226.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="27.6" class="underline" fill="#E0DEF4">NYC</text>
+            <text x="41.6" y="27.6" fill="#E0DEF4">Admin</text>
+            <text x="108.8" y="27.6" fill="#E0DEF4">Manager</text>
+            <text x="209.6" y="27.6" class="underline" fill="#E0DEF4">NYC</text>
+          </svg>
+        </div>
+      </div>
+      <div class="snapshot-container">
+        <div class="snapshot-label">Actual</div>
+        <div class="snapshot actual">
+          <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+              text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+              .bold { font-weight: bold; }
+              .italic { font-style: italic; }
+              .underline { text-decoration: underline; }
+              .strikethrough { text-decoration: line-through; }
+            </style>
+            <rect width="100%" height="100%" fill="#000000"/>
+            <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+            <rect x="209.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="218.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="226.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="8.0" fill="#191724">Alice</text>
+            <text x="108.8" y="8.0" fill="#E0DEF4">Engineer</text>
+            <text x="209.6" y="8.0" class="underline" fill="#E0DEF4">NYC</text>
+            <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="209.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="218.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <rect x="226.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+            <text x="8.0" y="27.6" class="underline" fill="#E0DEF4">NYC</text>
+            <text x="41.6" y="27.6" fill="#E0DEF4">Admin</text>
+            <text x="108.8" y="27.6" fill="#E0DEF4">Manager</text>
+            <text x="209.6" y="27.6" class="underline" fill="#E0DEF4">NYC</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="diff-view">
+      <div class="snapshot-label"><span class="diff-mode-label">Overlay</span>: Expected + Actual</div>
+      <div class="diff-layers">
+        <div class="expected-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="209.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="218.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="226.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="8.0" fill="#191724">Alice</text>
+          <text x="108.8" y="8.0" fill="#E0DEF4">Engineer</text>
+          <text x="209.6" y="8.0" class="underline" fill="#E0DEF4">NYC</text>
+          <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="209.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="218.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="226.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" class="underline" fill="#E0DEF4">NYC</text>
+          <text x="41.6" y="27.6" fill="#E0DEF4">Admin</text>
+          <text x="108.8" y="27.6" fill="#E0DEF4">Manager</text>
+          <text x="209.6" y="27.6" class="underline" fill="#E0DEF4">NYC</text>
+        </svg>
+        </div>
+        <div class="actual-layer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="209.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="218.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="226.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="8.0" fill="#191724">Alice</text>
+          <text x="108.8" y="8.0" fill="#E0DEF4">Engineer</text>
+          <text x="209.6" y="8.0" class="underline" fill="#E0DEF4">NYC</text>
+          <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="209.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="218.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="226.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" class="underline" fill="#E0DEF4">NYC</text>
+          <text x="41.6" y="27.6" fill="#E0DEF4">Admin</text>
+          <text x="108.8" y="27.6" fill="#E0DEF4">Manager</text>
+          <text x="209.6" y="27.6" class="underline" fill="#E0DEF4">NYC</text>
+        </svg>
+        </div>
+      </div>
+      <div class="diff-controls">
+        <label class="slider-label-text">Actual opacity:</label>
+        <input type="range" min="0" max="100" value="50" class="opacity-slider">
+        <span class="opacity-value">50%</span>
+      </div>
+    </div>
+    <div class="highlight-view">
+      <div class="snapshot-label">Snapshot (no differences to highlight)</div>
+      <div class="snapshot">
+        <svg xmlns="http://www.w3.org/2000/svg" width="436" height="153" viewBox="0 0 436 153">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+            text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+            .bold { font-weight: bold; }
+            .italic { font-style: italic; }
+            .underline { text-decoration: underline; }
+            .strikethrough { text-decoration: line-through; }
+          </style>
+          <rect width="100%" height="100%" fill="#000000"/>
+          <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#C4A7E7"/>
+          <rect x="209.6" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="218.0" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="226.4" y="8.0" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="8.0" fill="#191724">Alice</text>
+          <text x="108.8" y="8.0" fill="#E0DEF4">Engineer</text>
+          <text x="209.6" y="8.0" class="underline" fill="#E0DEF4">NYC</text>
+          <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="209.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="218.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <rect x="226.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+          <text x="8.0" y="27.6" class="underline" fill="#E0DEF4">NYC</text>
+          <text x="41.6" y="27.6" fill="#E0DEF4">Admin</text>
+          <text x="108.8" y="27.6" fill="#E0DEF4">Manager</text>
+          <text x="209.6" y="27.6" class="underline" fill="#E0DEF4">NYC</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="10" data-name="TestSnapshot_TabBar_Basic">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabBar_Basic</span>
       <span class="status-badge passed">PASSED</span>
@@ -505,7 +2445,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="1" data-name="TestSnapshot_TabBar_SecondActive">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="11" data-name="TestSnapshot_TabBar_SecondActive">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabBar_SecondActive</span>
       <span class="status-badge passed">PASSED</span>
@@ -769,7 +2709,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="2" data-name="TestSnapshot_TabBar_LastActive">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="12" data-name="TestSnapshot_TabBar_LastActive">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabBar_LastActive</span>
       <span class="status-badge passed">PASSED</span>
@@ -1033,7 +2973,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="3" data-name="TestSnapshot_TabBar_SingleTab">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="13" data-name="TestSnapshot_TabBar_SingleTab">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabBar_SingleTab</span>
       <span class="status-badge passed">PASSED</span>
@@ -1197,7 +3137,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="4" data-name="TestSnapshot_TabBar_Closable">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="14" data-name="TestSnapshot_TabBar_Closable">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabBar_Closable</span>
       <span class="status-badge passed">PASSED</span>
@@ -1431,7 +3371,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="5" data-name="TestSnapshot_TabBar_CustomStyle">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="15" data-name="TestSnapshot_TabBar_CustomStyle">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabBar_CustomStyle</span>
       <span class="status-badge passed">PASSED</span>
@@ -1635,7 +3575,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="6" data-name="TestSnapshot_TabBar_WithContainerStyle">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="16" data-name="TestSnapshot_TabBar_WithContainerStyle">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabBar_WithContainerStyle</span>
       <span class="status-badge passed">PASSED</span>
@@ -1839,7 +3779,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="7" data-name="TestSnapshot_TabBar_ManyTabs">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="17" data-name="TestSnapshot_TabBar_ManyTabs">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabBar_ManyTabs</span>
       <span class="status-badge passed">PASSED</span>
@@ -2208,7 +4148,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="8" data-name="TestSnapshot_TabBar_Empty">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="18" data-name="TestSnapshot_TabBar_Empty">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabBar_Empty</span>
       <span class="status-badge passed">PASSED</span>
@@ -2302,7 +4242,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="9" data-name="TestSnapshot_TabBar_NilState">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="19" data-name="TestSnapshot_TabBar_NilState">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabBar_NilState</span>
       <span class="status-badge passed">PASSED</span>
@@ -2396,7 +4336,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="10" data-name="TestSnapshot_TabView_Basic">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="20" data-name="TestSnapshot_TabView_Basic">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabView_Basic</span>
       <span class="status-badge passed">PASSED</span>
@@ -2620,7 +4560,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="11" data-name="TestSnapshot_TabView_SecondTabActive">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="21" data-name="TestSnapshot_TabView_SecondTabActive">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabView_SecondTabActive</span>
       <span class="status-badge passed">PASSED</span>
@@ -2844,7 +4784,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="12" data-name="TestSnapshot_TabView_WithComplexContent">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="22" data-name="TestSnapshot_TabView_WithComplexContent">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabView_WithComplexContent</span>
       <span class="status-badge passed">PASSED</span>
@@ -3063,7 +5003,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="13" data-name="TestSnapshot_TabView_Closable">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="23" data-name="TestSnapshot_TabView_Closable">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabView_Closable</span>
       <span class="status-badge passed">PASSED</span>
@@ -3317,7 +5257,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="14" data-name="TestSnapshot_TabView_CustomStyles">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="24" data-name="TestSnapshot_TabView_CustomStyles">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabView_CustomStyles</span>
       <span class="status-badge passed">PASSED</span>
@@ -4341,7 +6281,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="15" data-name="TestSnapshot_TabView_Empty">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="25" data-name="TestSnapshot_TabView_Empty">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabView_Empty</span>
       <span class="status-badge passed">PASSED</span>
@@ -4435,7 +6375,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="16" data-name="TestSnapshot_TabView_NilState">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="26" data-name="TestSnapshot_TabView_NilState">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabView_NilState</span>
       <span class="status-badge passed">PASSED</span>
@@ -4529,7 +6469,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="17" data-name="TestSnapshot_TabView_NilContent">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="27" data-name="TestSnapshot_TabView_NilContent">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabView_NilContent</span>
       <span class="status-badge passed">PASSED</span>
@@ -4703,7 +6643,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="18" data-name="TestSnapshot_TabBar_InDock">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="28" data-name="TestSnapshot_TabBar_InDock">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabBar_InDock</span>
       <span class="status-badge passed">PASSED</span>
@@ -6822,7 +8762,7 @@
       </div>
     </div>
   </div>
-  <div class="comparison passed view-sidebyside" data-status="passed" data-index="19" data-name="TestSnapshot_TabBar_WithKeybindBar">
+  <div class="comparison passed view-sidebyside" data-status="passed" data-index="29" data-name="TestSnapshot_TabBar_WithKeybindBar">
     <div class="comparison-header">
       <span class="comparison-name">TestSnapshot_TabBar_WithKeybindBar</span>
       <span class="status-badge passed">PASSED</span>

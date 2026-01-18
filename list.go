@@ -389,7 +389,9 @@ type List[T any] struct {
 	Width               Dimension                                                          // Optional width (zero value = auto)
 	Height              Dimension                                                          // Optional height (zero value = auto)
 	Style               Style                                                              // Optional styling
-	Click               func()                                                             // Optional callback invoked when clicked
+	Click               func(MouseEvent)                                                   // Optional callback invoked when clicked
+	MouseDown           func(MouseEvent)                                                   // Optional callback invoked when mouse is pressed
+	MouseUp             func(MouseEvent)                                                   // Optional callback invoked when mouse is released
 	Hover               func(bool)                                                         // Optional callback invoked when hover state changes
 	Blur                func()                                                             // Optional callback invoked when focus leaves this widget
 }
@@ -456,9 +458,25 @@ func (l List[T]) GetStyle() Style {
 
 // OnClick is called when the widget is clicked.
 // Implements the Clickable interface.
-func (l List[T]) OnClick() {
+func (l List[T]) OnClick(event MouseEvent) {
 	if l.Click != nil {
-		l.Click()
+		l.Click(event)
+	}
+}
+
+// OnMouseDown is called when the mouse is pressed on the widget.
+// Implements the MouseDownHandler interface.
+func (l List[T]) OnMouseDown(event MouseEvent) {
+	if l.MouseDown != nil {
+		l.MouseDown(event)
+	}
+}
+
+// OnMouseUp is called when the mouse is released on the widget.
+// Implements the MouseUpHandler interface.
+func (l List[T]) OnMouseUp(event MouseEvent) {
+	if l.MouseUp != nil {
+		l.MouseUp(event)
 	}
 }
 

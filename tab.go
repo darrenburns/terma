@@ -313,8 +313,10 @@ type TabBar struct {
 	Style          Style             // Container style
 	TabStyle       Style             // Inactive tab style
 	ActiveTabStyle Style             // Active tab style
-	Click          func()            // Optional callback invoked when clicked
-	Hover          func(bool)        // Optional callback invoked when hover state changes
+	Click     func(MouseEvent) // Optional callback invoked when clicked
+	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
+	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
+	Hover     func(bool)       // Optional callback invoked when hover state changes
 }
 
 // WidgetID returns the widget's unique identifier.
@@ -338,9 +340,23 @@ func (t TabBar) IsFocusable() bool {
 }
 
 // OnClick is called when the widget is clicked.
-func (t TabBar) OnClick() {
+func (t TabBar) OnClick(event MouseEvent) {
 	if t.Click != nil {
-		t.Click()
+		t.Click(event)
+	}
+}
+
+// OnMouseDown is called when the mouse is pressed.
+func (t TabBar) OnMouseDown(event MouseEvent) {
+	if t.MouseDown != nil {
+		t.MouseDown(event)
+	}
+}
+
+// OnMouseUp is called when the mouse is released.
+func (t TabBar) OnMouseUp(event MouseEvent) {
+	if t.MouseUp != nil {
+		t.MouseUp(event)
 	}
 }
 
@@ -531,7 +547,7 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 		children = append(children, Text{
 			Content: label,
 			Style:   style,
-			Click: func() {
+			Click: func(MouseEvent) {
 				t.State.SetActiveKey(tabKey)
 				if t.OnTabChange != nil {
 					t.OnTabChange(tabKey)
@@ -541,13 +557,15 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 	}
 
 	return Row{
-		ID:       t.ID,
-		Width:    t.Width,
-		Height:   t.Height,
-		Style:    t.Style,
-		Children: children,
-		Click:    t.Click,
-		Hover:    t.Hover,
+		ID:        t.ID,
+		Width:     t.Width,
+		Height:    t.Height,
+		Style:     t.Style,
+		Children:  children,
+		Click:     t.Click,
+		MouseDown: t.MouseDown,
+		MouseUp:   t.MouseUp,
+		Hover:     t.Hover,
 	}
 }
 

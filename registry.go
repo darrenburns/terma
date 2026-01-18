@@ -33,9 +33,10 @@ func (r Rect) Intersect(other Rect) Rect {
 
 // WidgetEntry stores a widget along with its position and identity.
 type WidgetEntry struct {
-	Widget Widget
-	ID     string
-	Bounds Rect
+	Widget      Widget
+	EventWidget Widget
+	ID          string
+	Bounds      Rect
 }
 
 // WidgetRegistry tracks all widgets and their positions during render.
@@ -52,11 +53,15 @@ func NewWidgetRegistry() *WidgetRegistry {
 }
 
 // Record adds a widget to the registry with its bounds and optional ID.
-func (r *WidgetRegistry) Record(widget Widget, id string, bounds Rect) {
+func (r *WidgetRegistry) Record(widget Widget, eventWidget Widget, id string, bounds Rect) {
+	if eventWidget == nil {
+		eventWidget = widget
+	}
 	r.entries = append(r.entries, WidgetEntry{
-		Widget: widget,
-		ID:     id,
-		Bounds: bounds,
+		Widget:      widget,
+		EventWidget: eventWidget,
+		ID:          id,
+		Bounds:      bounds,
 	})
 }
 
@@ -152,4 +157,3 @@ func (r *WidgetRegistry) IncrementTotal() {
 func (r *WidgetRegistry) TotalCount() int {
 	return r.totalCount
 }
-

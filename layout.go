@@ -41,8 +41,10 @@ type Row struct {
 	MainAlign  MainAxisAlign  // Main axis (horizontal) alignment
 	CrossAlign CrossAxisAlign // Cross axis (vertical) alignment
 	Children   []Widget
-	Click      func()     // Optional callback invoked when clicked
-	Hover      func(bool) // Optional callback invoked when hover state changes
+	Click      func(MouseEvent) // Optional callback invoked when clicked
+	MouseDown  func(MouseEvent) // Optional callback invoked when mouse is pressed
+	MouseUp    func(MouseEvent) // Optional callback invoked when mouse is released
+	Hover      func(bool)       // Optional callback invoked when hover state changes
 }
 
 // GetDimensions returns the width and height dimension preferences.
@@ -63,9 +65,25 @@ func (r Row) WidgetID() string {
 
 // OnClick is called when the widget is clicked.
 // Implements the Clickable interface.
-func (r Row) OnClick() {
+func (r Row) OnClick(event MouseEvent) {
 	if r.Click != nil {
-		r.Click()
+		r.Click(event)
+	}
+}
+
+// OnMouseDown is called when the mouse is pressed on the widget.
+// Implements the MouseDownHandler interface.
+func (r Row) OnMouseDown(event MouseEvent) {
+	if r.MouseDown != nil {
+		r.MouseDown(event)
+	}
+}
+
+// OnMouseUp is called when the mouse is released on the widget.
+// Implements the MouseUpHandler interface.
+func (r Row) OnMouseUp(event MouseEvent) {
+	if r.MouseUp != nil {
+		r.MouseUp(event)
 	}
 }
 
@@ -147,8 +165,10 @@ type Column struct {
 	MainAlign  MainAxisAlign  // Main axis (vertical) alignment
 	CrossAlign CrossAxisAlign // Cross axis (horizontal) alignment
 	Children   []Widget
-	Click      func()     // Optional callback invoked when clicked
-	Hover      func(bool) // Optional callback invoked when hover state changes
+	Click      func(MouseEvent) // Optional callback invoked when clicked
+	MouseDown  func(MouseEvent) // Optional callback invoked when mouse is pressed
+	MouseUp    func(MouseEvent) // Optional callback invoked when mouse is released
+	Hover      func(bool)       // Optional callback invoked when hover state changes
 }
 
 // GetDimensions returns the width and height dimension preferences.
@@ -169,9 +189,25 @@ func (c Column) WidgetID() string {
 
 // OnClick is called when the widget is clicked.
 // Implements the Clickable interface.
-func (c Column) OnClick() {
+func (c Column) OnClick(event MouseEvent) {
 	if c.Click != nil {
-		c.Click()
+		c.Click(event)
+	}
+}
+
+// OnMouseDown is called when the mouse is pressed on the widget.
+// Implements the MouseDownHandler interface.
+func (c Column) OnMouseDown(event MouseEvent) {
+	if c.MouseDown != nil {
+		c.MouseDown(event)
+	}
+}
+
+// OnMouseUp is called when the mouse is released on the widget.
+// Implements the MouseUpHandler interface.
+func (c Column) OnMouseUp(event MouseEvent) {
+	if c.MouseUp != nil {
+		c.MouseUp(event)
 	}
 }
 

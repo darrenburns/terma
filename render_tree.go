@@ -12,10 +12,12 @@ type RenderTree struct {
 	// Used for calling Render() and extracting style.
 	Widget Widget
 
-	// OriginalID is the ID from the original widget (before Build()).
-	// This preserves the ID for registration even when Build() returns
-	// a different widget type (e.g., Button.Build() returns Text).
-	OriginalID string
+	// EventWidget is the original widget (before Build()).
+	// Used for hit testing and event dispatch.
+	EventWidget Widget
+
+	// EventID is the ID used for hit testing and focus (explicit or auto).
+	EventID string
 
 	// Layout is the computed geometry for this widget.
 	// Contains BoxModel with all dimensions and insets.
@@ -29,15 +31,15 @@ type RenderTree struct {
 // BuildRenderTree constructs the complete render tree with all layout computed.
 // Focus collection also happens here, keeping the render phase pure painting.
 func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constraints, fc *FocusCollector) RenderTree {
-	built := widget.Build(ctx)
+	autoID := ctx.AutoID()
 
-	// Extract the original widget's ID before it's lost to Build()
-	// This is needed because Build() may return a different widget type
-	// (e.g., Button.Build() returns Text, losing the Button's ID)
-	var originalID string
-	if identifiable, ok := widget.(Identifiable); ok {
-		originalID = identifiable.WidgetID()
+	// Determine event ID (explicit ID or auto)
+	eventID := autoID
+	if identifiable, ok := widget.(Identifiable); ok && identifiable.WidgetID() != "" {
+		eventID = identifiable.WidgetID()
 	}
+
+	built := widget.Build(ctx)
 
 	// Collect focusables during tree build (not during render)
 	if fc != nil {
@@ -68,10 +70,11 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 	children := buildChildTrees(built, ctx, computed, fc)
 
 	return RenderTree{
-		Widget:     built,
-		OriginalID: originalID,
-		Layout:     computed,
-		Children:   children,
+		Widget:      built,
+		EventWidget: widget,
+		EventID:     eventID,
+		Layout:      computed,
+		Children:    children,
 	}
 }
 
