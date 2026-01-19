@@ -489,6 +489,8 @@ type Tree[T any] struct {
 	MultiSelect         bool
 	CursorStyle         // Embedded - CursorPrefix/SelectedPrefix for optional indicators
 	Indent              int
+	ShowGuideLines      *bool
+	GuideStyle          Style
 	ExpandIndicator     string
 	CollapseIndicator   string
 	LeafIndicator       string
@@ -599,6 +601,7 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 	if renderNodeWithMatch == nil && renderNode == nil {
 		renderNodeWithMatch = t.themedDefaultRenderNode(ctx)
 	}
+	theme := ctx.Theme()
 	widgetFocused := ctx.IsFocused(t)
 	cursorPrefix := t.CursorPrefix
 	selectedPrefix := t.SelectedPrefix
@@ -618,6 +621,19 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 	leafIndicator := t.LeafIndicator
 	if leafIndicator == "" {
 		leafIndicator = " "
+	}
+	showGuideLines := true
+	if t.ShowGuideLines != nil {
+		showGuideLines = *t.ShowGuideLines
+	}
+	guideStyle := t.GuideStyle
+	if guideStyle.IsZero() {
+		guideStyle = Style{ForegroundColor: theme.TextMuted}
+	}
+	guideSpanStyle := treeSpanStyleFromStyle(guideStyle)
+	var lastSiblingByPath map[string]bool
+	if showGuideLines {
+		lastSiblingByPath = treeLastSiblingByPath(entries)
 	}
 
 	children := make([]Widget, len(entries))
@@ -653,13 +669,14 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 			nodeWidget = renderNode(entry.node.Data, nodeCtx)
 		}
 
-		prefix := t.prefixForEntry(entry, rowPrefix, indent, expandIndicator, collapseIndicator, leafIndicator)
+		indentation, indicator := t.prefixPartsForEntry(entry, indent, expandIndicator, collapseIndicator, leafIndicator, showGuideLines, lastSiblingByPath)
+		prefixSpans := treePrefixSpans(rowPrefix, indentation, indicator, showGuideLines, guideSpanStyle)
 		prefixStyle := t.styleForContext(ctx, nodeCtx, widgetFocused)
 
 		children[i] = Row{
 			Spacing: 0,
 			Children: []Widget{
-				Text{Content: prefix, Style: prefixStyle},
+				Text{Spans: prefixSpans, Style: prefixStyle},
 				nodeWidget,
 			},
 		}
@@ -863,10 +880,14 @@ func (t Tree[T]) styleForContext(ctx BuildContext, nodeCtx TreeNodeContext, widg
 	return style
 }
 
-func (t Tree[T]) prefixForEntry(entry treeViewEntry[T], rowPrefix string, indent int, expandedIndicator, collapsedIndicator, leafIndicator string) string {
+func (t Tree[T]) prefixPartsForEntry(entry treeViewEntry[T], indent int, expandedIndicator, collapsedIndicator, leafIndicator string, showGuideLines bool, lastSiblingByPath map[string]bool) (string, string) {
 	indentation := ""
 	if indent > 0 && entry.depth > 0 {
-		indentation = strings.Repeat(" ", indent*entry.depth)
+		if showGuideLines {
+			indentation = treeGuidePrefix(entry.path, entry.depth, indent, lastSiblingByPath)
+		} else {
+			indentation = strings.Repeat(" ", indent*entry.depth)
+		}
 	}
 	indicator := leafIndicator
 	if entry.expandable {
@@ -876,7 +897,100 @@ func (t Tree[T]) prefixForEntry(entry treeViewEntry[T], rowPrefix string, indent
 			indicator = collapsedIndicator
 		}
 	}
-	return rowPrefix + indentation + indicator + " "
+	return indentation, indicator + " "
+}
+
+func treePrefixSpans(rowPrefix, indentation, indicator string, showGuideLines bool, guideSpanStyle SpanStyle) []Span {
+	spans := make([]Span, 0, 3)
+	if rowPrefix != "" {
+		spans = append(spans, Span{Text: rowPrefix})
+	}
+	if indentation != "" {
+		if showGuideLines {
+			spans = append(spans, Span{Text: indentation, Style: guideSpanStyle})
+		} else {
+			spans = append(spans, Span{Text: indentation})
+		}
+	}
+	if indicator != "" {
+		spans = append(spans, Span{Text: indicator})
+	}
+	return spans
+}
+
+func treeSpanStyleFromStyle(style Style) SpanStyle {
+	return SpanStyle{
+		Foreground:     treeColorProviderToColor(style.ForegroundColor),
+		Background:     treeColorProviderToColor(style.BackgroundColor),
+		Bold:           style.Bold,
+		Faint:          style.Faint,
+		Italic:         style.Italic,
+		Underline:      style.Underline,
+		UnderlineColor: style.UnderlineColor,
+		Blink:          style.Blink,
+		Reverse:        style.Reverse,
+		Conceal:        style.Conceal,
+		Strikethrough:  style.Strikethrough,
+	}
+}
+
+func treeColorProviderToColor(provider ColorProvider) Color {
+	if provider == nil || !provider.IsSet() {
+		return Color{}
+	}
+	return provider.ColorAt(1, 1, 0, 0)
+}
+
+func treeLastSiblingByPath[T any](entries []treeViewEntry[T]) map[string]bool {
+	lastChildByParent := make(map[string]string)
+	for _, entry := range entries {
+		if len(entry.path) == 0 {
+			continue
+		}
+		parentKey := pathKey(entry.path[:len(entry.path)-1])
+		lastChildByParent[parentKey] = pathKey(entry.path)
+	}
+	lastSibling := make(map[string]bool, len(lastChildByParent))
+	for _, childKey := range lastChildByParent {
+		lastSibling[childKey] = true
+	}
+	return lastSibling
+}
+
+func treeGuidePrefix(path []int, depth int, indent int, lastSiblingByPath map[string]bool) string {
+	if depth <= 0 || indent <= 0 {
+		return ""
+	}
+	spacer := strings.Repeat(" ", indent)
+	vertical := "│"
+	if indent > 1 {
+		vertical += strings.Repeat(" ", indent-1)
+	}
+	branchLine := ""
+	if indent > 1 {
+		branchLine = strings.Repeat("─", indent-1)
+	}
+	var b strings.Builder
+	ancestor := make([]int, 0, depth)
+	for i := 0; i < depth; i++ {
+		ancestor = append(ancestor, path[i])
+		isLast := lastSiblingByPath[pathKey(ancestor)]
+		if i == depth-1 {
+			if isLast {
+				b.WriteString("└")
+			} else {
+				b.WriteString("├")
+			}
+			b.WriteString(branchLine)
+			continue
+		}
+		if isLast {
+			b.WriteString(spacer)
+		} else {
+			b.WriteString(vertical)
+		}
+	}
+	return b.String()
 }
 
 func (t Tree[T]) buildViewEntries(nodes []TreeNode[T], query string, options FilterOptions) []treeViewEntry[T] {

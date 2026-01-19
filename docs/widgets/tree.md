@@ -72,9 +72,30 @@ Tree[T]{
 | `CursorPrefix` | `string` | `""` | Optional cursor prefix (from `CursorStyle`) |
 | `SelectedPrefix` | `string` | `""` | Optional selection prefix (from `CursorStyle`) |
 | `Indent` | `int` | `2` | Indentation per depth level |
+| `ShowGuideLines` | `*bool` | `true` | Display guide lines connecting tree levels |
+| `GuideStyle` | `Style` | `theme.TextMuted` | Style for guide lines |
 | `ExpandIndicator` | `string` | `"\u25BC"` | Indicator for expanded nodes |
 | `CollapseIndicator` | `string` | `"\u25B6"` | Indicator for collapsed nodes |
 | `LeafIndicator` | `string` | `" "` | Indicator for leaf nodes |
+
+To disable guide lines:
+
+```go
+showGuides := false
+tree := t.Tree[string]{
+    State:          state,
+    ShowGuideLines: &showGuides,
+}
+```
+
+To customize guide line styling:
+
+```go
+tree := t.Tree[string]{
+    State:      state,
+    GuideStyle: t.Style{ForegroundColor: t.Hex("#6b7280")},
+}
+```
 
 ## Basic Usage
 
