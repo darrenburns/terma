@@ -235,11 +235,12 @@ func Run(root Widget) error {
 		return renderer.WidgetAt(x, y), false
 	}
 
-	focusEntry := func(entry *WidgetEntry) {
-		if entry == nil || entry.EventWidget == nil {
-			return
-		}
-		if focusable, ok := entry.EventWidget.(Focusable); ok && focusable.IsFocusable() {
+	// focusAt finds the innermost focusable widget at (x, y) and focuses it.
+	// This is separate from WidgetAt because the clicked widget (for OnClick)
+	// may be different from the focusable widget (e.g., clicking Text inside a List).
+	focusAt := func(x, y int) {
+		entry := renderer.FocusableAt(x, y)
+		if entry != nil {
 			focusManager.FocusByID(entry.ID)
 		}
 	}
@@ -359,7 +360,7 @@ func Run(root Widget) error {
 
 					if entry != nil {
 						Log("  Found widget: ID=%q Type=%T", entry.ID, entry.EventWidget)
-						focusEntry(entry)
+						focusAt(ev.X, ev.Y)
 						clickCount := clickTracker.nextClick(entry.ID, ev.Button, time.Now())
 						mouseEvent := buildMouseEvent(uv.Mouse(ev), entry, clickCount)
 

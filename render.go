@@ -1073,6 +1073,12 @@ func (r *Renderer) WidgetAt(x, y int) *WidgetEntry {
 	return r.widgetRegistry.WidgetAt(x, y)
 }
 
+// FocusableAt returns the innermost focusable widget at the given coordinates.
+// Returns nil if no focusable widget is at that position.
+func (r *Renderer) FocusableAt(x, y int) *WidgetEntry {
+	return r.widgetRegistry.FocusableAt(x, y)
+}
+
 // WidgetByID returns the widget entry with the given ID.
 // Returns nil if no widget has that ID.
 func (r *Renderer) WidgetByID(id string) *WidgetEntry {
