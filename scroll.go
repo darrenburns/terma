@@ -159,7 +159,9 @@ type Scrollable struct {
 	Width         Dimension    // Optional width (zero value = auto)
 	Height        Dimension    // Optional height (zero value = auto)
 	Style         Style        // Optional styling
-	Click         func()       // Optional callback invoked when clicked
+	Click         func(MouseEvent) // Optional callback invoked when clicked
+	MouseDown     func(MouseEvent) // Optional callback invoked when mouse is pressed
+	MouseUp       func(MouseEvent) // Optional callback invoked when mouse is released
 	Hover         func(bool)   // Optional callback invoked when hover state changes
 
 	// Scrollbar appearance customization
@@ -186,9 +188,25 @@ func (s Scrollable) GetStyle() Style {
 
 // OnClick is called when the widget is clicked.
 // Implements the Clickable interface.
-func (s Scrollable) OnClick() {
+func (s Scrollable) OnClick(event MouseEvent) {
 	if s.Click != nil {
-		s.Click()
+		s.Click(event)
+	}
+}
+
+// OnMouseDown is called when the mouse is pressed on the widget.
+// Implements the MouseDownHandler interface.
+func (s Scrollable) OnMouseDown(event MouseEvent) {
+	if s.MouseDown != nil {
+		s.MouseDown(event)
+	}
+}
+
+// OnMouseUp is called when the mouse is released on the widget.
+// Implements the MouseUpHandler interface.
+func (s Scrollable) OnMouseUp(event MouseEvent) {
+	if s.MouseUp != nil {
+		s.MouseUp(event)
 	}
 }
 

@@ -9,7 +9,9 @@ type Button struct {
 	Width   Dimension  // Optional width (zero value = auto)
 	Height  Dimension  // Optional height (zero value = auto)
 	Style   Style      // Optional styling (colors) applied when not focused
-	Click   func()     // Optional callback invoked when clicked
+	Click   func(MouseEvent) // Optional callback invoked when clicked
+	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
+	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
 	Hover   func(bool) // Optional callback invoked when hover state changes
 }
 
@@ -87,9 +89,25 @@ func (b *Button) GetContentDimensions() (width, height Dimension) {
 
 // OnClick is called when the widget is clicked.
 // Implements the Clickable interface.
-func (b *Button) OnClick() {
+func (b *Button) OnClick(event MouseEvent) {
 	if b.Click != nil {
-		b.Click()
+		b.Click(event)
+	}
+}
+
+// OnMouseDown is called when the mouse is pressed on the widget.
+// Implements the MouseDownHandler interface.
+func (b *Button) OnMouseDown(event MouseEvent) {
+	if b.MouseDown != nil {
+		b.MouseDown(event)
+	}
+}
+
+// OnMouseUp is called when the mouse is released on the widget.
+// Implements the MouseUpHandler interface.
+func (b *Button) OnMouseUp(event MouseEvent) {
+	if b.MouseUp != nil {
+		b.MouseUp(event)
 	}
 }
 

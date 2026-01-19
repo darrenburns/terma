@@ -121,19 +121,19 @@ func (d *FloatingDemo) buildDropdownMenu() t.Widget {
 			Padding:         t.EdgeInsetsAll(1),
 		},
 		Children: []t.Widget{
-			d.menuItem("New File", func() {
+			d.menuItem("New File", func(t.MouseEvent) {
 				d.statusMsg.Set("Selected: New File")
 				d.showDropdown.Set(false)
 			}),
-			d.menuItem("Open File", func() {
+			d.menuItem("Open File", func(t.MouseEvent) {
 				d.statusMsg.Set("Selected: Open File")
 				d.showDropdown.Set(false)
 			}),
-			d.menuItem("Save", func() {
+			d.menuItem("Save", func(t.MouseEvent) {
 				d.statusMsg.Set("Selected: Save")
 				d.showDropdown.Set(false)
 			}),
-			d.menuItem("Exit", func() {
+			d.menuItem("Exit", func(t.MouseEvent) {
 				d.statusMsg.Set("Selected: Exit")
 				d.showDropdown.Set(false)
 			}),
@@ -142,7 +142,7 @@ func (d *FloatingDemo) buildDropdownMenu() t.Widget {
 }
 
 // menuItem creates a clickable menu item.
-func (d *FloatingDemo) menuItem(label string, onClick func()) t.Widget {
+func (d *FloatingDemo) menuItem(label string, onClick func(t.MouseEvent)) t.Widget {
 	return t.Text{
 		Content: " " + label + " ",
 		Click:   onClick,

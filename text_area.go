@@ -481,7 +481,9 @@ type TextArea struct {
 	ScrollState       *ScrollState      // Optional state for scroll-into-view
 	OnChange          func(text string) // Callback when text changes
 	OnSubmit          func(text string) // Callback when submit key is pressed
-	Click             func()            // Optional click callback
+	Click             func(MouseEvent)  // Optional click callback
+	MouseDown         func(MouseEvent)  // Optional mouse down callback
+	MouseUp           func(MouseEvent)  // Optional mouse up callback
 	Hover             func(bool)        // Optional hover callback
 	ExtraKeybinds     []Keybind         // Optional additional keybinds (checked before defaults)
 }
@@ -1007,9 +1009,25 @@ func (t TextArea) registerScrollCallbacks() {
 }
 
 // OnClick is called when the widget is clicked.
-func (t TextArea) OnClick() {
+func (t TextArea) OnClick(event MouseEvent) {
 	if t.Click != nil {
-		t.Click()
+		t.Click(event)
+	}
+}
+
+// OnMouseDown is called when the mouse is pressed on the widget.
+// Implements the MouseDownHandler interface.
+func (t TextArea) OnMouseDown(event MouseEvent) {
+	if t.MouseDown != nil {
+		t.MouseDown(event)
+	}
+}
+
+// OnMouseUp is called when the mouse is released on the widget.
+// Implements the MouseUpHandler interface.
+func (t TextArea) OnMouseUp(event MouseEvent) {
+	if t.MouseUp != nil {
+		t.MouseUp(event)
 	}
 }
 

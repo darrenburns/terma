@@ -294,9 +294,11 @@ type TextInput struct {
 	Style         Style             // Optional styling (padding adds to outer size automatically)
 	OnChange      func(text string) // Callback when text changes
 	OnSubmit      func(text string) // Callback when Enter pressed
-	Click         func()            // Optional click callback
-	Hover         func(bool)        // Optional hover callback
-	ExtraKeybinds []Keybind         // Optional additional keybinds (checked before defaults)
+	Click         func(MouseEvent) // Optional click callback
+	MouseDown      func(MouseEvent) // Optional mouse down callback
+	MouseUp        func(MouseEvent) // Optional mouse up callback
+	Hover          func(bool)       // Optional hover callback
+	ExtraKeybinds  []Keybind        // Optional additional keybinds (checked before defaults)
 }
 
 // WidgetID returns the text input's unique identifier.
@@ -624,9 +626,25 @@ func (t TextInput) renderContent(ctx *RenderContext, graphemes []string, cursorI
 }
 
 // OnClick is called when the widget is clicked.
-func (t TextInput) OnClick() {
+func (t TextInput) OnClick(event MouseEvent) {
 	if t.Click != nil {
-		t.Click()
+		t.Click(event)
+	}
+}
+
+// OnMouseDown is called when the mouse is pressed on the widget.
+// Implements the MouseDownHandler interface.
+func (t TextInput) OnMouseDown(event MouseEvent) {
+	if t.MouseDown != nil {
+		t.MouseDown(event)
+	}
+}
+
+// OnMouseUp is called when the mouse is released on the widget.
+// Implements the MouseUpHandler interface.
+func (t TextInput) OnMouseUp(event MouseEvent) {
+	if t.MouseUp != nil {
+		t.MouseUp(event)
 	}
 }
 
