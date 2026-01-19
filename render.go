@@ -821,6 +821,18 @@ func (r *Renderer) ScreenText() string {
 // This uses the tree-based rendering path which builds the complete layout tree first,
 // then renders using BoxModel utilities for clean separation of layout and painting.
 func (r *Renderer) Render(root Widget) []FocusableEntry {
+	focusables, _, _ := r.renderInternal(root)
+	return focusables
+}
+
+// RenderWithSize renders the widget and returns the computed border-box dimensions.
+// The border-box includes the widget's content, padding, and borders.
+func (r *Renderer) RenderWithSize(root Widget) (layoutWidth, layoutHeight int) {
+	_, layoutWidth, layoutHeight = r.renderInternal(root)
+	return layoutWidth, layoutHeight
+}
+
+func (r *Renderer) renderInternal(root Widget) (focusables []FocusableEntry, layoutWidth, layoutHeight int) {
 	// Reset collectors and widget registry for this render pass
 	r.focusCollector.Reset()
 	r.widgetRegistry.Reset()
@@ -834,6 +846,10 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 	constraints := layout.Loose(r.width, r.height)
 	renderTree := BuildRenderTree(root, buildCtx, constraints, r.focusCollector)
 
+	// Extract computed border-box size from the root render tree
+	layoutWidth = renderTree.Layout.Box.BorderBoxWidth()
+	layoutHeight = renderTree.Layout.Box.BorderBoxHeight()
+
 	// Phase 3: Render from the tree (pure painting - no layout or focus logic)
 	ctx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
 	r.renderTree(ctx, renderTree, 0, 0)
@@ -841,7 +857,7 @@ func (r *Renderer) Render(root Widget) []FocusableEntry {
 	// Handle floats
 	r.renderFloats(ctx, buildCtx)
 
-	return r.focusCollector.Focusables()
+	return r.focusCollector.Focusables(), layoutWidth, layoutHeight
 }
 
 // renderTree paints a render tree to the terminal.
