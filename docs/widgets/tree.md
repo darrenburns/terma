@@ -1,342 +1,208 @@
 # Tree
 
-Display hierarchical data with keyboard navigation, expand/collapse, filtering, and optional multi-selection. Use `Tree` for file browsers, nested menus, organization charts, or any data with parent-child relationships.
+A focusable, navigable tree widget for hierarchical data with expand/collapse, filtering, and optional lazy loading.
 
-```go
-Tree[FileInfo]{
-    State: treeState,
-    RenderNode: func(info FileInfo, ctx TreeNodeContext) Widget {
-        return Text{Content: info.Name}
-    },
-    OnSelect: func(info FileInfo) { /* handle selection */ },
-}
-```
+## Overview
 
-## Fields
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `ID` | `string` | `""` | Optional unique identifier |
-| `State` | `*TreeState[T]` | — | **Required** - holds nodes and cursor position |
-| `NodeID` | `func(data T) string` | — | Stable identifier for each node (enables state persistence across data changes) |
-| `RenderNode` | `func(node T, ctx TreeNodeContext) Widget` | — | Custom node renderer |
-| `RenderNodeWithMatch` | `func(node T, ctx TreeNodeContext, match MatchResult) Widget` | — | Node renderer with filter match data |
-| `HasChildren` | `func(node T) bool` | — | Determines expandability for lazy-loaded nodes |
-| `OnExpand` | `func(node T, path []int, setChildren func([]TreeNode[T]))` | — | Callback for lazy loading children |
-| `Filter` | `*FilterState` | `nil` | Optional filter state for matching nodes |
-| `MatchNode` | `func(node T, query string, opts FilterOptions) MatchResult` | — | Custom matcher per node |
-| `OnSelect` | `func(node T)` | — | Callback when Enter pressed |
-| `OnCursorChange` | `func(node T)` | — | Callback when cursor moves |
-| `ScrollState` | `*ScrollState` | `nil` | For scroll-into-view behavior |
-| `MultiSelect` | `bool` | `false` | Enable multi-select |
-| `Indent` | `int` | `2` | Spaces per nesting level |
-| `ExpandIndicator` | `string` | `"▼"` | Icon for expanded nodes |
-| `CollapseIndicator` | `string` | `"▶"` | Icon for collapsed nodes |
-| `LeafIndicator` | `string` | `" "` | Icon for leaf nodes |
-| `Width` | `Dimension` | `Auto` | Container width |
-| `Height` | `Dimension` | `Auto` | Container height |
-| `Style` | `Style` | — | Padding, margin, border |
-
-## TreeNode
-
-Nodes are represented using the `TreeNode[T]` struct:
+The tree is built from `TreeNode` values:
 
 ```go
 type TreeNode[T any] struct {
-    Data     T              // Your data for this node
-    Children []TreeNode[T]  // Child nodes (nil = not loaded, [] = leaf)
+    Data     T
+    Children []TreeNode[T] // nil = not loaded (lazy), [] = leaf
 }
 ```
 
-The `Children` field has special semantics:
+- `Children == nil` means the node has not loaded children yet (lazy).
+- `Children == []` means the node is a leaf.
 
-- `nil` — Children not yet loaded (enables lazy loading)
-- `[]TreeNode[T]{}` — Node is a leaf (no children)
-- `[]TreeNode[T]{...}` — Node has children
+## TreeState
 
-## TreeNodeContext
-
-When rendering nodes, you receive context about the node's state:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `Path` | `[]int` | Path to this node (e.g., `[0, 2, 1]`) |
-| `Depth` | `int` | Nesting level (0 = root) |
-| `Expanded` | `bool` | Is this node currently expanded? |
-| `Expandable` | `bool` | Can this node be expanded? |
-| `Active` | `bool` | Is cursor on this node? |
-| `Selected` | `bool` | Is this node selected? (MultiSelect mode) |
-| `FilteredAncestor` | `bool` | Visible only because a descendant matches the filter |
-
-## TreeState Methods
-
-### Creating State
+`TreeState` holds all tree state and is required by `Tree`.
 
 ```go
-// Create state with initial root nodes
-treeState := NewTreeState([]TreeNode[FileInfo]{
-    {Data: FileInfo{Name: "src"}, Children: nil},  // Lazy-loaded
-    {Data: FileInfo{Name: "README.md"}, Children: []TreeNode[FileInfo]{}},  // Leaf
-})
+type TreeState[T any] struct {
+    Nodes      AnySignal[[]TreeNode[T]]
+    CursorPath AnySignal[[]int]
+    Collapsed  AnySignal[map[string]bool]
+    Selection  AnySignal[map[string]struct{}]
+}
 ```
 
-### Cursor Control
+Create state with `NewTreeState(roots)`. The cursor starts at the first root node (if any).
 
-| Method | Description |
-|--------|-------------|
-| `CursorUp()` | Move cursor to previous visible node |
-| `CursorDown()` | Move cursor to next visible node |
-| `CursorToParent()` | Move cursor to parent node |
-| `CursorToFirstChild()` | Move cursor to first child (if visible) |
-| `CursorNode() (T, bool)` | Get data at cursor position |
-| `NodeAtPath(path []int) (TreeNode[T], bool)` | Get node at specific path |
+Common methods:
 
-### Expand/Collapse
+- Navigation: `CursorUp`, `CursorDown`, `CursorToParent`, `CursorToFirstChild`
+- Expand/collapse: `Toggle`, `Expand`, `Collapse`, `ExpandAll`, `CollapseAll`, `IsCollapsed`
+- Lazy load: `SetChildren`
+- Selection: `ToggleSelection`, `Select`, `Deselect`, `ClearSelection`, `IsSelected`, `SelectedPaths`
+- Queries: `NodeAtPath`, `CursorNode`
 
-| Method | Description |
-|--------|-------------|
-| `Toggle(path []int)` | Toggle expand/collapse state |
-| `Expand(path []int)` | Expand node at path |
-| `Collapse(path []int)` | Collapse node at path |
-| `ExpandAll()` | Expand all nodes |
-| `CollapseAll()` | Collapse all nodes |
-| `IsCollapsed(path []int) bool` | Check if node is collapsed |
+## Tree Widget
 
-### Selection (MultiSelect mode)
+```go
+Tree[T]{
+    ID:          "my-tree",
+    State:       state,
+    RenderNode:  func(node T, ctx TreeNodeContext) Widget { ... },
+}
+```
 
-| Method | Description |
-|--------|-------------|
-| `ToggleSelection(path []int)` | Toggle node selection |
-| `Select(path []int)` | Add node to selection |
-| `Deselect(path []int)` | Remove node from selection |
-| `IsSelected(path []int) bool` | Check if node is selected |
-| `ClearSelection()` | Clear all selections |
-| `SelectedPaths() [][]int` | Get all selected node paths |
+### Fields
 
-### Data Manipulation
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `ID` | `string` | `""` | Optional identifier |
+| `State` | `*TreeState[T]` | — | Required state |
+| `NodeID` | `func(T) string` | path-based | Stable ID for nodes when tree structure changes |
+| `RenderNode` | `func(T, TreeNodeContext) Widget` | default | Node renderer |
+| `RenderNodeWithMatch` | `func(T, TreeNodeContext, MatchResult) Widget` | `nil` | Optional renderer with match info |
+| `HasChildren` | `func(T) bool` | `nil` | For lazy nodes with `Children == nil` |
+| `OnExpand` | `func(T, []int, func([]TreeNode[T]))` | `nil` | Lazy load callback |
+| `Filter` | `*FilterState` | `nil` | Filter state (query + options) |
+| `MatchNode` | `func(T, string, FilterOptions) MatchResult` | `MatchString(fmt)` | Custom matcher |
+| `OnSelect` | `func(T)` | `nil` | Invoked on Enter |
+| `OnCursorChange` | `func(T)` | `nil` | Invoked when cursor moves |
+| `ScrollState` | `*ScrollState` | `nil` | Share with Scrollable for scroll-into-view |
+| `Width` | `Dimension` | auto | Width preference |
+| `Height` | `Dimension` | auto | Height preference |
+| `Style` | `Style` | — | Container styling |
+| `MultiSelect` | `bool` | `false` | Enable multi-select |
+| `CursorPrefix` | `string` | `""` | Optional cursor prefix (from `CursorStyle`) |
+| `SelectedPrefix` | `string` | `""` | Optional selection prefix (from `CursorStyle`) |
+| `Indent` | `int` | `2` | Indentation per depth level |
+| `ShowGuideLines` | `*bool` | `true` | Display guide lines connecting tree levels |
+| `GuideStyle` | `Style` | `theme.TextMuted` | Style for guide lines |
+| `ExpandIndicator` | `string` | `"\u25BC"` | Indicator for expanded nodes |
+| `CollapseIndicator` | `string` | `"\u25B6"` | Indicator for collapsed nodes |
+| `LeafIndicator` | `string` | `" "` | Indicator for leaf nodes |
 
-| Method | Description |
-|--------|-------------|
-| `SetChildren(path []int, children []TreeNode[T])` | Set children for a node (used with lazy loading) |
+To disable guide lines:
 
-## Keyboard Navigation
+```go
+showGuides := false
+tree := t.Tree[string]{
+    State:          state,
+    ShowGuideLines: &showGuides,
+}
+```
 
-| Keys | Action |
-|------|--------|
-| `↑` / `k` | Move up |
-| `↓` / `j` | Move down |
-| `←` / `h` | Collapse node, or move to parent |
-| `→` / `l` | Expand node, or move to first child |
-| `Home` / `g` | First node |
-| `End` / `G` | Last visible node |
-| `Space` | Toggle expand/collapse |
-| `Enter` | Trigger OnSelect |
-| `Shift+↑/↓` | Extend selection (MultiSelect) |
-| `Shift+Home/End` | Extend selection to start/end (MultiSelect) |
+To customize guide line styling:
+
+```go
+tree := t.Tree[string]{
+    State:      state,
+    GuideStyle: t.Style{ForegroundColor: t.Hex("#6b7280")},
+}
+```
 
 ## Basic Usage
 
-### Static Tree
-
 ```go
-type Item struct {
-    Name string
-}
+state := t.NewTreeState([]t.TreeNode[string]{
+    {Data: "src", Children: []t.TreeNode[string]{
+        {Data: "main.go", Children: []t.TreeNode[string]{}},
+    }},
+    {Data: "README.md", Children: []t.TreeNode[string]{}},
+})
 
-roots := []TreeNode[Item]{
-    {
-        Data: Item{Name: "Fruits"},
-        Children: []TreeNode[Item]{
-            {Data: Item{Name: "Apple"}, Children: []TreeNode[Item]{}},
-            {Data: Item{Name: "Banana"}, Children: []TreeNode[Item]{}},
-        },
-    },
-    {
-        Data: Item{Name: "Vegetables"},
-        Children: []TreeNode[Item]{
-            {Data: Item{Name: "Carrot"}, Children: []TreeNode[Item]{}},
-        },
-    },
-}
-
-treeState := NewTreeState(roots)
-
-Tree[Item]{
-    State: treeState,
-    RenderNode: func(item Item, ctx TreeNodeContext) Widget {
-        return Text{Content: item.Name}
+tree := t.Tree[string]{
+    ID:    "file-tree",
+    State: state,
+    RenderNode: func(name string, ctx t.TreeNodeContext) t.Widget {
+        return t.Text{Content: name, Width: t.Flex(1)}
     },
 }
 ```
 
-### Custom Node Rendering
+## Filtering
+
+Filtering uses `FilterState` and a match callback. When a query is active:
+
+- A node is visible if it matches or has a matching descendant.
+- Ancestors are rendered with a dimmed style (`FilteredAncestor`).
+- Matches can be highlighted with `RenderNodeWithMatch`.
+- The tree auto-expands to show matches.
 
 ```go
-Tree[FileInfo]{
-    State: treeState,
-    RenderNode: func(info FileInfo, ctx TreeNodeContext) Widget {
-        theme := ctx.Theme()
-        icon := "📄"
-        if info.IsDir {
-            if ctx.Expanded {
-                icon = "📂"
-            } else {
-                icon = "📁"
-            }
-        }
+filter := t.NewFilterState()
+filter.Query.Set("main")
 
-        style := Style{ForegroundColor: theme.Text}
-        if ctx.Active {
-            style.BackgroundColor = theme.Selection
-        }
-
-        return Text{
-            Content: icon + " " + info.Name,
-            Style:   style,
-        }
+tree := t.Tree[FileInfo]{
+    State:  state,
+    Filter: filter,
+    MatchNode: func(info FileInfo, q string, opts t.FilterOptions) t.MatchResult {
+        return t.MatchString(info.Name, q, opts)
+    },
+    RenderNodeWithMatch: func(info FileInfo, ctx t.TreeNodeContext, match t.MatchResult) t.Widget {
+        // Use match.Ranges to highlight
+        return t.Text{Content: info.Name}
     },
 }
 ```
 
 ## Lazy Loading
 
-Load children on-demand when a node is expanded. This is useful for large trees or when children are fetched from an API.
+For nodes with `Children == nil`, use `HasChildren` and `OnExpand`:
 
 ```go
-Tree[FileInfo]{
-    State: treeState,
-
-    // Determine if a node can be expanded (before children are loaded)
-    HasChildren: func(info FileInfo) bool {
-        return info.IsDir
-    },
-
-    // Called when user expands a node with nil Children
-    OnExpand: func(info FileInfo, path []int, setChildren func([]TreeNode[FileInfo])) {
-        // Fetch children asynchronously
+tree := t.Tree[FileInfo]{
+    State: state,
+    HasChildren: func(info FileInfo) bool { return info.IsDir },
+    OnExpand: func(info FileInfo, path []int, setChildren func([]t.TreeNode[FileInfo])) {
         go func() {
-            children := fetchDirectoryContents(info.Path)
-            setChildren(children)  // Update the tree
+            children := loadDirectory(info.Path)
+            setChildren(children)
         }()
     },
 }
 ```
 
-When `Children` is `nil` and `HasChildren` returns `true`, the node shows as expandable. When the user expands it, `OnExpand` is called with a `setChildren` callback to populate the children.
+## Selection
 
-## Filtering
+Enable `MultiSelect` and use shift navigation to extend the selection. Selection state is stored in `TreeState.Selection`.
 
-Combine with `FilterState` to filter visible nodes:
+If you want a toggle key, add your own keybind and call:
 
 ```go
-type App struct {
-    treeState   *TreeState[FileInfo]
-    filterState *FilterState
-    filterInput *TextInputState
-}
-
-func (a *App) Build(ctx BuildContext) Widget {
-    return Column{
-        Children: []Widget{
-            TextInput{
-                State:       a.filterInput,
-                Placeholder: "Filter...",
-                OnChange: func(text string) {
-                    a.filterState.Query.Set(text)
-                },
-            },
-            Tree[FileInfo]{
-                State:  a.treeState,
-                Filter: a.filterState,
-
-                // Optional: custom matching logic
-                MatchNode: func(info FileInfo, query string, opts FilterOptions) MatchResult {
-                    return MatchString(info.Name, query, opts)
-                },
-            },
-        },
-    }
-}
+treeState.ToggleSelection(treeState.CursorPath.Peek())
 ```
 
-When filtering:
+You can render prefixes with `CursorPrefix` and `SelectedPrefix`. By default no prefixes are shown; selection uses theme colors (`theme.Selection` and `theme.SelectionText`).
 
-- Matching nodes are shown with highlighted matches
-- Ancestor nodes of matches are shown (with `FilteredAncestor: true` in context)
-- Non-matching nodes without matching descendants are hidden
+## Keyboard
 
-### Rendering with Match Highlights
+| Key | Action |
+|-----|--------|
+| Up / k | Previous visible node |
+| Down / j | Next visible node |
+| Left / h | Collapse node, or move to parent |
+| Right / l | Expand node, or move to first child |
+| Enter | Trigger `OnSelect` |
+| Space | Toggle expand/collapse |
+| Home / g | Jump to first visible node |
+| End / G | Jump to last visible node |
+| Shift + Up/Down | Extend selection (multi-select) |
+| Shift + Home/End | Extend selection to start/end |
+
+## Scroll Integration
+
+Wrap the tree in a `Scrollable` and share a `ScrollState`:
 
 ```go
-Tree[FileInfo]{
-    State:  treeState,
-    Filter: filterState,
-    RenderNodeWithMatch: func(info FileInfo, ctx TreeNodeContext, match MatchResult) Widget {
-        if match.Matched && len(match.Ranges) > 0 {
-            // Highlight matching portions
-            highlight := SpanStyle{
-                Underline:      UnderlineSingle,
-                UnderlineColor: theme.Accent,
-            }
-            return Text{Spans: HighlightSpans(info.Name, match.Ranges, highlight)}
-        }
-        return Text{Content: info.Name}
-    },
+scroll := t.NewScrollState()
+tree := t.Tree[FileInfo]{State: state, ScrollState: scroll}
+
+t.Scrollable{
+    State:  scroll,
+    Height: t.Flex(1),
+    Child:  tree,
 }
 ```
 
-## With Scrolling
+The tree will keep the cursor in view and respond to mouse wheel scrolling through `ScrollState`.
 
-Combine with `Scrollable` for large trees:
+## Example App
 
-```go
-scrollState := NewScrollState()
-
-Scrollable{
-    State:  scrollState,
-    Height: Flex(1),
-    Child: Tree[FileInfo]{
-        State:       treeState,
-        ScrollState: scrollState,  // Enables scroll-into-view
-    },
-}
-```
-
-## Multi-Select
-
-Enable selection of multiple nodes:
-
-```go
-Tree[FileInfo]{
-    State:       treeState,
-    MultiSelect: true,
-    OnSelect: func(info FileInfo) {
-        // Access all selected paths
-        paths := treeState.SelectedPaths()
-        fmt.Printf("Selected %d nodes\n", len(paths))
-    },
-}
-```
-
-Use `Shift+Up/Down` to extend selection, or programmatically with `treeState.Select(path)` and `treeState.ToggleSelection(path)`.
-
-## Complete Example
-
-Run this example with:
-
-```bash
-go run ./cmd/tree-example
-```
-
-```go
---8<-- "cmd/tree-example/main.go"
-```
-
-## Notes
-
-- `State` is the only required field—default rendering uses `fmt.Sprintf("%v", node)`
-- Paths are represented as `[]int` slices (e.g., `[0, 2, 1]` means first root's third child's second child)
-- Use `NodeID` for stable identity when tree data changes (otherwise paths are used)
-- Ancestor nodes matching due to descendant matches have `FilteredAncestor: true` and are shown muted by default
-- For lazy loading, set `Children: nil` and provide `HasChildren` and `OnExpand`
-- Selection state persists in `TreeState` across rebuilds
+See `cmd/tree-example` for a complete demo with filtering, lazy loading, and multi-select reporting.
