@@ -26,6 +26,8 @@ markdown_extensions:
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      base_path: ['.']
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
@@ -40,6 +42,8 @@ nav:
     - Overview: widgets/index.md
     - ProgressBar: widgets/progressbar.md
     - Switcher: widgets/switcher.md
+    - Table: widgets/table.md
+    - Tree: widgets/tree.md
   - Layout:
     - Overview: layout/index.md
     - Row & Column: layout/row-column.md
