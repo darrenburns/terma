@@ -46,6 +46,8 @@ func NewWidgetShowcase() *WidgetShowcase {
 		t.ThemeNameKanagawaLotus,
 		t.ThemeNameMonokaiLight,
 	}
+	textAreaState := t.NewTextAreaState("")
+	textAreaState.WrapMode.Set(t.WrapSoft)
 
 	return &WidgetShowcase{
 		listState: t.NewListState([]string{
@@ -60,7 +62,7 @@ func NewWidgetShowcase() *WidgetShowcase {
 			{"Charlie", "Running", "Healthy"},
 		}),
 		textInputState: t.NewTextInputState(""),
-		textAreaState:  t.NewTextAreaState(""),
+		textAreaState:  textAreaState,
 		scrollState:    t.NewScrollState(),
 		themeIndex:     t.NewSignal(0),
 		themeNames:     themeNames,
@@ -178,7 +180,6 @@ func (w *WidgetShowcase) buildSection(theme t.ThemeData, title string, content t
 				Style: t.Style{
 					BackgroundColor: theme.Surface,
 					Padding:         t.EdgeInsetsAll(1),
-					Border:          t.RoundedBorder(theme.Border),
 				},
 				Children: []t.Widget{content},
 			},
@@ -348,7 +349,6 @@ func (w *WidgetShowcase) buildTextInputSection(theme t.ThemeData) t.Widget {
 				Style: t.Style{
 					BackgroundColor: theme.Background,
 					ForegroundColor: theme.Text,
-					Border:          t.RoundedBorder(theme.Border),
 					Padding:         t.EdgeInsetsXY(1, 0),
 				},
 			},
@@ -373,8 +373,7 @@ func (w *WidgetShowcase) buildTextAreaSection(theme t.ThemeData) t.Widget {
 				Style: t.Style{
 					BackgroundColor: theme.Background,
 					ForegroundColor: theme.Text,
-					Border:          t.RoundedBorder(theme.Border),
-					Padding:         t.EdgeInsetsAll(1),
+					Padding:         t.EdgeInsetsXY(1, 0),
 				},
 			},
 		},
@@ -404,7 +403,7 @@ func (w *WidgetShowcase) buildColorPalette(theme t.ThemeData) t.Widget {
 			t.Row{
 				Spacing: 1,
 				Children: []t.Widget{
-					w.colorSwatch("Selection", theme.Selection, theme.SelectionText),
+					w.colorSwatch("ActiveCursor", theme.ActiveCursor, theme.SelectionText),
 					w.colorSwatch("Border", theme.Border, theme.Text),
 					w.colorSwatch("FocusRing", theme.FocusRing, theme.TextOnPrimary),
 				},

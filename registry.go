@@ -141,6 +141,23 @@ func (r *WidgetRegistry) ScrollablesAt(x, y int) []*Scrollable {
 	return scrollables
 }
 
+// FocusableAt returns the innermost focusable widget containing the point (x, y).
+// Returns nil if no focusable widget contains the point.
+// Since widgets are recorded in render order (parents before children),
+// we search back-to-front to find the innermost focusable.
+func (r *WidgetRegistry) FocusableAt(x, y int) *WidgetEntry {
+	for i := len(r.entries) - 1; i >= 0; i-- {
+		entry := &r.entries[i]
+		if entry.Bounds.Contains(x, y) {
+			// Check if EventWidget is focusable
+			if focusable, ok := entry.EventWidget.(Focusable); ok && focusable.IsFocusable() {
+				return entry
+			}
+		}
+	}
+	return nil
+}
+
 // Reset clears all entries for a new render pass.
 func (r *WidgetRegistry) Reset() {
 	r.entries = r.entries[:0]

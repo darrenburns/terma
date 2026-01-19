@@ -134,8 +134,8 @@ func (s Spinner) WidgetID() string {
 	return s.ID
 }
 
-// GetDimensions returns the dimensions.
-func (s Spinner) GetDimensions() (width, height Dimension) {
+// GetContentDimensions returns the dimensions.
+func (s Spinner) GetContentDimensions() (width, height Dimension) {
 	return s.Width, s.Height
 }
 

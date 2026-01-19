@@ -44,8 +44,8 @@ func (s Switcher) Build(ctx BuildContext) Widget {
 	return EmptyWidget{}
 }
 
-// GetDimensions returns the configured width and height.
-func (s Switcher) GetDimensions() (Dimension, Dimension) {
+// GetContentDimensions returns the configured width and height.
+func (s Switcher) GetContentDimensions() (Dimension, Dimension) {
 	return s.Width, s.Height
 }
 

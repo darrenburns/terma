@@ -25,6 +25,8 @@ const (
 	ThemeNameMonokaiLight    = "monokai-light"
 )
 
+const DefaultSelectionAlpha = 0.25
+
 // ThemeData holds all semantic colors for a theme.
 // This is the data structure users provide when registering custom themes.
 type ThemeData struct {
@@ -66,8 +68,9 @@ type ThemeData struct {
 	TextOnSuccess Color
 	TextOnInfo    Color
 
-	// Selection colors
-	Selection     Color // Selection background
+	// ActiveCursor colors
+	ActiveCursor  Color // Active selection background (cursor/focused item)
+	Selection     Color // Dimmer selection background (multi-select without focus)
 	SelectionText Color // Text on selection
 
 	// Scrollbar colors
@@ -122,8 +125,9 @@ var rosePineThemeData = ThemeData{
 	TextOnSuccess: Hex("#191724"), // Base
 	TextOnInfo:    Hex("#e0def4"), // Text (Pine is darker)
 
-	Selection:     Hex("#c4a7e7").WithAlpha(0.25), // Iris with alpha
-	SelectionText: Hex("#e0def4"),                 // Text
+	ActiveCursor:  Hex("#c4a7e7"),                                  // Primary (Iris)
+	Selection:     Hex("#c4a7e7").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
+	SelectionText: Hex("#191724"),                                  // TextOnPrimary (Base)
 
 	ScrollbarTrack: Hex("#26233a"), // Overlay
 	ScrollbarThumb: Hex("#6e6a86"), // Subtle
@@ -171,8 +175,9 @@ var draculaThemeData = ThemeData{
 	TextOnSuccess: Hex("#282a36"), // Background
 	TextOnInfo:    Hex("#282a36"), // Background
 
-	Selection:     Hex("#bd93f9").WithAlpha(0.25), // Purple with alpha
-	SelectionText: Hex("#f8f8f2"),                 // Foreground
+	ActiveCursor:  Hex("#bd93f9"),                                  // Primary (Purple)
+	Selection:     Hex("#bd93f9").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
+	SelectionText: Hex("#282a36"),                                  // TextOnPrimary (Background)
 
 	ScrollbarTrack: Hex("#44475a"), // Current Line
 	ScrollbarThumb: Hex("#6272a4"), // Comment
@@ -220,8 +225,9 @@ var tokyoNightThemeData = ThemeData{
 	TextOnSuccess: Hex("#1a1b26"), // Background
 	TextOnInfo:    Hex("#1a1b26"), // Background
 
-	Selection:     Hex("#7aa2f7").WithAlpha(0.25), // Blue with alpha
-	SelectionText: Hex("#c0caf5"),                 // Foreground
+	ActiveCursor:  Hex("#7aa2f7"),                                  // Primary (Blue)
+	Selection:     Hex("#7aa2f7").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
+	SelectionText: Hex("#1a1b26"),                                  // TextOnPrimary (Background)
 
 	ScrollbarTrack: Hex("#24283b"), // Surface
 	ScrollbarThumb: Hex("#565f89"), // Comment
@@ -269,8 +275,9 @@ var catppuccinThemeData = ThemeData{
 	TextOnSuccess: Hex("#1e1e2e"), // Base
 	TextOnInfo:    Hex("#1e1e2e"), // Base
 
-	Selection:     Hex("#cba6f7").WithAlpha(0.25), // Mauve with alpha
-	SelectionText: Hex("#cdd6f4"),                 // Text
+	ActiveCursor:  Hex("#cba6f7"),                                  // Primary (Mauve)
+	Selection:     Hex("#cba6f7").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
+	SelectionText: Hex("#1e1e2e"),                                  // TextOnPrimary (Base)
 
 	ScrollbarTrack: Hex("#313244"), // Surface0
 	ScrollbarThumb: Hex("#6c7086"), // Overlay0
@@ -318,8 +325,9 @@ var gruvboxThemeData = ThemeData{
 	TextOnSuccess: Hex("#282828"), // bg0
 	TextOnInfo:    Hex("#282828"), // bg0
 
-	Selection:     Hex("#d79921").WithAlpha(0.25), // Yellow with alpha
-	SelectionText: Hex("#ebdbb2"),                 // fg1
+	ActiveCursor:  Hex("#d79921"),                                  // Primary (Yellow)
+	Selection:     Hex("#d79921").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
+	SelectionText: Hex("#282828"),                                  // TextOnPrimary (bg0)
 
 	ScrollbarTrack: Hex("#3c3836"), // bg1
 	ScrollbarThumb: Hex("#7c6f64"), // bg4
@@ -367,8 +375,9 @@ var nordThemeData = ThemeData{
 	TextOnSuccess: Hex("#2e3440"), // Nord0
 	TextOnInfo:    Hex("#eceff4"), // Nord6 (frost blue is darker)
 
-	Selection:     Hex("#88c0d0").WithAlpha(0.25), // Nord8 with alpha
-	SelectionText: Hex("#eceff4"),                 // Nord6
+	ActiveCursor:  Hex("#88c0d0"),                                  // Primary (Nord8)
+	Selection:     Hex("#88c0d0").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
+	SelectionText: Hex("#2e3440"),                                  // TextOnPrimary (Nord0)
 
 	ScrollbarTrack: Hex("#3b4252"), // Nord1
 	ScrollbarThumb: Hex("#4c566a"), // Nord3
@@ -416,8 +425,9 @@ var solarizedThemeData = ThemeData{
 	TextOnSuccess: Hex("#fdf6e3"), // base3
 	TextOnInfo:    Hex("#fdf6e3"), // base3
 
-	Selection:     Hex("#268bd2").WithAlpha(0.25), // Blue with alpha
-	SelectionText: Hex("#839496"),                 // base0
+	ActiveCursor:  Hex("#268bd2"),                                  // Primary (Blue)
+	Selection:     Hex("#268bd2").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
+	SelectionText: Hex("#fdf6e3"),                                  // TextOnPrimary (base3)
 
 	ScrollbarTrack: Hex("#073642"), // base02
 	ScrollbarThumb: Hex("#586e75"), // base01
@@ -465,8 +475,9 @@ var kanagawaThemeData = ThemeData{
 	TextOnSuccess: Hex("#1f1f28"), // sumiInk1
 	TextOnInfo:    Hex("#1f1f28"), // sumiInk1
 
-	Selection:     Hex("#7e9cd8").WithAlpha(0.25), // crystalBlue with alpha
-	SelectionText: Hex("#dcd7ba"),                 // fujiWhite
+	ActiveCursor:  Hex("#7e9cd8"),                                  // Primary (crystalBlue)
+	Selection:     Hex("#7e9cd8").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
+	SelectionText: Hex("#1f1f28"),                                  // TextOnPrimary (sumiInk1)
 
 	ScrollbarTrack: Hex("#2a2a37"), // sumiInk3
 	ScrollbarThumb: Hex("#54546d"), // sumiInk6
@@ -490,7 +501,7 @@ var monokaiThemeData = ThemeData{
 
 	Background:   Hex("#272822"), // Background
 	Surface:      Hex("#3e3d32"), // Line highlight
-	SurfaceHover: Hex("#49483e"), // Selection
+	SurfaceHover: Hex("#49483e"), // ActiveCursor
 	Surface2:     Hex("#555549"), // Lighter selection
 	Surface3:     Hex("#625f54"), // Even lighter
 
@@ -501,7 +512,7 @@ var monokaiThemeData = ThemeData{
 	TextOnAccent:    Hex("#272822"), // Background
 	TextDisabled:    Hex("#75715e"), // Comment
 
-	Border:    Hex("#49483e"), // Selection
+	Border:    Hex("#49483e"), // ActiveCursor
 	FocusRing: Hex("#a6e22e"), // Green
 
 	Error:   Hex("#f92672"), // Pink/Red
@@ -514,8 +525,9 @@ var monokaiThemeData = ThemeData{
 	TextOnSuccess: Hex("#272822"), // Background
 	TextOnInfo:    Hex("#272822"), // Background
 
-	Selection:     Hex("#a6e22e").WithAlpha(0.25), // Green with alpha
-	SelectionText: Hex("#f8f8f2"),                 // Foreground
+	ActiveCursor:  Hex("#a6e22e"),                                  // Primary (Green)
+	Selection:     Hex("#a6e22e").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
+	SelectionText: Hex("#272822"),                                  // TextOnPrimary (Background)
 
 	ScrollbarTrack: Hex("#3e3d32"), // Line highlight
 	ScrollbarThumb: Hex("#75715e"), // Comment
@@ -567,8 +579,9 @@ var rosePineDawnThemeData = ThemeData{
 	TextOnSuccess: Hex("#faf4ed"), // Base
 	TextOnInfo:    Hex("#faf4ed"), // Base
 
-	Selection:     Hex("#907aa9").WithAlpha(0.2), // Iris with alpha
-	SelectionText: Hex("#575279"),                // Text
+	ActiveCursor:  Hex("#907aa9"),                 // Primary (Iris)
+	Selection:     Hex("#907aa9").WithAlpha(0.12), // Primary with alpha for multi-select
+	SelectionText: Hex("#faf4ed"),                 // TextOnPrimary (Base)
 
 	ScrollbarTrack: Hex("#f2e9e1"), // Overlay
 	ScrollbarThumb: Hex("#b4aeb8"), // Subtle
@@ -615,8 +628,9 @@ var draculaLightThemeData = ThemeData{
 	TextOnSuccess: Hex("#282a36"), // Dark
 	TextOnInfo:    Hex("#282a36"), // Dark
 
-	Selection:     Hex("#9580ff").WithAlpha(0.2), // Purple with alpha
-	SelectionText: Hex("#282a36"),                // Dark text
+	ActiveCursor:  Hex("#9580ff"),                 // Primary (Purple)
+	Selection:     Hex("#9580ff").WithAlpha(0.12), // Primary with alpha for multi-select
+	SelectionText: Hex("#f8f8f2"),                 // TextOnPrimary (Light)
 
 	ScrollbarTrack: Hex("#e8e8e0"), // Surface hover
 	ScrollbarThumb: Hex("#6272a4"), // Comment
@@ -664,8 +678,9 @@ var tokyoNightDayThemeData = ThemeData{
 	TextOnSuccess: Hex("#e1e2e7"), // Background
 	TextOnInfo:    Hex("#e1e2e7"), // Background
 
-	Selection:     Hex("#2e7de9").WithAlpha(0.2), // Blue with alpha
-	SelectionText: Hex("#3760bf"),                // Foreground
+	ActiveCursor:  Hex("#2e7de9"),                 // Primary (Blue)
+	Selection:     Hex("#2e7de9").WithAlpha(0.12), // Primary with alpha for multi-select
+	SelectionText: Hex("#e1e2e7"),                 // TextOnPrimary (Background)
 
 	ScrollbarTrack: Hex("#d5d6db"), // Surface
 	ScrollbarThumb: Hex("#848cb5"), // Comment
@@ -713,8 +728,9 @@ var catppuccinLatteThemeData = ThemeData{
 	TextOnSuccess: Hex("#eff1f5"), // Base
 	TextOnInfo:    Hex("#eff1f5"), // Base
 
-	Selection:     Hex("#8839ef").WithAlpha(0.2), // Mauve with alpha
-	SelectionText: Hex("#4c4f69"),                // Text
+	ActiveCursor:  Hex("#8839ef"),                 // Primary (Mauve)
+	Selection:     Hex("#8839ef").WithAlpha(0.12), // Primary with alpha for multi-select
+	SelectionText: Hex("#eff1f5"),                 // TextOnPrimary (Base)
 
 	ScrollbarTrack: Hex("#e6e9ef"), // Surface0
 	ScrollbarThumb: Hex("#9ca0b0"), // Overlay1
@@ -762,8 +778,9 @@ var gruvboxLightThemeData = ThemeData{
 	TextOnSuccess: Hex("#fbf1c7"), // bg0
 	TextOnInfo:    Hex("#fbf1c7"), // bg0
 
-	Selection:     Hex("#d79921").WithAlpha(0.2), // Yellow with alpha
-	SelectionText: Hex("#3c3836"),                // fg1
+	ActiveCursor:  Hex("#d79921"),                 // Primary (Yellow)
+	Selection:     Hex("#d79921").WithAlpha(0.12), // Primary with alpha for multi-select
+	SelectionText: Hex("#fbf1c7"),                 // TextOnPrimary (bg0)
 
 	ScrollbarTrack: Hex("#ebdbb2"), // bg1
 	ScrollbarThumb: Hex("#928374"), // gray
@@ -811,8 +828,9 @@ var nordLightThemeData = ThemeData{
 	TextOnSuccess: Hex("#2e3440"), // Nord0
 	TextOnInfo:    Hex("#eceff4"), // Nord6
 
-	Selection:     Hex("#5e81ac").WithAlpha(0.2), // Nord10 with alpha
-	SelectionText: Hex("#2e3440"),                // Nord0
+	ActiveCursor:  Hex("#5e81ac"),                 // Primary (Nord10)
+	Selection:     Hex("#5e81ac").WithAlpha(0.12), // Primary with alpha for multi-select
+	SelectionText: Hex("#eceff4"),                 // TextOnPrimary (Nord6)
 
 	ScrollbarTrack: Hex("#e5e9f0"), // Nord5
 	ScrollbarThumb: Hex("#7b88a1"), // Muted
@@ -860,8 +878,9 @@ var solarizedLightThemeData = ThemeData{
 	TextOnSuccess: Hex("#fdf6e3"), // base3
 	TextOnInfo:    Hex("#fdf6e3"), // base3
 
-	Selection:     Hex("#268bd2").WithAlpha(0.2), // Blue with alpha
-	SelectionText: Hex("#657b83"),                // base00
+	ActiveCursor:  Hex("#268bd2"),                 // Primary (Blue)
+	Selection:     Hex("#268bd2").WithAlpha(0.12), // Primary with alpha for multi-select
+	SelectionText: Hex("#fdf6e3"),                 // TextOnPrimary (base3)
 
 	ScrollbarTrack: Hex("#eee8d5"), // base2
 	ScrollbarThumb: Hex("#93a1a1"), // base1
@@ -909,8 +928,9 @@ var kanagawaLotusThemeData = ThemeData{
 	TextOnSuccess: Hex("#f2ecbc"), // lotusWhite0
 	TextOnInfo:    Hex("#f2ecbc"), // lotusWhite0
 
-	Selection:     Hex("#4d699b").WithAlpha(0.2), // lotusBlue with alpha
-	SelectionText: Hex("#545464"),                // lotusInk1
+	ActiveCursor:  Hex("#4d699b"),                 // Primary (lotusBlue)
+	Selection:     Hex("#4d699b").WithAlpha(0.12), // Primary with alpha for multi-select
+	SelectionText: Hex("#f2ecbc"),                 // TextOnPrimary (lotusWhite0)
 
 	ScrollbarTrack: Hex("#e7dba0"), // lotusWhite1
 	ScrollbarThumb: Hex("#a09f95"), // Muted
@@ -957,8 +977,9 @@ var monokaiLightThemeData = ThemeData{
 	TextOnSuccess: Hex("#fafafa"), // Light
 	TextOnInfo:    Hex("#fafafa"), // Light
 
-	Selection:     Hex("#7a8c21").WithAlpha(0.2), // Green with alpha
-	SelectionText: Hex("#272822"),                // Dark text
+	ActiveCursor:  Hex("#7a8c21"),                 // Primary (Green)
+	Selection:     Hex("#7a8c21").WithAlpha(0.12), // Primary with alpha for multi-select
+	SelectionText: Hex("#fafafa"),                 // TextOnPrimary (Light)
 
 	ScrollbarTrack: Hex("#e5e5e5"), // Surface hover
 	ScrollbarThumb: Hex("#a59f85"), // Muted comment

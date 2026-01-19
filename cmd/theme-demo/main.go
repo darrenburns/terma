@@ -6,7 +6,6 @@ import (
 	t "terma"
 )
 
-
 // App demonstrates the theme system with interactive theme switching.
 type App struct {
 	listState  *t.ListState[string]
@@ -175,8 +174,8 @@ func (a *App) buildAdditionalSwatches(theme t.ThemeData) t.Widget {
 					},
 					t.Text{Content: " "},
 					t.Text{
-						Content: " Selection ",
-						Style:   t.Style{BackgroundColor: theme.Selection, ForegroundColor: theme.SelectionText},
+						Content: " ActiveCursor ",
+						Style:   t.Style{BackgroundColor: theme.ActiveCursor, ForegroundColor: theme.SelectionText},
 					},
 					t.Text{Content: " "},
 					t.Text{

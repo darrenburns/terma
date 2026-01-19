@@ -841,7 +841,7 @@ func (t Tree[T]) themedDefaultRenderNode(ctx BuildContext) func(node T, nodeCtx 
 	highlight := SpanStyle{
 		Underline:      UnderlineSingle,
 		UnderlineColor: theme.Accent,
-		Background:     theme.Selection,
+		Background:     theme.ActiveCursor,
 	}
 	return func(node T, nodeCtx TreeNodeContext, match MatchResult) Widget {
 		content := fmt.Sprintf("%v", node)
@@ -870,12 +870,12 @@ func (t Tree[T]) styleForContext(ctx BuildContext, nodeCtx TreeNodeContext, widg
 	}
 	showCursor := nodeCtx.Active && widgetFocused
 	if showCursor {
-		style.BackgroundColor = theme.Selection
+		style.BackgroundColor = theme.ActiveCursor
 		style.ForegroundColor = theme.SelectionText
 		return style
 	}
 	if nodeCtx.Selected {
-		style.BackgroundColor = theme.Selection
+		style.BackgroundColor = theme.ActiveCursor
 	}
 	return style
 }

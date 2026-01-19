@@ -389,7 +389,7 @@ func (t TabBar) Keybinds() []Keybind {
 	}
 
 	// Closable keybind
-	if t.Closable && t.OnTabClose != nil {
+	if t.Closable {
 		keybinds = append(keybinds,
 			Keybind{Key: "ctrl+w", Name: "Close Tab", Action: t.closeActive, Hidden: true},
 		)
@@ -486,10 +486,15 @@ func (t TabBar) moveActiveRight() {
 
 // closeActive closes the active tab.
 func (t TabBar) closeActive() {
-	if t.State == nil || t.OnTabClose == nil {
+	if t.State == nil {
 		return
 	}
-	t.OnTabClose(t.State.ActiveKeyPeek())
+	key := t.State.ActiveKeyPeek()
+	if t.OnTabClose != nil {
+		t.OnTabClose(key)
+	} else {
+		t.State.RemoveTab(key)
+	}
 }
 
 // OnKey handles keys not covered by declarative keybindings.
@@ -541,7 +546,7 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 		}
 
 		// Build tab content
-		if t.Closable && t.OnTabClose != nil {
+		if t.Closable {
 			// Tab with separate close button
 			labelStyle := style
 			labelStyle.Padding = EdgeInsets{Left: style.Padding.Left, Right: 1}
@@ -566,7 +571,11 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 						Content: "×",
 						Style:   closeStyle,
 						Click: func(MouseEvent) {
-							t.OnTabClose(tabKey)
+							if t.OnTabClose != nil {
+								t.OnTabClose(tabKey)
+							} else {
+								t.State.RemoveTab(tabKey)
+							}
 						},
 					},
 				},

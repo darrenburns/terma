@@ -239,7 +239,7 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 				Spans: t.ParseMarkup(fmt.Sprintf("Items: [b $Warning]%d[/] | Cursor: [b $Info]%d[/] | Press [b $Error]Ctrl+C[/] to quit", d.listState.ItemCount(), d.listState.CursorIndex.Get()+1), theme),
 			},
 
-			// Selection summary
+			// ActiveCursor summary
 			d.buildSelectionSummary(theme),
 		},
 	}

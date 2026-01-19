@@ -38,7 +38,16 @@ func DefaultSVGOptions() SVGOptions {
 // RenderToBuffer renders a widget to a headless buffer.
 // The returned buffer can be inspected with CellAt() or converted to SVG.
 func RenderToBuffer(widget Widget, width, height int) *uv.Buffer {
-	buf := uv.NewBuffer(width, height)
+	buf, _, _ := RenderToBufferWithSize(widget, width, height)
+	return buf
+}
+
+// RenderToBufferWithSize renders a widget to a headless buffer and returns
+// the widget's computed border-box dimensions (outer size including padding and borders).
+// This is useful for auto-sizing output where you want to know how much
+// space the widget actually occupies, not just the buffer size.
+func RenderToBufferWithSize(widget Widget, width, height int) (buf *uv.Buffer, layoutWidth, layoutHeight int) {
+	buf = uv.NewBuffer(width, height)
 
 	// Create focus manager and signals (required for rendering)
 	focusManager := NewFocusManager()
@@ -46,11 +55,11 @@ func RenderToBuffer(widget Widget, width, height int) *uv.Buffer {
 	focusedSignal := NewAnySignal[Focusable](nil)
 	hoveredSignal := NewAnySignal[Widget](nil)
 
-	// Create renderer and render the widget
+	// Create renderer and render the widget, getting computed size
 	renderer := NewRenderer(buf, width, height, focusManager, focusedSignal, hoveredSignal)
-	renderer.Render(widget)
+	layoutWidth, layoutHeight = renderer.RenderWithSize(widget)
 
-	return buf
+	return buf, layoutWidth, layoutHeight
 }
 
 // Snapshot renders a widget and returns SVG with default options.
