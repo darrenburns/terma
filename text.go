@@ -59,8 +59,8 @@ func (t Text) OnHover(hovered bool) {
 	}
 }
 
-// GetDimensions returns the width and height dimension preferences.
-func (t Text) GetDimensions() (width, height Dimension) {
+// GetContentDimensions returns the width and height dimension preferences.
+func (t Text) GetContentDimensions() (width, height Dimension) {
 	return t.Width, t.Height
 }
 
@@ -78,11 +78,30 @@ func (t Text) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minWidth, maxWidth := dimensionToMinMax(t.Width)
 	minHeight, maxHeight := dimensionToMinMax(t.Height)
 
+	padding := toLayoutEdgeInsets(t.Style.Padding)
+	border := borderToEdgeInsets(t.Style.Border)
+
+	// Add padding and border to convert content-box to border-box constraints
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+	if minWidth > 0 {
+		minWidth += hInset
+	}
+	if maxWidth > 0 {
+		maxWidth += hInset
+	}
+	if minHeight > 0 {
+		minHeight += vInset
+	}
+	if maxHeight > 0 {
+		maxHeight += vInset
+	}
+
 	return &layout.TextNode{
 		Content:   content,
 		Wrap:      toLayoutWrapMode(t.Wrap),
-		Padding:   toLayoutEdgeInsets(t.Style.Padding),
-		Border:    borderToEdgeInsets(t.Style.Border),
+		Padding:   padding,
+		Border:    border,
 		Margin:    toLayoutEdgeInsets(t.Style.Margin),
 		MinWidth:  minWidth,
 		MaxWidth:  maxWidth,

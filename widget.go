@@ -33,8 +33,15 @@ type Renderable interface {
 
 // Dimensioned is implemented by widgets that have explicit dimension preferences.
 // This allows parent containers to query child dimensions for fractional layout.
+//
+// GetContentDimensions returns the content-box dimensions - the space needed for
+// the widget's content, NOT including padding or border. The framework automatically
+// adds padding and border from the widget's Style to compute the final outer size.
+//
+// For example, a TextInput might return Cells(1) for height (one line of text content),
+// and if it has Style{Padding: EdgeInsetsXY(1,1)}, the final height will be 3 cells.
 type Dimensioned interface {
-	GetDimensions() (width, height Dimension)
+	GetContentDimensions() (width, height Dimension)
 }
 
 // Styled is implemented by widgets that have a Style.

@@ -38,8 +38,8 @@ type Dock struct {
 	Style     Style     // Optional styling
 }
 
-// GetDimensions returns dimensions (defaults to Flex(1) for both).
-func (d Dock) GetDimensions() (Dimension, Dimension) {
+// GetContentDimensions returns dimensions (defaults to Flex(1) for both).
+func (d Dock) GetContentDimensions() (Dimension, Dimension) {
 	w, h := d.Width, d.Height
 	if w.IsUnset() {
 		w = Flex(1)
@@ -105,6 +105,25 @@ func (d Dock) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minW, maxW := dimensionToMinMax(d.Width)
 	minH, maxH := dimensionToMinMax(d.Height)
 
+	padding := toLayoutEdgeInsets(d.Style.Padding)
+	border := borderToEdgeInsets(d.Style.Border)
+
+	// Add padding and border to convert content-box to border-box constraints
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+	if minW > 0 {
+		minW += hInset
+	}
+	if maxW > 0 {
+		maxW += hInset
+	}
+	if minH > 0 {
+		minH += vInset
+	}
+	if maxH > 0 {
+		maxH += vInset
+	}
+
 	return &layout.DockNode{
 		Top:       top,
 		Bottom:    bottom,
@@ -112,8 +131,8 @@ func (d Dock) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		Right:     right,
 		Body:      body,
 		DockOrder: d.DockOrder,
-		Padding:   toLayoutEdgeInsets(d.Style.Padding),
-		Border:    borderToEdgeInsets(d.Style.Border),
+		Padding:   padding,
+		Border:    border,
 		Margin:    toLayoutEdgeInsets(d.Style.Margin),
 		MinWidth:  minW,
 		MaxWidth:  maxW,
@@ -137,7 +156,7 @@ func (d Dock) buildEdgeChildren(ctx BuildContext, widgets []Widget, index *int, 
 		// Wrap in PercentNode if the child has a percentage dimension on the relevant axis
 		// Top/Bottom: check Height (Vertical), Left/Right: check Width (Horizontal)
 		if dim, ok := built.(Dimensioned); ok {
-			width, height := dim.GetDimensions()
+			width, height := dim.GetContentDimensions()
 			switch edge {
 			case Top, Bottom:
 				if height.IsPercent() {

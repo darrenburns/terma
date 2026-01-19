@@ -59,9 +59,9 @@ func (p ProgressBar) WidgetID() string {
 	return p.ID
 }
 
-// GetDimensions returns the width and height dimension preferences.
+// GetContentDimensions returns the width and height dimension preferences.
 // Width defaults to Flex(1), Height defaults to Cells(1).
-func (p ProgressBar) GetDimensions() (width, height Dimension) {
+func (p ProgressBar) GetContentDimensions() (width, height Dimension) {
 	w, h := p.Width, p.Height
 	if w.IsUnset() {
 		w = Flex(1)
@@ -79,13 +79,32 @@ func (p ProgressBar) GetStyle() Style {
 
 // BuildLayoutNode builds a layout node for this ProgressBar widget.
 func (p ProgressBar) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
-	w, h := p.GetDimensions()
+	w, h := p.GetContentDimensions()
 	minWidth, maxWidth := dimensionToMinMax(w)
 	minHeight, maxHeight := dimensionToMinMax(h)
 
+	padding := toLayoutEdgeInsets(p.Style.Padding)
+	border := borderToEdgeInsets(p.Style.Border)
+
+	// Add padding and border to convert content-box to border-box constraints
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+	if minWidth > 0 {
+		minWidth += hInset
+	}
+	if maxWidth > 0 {
+		maxWidth += hInset
+	}
+	if minHeight > 0 {
+		minHeight += vInset
+	}
+	if maxHeight > 0 {
+		maxHeight += vInset
+	}
+
 	return &layout.BoxNode{
-		Padding:   toLayoutEdgeInsets(p.Style.Padding),
-		Border:    borderToEdgeInsets(p.Style.Border),
+		Padding:   padding,
+		Border:    border,
 		Margin:    toLayoutEdgeInsets(p.Style.Margin),
 		MinWidth:  minWidth,
 		MaxWidth:  maxWidth,

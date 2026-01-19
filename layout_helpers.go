@@ -119,7 +119,7 @@ func wrapInPercentIfNeeded(node layout.LayoutNode, mainAxisDim Dimension, axis l
 // For vertical (Column): returns Height
 func getChildMainAxisDimension(widget Widget, horizontal bool) Dimension {
 	if dimensioned, ok := widget.(Dimensioned); ok {
-		width, height := dimensioned.GetDimensions()
+		width, height := dimensioned.GetContentDimensions()
 		if horizontal {
 			return width
 		}
@@ -145,7 +145,7 @@ func wrapInPercentNodesForStack(node layout.LayoutNode, widget Widget) layout.La
 		return node
 	}
 
-	width, height := dimensioned.GetDimensions()
+	width, height := dimensioned.GetContentDimensions()
 
 	// Wrap for width percent first
 	if width.IsPercent() {
@@ -170,23 +170,46 @@ func wrapInPercentNodesForStack(node layout.LayoutNode, widget Widget) layout.La
 
 // buildFallbackLayoutNode creates a BoxNode for widgets that don't implement LayoutNodeBuilder.
 // It uses the widget's Dimensioned and Styled interfaces to extract dimensions and insets.
+//
+// Content dimensions from GetContentDimensions() are converted to border-box constraints
+// by adding padding and border. This allows widgets to specify their content size without
+// worrying about the box model - the framework handles adding space for decoration.
 func buildFallbackLayoutNode(widget Widget, ctx BuildContext) layout.LayoutNode {
 	var widthDim, heightDim Dimension
 	if dimensioned, ok := widget.(Dimensioned); ok {
-		widthDim, heightDim = dimensioned.GetDimensions()
+		widthDim, heightDim = dimensioned.GetContentDimensions()
 	}
 
-	// Convert dimensions to min/max constraints
-	minWidth, maxWidth := dimensionToMinMax(widthDim)
-	minHeight, maxHeight := dimensionToMinMax(heightDim)
-
-	// Extract style for insets
+	// Extract style for insets first - we need these to compute border-box dimensions
 	var padding, border, margin layout.EdgeInsets
 	if styled, ok := widget.(Styled); ok {
 		style := styled.GetStyle()
 		padding = toLayoutEdgeInsets(style.Padding)
 		border = borderToEdgeInsets(style.Border)
 		margin = toLayoutEdgeInsets(style.Margin)
+	}
+
+	// Convert content dimensions to min/max constraints
+	minWidth, maxWidth := dimensionToMinMax(widthDim)
+	minHeight, maxHeight := dimensionToMinMax(heightDim)
+
+	// Add padding and border to convert from content-box to border-box constraints.
+	// Only add insets when there's a fixed content dimension (non-zero constraint).
+	// Zero means "no constraint" in BoxNode, so we don't add insets to that.
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+
+	if minWidth > 0 {
+		minWidth += hInset
+	}
+	if maxWidth > 0 {
+		maxWidth += hInset
+	}
+	if minHeight > 0 {
+		minHeight += vInset
+	}
+	if maxHeight > 0 {
+		maxHeight += vInset
 	}
 
 	return &layout.BoxNode{

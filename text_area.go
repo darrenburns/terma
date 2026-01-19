@@ -748,13 +748,32 @@ func (t TextArea) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minHeight, maxHeight := dimensionToMinMax(t.Height)
 	style := t.Style
 
+	padding := toLayoutEdgeInsets(style.Padding)
+	border := borderToEdgeInsets(style.Border)
+
+	// Add padding and border to convert content-box to border-box constraints
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+	if minWidth > 0 {
+		minWidth += hInset
+	}
+	if maxWidth > 0 {
+		maxWidth += hInset
+	}
+	if minHeight > 0 {
+		minHeight += vInset
+	}
+	if maxHeight > 0 {
+		maxHeight += vInset
+	}
+
 	return &layout.BoxNode{
 		MinWidth:  minWidth,
 		MaxWidth:  maxWidth,
 		MinHeight: minHeight,
 		MaxHeight: maxHeight,
-		Padding:   toLayoutEdgeInsets(style.Padding),
-		Border:    borderToEdgeInsets(style.Border),
+		Padding:   padding,
+		Border:    border,
 		Margin:    toLayoutEdgeInsets(style.Margin),
 		MeasureFunc: func(constraints layout.Constraints) (int, int) {
 			size := t.Layout(ctx, Constraints{
@@ -768,8 +787,8 @@ func (t TextArea) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	}
 }
 
-// GetDimensions returns the width and height dimension preferences.
-func (t TextArea) GetDimensions() (width, height Dimension) {
+// GetContentDimensions returns the width and height dimension preferences.
+func (t TextArea) GetContentDimensions() (width, height Dimension) {
 	return t.Width, t.Height
 }
 

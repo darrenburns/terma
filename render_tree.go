@@ -131,6 +131,9 @@ func extractChildren(widget Widget) []Widget {
 
 // layoutFromLayoutable creates a ComputedLayout for widgets that don't implement LayoutNodeBuilder.
 // This provides fallback support so widgets can be migrated incrementally.
+//
+// Important: Layout() returns content-box dimensions (content size only, not including padding/border).
+// This function converts those to border-box for the BoxModel by adding padding and border.
 func layoutFromLayoutable(widget Widget, ctx BuildContext, constraints layout.Constraints) layout.ComputedLayout {
 	// Extract style for insets
 	var style Style
@@ -138,26 +141,35 @@ func layoutFromLayoutable(widget Widget, ctx BuildContext, constraints layout.Co
 		style = styled.GetStyle()
 	}
 
-	// Use existing Layoutable interface to get size
-	width, height := constraints.MaxWidth, constraints.MaxHeight
+	padding := toLayoutEdgeInsets(style.Padding)
+	border := borderToEdgeInsets(style.Border)
+	margin := toLayoutEdgeInsets(style.Margin)
+
+	// Compute insets to convert between content-box and border-box
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+
+	// Use existing Layoutable interface to get content size
+	// Pass content-box constraints (subtract insets from parent constraints)
+	contentWidth, contentHeight := max(0, constraints.MaxWidth-hInset), max(0, constraints.MaxHeight-vInset)
 	if layoutable, ok := widget.(Layoutable); ok {
 		size := layoutable.Layout(ctx, Constraints{
-			MinWidth:  constraints.MinWidth,
-			MaxWidth:  constraints.MaxWidth,
-			MinHeight: constraints.MinHeight,
-			MaxHeight: constraints.MaxHeight,
+			MinWidth:  max(0, constraints.MinWidth-hInset),
+			MaxWidth:  max(0, constraints.MaxWidth-hInset),
+			MinHeight: max(0, constraints.MinHeight-vInset),
+			MaxHeight: max(0, constraints.MaxHeight-vInset),
 		})
-		width, height = size.Width, size.Height
+		contentWidth, contentHeight = size.Width, size.Height
 	}
 
-	// Create BoxModel from style + computed size
+	// Create BoxModel with border-box dimensions (content + padding + border)
 	return layout.ComputedLayout{
 		Box: layout.BoxModel{
-			Width:   width,
-			Height:  height,
-			Padding: toLayoutEdgeInsets(style.Padding),
-			Border:  borderToEdgeInsets(style.Border),
-			Margin:  toLayoutEdgeInsets(style.Margin),
+			Width:   contentWidth + hInset,
+			Height:  contentHeight + vInset,
+			Padding: padding,
+			Border:  border,
+			Margin:  margin,
 		},
 		Children: nil, // Fallback widgets handle their own children in Render()
 	}

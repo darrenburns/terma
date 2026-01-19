@@ -509,9 +509,9 @@ func (t Table[T]) WidgetID() string {
 	return t.ID
 }
 
-// GetDimensions returns the width and height dimension preferences.
+// GetContentDimensions returns the width and height dimension preferences.
 // Implements the Dimensioned interface.
-func (t Table[T]) GetDimensions() (width, height Dimension) {
+func (t Table[T]) GetContentDimensions() (width, height Dimension) {
 	return t.Width, t.Height
 }
 
@@ -1361,6 +1361,25 @@ func (c tableContainer[T]) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minWidth, maxWidth := dimensionToMinMax(c.Width)
 	minHeight, maxHeight := dimensionToMinMax(c.Height)
 
+	padding := toLayoutEdgeInsets(c.Style.Padding)
+	border := borderToEdgeInsets(c.Style.Border)
+
+	// Add padding and border to convert content-box to border-box constraints
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+	if minWidth > 0 {
+		minWidth += hInset
+	}
+	if maxWidth > 0 {
+		maxWidth += hInset
+	}
+	if minHeight > 0 {
+		minHeight += vInset
+	}
+	if maxHeight > 0 {
+		maxHeight += vInset
+	}
+
 	preserveWidth := c.Width.IsAuto() && !c.Width.IsUnset()
 	preserveHeight := c.Height.IsAuto() && !c.Height.IsUnset()
 
@@ -1376,8 +1395,8 @@ func (c tableContainer[T]) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		ColumnSpacing:  c.ColumnSpacing,
 		RowSpacing:     c.RowSpacing,
 		Children:       children,
-		Padding:        toLayoutEdgeInsets(c.Style.Padding),
-		Border:         borderToEdgeInsets(c.Style.Border),
+		Padding:        padding,
+		Border:         border,
 		Margin:         toLayoutEdgeInsets(c.Style.Margin),
 		MinWidth:       minWidth,
 		MaxWidth:       maxWidth,

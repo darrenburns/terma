@@ -173,8 +173,8 @@ func (s Scrollable) WidgetID() string {
 	return s.ID
 }
 
-// GetDimensions returns the width and height dimension preferences.
-func (s Scrollable) GetDimensions() (width, height Dimension) {
+// GetContentDimensions returns the width and height dimension preferences.
+func (s Scrollable) GetContentDimensions() (width, height Dimension) {
 	return s.Width, s.Height
 }
 
@@ -236,17 +236,36 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		scrollbarWidth = 1
 	}
 
-	// Get node constraints from dimensions
+	// Get content-box constraints from dimensions
 	minWidth, maxWidth := dimensionToMinMax(s.Width)
 	minHeight, maxHeight := dimensionToMinMax(s.Height)
+
+	padding := toLayoutEdgeInsets(s.Style.Padding)
+	border := borderToEdgeInsets(s.Style.Border)
+
+	// Add padding and border to convert content-box to border-box constraints
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+	if minWidth > 0 {
+		minWidth += hInset
+	}
+	if maxWidth > 0 {
+		maxWidth += hInset
+	}
+	if minHeight > 0 {
+		minHeight += vInset
+	}
+	if maxHeight > 0 {
+		maxHeight += vInset
+	}
 
 	return &layout.ScrollableNode{
 		Child:           childNode,
 		ScrollOffsetY:   scrollOffsetY,
 		ScrollbarWidth:  scrollbarWidth,
 		ScrollbarHeight: 0, // Horizontal scrolling not supported yet
-		Padding:         toLayoutEdgeInsets(s.Style.Padding),
-		Border:          borderToEdgeInsets(s.Style.Border),
+		Padding:         padding,
+		Border:          border,
 		Margin:          toLayoutEdgeInsets(s.Style.Margin),
 		MinWidth:        minWidth,
 		MaxWidth:        maxWidth,

@@ -45,8 +45,8 @@ type Row struct {
 	Hover      func(bool) // Optional callback invoked when hover state changes
 }
 
-// GetDimensions returns the width and height dimension preferences.
-func (r Row) GetDimensions() (width, height Dimension) {
+// GetContentDimensions returns the width and height dimension preferences.
+func (r Row) GetContentDimensions() (width, height Dimension) {
 	return r.Width, r.Height
 }
 
@@ -107,6 +107,25 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minWidth, maxWidth := dimensionToMinMax(r.Width)
 	minHeight, maxHeight := dimensionToMinMax(r.Height)
 
+	padding := toLayoutEdgeInsets(r.Style.Padding)
+	border := borderToEdgeInsets(r.Style.Border)
+
+	// Add padding and border to convert content-box to border-box constraints
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+	if minWidth > 0 {
+		minWidth += hInset
+	}
+	if maxWidth > 0 {
+		maxWidth += hInset
+	}
+	if minHeight > 0 {
+		minHeight += vInset
+	}
+	if maxHeight > 0 {
+		maxHeight += vInset
+	}
+
 	// Explicit Auto means "fit content, don't stretch" - set preserve flags
 	preserveWidth := r.Width.IsAuto() && !r.Width.IsUnset()
 	preserveHeight := r.Height.IsAuto() && !r.Height.IsUnset()
@@ -116,8 +135,8 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		MainAlign:      toLayoutMainAlign(r.MainAlign),
 		CrossAlign:     toLayoutCrossAlign(r.CrossAlign),
 		Children:       children,
-		Padding:        toLayoutEdgeInsets(r.Style.Padding),
-		Border:         borderToEdgeInsets(r.Style.Border),
+		Padding:        padding,
+		Border:         border,
 		Margin:         toLayoutEdgeInsets(r.Style.Margin),
 		MinWidth:       minWidth,
 		MaxWidth:       maxWidth,
@@ -151,8 +170,8 @@ type Column struct {
 	Hover      func(bool) // Optional callback invoked when hover state changes
 }
 
-// GetDimensions returns the width and height dimension preferences.
-func (c Column) GetDimensions() (width, height Dimension) {
+// GetContentDimensions returns the width and height dimension preferences.
+func (c Column) GetContentDimensions() (width, height Dimension) {
 	return c.Width, c.Height
 }
 
@@ -212,6 +231,25 @@ func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minWidth, maxWidth := dimensionToMinMax(c.Width)
 	minHeight, maxHeight := dimensionToMinMax(c.Height)
 
+	padding := toLayoutEdgeInsets(c.Style.Padding)
+	border := borderToEdgeInsets(c.Style.Border)
+
+	// Add padding and border to convert content-box to border-box constraints
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+	if minWidth > 0 {
+		minWidth += hInset
+	}
+	if maxWidth > 0 {
+		maxWidth += hInset
+	}
+	if minHeight > 0 {
+		minHeight += vInset
+	}
+	if maxHeight > 0 {
+		maxHeight += vInset
+	}
+
 	// Explicit Auto means "fit content, don't stretch" - set preserve flags
 	preserveWidth := c.Width.IsAuto() && !c.Width.IsUnset()
 	preserveHeight := c.Height.IsAuto() && !c.Height.IsUnset()
@@ -221,8 +259,8 @@ func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		MainAlign:      toLayoutMainAlign(c.MainAlign),
 		CrossAlign:     toLayoutCrossAlign(c.CrossAlign),
 		Children:       children,
-		Padding:        toLayoutEdgeInsets(c.Style.Padding),
-		Border:         borderToEdgeInsets(c.Style.Border),
+		Padding:        padding,
+		Border:         border,
 		Margin:         toLayoutEdgeInsets(c.Style.Margin),
 		MinWidth:       minWidth,
 		MaxWidth:       maxWidth,

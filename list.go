@@ -443,9 +443,9 @@ func (l List[T]) WidgetID() string {
 	return l.ID
 }
 
-// GetDimensions returns the width and height dimension preferences.
+// GetContentDimensions returns the width and height dimension preferences.
 // Implements the Dimensioned interface.
-func (l List[T]) GetDimensions() (width, height Dimension) {
+func (l List[T]) GetContentDimensions() (width, height Dimension) {
 	return l.Width, l.Height
 }
 
