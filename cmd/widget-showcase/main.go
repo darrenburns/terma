@@ -403,7 +403,7 @@ func (w *WidgetShowcase) buildColorPalette(theme t.ThemeData) t.Widget {
 			t.Row{
 				Spacing: 1,
 				Children: []t.Widget{
-					w.colorSwatch("Selection", theme.Selection, theme.SelectionText),
+					w.colorSwatch("ActiveCursor", theme.ActiveCursor, theme.SelectionText),
 					w.colorSwatch("Border", theme.Border, theme.Text),
 					w.colorSwatch("FocusRing", theme.FocusRing, theme.TextOnPrimary),
 				},

@@ -67,7 +67,7 @@ func (d *TableDemo) Keybinds() []t.Keybind {
 			idx := d.selectionIndex(d.columnCount())
 			d.tableState.ToggleSelection(idx)
 		}},
-		{Key: "m", Name: "Selection mode", Action: d.cycleSelectionMode},
+		{Key: "m", Name: "ActiveCursor mode", Action: d.cycleSelectionMode},
 		{Key: "a", Name: "Append row", Action: func() {
 			d.counter++
 			d.tableState.Append(d.makeRow(d.counter))
@@ -319,7 +319,7 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 				Spans: t.ParseMarkup("Navigate: [b $Info]↑/↓[/] or [b $Info]j/k[/] | Select range: [b $Secondary]Shift+Arrow[/] | Toggle: [b $Secondary]Space[/] | Mode: [b $Secondary]m[/]", theme),
 			},
 			t.Text{
-				Spans: t.ParseMarkup(fmt.Sprintf("Modify: [b $Success]a[/]ppend [b $Success]p[/]repend [b $Error]d[/]elete [b $Warning]r[/]eset  •  Selection: [b $Accent]%s[/]", selectionModeLabel(mode)), theme),
+				Spans: t.ParseMarkup(fmt.Sprintf("Modify: [b $Success]a[/]ppend [b $Success]p[/]repend [b $Error]d[/]elete [b $Warning]r[/]eset  •  ActiveCursor: [b $Accent]%s[/]", selectionModeLabel(mode)), theme),
 			},
 			t.Row{
 				Spacing:    1,

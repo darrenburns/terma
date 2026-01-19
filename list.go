@@ -608,7 +608,7 @@ func (l List[T]) themedDefaultRenderItem(ctx BuildContext) func(item T, active b
 	highlight := SpanStyle{
 		Underline:      UnderlineSingle,
 		UnderlineColor: theme.Accent,
-		Background:     theme.Selection,
+		Background:     theme.ActiveCursor,
 	}
 	return func(item T, active bool, selected bool, match MatchResult) Widget {
 		content := fmt.Sprintf("%v", item)
@@ -620,11 +620,12 @@ func (l List[T]) themedDefaultRenderItem(ctx BuildContext) func(item T, active b
 
 		if showCursor {
 			prefix = cursorPrefix
-			style.BackgroundColor = theme.Selection
+			style.BackgroundColor = theme.ActiveCursor
 			style.ForegroundColor = theme.SelectionText
 		}
 
-		// Selection highlight shown regardless of focus (user's selection persists)
+		// ActiveCursor highlight shown regardless of focus (user's selection persists)
+		// Uses Selection for a dimmer appearance than the active cursor
 		if selected && !showCursor {
 			prefix = selectedPrefix
 			style.BackgroundColor = theme.Selection

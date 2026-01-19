@@ -147,7 +147,7 @@ func (a *TreeExampleApp) Build(ctx t.BuildContext) t.Widget {
 								highlight := t.SpanStyle{
 									Underline:      t.UnderlineSingle,
 									UnderlineColor: theme.Accent,
-									Background:     theme.Selection,
+									Background:     theme.ActiveCursor,
 								}
 								spans = append(spans, t.HighlightSpans(info.Name, match.Ranges, highlight)...)
 							} else {
@@ -194,12 +194,12 @@ func treeNodeStyle(theme t.ThemeData, nodeCtx t.TreeNodeContext, widgetFocused b
 	}
 	showCursor := nodeCtx.Active && widgetFocused
 	if showCursor {
-		style.BackgroundColor = theme.Selection
+		style.BackgroundColor = theme.ActiveCursor
 		style.ForegroundColor = theme.SelectionText
 		return style
 	}
 	if nodeCtx.Selected {
-		style.BackgroundColor = theme.Selection
+		style.BackgroundColor = theme.ActiveCursor
 	}
 	return style
 }

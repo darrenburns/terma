@@ -689,7 +689,7 @@ func (t Table[T]) themedDefaultRenderCell(ctx BuildContext) func(row T, rowIndex
 	highlight := SpanStyle{
 		Underline:      UnderlineSingle,
 		UnderlineColor: theme.Accent,
-		Background:     theme.Selection,
+		Background:     theme.ActiveCursor,
 	}
 	return func(row T, rowIndex int, colIndex int, active bool, selected bool, match MatchResult) Widget {
 		style := tableDefaultCellStyle(theme, active, selected, widgetFocused)
@@ -1513,10 +1513,11 @@ func tableDefaultCellStyle(theme ThemeData, active, selected, widgetFocused bool
 	showCursor := active && widgetFocused
 
 	if showCursor {
-		style.BackgroundColor = theme.Selection
+		style.BackgroundColor = theme.ActiveCursor
 		style.ForegroundColor = theme.SelectionText
 	} else if selected {
-		// Selection highlight shown regardless of focus (user's selection persists)
+		// ActiveCursor highlight shown regardless of focus (user's selection persists)
+		// Uses Selection for a dimmer appearance than the active cursor
 		style.BackgroundColor = theme.Selection
 	}
 	return style
