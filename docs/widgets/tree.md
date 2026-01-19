@@ -2,6 +2,8 @@
 
 A focusable, navigable tree widget for hierarchical data with expand/collapse, filtering, and optional lazy loading.
 
+<video autoplay loop muted playsinline src="../../assets/tree-demo.mp4"></video>
+
 ## Overview
 
 The tree is built from `TreeNode` values:

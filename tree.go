@@ -480,7 +480,7 @@ type Tree[T any] struct {
 	OnExpand            func(node T, path []int, setChildren func([]TreeNode[T]))
 	Filter              *FilterState
 	MatchNode           func(node T, query string, options FilterOptions) MatchResult
-	OnSelect            func(node T)
+	OnSelect            func(node T, selected []T)
 	OnCursorChange      func(node T)
 	ScrollState         *ScrollState
 	Width               Dimension
@@ -619,9 +619,6 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 		collapseIndicator = "▶"
 	}
 	leafIndicator := t.LeafIndicator
-	if leafIndicator == "" {
-		leafIndicator = " "
-	}
 	showGuideLines := true
 	if t.ShowGuideLines != nil {
 		showGuideLines = *t.ShowGuideLines
@@ -732,7 +729,8 @@ func (t Tree[T]) OnKey(event KeyEvent) bool {
 	case event.MatchString("enter"):
 		if t.OnSelect != nil {
 			if node, ok := t.State.CursorNode(); ok {
-				t.OnSelect(node)
+				selected := t.getSelectedNodes()
+				t.OnSelect(node, selected)
 			}
 		}
 		return true
@@ -841,7 +839,7 @@ func (t Tree[T]) themedDefaultRenderNode(ctx BuildContext) func(node T, nodeCtx 
 	highlight := SpanStyle{
 		Underline:      UnderlineSingle,
 		UnderlineColor: theme.Accent,
-		Background:     theme.ActiveCursor,
+		Background:     theme.Selection,
 	}
 	return func(node T, nodeCtx TreeNodeContext, match MatchResult) Widget {
 		content := fmt.Sprintf("%v", node)
@@ -875,7 +873,7 @@ func (t Tree[T]) styleForContext(ctx BuildContext, nodeCtx TreeNodeContext, widg
 		return style
 	}
 	if nodeCtx.Selected {
-		style.BackgroundColor = theme.ActiveCursor
+		style.BackgroundColor = theme.Selection
 	}
 	return style
 }
@@ -958,39 +956,17 @@ func treeLastSiblingByPath[T any](entries []treeViewEntry[T]) map[string]bool {
 }
 
 func treeGuidePrefix(path []int, depth int, indent int, lastSiblingByPath map[string]bool) string {
-	if depth <= 0 || indent <= 0 {
+	if depth <= 0 {
 		return ""
 	}
-	spacer := strings.Repeat(" ", indent)
-	vertical := "│"
-	if indent > 1 {
-		vertical += strings.Repeat(" ", indent-1)
+	// Indentation for depth (spaces for ancestor levels)
+	indentStr := strings.Repeat(" ", indent*(depth-1))
+	// Branch character based on whether this node is last sibling
+	isLast := lastSiblingByPath[pathKey(path)]
+	if isLast {
+		return indentStr + "└─"
 	}
-	branchLine := ""
-	if indent > 1 {
-		branchLine = strings.Repeat("─", indent-1)
-	}
-	var b strings.Builder
-	ancestor := make([]int, 0, depth)
-	for i := 0; i < depth; i++ {
-		ancestor = append(ancestor, path[i])
-		isLast := lastSiblingByPath[pathKey(ancestor)]
-		if i == depth-1 {
-			if isLast {
-				b.WriteString("└")
-			} else {
-				b.WriteString("├")
-			}
-			b.WriteString(branchLine)
-			continue
-		}
-		if isLast {
-			b.WriteString(spacer)
-		} else {
-			b.WriteString(vertical)
-		}
-	}
-	return b.String()
+	return indentStr + "├─"
 }
 
 func (t Tree[T]) buildViewEntries(nodes []TreeNode[T], query string, options FilterOptions) []treeViewEntry[T] {
@@ -1323,6 +1299,24 @@ func (t Tree[T]) notifyCursorChange() {
 	if node, ok := t.State.CursorNode(); ok {
 		t.OnCursorChange(node)
 	}
+}
+
+// getSelectedNodes returns the data for all selected nodes.
+func (t Tree[T]) getSelectedNodes() []T {
+	if t.State == nil {
+		return nil
+	}
+	paths := t.State.SelectedPaths()
+	if len(paths) == 0 {
+		return nil
+	}
+	nodes := make([]T, 0, len(paths))
+	for _, path := range paths {
+		if node, ok := t.State.NodeAtPath(path); ok {
+			nodes = append(nodes, node.Data)
+		}
+	}
+	return nodes
 }
 
 func defaultTreeMatchNode[T any](node T, query string, options FilterOptions) MatchResult {

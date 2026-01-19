@@ -689,7 +689,7 @@ func (t Table[T]) themedDefaultRenderCell(ctx BuildContext) func(row T, rowIndex
 	highlight := SpanStyle{
 		Underline:      UnderlineSingle,
 		UnderlineColor: theme.Accent,
-		Background:     theme.ActiveCursor,
+		Background:     theme.Selection,
 	}
 	return func(row T, rowIndex int, colIndex int, active bool, selected bool, match MatchResult) Widget {
 		style := tableDefaultCellStyle(theme, active, selected, widgetFocused)

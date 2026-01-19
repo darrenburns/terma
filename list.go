@@ -608,7 +608,7 @@ func (l List[T]) themedDefaultRenderItem(ctx BuildContext) func(item T, active b
 	highlight := SpanStyle{
 		Underline:      UnderlineSingle,
 		UnderlineColor: theme.Accent,
-		Background:     theme.ActiveCursor,
+		Background:     theme.Selection,
 	}
 	return func(item T, active bool, selected bool, match MatchResult) Widget {
 		content := fmt.Sprintf("%v", item)

@@ -30,7 +30,8 @@ const DefaultSelectionAlpha = 0.25
 // ThemeData holds all semantic colors for a theme.
 // This is the data structure users provide when registering custom themes.
 type ThemeData struct {
-	Name string
+	Name    string
+	IsLight bool // True for light themes, false for dark themes
 
 	// Core branding colors
 	Primary   Color
@@ -547,7 +548,8 @@ var monokaiThemeData = ThemeData{
 // rosePineDawnThemeData - Rosé Pine Dawn light variant
 // https://rosepinetheme.com/
 var rosePineDawnThemeData = ThemeData{
-	Name: ThemeNameRosePineDawn,
+	Name:    ThemeNameRosePineDawn,
+	IsLight: true,
 
 	Primary:   Hex("#907aa9"), // Iris
 	Secondary: Hex("#d7827e"), // Rose
@@ -596,7 +598,8 @@ var rosePineDawnThemeData = ThemeData{
 
 // draculaLightThemeData - Dracula light variant (Alucard)
 var draculaLightThemeData = ThemeData{
-	Name: ThemeNameDraculaLight,
+	Name:    ThemeNameDraculaLight,
+	IsLight: true,
 
 	Primary:   Hex("#9580ff"), // Purple
 	Secondary: Hex("#ff80bf"), // Pink
@@ -646,7 +649,8 @@ var draculaLightThemeData = ThemeData{
 // tokyoNightDayThemeData - Tokyo Night Day light variant
 // https://github.com/enkia/tokyo-night-vscode-theme
 var tokyoNightDayThemeData = ThemeData{
-	Name: ThemeNameTokyoNightDay,
+	Name:    ThemeNameTokyoNightDay,
+	IsLight: true,
 
 	Primary:   Hex("#2e7de9"), // Blue
 	Secondary: Hex("#9854f1"), // Purple
@@ -696,7 +700,8 @@ var tokyoNightDayThemeData = ThemeData{
 // catppuccinLatteThemeData - Catppuccin Latte light variant
 // https://catppuccin.com/
 var catppuccinLatteThemeData = ThemeData{
-	Name: ThemeNameCatppuccinLatte,
+	Name:    ThemeNameCatppuccinLatte,
+	IsLight: true,
 
 	Primary:   Hex("#8839ef"), // Mauve
 	Secondary: Hex("#ea76cb"), // Pink
@@ -746,7 +751,8 @@ var catppuccinLatteThemeData = ThemeData{
 // gruvboxLightThemeData - Gruvbox Light variant
 // https://github.com/morhetz/gruvbox
 var gruvboxLightThemeData = ThemeData{
-	Name: ThemeNameGruvboxLight,
+	Name:    ThemeNameGruvboxLight,
+	IsLight: true,
 
 	Primary:   Hex("#d79921"), // Yellow
 	Secondary: Hex("#b16286"), // Purple
@@ -796,7 +802,8 @@ var gruvboxLightThemeData = ThemeData{
 // nordLightThemeData - Nord Light variant (Snow Storm palette)
 // https://www.nordtheme.com/
 var nordLightThemeData = ThemeData{
-	Name: ThemeNameNordLight,
+	Name:    ThemeNameNordLight,
+	IsLight: true,
 
 	Primary:   Hex("#5e81ac"), // Nord10 - frost
 	Secondary: Hex("#81a1c1"), // Nord9 - frost
@@ -846,7 +853,8 @@ var nordLightThemeData = ThemeData{
 // solarizedLightThemeData - Solarized Light variant
 // https://ethanschoonover.com/solarized/
 var solarizedLightThemeData = ThemeData{
-	Name: ThemeNameSolarizedLight,
+	Name:    ThemeNameSolarizedLight,
+	IsLight: true,
 
 	Primary:   Hex("#268bd2"), // Blue
 	Secondary: Hex("#6c71c4"), // Violet
@@ -896,7 +904,8 @@ var solarizedLightThemeData = ThemeData{
 // kanagawaLotusThemeData - Kanagawa Lotus light variant
 // https://github.com/rebelot/kanagawa.nvim
 var kanagawaLotusThemeData = ThemeData{
-	Name: ThemeNameKanagawaLotus,
+	Name:    ThemeNameKanagawaLotus,
+	IsLight: true,
 
 	Primary:   Hex("#4d699b"), // lotusBlue
 	Secondary: Hex("#624c83"), // lotusViolet
@@ -945,7 +954,8 @@ var kanagawaLotusThemeData = ThemeData{
 
 // monokaiLightThemeData - Monokai Light variant
 var monokaiLightThemeData = ThemeData{
-	Name: ThemeNameMonokaiLight,
+	Name:    ThemeNameMonokaiLight,
+	IsLight: true,
 
 	Primary:   Hex("#7a8c21"), // Green (darkened)
 	Secondary: Hex("#8c6bc8"), // Purple
@@ -1056,6 +1066,28 @@ func ThemeNames() []string {
 	names := make([]string, 0, len(themeRegistry))
 	for name := range themeRegistry {
 		names = append(names, name)
+	}
+	return names
+}
+
+// LightThemeNames returns a slice of all registered light theme names.
+func LightThemeNames() []string {
+	names := make([]string, 0)
+	for name, data := range themeRegistry {
+		if data.IsLight {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+// DarkThemeNames returns a slice of all registered dark theme names.
+func DarkThemeNames() []string {
+	names := make([]string, 0)
+	for name, data := range themeRegistry {
+		if !data.IsLight {
+			names = append(names, name)
+		}
 	}
 	return names
 }
