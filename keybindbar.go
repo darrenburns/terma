@@ -23,10 +23,10 @@ type KeybindBar struct {
 	FormatKey func(string) string
 }
 
-// GetDimensions returns the width and height dimension preferences.
+// GetContentDimensions returns the width and height dimension preferences.
 // Width defaults to Flex(1) if not explicitly set, as KeybindBar typically fills width.
 // Height defaults to Cells(1) if not explicitly set, as KeybindBar is a single-line widget.
-func (f KeybindBar) GetDimensions() (width, height Dimension) {
+func (f KeybindBar) GetContentDimensions() (width, height Dimension) {
 	w, h := f.Width, f.Height
 	if w.IsUnset() {
 		w = Flex(1)
@@ -47,7 +47,7 @@ type keybindGroup struct {
 func (f KeybindBar) Build(ctx BuildContext) Widget {
 	keybinds := ctx.ActiveKeybinds()
 	theme := ctx.Theme()
-	width, height := f.GetDimensions()
+	width, height := f.GetContentDimensions()
 
 	if len(keybinds) == 0 {
 		return Text{Width: width, Height: height, Style: f.Style}

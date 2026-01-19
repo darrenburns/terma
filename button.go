@@ -81,9 +81,9 @@ func (b *Button) Build(ctx BuildContext) Widget {
 	}
 }
 
-// GetDimensions returns the width and height dimension preferences.
+// GetContentDimensions returns the width and height dimension preferences.
 // Implements the Dimensioned interface.
-func (b *Button) GetDimensions() (width, height Dimension) {
+func (b *Button) GetContentDimensions() (width, height Dimension) {
 	return b.Width, b.Height
 }
 

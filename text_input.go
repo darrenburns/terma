@@ -283,13 +283,15 @@ func (s *TextInputState) clampCursor() {
 // --- TextInput Widget ---
 
 // TextInput is a single-line focusable text entry widget.
+// Content height is always 1 cell (single line). Use Style.Padding to add
+// visual space around the text - the framework automatically accounts for padding.
 type TextInput struct {
 	ID            string            // Required for focus management
 	State         *TextInputState   // Required - holds text and cursor position
 	Placeholder   string            // Text shown when empty and unfocused
 	Width         Dimension         // Optional width
-	Height        Dimension         // Ignored (always 1 for single-line)
-	Style         Style             // Optional styling
+	Height        Dimension         // Ignored - content is always 1 cell (single-line); use Style.Padding for visual spacing
+	Style         Style             // Optional styling (padding adds to outer size automatically)
 	OnChange      func(text string) // Callback when text changes
 	OnSubmit      func(text string) // Callback when Enter pressed
 	Click         func(MouseEvent) // Optional click callback
@@ -468,9 +470,11 @@ func (t TextInput) Build(ctx BuildContext) Widget {
 	return t
 }
 
-// GetDimensions returns the width and height dimension preferences.
-func (t TextInput) GetDimensions() (width, height Dimension) {
-	return t.Width, Cells(1) // Always 1 cell tall
+// GetContentDimensions returns the content-box dimensions.
+// Height is always 1 cell (single line of text). Padding/border from Style
+// are automatically added by the framework to compute the final outer size.
+func (t TextInput) GetContentDimensions() (width, height Dimension) {
+	return t.Width, Cells(1)
 }
 
 // GetStyle returns the style.

@@ -25,9 +25,9 @@ func (s Spacer) Build(ctx BuildContext) Widget {
 	return s
 }
 
-// GetDimensions returns the width and height dimension preferences.
+// GetContentDimensions returns the width and height dimension preferences.
 // Unset dimensions default to Flex(1).
-func (s Spacer) GetDimensions() (width, height Dimension) {
+func (s Spacer) GetContentDimensions() (width, height Dimension) {
 	w, h := s.Width, s.Height
 	if w.IsUnset() {
 		w = Flex(1)
@@ -40,7 +40,7 @@ func (s Spacer) GetDimensions() (width, height Dimension) {
 
 // BuildLayoutNode builds a layout node for this Spacer widget.
 func (s Spacer) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
-	w, h := s.GetDimensions()
+	w, h := s.GetContentDimensions()
 	minWidth, maxWidth := dimensionToMinMax(w)
 	minHeight, maxHeight := dimensionToMinMax(h)
 

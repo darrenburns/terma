@@ -511,9 +511,9 @@ func (t Table[T]) WidgetID() string {
 	return t.ID
 }
 
-// GetDimensions returns the width and height dimension preferences.
+// GetContentDimensions returns the width and height dimension preferences.
 // Implements the Dimensioned interface.
-func (t Table[T]) GetDimensions() (width, height Dimension) {
+func (t Table[T]) GetContentDimensions() (width, height Dimension) {
 	return t.Width, t.Height
 }
 
@@ -689,7 +689,7 @@ func (t Table[T]) themedDefaultRenderCell(ctx BuildContext) func(row T, rowIndex
 	highlight := SpanStyle{
 		Underline:      UnderlineSingle,
 		UnderlineColor: theme.Accent,
-		Background:     theme.Selection,
+		Background:     theme.ActiveCursor,
 	}
 	return func(row T, rowIndex int, colIndex int, active bool, selected bool, match MatchResult) Widget {
 		style := tableDefaultCellStyle(theme, active, selected, widgetFocused)
@@ -1379,6 +1379,25 @@ func (c tableContainer[T]) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minWidth, maxWidth := dimensionToMinMax(c.Width)
 	minHeight, maxHeight := dimensionToMinMax(c.Height)
 
+	padding := toLayoutEdgeInsets(c.Style.Padding)
+	border := borderToEdgeInsets(c.Style.Border)
+
+	// Add padding and border to convert content-box to border-box constraints
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+	if minWidth > 0 {
+		minWidth += hInset
+	}
+	if maxWidth > 0 {
+		maxWidth += hInset
+	}
+	if minHeight > 0 {
+		minHeight += vInset
+	}
+	if maxHeight > 0 {
+		maxHeight += vInset
+	}
+
 	preserveWidth := c.Width.IsAuto() && !c.Width.IsUnset()
 	preserveHeight := c.Height.IsAuto() && !c.Height.IsUnset()
 
@@ -1394,8 +1413,8 @@ func (c tableContainer[T]) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		ColumnSpacing:  c.ColumnSpacing,
 		RowSpacing:     c.RowSpacing,
 		Children:       children,
-		Padding:        toLayoutEdgeInsets(c.Style.Padding),
-		Border:         borderToEdgeInsets(c.Style.Border),
+		Padding:        padding,
+		Border:         border,
 		Margin:         toLayoutEdgeInsets(c.Style.Margin),
 		MinWidth:       minWidth,
 		MaxWidth:       maxWidth,
@@ -1494,10 +1513,11 @@ func tableDefaultCellStyle(theme ThemeData, active, selected, widgetFocused bool
 	showCursor := active && widgetFocused
 
 	if showCursor {
-		style.BackgroundColor = theme.Selection
+		style.BackgroundColor = theme.ActiveCursor
 		style.ForegroundColor = theme.SelectionText
 	} else if selected {
-		// Selection highlight shown regardless of focus (user's selection persists)
+		// ActiveCursor highlight shown regardless of focus (user's selection persists)
+		// Uses Selection for a dimmer appearance than the active cursor
 		style.BackgroundColor = theme.Selection
 	}
 	return style

@@ -61,8 +61,8 @@ type Stack struct {
 	Hover     func(bool)       // Optional callback invoked when hover state changes
 }
 
-// GetDimensions returns the width and height dimension preferences.
-func (s Stack) GetDimensions() (width, height Dimension) {
+// GetContentDimensions returns the width and height dimension preferences.
+func (s Stack) GetContentDimensions() (width, height Dimension) {
 	return s.Width, s.Height
 }
 
@@ -165,19 +165,38 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minWidth, maxWidth := dimensionToMinMax(s.Width)
 	minHeight, maxHeight := dimensionToMinMax(s.Height)
 
+	padding := toLayoutEdgeInsets(s.Style.Padding)
+	border := borderToEdgeInsets(s.Style.Border)
+
+	// Add padding and border to convert content-box to border-box constraints
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+	if minWidth > 0 {
+		minWidth += hInset
+	}
+	if maxWidth > 0 {
+		maxWidth += hInset
+	}
+	if minHeight > 0 {
+		minHeight += vInset
+	}
+	if maxHeight > 0 {
+		maxHeight += vInset
+	}
+
 	return &layout.StackNode{
-		Children:     children,
+		Children:      children,
 		DefaultHAlign: toLayoutHAlign(s.Alignment.Horizontal),
 		DefaultVAlign: toLayoutVAlign(s.Alignment.Vertical),
-		Padding:      toLayoutEdgeInsets(s.Style.Padding),
-		Border:       borderToEdgeInsets(s.Style.Border),
-		Margin:       toLayoutEdgeInsets(s.Style.Margin),
-		MinWidth:     minWidth,
-		MaxWidth:     maxWidth,
-		MinHeight:    minHeight,
-		MaxHeight:    maxHeight,
-		ExpandWidth:  s.Width.IsFlex(),
-		ExpandHeight: s.Height.IsFlex(),
+		Padding:       padding,
+		Border:        border,
+		Margin:        toLayoutEdgeInsets(s.Style.Margin),
+		MinWidth:      minWidth,
+		MaxWidth:      maxWidth,
+		MinHeight:     minHeight,
+		MaxHeight:     maxHeight,
+		ExpandWidth:   s.Width.IsFlex(),
+		ExpandHeight:  s.Height.IsFlex(),
 	}
 }
 
