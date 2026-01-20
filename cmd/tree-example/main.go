@@ -158,7 +158,6 @@ func (a *TreeExampleApp) Build(ctx t.BuildContext) t.Widget {
 							return t.Text{
 								Spans: spans,
 								Style: style,
-								Width: t.Flex(1),
 							}
 						}
 						return treeWidget
