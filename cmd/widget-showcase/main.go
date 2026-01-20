@@ -368,7 +368,7 @@ func (w *WidgetShowcase) buildTextAreaSection(theme t.ThemeData) t.Widget {
 				ID:          "showcase-textarea",
 				State:       w.textAreaState,
 				Placeholder: "Type multiple lines here...",
-				Width:       t.Cells(40),
+				Width:       t.Auto,
 				Height:      t.Cells(4),
 				Style: t.Style{
 					BackgroundColor: theme.Background,

@@ -814,6 +814,9 @@ func (t TextArea) Layout(ctx BuildContext, constraints Constraints) Size {
 		}
 		placeholderWidth := maxLineWidthString(t.Placeholder)
 		width = max(contentWidth, placeholderWidth, 1)
+		if width > 1 {
+			width++
+		}
 	}
 	width = clampInt(width, constraints.MinWidth, constraints.MaxWidth)
 
