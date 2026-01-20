@@ -1,5 +1,7 @@
 package terma
 
+import "sort"
+
 // Theme name constants for built-in themes
 const (
 	// Dark themes
@@ -126,9 +128,9 @@ var rosePineThemeData = ThemeData{
 	TextOnSuccess: Hex("#191724"), // Base
 	TextOnInfo:    Hex("#e0def4"), // Text (Pine is darker)
 
-	ActiveCursor:  Hex("#c4a7e7"),                                  // Primary (Iris)
-	Selection:     Hex("#c4a7e7").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
-	SelectionText: Hex("#191724"),                                  // TextOnPrimary (Base)
+	ActiveCursor:  Hex("#f6c177"),                                  // Accent (Gold)
+	Selection:     Hex("#f6c177").WithAlpha(DefaultSelectionAlpha), // Accent with alpha for multi-select
+	SelectionText: Hex("#191724"),                                  // TextOnAccent (Base)
 
 	ScrollbarTrack: Hex("#26233a"), // Overlay
 	ScrollbarThumb: Hex("#6e6a86"), // Subtle
@@ -176,9 +178,9 @@ var draculaThemeData = ThemeData{
 	TextOnSuccess: Hex("#282a36"), // Background
 	TextOnInfo:    Hex("#282a36"), // Background
 
-	ActiveCursor:  Hex("#bd93f9"),                                  // Primary (Purple)
-	Selection:     Hex("#bd93f9").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
-	SelectionText: Hex("#282a36"),                                  // TextOnPrimary (Background)
+	ActiveCursor:  Hex("#8be9fd"),                                  // Accent (Cyan)
+	Selection:     Hex("#8be9fd").WithAlpha(DefaultSelectionAlpha), // Accent with alpha for multi-select
+	SelectionText: Hex("#282a36"),                                  // TextOnAccent (Background)
 
 	ScrollbarTrack: Hex("#44475a"), // Current Line
 	ScrollbarThumb: Hex("#6272a4"), // Comment
@@ -226,9 +228,9 @@ var tokyoNightThemeData = ThemeData{
 	TextOnSuccess: Hex("#1a1b26"), // Background
 	TextOnInfo:    Hex("#1a1b26"), // Background
 
-	ActiveCursor:  Hex("#7aa2f7"),                                  // Primary (Blue)
-	Selection:     Hex("#7aa2f7").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
-	SelectionText: Hex("#1a1b26"),                                  // TextOnPrimary (Background)
+	ActiveCursor:  Hex("#7dcfff"),                                  // Accent (Cyan)
+	Selection:     Hex("#7dcfff").WithAlpha(DefaultSelectionAlpha), // Accent with alpha for multi-select
+	SelectionText: Hex("#1a1b26"),                                  // TextOnAccent (Background)
 
 	ScrollbarTrack: Hex("#24283b"), // Surface
 	ScrollbarThumb: Hex("#565f89"), // Comment
@@ -276,9 +278,9 @@ var catppuccinThemeData = ThemeData{
 	TextOnSuccess: Hex("#1e1e2e"), // Base
 	TextOnInfo:    Hex("#1e1e2e"), // Base
 
-	ActiveCursor:  Hex("#cba6f7"),                                  // Primary (Mauve)
-	Selection:     Hex("#cba6f7").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
-	SelectionText: Hex("#1e1e2e"),                                  // TextOnPrimary (Base)
+	ActiveCursor:  Hex("#94e2d5"),                                  // Accent (Teal)
+	Selection:     Hex("#94e2d5").WithAlpha(DefaultSelectionAlpha), // Accent with alpha for multi-select
+	SelectionText: Hex("#1e1e2e"),                                  // TextOnAccent (Base)
 
 	ScrollbarTrack: Hex("#313244"), // Surface0
 	ScrollbarThumb: Hex("#6c7086"), // Overlay0
@@ -326,9 +328,9 @@ var gruvboxThemeData = ThemeData{
 	TextOnSuccess: Hex("#282828"), // bg0
 	TextOnInfo:    Hex("#282828"), // bg0
 
-	ActiveCursor:  Hex("#d79921"),                                  // Primary (Yellow)
-	Selection:     Hex("#d79921").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
-	SelectionText: Hex("#282828"),                                  // TextOnPrimary (bg0)
+	ActiveCursor:  Hex("#8ec07c"),                                  // Accent (Aqua)
+	Selection:     Hex("#8ec07c").WithAlpha(DefaultSelectionAlpha), // Accent with alpha for multi-select
+	SelectionText: Hex("#282828"),                                  // TextOnAccent (bg0)
 
 	ScrollbarTrack: Hex("#3c3836"), // bg1
 	ScrollbarThumb: Hex("#7c6f64"), // bg4
@@ -376,9 +378,9 @@ var nordThemeData = ThemeData{
 	TextOnSuccess: Hex("#2e3440"), // Nord0
 	TextOnInfo:    Hex("#eceff4"), // Nord6 (frost blue is darker)
 
-	ActiveCursor:  Hex("#88c0d0"),                                  // Primary (Nord8)
-	Selection:     Hex("#88c0d0").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
-	SelectionText: Hex("#2e3440"),                                  // TextOnPrimary (Nord0)
+	ActiveCursor:  Hex("#8fbcbb"),                                  // Accent (Nord7)
+	Selection:     Hex("#8fbcbb").WithAlpha(DefaultSelectionAlpha), // Accent with alpha for multi-select
+	SelectionText: Hex("#2e3440"),                                  // TextOnAccent (Nord0)
 
 	ScrollbarTrack: Hex("#3b4252"), // Nord1
 	ScrollbarThumb: Hex("#4c566a"), // Nord3
@@ -426,9 +428,9 @@ var solarizedThemeData = ThemeData{
 	TextOnSuccess: Hex("#fdf6e3"), // base3
 	TextOnInfo:    Hex("#fdf6e3"), // base3
 
-	ActiveCursor:  Hex("#268bd2"),                                  // Primary (Blue)
-	Selection:     Hex("#268bd2").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
-	SelectionText: Hex("#fdf6e3"),                                  // TextOnPrimary (base3)
+	ActiveCursor:  Hex("#2aa198"),                                  // Accent (Cyan)
+	Selection:     Hex("#2aa198").WithAlpha(DefaultSelectionAlpha), // Accent with alpha for multi-select
+	SelectionText: Hex("#fdf6e3"),                                  // TextOnAccent (base3)
 
 	ScrollbarTrack: Hex("#073642"), // base02
 	ScrollbarThumb: Hex("#586e75"), // base01
@@ -476,9 +478,9 @@ var kanagawaThemeData = ThemeData{
 	TextOnSuccess: Hex("#1f1f28"), // sumiInk1
 	TextOnInfo:    Hex("#1f1f28"), // sumiInk1
 
-	ActiveCursor:  Hex("#7e9cd8"),                                  // Primary (crystalBlue)
-	Selection:     Hex("#7e9cd8").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
-	SelectionText: Hex("#1f1f28"),                                  // TextOnPrimary (sumiInk1)
+	ActiveCursor:  Hex("#7aa89f"),                                  // Accent (waveAqua2)
+	Selection:     Hex("#7aa89f").WithAlpha(DefaultSelectionAlpha), // Accent with alpha for multi-select
+	SelectionText: Hex("#1f1f28"),                                  // TextOnAccent (sumiInk1)
 
 	ScrollbarTrack: Hex("#2a2a37"), // sumiInk3
 	ScrollbarThumb: Hex("#54546d"), // sumiInk6
@@ -526,9 +528,9 @@ var monokaiThemeData = ThemeData{
 	TextOnSuccess: Hex("#272822"), // Background
 	TextOnInfo:    Hex("#272822"), // Background
 
-	ActiveCursor:  Hex("#a6e22e"),                                  // Primary (Green)
-	Selection:     Hex("#a6e22e").WithAlpha(DefaultSelectionAlpha), // Primary with alpha for multi-select
-	SelectionText: Hex("#272822"),                                  // TextOnPrimary (Background)
+	ActiveCursor:  Hex("#66d9ef"),                                  // Accent (Cyan)
+	Selection:     Hex("#66d9ef").WithAlpha(DefaultSelectionAlpha), // Accent with alpha for multi-select
+	SelectionText: Hex("#272822"),                                  // TextOnAccent (Background)
 
 	ScrollbarTrack: Hex("#3e3d32"), // Line highlight
 	ScrollbarThumb: Hex("#75715e"), // Comment
@@ -581,9 +583,9 @@ var rosePineDawnThemeData = ThemeData{
 	TextOnSuccess: Hex("#faf4ed"), // Base
 	TextOnInfo:    Hex("#faf4ed"), // Base
 
-	ActiveCursor:  Hex("#907aa9"),                 // Primary (Iris)
-	Selection:     Hex("#907aa9").WithAlpha(0.12), // Primary with alpha for multi-select
-	SelectionText: Hex("#faf4ed"),                 // TextOnPrimary (Base)
+	ActiveCursor:  Hex("#ea9d34"),                 // Accent (Gold)
+	Selection:     Hex("#ea9d34").WithAlpha(0.12), // Accent with alpha for multi-select
+	SelectionText: Hex("#faf4ed"),                 // TextOnAccent (Base)
 
 	ScrollbarTrack: Hex("#f2e9e1"), // Overlay
 	ScrollbarThumb: Hex("#b4aeb8"), // Subtle
@@ -631,9 +633,9 @@ var draculaLightThemeData = ThemeData{
 	TextOnSuccess: Hex("#282a36"), // Dark
 	TextOnInfo:    Hex("#282a36"), // Dark
 
-	ActiveCursor:  Hex("#9580ff"),                 // Primary (Purple)
-	Selection:     Hex("#9580ff").WithAlpha(0.12), // Primary with alpha for multi-select
-	SelectionText: Hex("#f8f8f2"),                 // TextOnPrimary (Light)
+	ActiveCursor:  Hex("#80ffea"),                 // Accent (Cyan)
+	Selection:     Hex("#80ffea").WithAlpha(0.12), // Accent with alpha for multi-select
+	SelectionText: Hex("#282a36"),                 // TextOnAccent (Dark)
 
 	ScrollbarTrack: Hex("#e8e8e0"), // Surface hover
 	ScrollbarThumb: Hex("#6272a4"), // Comment
@@ -682,9 +684,9 @@ var tokyoNightDayThemeData = ThemeData{
 	TextOnSuccess: Hex("#e1e2e7"), // Background
 	TextOnInfo:    Hex("#e1e2e7"), // Background
 
-	ActiveCursor:  Hex("#2e7de9"),                 // Primary (Blue)
-	Selection:     Hex("#2e7de9").WithAlpha(0.12), // Primary with alpha for multi-select
-	SelectionText: Hex("#e1e2e7"),                 // TextOnPrimary (Background)
+	ActiveCursor:  Hex("#007197"),                 // Accent (Cyan)
+	Selection:     Hex("#007197").WithAlpha(0.12), // Accent with alpha for multi-select
+	SelectionText: Hex("#e1e2e7"),                 // TextOnAccent (Background)
 
 	ScrollbarTrack: Hex("#d5d6db"), // Surface
 	ScrollbarThumb: Hex("#848cb5"), // Comment
@@ -733,9 +735,9 @@ var catppuccinLatteThemeData = ThemeData{
 	TextOnSuccess: Hex("#eff1f5"), // Base
 	TextOnInfo:    Hex("#eff1f5"), // Base
 
-	ActiveCursor:  Hex("#8839ef"),                 // Primary (Mauve)
-	Selection:     Hex("#8839ef").WithAlpha(0.12), // Primary with alpha for multi-select
-	SelectionText: Hex("#eff1f5"),                 // TextOnPrimary (Base)
+	ActiveCursor:  Hex("#179299"),                 // Accent (Teal)
+	Selection:     Hex("#179299").WithAlpha(0.12), // Accent with alpha for multi-select
+	SelectionText: Hex("#eff1f5"),                 // TextOnAccent (Base)
 
 	ScrollbarTrack: Hex("#e6e9ef"), // Surface0
 	ScrollbarThumb: Hex("#9ca0b0"), // Overlay1
@@ -784,9 +786,9 @@ var gruvboxLightThemeData = ThemeData{
 	TextOnSuccess: Hex("#fbf1c7"), // bg0
 	TextOnInfo:    Hex("#fbf1c7"), // bg0
 
-	ActiveCursor:  Hex("#d79921"),                 // Primary (Yellow)
-	Selection:     Hex("#d79921").WithAlpha(0.12), // Primary with alpha for multi-select
-	SelectionText: Hex("#fbf1c7"),                 // TextOnPrimary (bg0)
+	ActiveCursor:  Hex("#689d6a"),                 // Accent (Aqua)
+	Selection:     Hex("#689d6a").WithAlpha(0.12), // Accent with alpha for multi-select
+	SelectionText: Hex("#fbf1c7"),                 // TextOnAccent (bg0)
 
 	ScrollbarTrack: Hex("#ebdbb2"), // bg1
 	ScrollbarThumb: Hex("#928374"), // gray
@@ -835,9 +837,9 @@ var nordLightThemeData = ThemeData{
 	TextOnSuccess: Hex("#2e3440"), // Nord0
 	TextOnInfo:    Hex("#eceff4"), // Nord6
 
-	ActiveCursor:  Hex("#5e81ac"),                 // Primary (Nord10)
-	Selection:     Hex("#5e81ac").WithAlpha(0.12), // Primary with alpha for multi-select
-	SelectionText: Hex("#eceff4"),                 // TextOnPrimary (Nord6)
+	ActiveCursor:  Hex("#88c0d0"),                 // Accent (Nord8)
+	Selection:     Hex("#88c0d0").WithAlpha(0.12), // Accent with alpha for multi-select
+	SelectionText: Hex("#2e3440"),                 // TextOnAccent (Nord0)
 
 	ScrollbarTrack: Hex("#e5e9f0"), // Nord5
 	ScrollbarThumb: Hex("#7b88a1"), // Muted
@@ -886,9 +888,9 @@ var solarizedLightThemeData = ThemeData{
 	TextOnSuccess: Hex("#fdf6e3"), // base3
 	TextOnInfo:    Hex("#fdf6e3"), // base3
 
-	ActiveCursor:  Hex("#268bd2"),                 // Primary (Blue)
-	Selection:     Hex("#268bd2").WithAlpha(0.12), // Primary with alpha for multi-select
-	SelectionText: Hex("#fdf6e3"),                 // TextOnPrimary (base3)
+	ActiveCursor:  Hex("#2aa198"),                 // Accent (Cyan)
+	Selection:     Hex("#2aa198").WithAlpha(0.12), // Accent with alpha for multi-select
+	SelectionText: Hex("#fdf6e3"),                 // TextOnAccent (base3)
 
 	ScrollbarTrack: Hex("#eee8d5"), // base2
 	ScrollbarThumb: Hex("#93a1a1"), // base1
@@ -937,9 +939,9 @@ var kanagawaLotusThemeData = ThemeData{
 	TextOnSuccess: Hex("#f2ecbc"), // lotusWhite0
 	TextOnInfo:    Hex("#f2ecbc"), // lotusWhite0
 
-	ActiveCursor:  Hex("#4d699b"),                 // Primary (lotusBlue)
-	Selection:     Hex("#4d699b").WithAlpha(0.12), // Primary with alpha for multi-select
-	SelectionText: Hex("#f2ecbc"),                 // TextOnPrimary (lotusWhite0)
+	ActiveCursor:  Hex("#597b75"),                 // Accent (lotusAqua)
+	Selection:     Hex("#597b75").WithAlpha(0.12), // Accent with alpha for multi-select
+	SelectionText: Hex("#f2ecbc"),                 // TextOnAccent (lotusWhite0)
 
 	ScrollbarTrack: Hex("#e7dba0"), // lotusWhite1
 	ScrollbarThumb: Hex("#a09f95"), // Muted
@@ -987,9 +989,9 @@ var monokaiLightThemeData = ThemeData{
 	TextOnSuccess: Hex("#fafafa"), // Light
 	TextOnInfo:    Hex("#fafafa"), // Light
 
-	ActiveCursor:  Hex("#7a8c21"),                 // Primary (Green)
-	Selection:     Hex("#7a8c21").WithAlpha(0.12), // Primary with alpha for multi-select
-	SelectionText: Hex("#fafafa"),                 // TextOnPrimary (Light)
+	ActiveCursor:  Hex("#0f9fbf"),                 // Accent (Cyan)
+	Selection:     Hex("#0f9fbf").WithAlpha(0.12), // Accent with alpha for multi-select
+	SelectionText: Hex("#fafafa"),                 // TextOnAccent (Light)
 
 	ScrollbarTrack: Hex("#e5e5e5"), // Surface hover
 	ScrollbarThumb: Hex("#a59f85"), // Muted comment
@@ -1061,16 +1063,17 @@ func CurrentThemeName() string {
 	return activeThemeName
 }
 
-// ThemeNames returns a slice of all registered theme names.
+// ThemeNames returns a slice of all registered theme names in alphabetical order.
 func ThemeNames() []string {
 	names := make([]string, 0, len(themeRegistry))
 	for name := range themeRegistry {
 		names = append(names, name)
 	}
+	sort.Strings(names)
 	return names
 }
 
-// LightThemeNames returns a slice of all registered light theme names.
+// LightThemeNames returns a slice of all registered light theme names in alphabetical order.
 func LightThemeNames() []string {
 	names := make([]string, 0)
 	for name, data := range themeRegistry {
@@ -1078,10 +1081,11 @@ func LightThemeNames() []string {
 			names = append(names, name)
 		}
 	}
+	sort.Strings(names)
 	return names
 }
 
-// DarkThemeNames returns a slice of all registered dark theme names.
+// DarkThemeNames returns a slice of all registered dark theme names in alphabetical order.
 func DarkThemeNames() []string {
 	names := make([]string, 0)
 	for name, data := range themeRegistry {
@@ -1089,6 +1093,7 @@ func DarkThemeNames() []string {
 			names = append(names, name)
 		}
 	}
+	sort.Strings(names)
 	return names
 }
 

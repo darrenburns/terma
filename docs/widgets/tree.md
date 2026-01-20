@@ -2,7 +2,15 @@
 
 A focusable, navigable tree widget for hierarchical data with expand/collapse, filtering, and optional lazy loading.
 
-<video autoplay loop muted playsinline src="../../assets/tree-demo.mp4"></video>
+=== "Demo"
+
+    <video autoplay loop muted playsinline src="../../assets/tree-demo.mp4"></video>
+
+=== "Code"
+
+    ```go
+    --8<-- "cmd/simple-tree-example/main.go"
+    ```
 
 ## Overview
 
@@ -205,6 +213,8 @@ t.Scrollable{
 
 The tree will keep the cursor in view and respond to mouse wheel scrolling through `ScrollState`.
 
-## Example App
+## Minimal Example
 
-See `cmd/tree-example` for a complete demo with filtering, lazy loading, and multi-select reporting.
+```go
+--8<-- "docs/minimal-examples/tree-basic/main.go"
+```

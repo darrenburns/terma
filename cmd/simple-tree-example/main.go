@@ -8,7 +8,6 @@ import (
 	t "terma"
 )
 
-// Theme names for cycling
 var themeNames = t.DarkThemeNames()
 
 // SimpleTreeDemo demonstrates the most basic usage of Tree[string]
@@ -82,6 +81,7 @@ func (d *SimpleTreeDemo) Build(ctx t.BuildContext) t.Widget {
 	return t.Column{
 		ID:      "simple-tree-root",
 		Spacing: 1,
+		Width:   t.Flex(1),
 		Height:  t.Flex(1),
 		Style: t.Style{
 			BackgroundColor: theme.Background,
@@ -96,17 +96,11 @@ func (d *SimpleTreeDemo) Build(ctx t.BuildContext) t.Widget {
 					Padding:         t.EdgeInsetsXY(1, 0),
 				},
 			},
-
-			t.ParseMarkupToText("Use [b $Accent]Up/Down[/] to navigate | [b $Accent]Left/Right[/] to collapse/expand | [b $Accent]Shift+Up/Down[/] to multi-select | [b $Accent]Enter[/] to select", theme),
-
-			// Filter input
+			t.ParseMarkupToText("[b $Accent]↑↓[/] navigate [b $Accent]←→[/] expand [b $Accent]Shift+↑↓[/] select", theme),
 			t.Row{
 				Spacing: 1,
 				Children: []t.Widget{
-					t.Text{
-						Content: "Filter:",
-						Style:   t.Style{ForegroundColor: theme.TextMuted},
-					},
+					t.Text{Content: "Filter:", Style: t.Style{ForegroundColor: theme.TextMuted}},
 					t.TextInput{
 						ID:          "tree-filter",
 						State:       d.filterInput,
@@ -122,10 +116,9 @@ func (d *SimpleTreeDemo) Build(ctx t.BuildContext) t.Widget {
 					},
 				},
 			},
-
-			// Tree with state, filter, and multi-select
 			t.Tree[string]{
 				ID:          "food-tree",
+				Width:       t.Cells(24),
 				State:       d.treeState,
 				Filter:      d.filterState,
 				MultiSelect: true,
@@ -137,15 +130,10 @@ func (d *SimpleTreeDemo) Build(ctx t.BuildContext) t.Widget {
 					}
 				},
 			},
-
-			// Display the selection message
 			t.Text{
 				Content: d.selectedMsg.Get(),
-				Style: t.Style{
-					ForegroundColor: theme.Success,
-				},
+				Style:   t.Style{ForegroundColor: theme.Success},
 			},
-
 			t.ParseMarkupToText("Press [b $Accent]t[/] to change theme | [b $Error]Ctrl+C[/] to quit", theme),
 		},
 	}

@@ -1,27 +1,37 @@
-# Tree Widget Demo
+# Simple Tree Widget Demo
 # Run with: vhs tree.tape
 
 Output docs/assets/tree-demo.mp4
 
 Set Shell "bash"
-Set FontSize 18
-Set Width 800
-Set Height 500
-Set Padding 10
-Set TypingSpeed 50ms
+Set FontSize 25
+Set Width 1024
+Set Height 720
+Set Padding 0
+Set TypingSpeed 150ms
 
-# Start the tree example (hidden)
+# Start the simple tree example (hidden)
 Hide
-Type "go run ./cmd/tree-example"
+Type "go run ./cmd/simple-tree-example"
 Enter
-Sleep 1.5s
+Sleep 0.3s
 Show
 
-# Focus the tree (filter is focused by default)
+# Focus the tree (filter input is focused by default)
 Tab
 Sleep 300ms
 
-# Navigate down through the tree
+# Collapse Fruits
+Space
+Sleep 400ms
+
+# Expand Fruits again
+Space
+Sleep 400ms
+
+# Navigate into Fruits children
+Down
+Sleep 300ms
 Down
 Sleep 300ms
 Down
@@ -29,56 +39,47 @@ Sleep 300ms
 Down
 Sleep 300ms
 
-# Expand a directory (cmd folder - it's lazy loaded)
-Up
-Up
-Up
-Sleep 300ms
-Right
-Sleep 800ms  # Wait for lazy load
-
-# Navigate into expanded content
-Down
-Sleep 300ms
-Down
-Sleep 300ms
-
-# Collapse the directory
-Left
-Sleep 500ms
-
-# Expand again and show multi-select with Shift+Down
-Right
-Sleep 500ms
-Down
-Sleep 300ms
-
-# Multi-select demonstration (Shift+j)
+# Multi-select with Shift+j (capital J)
 Type "J"
 Sleep 300ms
 Type "J"
 Sleep 300ms
 Type "J"
 Sleep 500ms
+Enter
+Sleep 700ms
 
-# Clear selection by moving without shift
+# Cycle through 3 themes
+Type "t"
+Sleep 1000ms
+Type "t"
+Sleep 1000ms
+Type "t"
+Sleep 1000ms
+Type "t"
+Sleep 1000ms
+Type "t"
+Sleep 1000ms
+
 Down
-Sleep 500ms
-
-# Show filtering - focus the filter input
-Ctrl+f
 Sleep 300ms
 
-# Type a filter query
-Type "main"
-Sleep 1s
+# Focus the filter input
+Tab
+Sleep 300ms
 
-# Show filtered results
-Sleep 500ms
+# Type filter query "Cher"
+Type "Cher"
+Sleep 2s
 
 # Clear filter
-Escape
-Sleep 500ms
+Backspace
+Sleep 300ms
+Backspace
+Sleep 300ms
+Backspace
+Sleep 300ms
+Backspace
 
-# Final pause to show the result
+# Final pause
 Sleep 1s
