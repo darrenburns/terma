@@ -5,6 +5,7 @@ import (
 	"unicode"
 
 	"github.com/charmbracelet/x/ansi"
+	"terma/layout"
 )
 
 // --- Grapheme Helper Functions (reusable for multi-line) ---
@@ -294,11 +295,11 @@ type TextInput struct {
 	Style         Style             // Optional styling (padding adds to outer size automatically)
 	OnChange      func(text string) // Callback when text changes
 	OnSubmit      func(text string) // Callback when Enter pressed
-	Click         func(MouseEvent) // Optional click callback
-	MouseDown      func(MouseEvent) // Optional mouse down callback
-	MouseUp        func(MouseEvent) // Optional mouse up callback
-	Hover          func(bool)       // Optional hover callback
-	ExtraKeybinds  []Keybind        // Optional additional keybinds (checked before defaults)
+	Click         func(MouseEvent)  // Optional click callback
+	MouseDown     func(MouseEvent)  // Optional mouse down callback
+	MouseUp       func(MouseEvent)  // Optional mouse up callback
+	Hover         func(bool)        // Optional hover callback
+	ExtraKeybinds []Keybind         // Optional additional keybinds (checked before defaults)
 }
 
 // WidgetID returns the text input's unique identifier.
@@ -482,6 +483,53 @@ func (t TextInput) GetStyle() Style {
 	return t.Style
 }
 
+// BuildLayoutNode builds a layout node for this TextInput widget.
+// Implements the LayoutNodeBuilder interface.
+func (t TextInput) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
+	w, h := t.GetContentDimensions()
+	minWidth, maxWidth := dimensionToMinMax(w)
+	minHeight, maxHeight := dimensionToMinMax(h)
+	style := t.Style
+
+	padding := toLayoutEdgeInsets(style.Padding)
+	border := borderToEdgeInsets(style.Border)
+
+	// Add padding and border to convert content-box to border-box constraints
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+	if minWidth > 0 {
+		minWidth += hInset
+	}
+	if maxWidth > 0 {
+		maxWidth += hInset
+	}
+	if minHeight > 0 {
+		minHeight += vInset
+	}
+	if maxHeight > 0 {
+		maxHeight += vInset
+	}
+
+	return &layout.BoxNode{
+		MinWidth:  minWidth,
+		MaxWidth:  maxWidth,
+		MinHeight: minHeight,
+		MaxHeight: maxHeight,
+		Padding:   padding,
+		Border:    border,
+		Margin:    toLayoutEdgeInsets(style.Margin),
+		MeasureFunc: func(constraints layout.Constraints) (int, int) {
+			size := t.Layout(ctx, Constraints{
+				MinWidth:  constraints.MinWidth,
+				MaxWidth:  constraints.MaxWidth,
+				MinHeight: constraints.MinHeight,
+				MaxHeight: constraints.MaxHeight,
+			})
+			return size.Width, size.Height
+		},
+	}
+}
+
 // Layout computes the size of the text input.
 func (t TextInput) Layout(ctx BuildContext, constraints Constraints) Size {
 	// Height is always 1 for single-line
@@ -500,7 +548,7 @@ func (t TextInput) Layout(ctx BuildContext, constraints Constraints) Size {
 			contentWidth = t.State.contentWidth()
 		}
 		placeholderWidth := ansi.StringWidth(t.Placeholder)
-		width = max(contentWidth, placeholderWidth, 1)
+		width = max(contentWidth, placeholderWidth)
 	}
 
 	// Clamp to constraints

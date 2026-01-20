@@ -138,10 +138,9 @@ func (a *SlackApp) buildMainContent(theme t.ThemeData, activeChannel string, mes
 			},
 			// Input area
 			t.Row{
-				Height: t.Cells(3),
 				Style: t.Style{
 					BackgroundColor: theme.Surface,
-					Padding:         t.EdgeInsets{Left: 2, Right: 2, Top: 1},
+					Padding:         t.EdgeInsetsXY(2, 1),
 				},
 				Children: []t.Widget{
 					t.TextInput{
