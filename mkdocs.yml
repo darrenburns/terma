@@ -1,5 +1,6 @@
 site_name: Terma
 site_description: A declarative terminal UI framework for Go
+docs_dir: docs
 
 theme:
   name: material
@@ -10,8 +11,6 @@ theme:
   features:
     - content.code.copy
     - content.code.annotate
-    - navigation.instant
-    - navigation.instant.progress
     - navigation.sections
     - navigation.top
     - search.highlight

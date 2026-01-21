@@ -50,38 +50,35 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 
 	return t.Column{
 		Spacing: 1,
-		Style:   t.Style{Padding: t.EdgeInsetsAll(1)},
+		Width:   t.Flex(1),
+		Style:   t.Style{Padding: t.EdgeInsetsAll(1), BackgroundColor: theme.Background},
 		Children: []t.Widget{
 			t.Text{Content: "ProgressBar Widget Demo", Style: t.Style{ForegroundColor: theme.Primary, Bold: true}},
 			t.Text{Content: "Smooth Unicode rendering with animation support", Style: t.Style{ForegroundColor: theme.TextMuted}},
-
-			t.Spacer{Height: t.Cells(1)},
 
 			// Auto-cycling animated progress bar
 			t.Text{Content: "Auto-cycling (loops continuously):", Style: t.Style{ForegroundColor: theme.Accent}},
 			t.Row{
 				Children: []t.Widget{
+					t.Text{Content: fmt.Sprintf(" %.0f%%", autoP*100), Width: t.Cells(6)},
 					t.ProgressBar{
 						Progress:    autoP,
-						Width:       t.Cells(40),
+						Width:       t.Flex(1),
 						FilledColor: theme.Accent,
 					},
-					t.Text{Content: fmt.Sprintf(" %.0f%%", autoP*100), Width: t.Cells(5)},
 				},
 			},
 
-			t.Spacer{Height: t.Cells(1)},
-
 			// Interactive progress bar with smooth animation
-			t.Text{Content: "Interactive (use buttons or +/- keys):", Style: t.Style{ForegroundColor: theme.Primary}},
+			t.Text{Content: "Interactive (use buttons or +/- keys):", Style: t.Style{ForegroundColor: theme.Secondary}},
 			t.Row{
 				Children: []t.Widget{
+					t.Text{Content: fmt.Sprintf(" %.0f%%", p*100), Width: t.Cells(6)},
 					t.ProgressBar{
 						Progress:    p,
-						Width:       t.Cells(40),
-						FilledColor: theme.Primary,
+						Width:       t.Flex(1),
+						FilledColor: theme.Secondary,
 					},
-					t.Text{Content: fmt.Sprintf(" %.0f%%", p*100), Width: t.Cells(5)},
 				},
 			},
 
@@ -91,7 +88,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 				Children: []t.Widget{
 					&t.Button{
 						ID:    "decrement",
-						Label: "- 10%",
+						Label: "-10%",
 						OnPress: func() {
 							current := a.progress.Target()
 							a.progress.Set(max(0, current-0.1))
@@ -99,7 +96,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 					},
 					&t.Button{
 						ID:    "increment",
-						Label: "+ 10%",
+						Label: "+10%",
 						OnPress: func() {
 							current := a.progress.Target()
 							a.progress.Set(min(1, current+0.1))
@@ -121,8 +118,6 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 					},
 				},
 			},
-
-			t.Spacer{Height: t.Cells(1)},
 
 			// Static examples showing different progress values and colors
 			t.Text{Content: "Static examples:", Style: t.Style{ForegroundColor: theme.TextMuted}},
@@ -157,8 +152,6 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 					t.ProgressBar{Progress: 1.0, Width: t.Cells(30), FilledColor: theme.Error},
 				},
 			},
-
-			t.Spacer{},
 		},
 	}
 }
@@ -190,6 +183,7 @@ func (a *App) Keybinds() []t.Keybind {
 }
 
 func main() {
+	t.SetTheme(t.ThemeNameRosePine)
 	if err := t.Run(NewApp()); err != nil {
 		log.Fatal(err)
 	}
