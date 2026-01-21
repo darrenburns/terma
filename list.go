@@ -584,13 +584,14 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 	// Ensure cursor item is visible whenever we rebuild
 	return listContainer[T]{
 		Column: Column{
-			ID:       l.ID,
-			Width:    l.Width,
-			Height:   l.Height,
-			Style:    l.Style,
-			Children: children,
-			Click:    l.Click,
-			Hover:    l.Hover,
+			ID:         l.ID,
+			CrossAlign: CrossAxisStretch,
+			Width:      l.Width,
+			Height:     l.Height,
+			Style:      l.Style,
+			Children:   children,
+			Click:      l.Click,
+			Hover:      l.Hover,
 		},
 		list: l,
 	}
