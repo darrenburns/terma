@@ -42,6 +42,7 @@ nav:
     - Overview: widgets/index.md
     - ProgressBar: widgets/progressbar.md
     - Switcher: widgets/switcher.md
+    - Tabs: widgets/tabs.md
     - Table: widgets/table.md
     - TextInput: widgets/textinput.md
     - Tree: widgets/tree.md
