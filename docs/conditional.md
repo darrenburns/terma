@@ -32,18 +32,69 @@ InvisibleWhen(a.isEditing.Get(), Preview{Content: a.content.Get()})
 
 Think of these like CSS `visibility: hidden`. The widget remains in the layout, but is not drawn.
 
+## DisabledWhen / EnabledWhen
+
+Control whether widgets in a subtree can receive focus. Disabled widgets are rendered with disabled styling and cannot be focused or interacted with via keyboard.
+
+```go
+// Disable the submit button until the form is valid
+DisabledWhen(!a.formIsValid.Get(), Button{
+    ID:      "submit",
+    Label:   "Submit",
+    OnPress: a.submitForm,
+})
+
+// Enable the delete button only when an item is selected
+EnabledWhen(a.selectedItem.Get() != "", Button{
+    ID:      "delete",
+    Label:   "Delete",
+    OnPress: a.deleteItem,
+})
+```
+
+`DisabledWhen` disables the child (and all focusable widgets in its subtree) when the condition is `true`. `EnabledWhen` is the inverse—it disables when the condition is `false`.
+
+### Disabling Multiple Widgets
+
+Wrap a container to disable all focusable widgets within it:
+
+```go
+// Disable entire form section when loading
+DisabledWhen(a.isLoading.Get(), Column{
+    Children: []Widget{
+        TextInput{ID: "name", Value: a.name.Get()},
+        TextInput{ID: "email", Value: a.email.Get()},
+        Button{ID: "submit", Label: "Submit", OnPress: a.submit},
+    },
+})
+```
+
+All three widgets (both inputs and the button) become disabled when `isLoading` is true.
+
+### How Disabled State Works
+
+- **Focus prevention**: Disabled widgets are skipped in focus navigation
+- **Visual styling**: Widgets should check `ctx.Disabled()` in their Build method to render with muted/grayed appearance
+- **Layout preserved**: Disabled widgets remain in the layout and take up space
+- **Events blocked**: Disabled widgets don't receive keyboard or click events
+
 ### When to Use Each
 
-| Function | Space Reserved | Use Case |
-|----------|---------------|----------|
-| `ShowWhen` | No | Toggle elements on/off |
-| `HideWhen` | No | Inverse of ShowWhen |
-| `VisibleWhen` | Yes | Placeholder UI, avoid layout shift |
-| `InvisibleWhen` | Yes | Inverse of VisibleWhen |
+| Function | Space Reserved | Focusable | Use Case |
+|----------|---------------|-----------|----------|
+| `ShowWhen` | No | — | Toggle elements on/off |
+| `HideWhen` | No | — | Inverse of ShowWhen |
+| `VisibleWhen` | Yes | No | Placeholder UI, avoid layout shift |
+| `InvisibleWhen` | Yes | No | Inverse of VisibleWhen |
+| `DisabledWhen` | Yes | No | Disable interactive widgets |
+| `EnabledWhen` | Yes | Yes | Inverse of DisabledWhen |
 
 ## Switcher
 
 Display one widget at a time from a collection, selected by a string key. Use `Switcher` for tabbed interfaces or multi-view applications.
+
+!!! tip "Looking for tabs?"
+    For tabbed interfaces with a visual tab bar, consider using `TabView` or `TabBar` instead. `TabView` combines a tab bar with content switching, while `TabBar` can be paired with `Switcher` for custom layouts. `Switcher` is the low-level primitive when you need full control over the switching UI.
 
 ```go
 Switcher{
@@ -228,4 +279,5 @@ func main() {
 |----------|----------|
 | `ShowWhen`/`HideWhen` | Simple toggles, conditional elements |
 | `VisibleWhen`/`InvisibleWhen` | Avoiding layout shift, placeholder UI |
+| `DisabledWhen`/`EnabledWhen` | Form validation, permission-based UI |
 | `Switcher` | Tabs, multi-view apps, complex state preservation |

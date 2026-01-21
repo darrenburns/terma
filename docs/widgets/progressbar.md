@@ -1,24 +1,25 @@
 # ProgressBar
 
 A horizontal bar that displays progress from 0% to 100%.
+Expands horizontally to fill parent container.
+Unicode block characters provide 8 levels of sub-cell precision for smooth rendering even at narrow widths.
+
+=== "Demo"
+
+    <video autoplay loop muted playsinline src="../../assets/progressbar-demo.mp4"></video>
+
+=== "Code"
+
+    ```go
+    --8<-- "cmd/progressbar-example/main.go"
+    ```
+
+## Overview
+
+`ProgressBar` displays a value between 0.0 and 1.0 as a horizontal bar. Pass the current progress to the `Progress` field and optionally customize colors with `FilledColor` and `UnfilledColor`.
 
 ```go
-package main
-
-import t "terma"
-
-type App struct{}
-
-func (a *App) Build(ctx t.BuildContext) t.Widget {
-    return t.ProgressBar{
-        Progress: 0.7,
-        Width:    t.Cells(30),
-    }
-}
-
-func main() {
-    t.Run(&App{})
-}
+--8<-- "docs/minimal-examples/progressbar-basic/main.go"
 ```
 
 ## Fields
@@ -48,19 +49,15 @@ ProgressBar{
 }
 ```
 
-## Sub-Cell Precision
-
-ProgressBar uses Unicode block characters for smooth rendering:
-
-```
-▏ ▎ ▍ ▌ ▋ ▊ ▉ █
-```
-
-This provides 8 levels of precision per character cell, making animations appear smooth even at narrow widths.
-
 ## Animated Progress
 
-Combine with `AnimatedValue` for smooth transitions when progress changes:
+Combine with `AnimatedValue` for smooth transitions when progress changes. `AnimatedValue` wraps a value and animates between old and new values when you call `Set()`. Use `Get()` in your `Build` method to read the current animated value, and `Target()` to read the target value (useful for incrementing).
+
+Key configuration options:
+
+- `Initial`: Starting value
+- `Duration`: How long the animation takes
+- `Easing`: The easing function (e.g., `EaseOutCubic`, `EaseInOutSine`)
 
 ```go
 type App struct {
@@ -104,7 +101,17 @@ func (a *App) Keybinds() []t.Keybind {
 
 ## Auto-Advancing Progress
 
-Use `Animation` for continuous progress animations:
+While `AnimatedValue` animates between values you set manually, `Animation` drives progress automatically over time—useful for loading indicators, countdowns, or any progress that advances without user input.
+
+`Animation` animates from the value `From` to the value `To` over a specified `Duration`, with an optional `Easing` function. `OnComplete` is called when the animation finishes. Call `Start()` to begin the animation. The `Value()` method returns a `Signal[T]`—call `Value().Get()` in your `Build` method to read the current value and automatically subscribe to updates.
+
+```go
+--8<-- "docs/minimal-examples/progressbar-animation/main.go"
+```
+
+### Looping
+
+To loop an animation, call `Reset()` and `Start()` in the `OnComplete` callback. Since the callback references the animation variable, declare it first:
 
 ```go
 type App struct {
@@ -112,27 +119,34 @@ type App struct {
 }
 
 func NewApp() *App {
-    anim := t.NewAnimation(t.AnimationConfig[float64]{
+    app := &App{}
+    app.anim = t.NewAnimation(t.AnimationConfig[float64]{
         From:     0,
         To:       1,
         Duration: 3 * time.Second,
-        Easing:   t.EaseInOutSine,
         OnComplete: func() {
-            // Loop the animation
+            app.anim.Reset()
+            app.anim.Start()
         },
     })
-    anim.Start()
-
-    return &App{anim: anim}
-}
-
-func (a *App) Build(ctx t.BuildContext) t.Widget {
-    return t.ProgressBar{
-        Progress: a.anim.Value().Get(),
-        Width:    t.Cells(40),
-    }
+    app.anim.Start()
+    return app
 }
 ```
+
+### Controlling Animations
+
+`Animation` provides methods for controlling playback:
+
+| Method | Description |
+|--------|-------------|
+| `Start()` | Begin or restart the animation |
+| `Stop()` | Halt the animation without completing |
+| `Pause()` | Temporarily suspend the animation |
+| `Resume()` | Continue a paused animation |
+| `Reset()` | Reset to the beginning (call `Start()` to play again) |
+| `IsRunning()` | Returns true if currently animating |
+| `IsComplete()` | Returns true if animation has finished |
 
 ## Multiple Progress Bars
 
@@ -165,9 +179,17 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 
 ## With Labels
 
-Combine with Text widgets for labeled progress:
+Combine with `Text` widgets for labeled progress:
 
 ```go
+type App struct {
+    progress t.Signal[float64]
+}
+
+func NewApp() *App {
+    return &App{progress: t.NewSignal(0.65)}
+}
+
 func (a *App) Build(ctx t.BuildContext) t.Widget {
     progress := a.progress.Get()
     percent := int(progress * 100)
@@ -181,10 +203,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
                     t.Text{Content: fmt.Sprintf("%d%%", percent)},
                 },
             },
-            t.ProgressBar{
-                Progress: progress,
-                Width:    t.Flex(1),
-            },
+            t.ProgressBar{Progress: progress},
         },
     }
 }
@@ -195,17 +214,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 Apply borders and padding through the Style field:
 
 ```go
-ProgressBar{
-    Progress: 0.6,
-    Width:    Cells(30),
-    Style: Style{
-        Border:      BorderRounded,
-        BorderColor: theme.TextMuted,
-        Padding:     EdgeInsetsHV(1, 0),
-    },
-    FilledColor:   theme.Accent,
-    UnfilledColor: theme.Background,
-}
+--8<-- "docs/minimal-examples/progressbar-styling/main.go"
 ```
 
 ## Notes
