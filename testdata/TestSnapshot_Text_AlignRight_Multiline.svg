@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="184" height="114" viewBox="0 0 184 114">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    .bold { font-weight: bold; }
+    .italic { font-style: italic; }
+    .underline { text-decoration: underline; }
+    .strikethrough { text-decoration: line-through; }
+  </style>
+  <rect width="100%" height="100%" fill="#000000"/>
+  <text x="134.0" y="8.0" fill="#E0DEF4">Short</text>
+  <text x="83.6" y="27.6" fill="#E0DEF4">Medium</text>
+  <text x="142.4" y="27.6" fill="#E0DEF4">text</text>
+  <text x="167.6" y="47.2" fill="#E0DEF4">A</text>
+</svg>

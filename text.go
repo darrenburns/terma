@@ -19,19 +19,32 @@ const (
 	WrapHard
 )
 
+// TextAlign defines horizontal alignment for text content within available width.
+type TextAlign int
+
+const (
+	// TextAlignLeft aligns text to the left edge (default).
+	TextAlignLeft TextAlign = iota
+	// TextAlignCenter centers text horizontally.
+	TextAlignCenter
+	// TextAlignRight aligns text to the right edge.
+	TextAlignRight
+)
+
 // Text is a leaf widget that displays text content.
 type Text struct {
-	ID      string     // Optional unique identifier for the widget
-	Content string     // Plain text (used if Spans is empty)
-	Spans   []Span     // Rich text segments (takes precedence if non-empty)
-	Width   Dimension  // Optional width (zero value = auto)
-	Height  Dimension  // Optional height (zero value = auto)
-	Wrap    WrapMode   // Wrapping mode (default = WrapNone)
-	Style   Style      // Optional styling (colors, inherited by spans)
-	Click   func(MouseEvent) // Optional callback invoked when clicked
-	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
-	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
-	Hover   func(bool) // Optional callback invoked when hover state changes
+	ID        string             // Optional unique identifier for the widget
+	Content   string             // Plain text (used if Spans is empty)
+	Spans     []Span             // Rich text segments (takes precedence if non-empty)
+	Wrap      WrapMode           // Wrapping mode (default = WrapNone)
+	TextAlign TextAlign          // Horizontal alignment (default = TextAlignLeft)
+	Width     Dimension          // Optional width (zero value = auto)
+	Height    Dimension          // Optional height (zero value = auto)
+	Style     Style              // Optional styling (colors, inherited by spans)
+	Click     func(MouseEvent)   // Optional callback invoked when clicked
+	MouseDown func(MouseEvent)   // Optional callback invoked when mouse is pressed
+	MouseUp   func(MouseEvent)   // Optional callback invoked when mouse is released
+	Hover     func(bool)         // Optional callback invoked when hover state changes
 }
 
 // Build returns itself as Text is a leaf widget.
@@ -199,6 +212,18 @@ func wrapText(content string, maxWidth int, mode WrapMode) []string {
 	return result
 }
 
+// alignLine calculates the x-offset for a line based on text alignment.
+func alignLine(lineWidth, availableWidth int, align TextAlign) int {
+	switch align {
+	case TextAlignCenter:
+		return (availableWidth - lineWidth) / 2
+	case TextAlignRight:
+		return availableWidth - lineWidth
+	default:
+		return 0
+	}
+}
+
 // Render draws the text to the render context.
 func (t Text) Render(ctx *RenderContext) {
 	if len(t.Spans) > 0 {
@@ -240,23 +265,46 @@ func (t Text) renderPlain(ctx *RenderContext) {
 			lineWidth = ctx.Width
 		}
 
+		// Calculate alignment offset
+		xOffset := alignLine(lineWidth, ctx.Width, t.TextAlign)
+		leftPadding := xOffset
+		rightPadding := ctx.Width - lineWidth - xOffset
+
 		if separatePadding && lineWidth < ctx.Width {
-			// Draw text with full style (including strikethrough/underline)
-			ctx.DrawStyledText(0, i, line, drawStyle)
-			// Draw padding without strikethrough/underline
+			// Style for padding (without strikethrough/underline)
 			paddingStyle := drawStyle
 			paddingStyle.Strikethrough = false
 			paddingStyle.Underline = UnderlineNone
-			padding := strings.Repeat(" ", ctx.Width-lineWidth)
-			ctx.DrawStyledText(lineWidth, i, padding, paddingStyle)
-		} else {
-			// Pad line to fill the full width (for background colors)
-			if lineWidth < ctx.Width {
-				line = line + strings.Repeat(" ", ctx.Width-lineWidth)
+
+			// Draw left padding
+			if leftPadding > 0 {
+				ctx.DrawStyledText(0, i, strings.Repeat(" ", leftPadding), paddingStyle)
 			}
-			ctx.DrawStyledText(0, i, line, drawStyle)
+			// Draw text with full style (including strikethrough/underline)
+			ctx.DrawStyledText(xOffset, i, line, drawStyle)
+			// Draw right padding
+			if rightPadding > 0 {
+				ctx.DrawStyledText(xOffset+lineWidth, i, strings.Repeat(" ", rightPadding), paddingStyle)
+			}
+		} else {
+			// Build aligned line with padding
+			alignedLine := strings.Repeat(" ", leftPadding) + line + strings.Repeat(" ", rightPadding)
+			ctx.DrawStyledText(0, i, alignedLine, drawStyle)
 		}
 	}
+}
+
+// spanSegment holds a span segment at a relative x position within a line.
+type spanSegment struct {
+	span   Span
+	relX   int // x position relative to line start
+	width  int
+}
+
+// lineData holds all span segments for a single line.
+type lineData struct {
+	segments []spanSegment
+	width    int // total width of the line
 }
 
 // renderSpans renders rich text with multiple styled spans.
@@ -271,17 +319,58 @@ func (t Text) renderSpans(ctx *RenderContext) {
 		drawBaseStyle.BackgroundColor = nil
 	}
 
-	x, y := 0, 0
+	// First pass: collect all spans per line
+	lines := t.collectSpanLines(ctx.Width, ctx.Height)
+
+	// Second pass: render each line with alignment
+	for y, line := range lines {
+		if y >= ctx.Height {
+			break
+		}
+
+		// Calculate alignment offset for this line
+		xOffset := alignLine(line.width, ctx.Width, t.TextAlign)
+
+		// Draw left padding if needed
+		if xOffset > 0 {
+			ctx.DrawStyledText(0, y, strings.Repeat(" ", xOffset), drawBaseStyle)
+		}
+
+		// Draw all spans in the line
+		for _, seg := range line.segments {
+			ctx.DrawSpan(xOffset+seg.relX, y, seg.span, drawBaseStyle)
+		}
+
+		// Draw right padding to fill remaining width
+		rightPadding := ctx.Width - xOffset - line.width
+		if rightPadding > 0 {
+			ctx.DrawStyledText(xOffset+line.width, y, strings.Repeat(" ", rightPadding), drawBaseStyle)
+		}
+	}
+
+	// Fill any remaining lines with empty space
+	for y := len(lines); y < ctx.Height; y++ {
+		ctx.DrawStyledText(0, y, strings.Repeat(" ", ctx.Width), drawBaseStyle)
+	}
+}
+
+// collectSpanLines collects all span segments organized by line.
+func (t Text) collectSpanLines(width, height int) []lineData {
+	var lines []lineData
+	var currentLine lineData
+	x := 0
 
 	for _, span := range t.Spans {
 		parts := strings.Split(span.Text, "\n")
 		for partIdx, part := range parts {
 			// Handle explicit newline
 			if partIdx > 0 {
+				currentLine.width = x
+				lines = append(lines, currentLine)
+				currentLine = lineData{}
 				x = 0
-				y++
-				if y >= ctx.Height {
-					return
+				if len(lines) >= height {
+					return lines
 				}
 			}
 
@@ -292,32 +381,38 @@ func (t Text) renderSpans(ctx *RenderContext) {
 			// Process this part with wrapping
 			remaining := part
 			for len(remaining) > 0 {
-				if y >= ctx.Height {
-					return
+				if len(lines) >= height {
+					return lines
 				}
 
-				availableWidth := ctx.Width - x
+				availableWidth := width - x
 				if availableWidth <= 0 {
+					currentLine.width = x
+					lines = append(lines, currentLine)
+					currentLine = lineData{}
 					x = 0
-					y++
-					availableWidth = ctx.Width
-					if y >= ctx.Height {
-						return
+					availableWidth = width
+					if len(lines) >= height {
+						return lines
 					}
 				}
 
 				partWidth := ansi.StringWidth(remaining)
 
-				// If it fits or no wrapping, draw and continue
+				// If it fits or no wrapping, add segment and continue
 				if partWidth <= availableWidth || t.Wrap == WrapNone {
 					chunk := remaining
 					if partWidth > availableWidth {
 						chunk = ansi.Truncate(remaining, availableWidth, "")
+						partWidth = ansi.StringWidth(chunk)
 					}
 					if len(chunk) > 0 {
-						partSpan := Span{Text: chunk, Style: span.Style}
-						ctx.DrawSpan(x, y, partSpan, drawBaseStyle)
-						x += ansi.StringWidth(chunk)
+						currentLine.segments = append(currentLine.segments, spanSegment{
+							span:  Span{Text: chunk, Style: span.Style},
+							relX:  x,
+							width: partWidth,
+						})
+						x += partWidth
 					}
 					break
 				}
@@ -326,18 +421,31 @@ func (t Text) renderSpans(ctx *RenderContext) {
 				chunk, rest := t.findWrapPoint(remaining, availableWidth)
 
 				if len(chunk) > 0 {
-					partSpan := Span{Text: chunk, Style: span.Style}
-					ctx.DrawSpan(x, y, partSpan, drawBaseStyle)
+					chunkWidth := ansi.StringWidth(chunk)
+					currentLine.segments = append(currentLine.segments, spanSegment{
+						span:  Span{Text: chunk, Style: span.Style},
+						relX:  x,
+						width: chunkWidth,
+					})
+					x += chunkWidth
 				}
 
 				remaining = rest
 				if len(remaining) > 0 {
+					currentLine.width = x
+					lines = append(lines, currentLine)
+					currentLine = lineData{}
 					x = 0
-					y++
 				}
 			}
 		}
 	}
+
+	// Don't forget the last line
+	currentLine.width = x
+	lines = append(lines, currentLine)
+
+	return lines
 }
 
 // findWrapPoint finds where to break text for wrapping, returning the chunk to render
