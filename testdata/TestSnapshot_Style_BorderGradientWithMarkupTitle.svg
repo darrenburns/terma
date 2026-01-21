@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="268" height="114" viewBox="0 0 268 114">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    .bold { font-weight: bold; }
+    .italic { font-style: italic; }
+    .underline { text-decoration: underline; }
+    .strikethrough { text-decoration: line-through; }
+  </style>
+  <rect width="100%" height="100%" fill="#000000"/>
+  <text x="8.0" y="8.0" fill="#FF0000">╭</text>
+  <text x="24.8" y="8.0" class="bold" fill="#ED0011">G</text>
+  <text x="33.2" y="8.0" class="bold" fill="#E4001A">r</text>
+  <text x="41.6" y="8.0" class="bold" fill="#DB0023">a</text>
+  <text x="50.0" y="8.0" class="bold" fill="#D3002B">d</text>
+  <text x="58.4" y="8.0" class="bold" fill="#CA0034">i</text>
+  <text x="66.8" y="8.0" class="bold" fill="#C1003D">e</text>
+  <text x="75.2" y="8.0" class="bold" fill="#B80046">n</text>
+  <text x="83.6" y="8.0" class="bold" fill="#AF004F">t</text>
+  <text x="100.4" y="8.0" class="bold" fill="#9E0060">T</text>
+  <text x="108.8" y="8.0" class="bold" fill="#950069">i</text>
+  <text x="117.2" y="8.0" class="bold" fill="#8C0072">t</text>
+  <text x="125.6" y="8.0" class="bold" fill="#83007B">l</text>
+  <text x="134.0" y="8.0" class="bold" fill="#7B0083">e</text>
+  <text x="150.8" y="8.0" fill="#690095">─</text>
+  <text x="159.2" y="8.0" fill="#60009E">─</text>
+  <text x="167.6" y="8.0" fill="#5700A7">─</text>
+  <text x="176.0" y="8.0" fill="#4F00AF">─</text>
+  <text x="184.4" y="8.0" fill="#4600B8">─</text>
+  <text x="192.8" y="8.0" fill="#3D00C1">─</text>
+  <text x="201.2" y="8.0" fill="#3400CA">─</text>
+  <text x="209.6" y="8.0" fill="#2B00D3">─</text>
+  <text x="218.0" y="8.0" fill="#2300DB">─</text>
+  <text x="226.4" y="8.0" fill="#1A00E4">─</text>
+  <text x="234.8" y="8.0" fill="#1100ED">─</text>
+  <text x="243.2" y="8.0" fill="#0800F6">─</text>
+  <text x="251.6" y="8.0" fill="#0000FF">╮</text>
+  <text x="8.0" y="27.6" fill="#FF0000">│</text>
+  <text x="16.4" y="27.6" fill="#E0DEF4">Content</text>
+  <text x="251.6" y="27.6" fill="#0000FF">│</text>
+  <text x="8.0" y="47.2" fill="#FF0000">│</text>
+  <text x="251.6" y="47.2" fill="#0000FF">│</text>
+  <text x="8.0" y="66.8" fill="#FF0000">│</text>
+  <text x="251.6" y="66.8" fill="#0000FF">│</text>
+  <text x="8.0" y="86.4" fill="#FF0000">╰</text>
+  <text x="16.4" y="86.4" fill="#F60008">─</text>
+  <text x="24.8" y="86.4" fill="#ED0011">─</text>
+  <text x="33.2" y="86.4" fill="#E4001A">─</text>
+  <text x="41.6" y="86.4" fill="#DB0023">─</text>
+  <text x="50.0" y="86.4" fill="#D3002B">─</text>
+  <text x="58.4" y="86.4" fill="#CA0034">─</text>
+  <text x="66.8" y="86.4" fill="#C1003D">─</text>
+  <text x="75.2" y="86.4" fill="#B80046">─</text>
+  <text x="83.6" y="86.4" fill="#AF004F">─</text>
+  <text x="92.0" y="86.4" fill="#A70057">─</text>
+  <text x="100.4" y="86.4" fill="#9E0060">─</text>
+  <text x="108.8" y="86.4" fill="#950069">─</text>
+  <text x="117.2" y="86.4" fill="#8C0072">─</text>
+  <text x="125.6" y="86.4" fill="#83007B">─</text>
+  <text x="134.0" y="86.4" fill="#7B0083">─</text>
+  <text x="142.4" y="86.4" fill="#72008C">─</text>
+  <text x="150.8" y="86.4" fill="#690095">─</text>
+  <text x="159.2" y="86.4" fill="#60009E">─</text>
+  <text x="167.6" y="86.4" fill="#5700A7">─</text>
+  <text x="176.0" y="86.4" fill="#4F00AF">─</text>
+  <text x="184.4" y="86.4" fill="#4600B8">─</text>
+  <text x="192.8" y="86.4" fill="#3D00C1">─</text>
+  <text x="201.2" y="86.4" fill="#3400CA">─</text>
+  <text x="209.6" y="86.4" fill="#2B00D3">─</text>
+  <text x="218.0" y="86.4" fill="#2300DB">─</text>
+  <text x="226.4" y="86.4" fill="#1A00E4">─</text>
+  <text x="234.8" y="86.4" fill="#1100ED">─</text>
+  <text x="243.2" y="86.4" fill="#0800F6">─</text>
+  <text x="251.6" y="86.4" fill="#0000FF">╯</text>
+</svg>

@@ -110,9 +110,10 @@ const (
 
 // BorderDecoration defines a text label on a border edge.
 type BorderDecoration struct {
-	Text     string
+	Text     string             // Plain text (used if Markup is empty)
+	Markup   string             // Markup string, parsed at render time for styled text
 	Position DecorationPosition
-	Color    ColorProvider // If unset (zero value), inherits border color
+	Color    ColorProvider // Fallback color if markup has no color (or for plain text)
 }
 
 // BorderTitle creates a title decoration at the top-left of the border.
@@ -143,6 +144,37 @@ func BorderSubtitleCenter(text string) BorderDecoration {
 // BorderSubtitleRight creates a subtitle decoration at the bottom-right of the border.
 func BorderSubtitleRight(text string) BorderDecoration {
 	return BorderDecoration{Text: text, Position: DecorationBottomRight}
+}
+
+// BorderTitleMarkup creates a title decoration with markup at the top-left of the border.
+// The markup is parsed at render time to access the theme.
+func BorderTitleMarkup(markup string) BorderDecoration {
+	return BorderDecoration{Markup: markup, Position: DecorationTopLeft}
+}
+
+// BorderTitleCenterMarkup creates a title decoration with markup at the top-center of the border.
+func BorderTitleCenterMarkup(markup string) BorderDecoration {
+	return BorderDecoration{Markup: markup, Position: DecorationTopCenter}
+}
+
+// BorderTitleRightMarkup creates a title decoration with markup at the top-right of the border.
+func BorderTitleRightMarkup(markup string) BorderDecoration {
+	return BorderDecoration{Markup: markup, Position: DecorationTopRight}
+}
+
+// BorderSubtitleMarkup creates a subtitle decoration with markup at the bottom-left of the border.
+func BorderSubtitleMarkup(markup string) BorderDecoration {
+	return BorderDecoration{Markup: markup, Position: DecorationBottomLeft}
+}
+
+// BorderSubtitleCenterMarkup creates a subtitle decoration with markup at the bottom-center of the border.
+func BorderSubtitleCenterMarkup(markup string) BorderDecoration {
+	return BorderDecoration{Markup: markup, Position: DecorationBottomCenter}
+}
+
+// BorderSubtitleRightMarkup creates a subtitle decoration with markup at the bottom-right of the border.
+func BorderSubtitleRightMarkup(markup string) BorderDecoration {
+	return BorderDecoration{Markup: markup, Position: DecorationBottomRight}
 }
 
 // Border defines the border appearance for a widget.
