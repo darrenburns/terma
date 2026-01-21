@@ -19,6 +19,7 @@ Widgets that arrange and position other widgets:
 Widgets that display content:
 
 - Text - Display plain or rich text
+- [TextInput](textinput.md) - Single-line text entry
 - Button - Focusable button with press handler
 - List - Generic navigable list
 - Table - Navigable multi-column table
