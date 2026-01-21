@@ -27,6 +27,11 @@ type ScrollState struct {
 	viewportHeight int         // Set by Scrollable during layout
 	contentHeight  int         // Set by Scrollable during layout
 
+	// PinToBottom enables auto-scroll when content grows while at bottom.
+	// Scrolling up breaks the pin; scrolling to bottom re-engages it.
+	PinToBottom bool
+	isPinned    bool // internal: tracks current pinned state
+
 	// OnScrollUp is called when ScrollUp is invoked with the number of lines.
 	// If it returns true, the default viewport scrolling is suppressed.
 	// Use this for selection-first scrolling (e.g., in List widget).
@@ -39,9 +44,11 @@ type ScrollState struct {
 }
 
 // NewScrollState creates a new scroll state with initial offset of 0.
+// isPinned starts true so that initial content (offset 0) is considered "at bottom".
 func NewScrollState() *ScrollState {
 	return &ScrollState{
-		Offset: NewSignal(0),
+		Offset:   NewSignal(0),
+		isPinned: true,
 	}
 }
 
@@ -93,9 +100,14 @@ func (s *ScrollState) ScrollToView(y, height int) {
 // Returns true if scrolling was handled (callback handled it or offset changed).
 // Returns false if already at the top and no callback handled it.
 // If OnScrollUp is set and returns true, viewport scrolling is suppressed.
+// If PinToBottom is enabled, scrolling up breaks the pin.
 func (s *ScrollState) ScrollUp(lines int) bool {
 	if s.OnScrollUp != nil && s.OnScrollUp(lines) {
 		return true // Callback handled scrolling
+	}
+	// Break pin when user scrolls up
+	if s.PinToBottom && s.isPinned {
+		s.isPinned = false
 	}
 	oldOffset := s.Offset.Peek()
 	s.SetOffset(oldOffset - lines)
@@ -106,12 +118,17 @@ func (s *ScrollState) ScrollUp(lines int) bool {
 // Returns true if scrolling was handled (callback handled it or offset changed).
 // Returns false if already at the bottom and no callback handled it.
 // If OnScrollDown is set and returns true, viewport scrolling is suppressed.
+// If PinToBottom is enabled, reaching the bottom re-engages the pin.
 func (s *ScrollState) ScrollDown(lines int) bool {
 	if s.OnScrollDown != nil && s.OnScrollDown(lines) {
 		return true // Callback handled scrolling
 	}
 	oldOffset := s.Offset.Peek()
 	s.SetOffset(oldOffset + lines)
+	// Re-engage pin when reaching bottom
+	if s.PinToBottom && s.IsAtBottom() {
+		s.isPinned = true
+	}
 	return s.Offset.Peek() != oldOffset
 }
 
@@ -129,13 +146,38 @@ func (s *ScrollState) canScroll() bool {
 	return s.contentHeight > s.viewportHeight
 }
 
+// IsAtBottom returns true if currently scrolled to the bottom.
+func (s *ScrollState) IsAtBottom() bool {
+	return s.Offset.Peek() >= s.maxOffset()
+}
+
+// IsPinned returns true if PinToBottom is enabled and currently pinned.
+func (s *ScrollState) IsPinned() bool {
+	return s.PinToBottom && s.isPinned
+}
+
+// ScrollToBottom scrolls to the bottom and re-engages the pin if PinToBottom is enabled.
+func (s *ScrollState) ScrollToBottom() {
+	s.SetOffset(s.maxOffset())
+	if s.PinToBottom {
+		s.isPinned = true
+	}
+}
+
 // updateLayout is called by Scrollable to update viewport/content dimensions.
 // Note: Does not clamp offset here because Layout may be called multiple times
 // with different constraints (e.g., by floating widgets). Clamping is deferred
 // to Render where we have the final dimensions.
+// If PinToBottom is enabled and pinned, auto-scrolls when content grows.
 func (s *ScrollState) updateLayout(viewportHeight, contentHeight int) {
+	oldContentHeight := s.contentHeight
 	s.viewportHeight = viewportHeight
 	s.contentHeight = contentHeight
+
+	// Auto-scroll to bottom when pinned and content grows
+	if s.PinToBottom && s.isPinned && contentHeight > oldContentHeight && oldContentHeight > 0 {
+		s.Offset.Set(s.maxOffset())
+	}
 }
 
 // Scrollable is a container widget that enables vertical scrolling of its child
@@ -243,9 +285,10 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	}
 
 	// Get scroll offset from state
+	// Use Get() to subscribe to offset changes so PinToBottom auto-scroll triggers re-render
 	scrollOffsetY := 0
 	if s.State != nil {
-		scrollOffsetY = s.State.Offset.Peek()
+		scrollOffsetY = s.State.Offset.Get()
 	}
 
 	// Scrollbar width: 1 if scrolling enabled, 0 if disabled
@@ -528,6 +571,10 @@ func (s Scrollable) OnKey(event KeyEvent) bool {
 		Log("Scrollable[%s].OnKey: page down, offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
 		return true
 	case event.MatchString("home", "g"):
+		// Break pin when going to top
+		if s.State.PinToBottom && s.State.isPinned {
+			s.State.isPinned = false
+		}
 		s.setScrollOffset(0)
 		Log("Scrollable[%s].OnKey: home, offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
 		return true
@@ -535,7 +582,8 @@ func (s Scrollable) OnKey(event KeyEvent) bool {
 		maxOff := s.maxScrollOffset()
 		Log("Scrollable[%s].OnKey: end BEFORE - stateViewport=%d, stateContent=%d, maxOffset=%d",
 			s.ID, s.State.viewportHeight, s.State.contentHeight, maxOff)
-		s.setScrollOffset(maxOff)
+		// Use ScrollToBottom to re-engage pin
+		s.State.ScrollToBottom()
 		Log("Scrollable[%s].OnKey: end AFTER - offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
 		return true
 	}

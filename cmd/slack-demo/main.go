@@ -194,6 +194,7 @@ func (a *SlackApp) renderMessages(theme t.ThemeData, messages []Message) []t.Wid
 				},
 				t.Text{
 					Content: msg.Content,
+					Wrap:    t.WrapSoft,
 					Style: t.Style{
 						ForegroundColor: theme.Text,
 					},
@@ -243,11 +244,14 @@ func main() {
 		{Author: "Bob", Content: "Has anyone tried the List widget with multi-select yet?", Timestamp: time.Now().Add(-5 * time.Minute)},
 	}
 
+	scrollState := t.NewScrollState()
+	scrollState.PinToBottom = true
+	scrollState.ScrollToBottom()
 	app := &SlackApp{
 		channels:      t.NewListState(channels),
 		messages:      t.NewAnySignal(messages),
 		inputState:    t.NewTextInputState(""),
-		scrollState:   t.NewScrollState(),
+		scrollState:   scrollState,
 		activeChannel: t.NewSignal("general"),
 	}
 
