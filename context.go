@@ -26,6 +26,8 @@ type BuildContext struct {
 	path []int
 	// floatCollector gathers Floating widgets for deferred rendering
 	floatCollector *FloatCollector
+	// disabled is true if within a disabled subtree (set by DisabledWhen wrapper)
+	disabled bool
 }
 
 // NewBuildContext creates a new build context.
@@ -72,6 +74,26 @@ func (ctx BuildContext) PushChild(index int) BuildContext {
 		hoveredSignal:  ctx.hoveredSignal,
 		path:           newPath,
 		floatCollector: ctx.floatCollector,
+		disabled:       ctx.disabled,
+	}
+}
+
+// IsDisabled returns true if within a disabled subtree.
+// Widgets can check this to render in a disabled state and skip interactive behavior.
+func (ctx BuildContext) IsDisabled() bool {
+	return ctx.disabled
+}
+
+// WithDisabled returns a copy of the context with disabled=true.
+// Used by DisabledWhen wrapper to mark a subtree as disabled.
+func (ctx BuildContext) WithDisabled() BuildContext {
+	return BuildContext{
+		focusManager:   ctx.focusManager,
+		focusedSignal:  ctx.focusedSignal,
+		hoveredSignal:  ctx.hoveredSignal,
+		path:           ctx.path,
+		floatCollector: ctx.floatCollector,
+		disabled:       true,
 	}
 }
 

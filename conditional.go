@@ -95,3 +95,43 @@ func VisibleWhen(condition bool, child Widget) Widget {
 func InvisibleWhen(condition bool, child Widget) Widget {
 	return VisibleWhen(!condition, child)
 }
+
+// disabledWrapper marks a subtree as disabled, preventing focus and showing disabled styling.
+// The child is still built and laid out normally, but focusable widgets within the subtree
+// cannot receive focus and should render in a disabled state.
+//
+// The wrapper is detected by BuildRenderTree BEFORE Build() is called, which sets
+// ctx.disabled = true. Then Build() returns the child directly, so the child
+// is built with the disabled context and renders/lays out normally.
+type disabledWrapper struct {
+	child    Widget
+	disabled bool
+}
+
+// Build returns the child widget directly.
+// The disabled context is set by BuildRenderTree before this is called.
+func (w disabledWrapper) Build(ctx BuildContext) Widget {
+	return w.child.Build(ctx)
+}
+
+// DisabledWhen disables all focusable widgets in the subtree when condition is true.
+// Disabled widgets cannot receive keyboard focus and should render with disabled styling.
+// The child is still rendered and takes up space in layout.
+//
+// Example:
+//
+//	DisabledWhen(!form.IsValid(), Button{Label: "Submit", OnPress: submit})
+func DisabledWhen(condition bool, child Widget) Widget {
+	return disabledWrapper{child: child, disabled: condition}
+}
+
+// EnabledWhen is the inverse of DisabledWhen.
+// When condition is true, the child is rendered normally.
+// When condition is false, the child is disabled.
+//
+// Example:
+//
+//	EnabledWhen(form.IsValid(), Button{Label: "Submit", OnPress: submit})
+func EnabledWhen(condition bool, child Widget) Widget {
+	return DisabledWhen(!condition, child)
+}
