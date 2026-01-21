@@ -27,7 +27,9 @@ func (k KeyEvent) Text() string {
 
 // MouseEvent wraps a mouse interaction with click-chain metadata.
 type MouseEvent struct {
-	X, Y       int
+	X, Y       int            // Absolute screen coordinates
+	LocalX     int            // X offset within the widget (0 = left edge)
+	LocalY     int            // Y offset within the widget (0 = top edge)
 	Button     uv.MouseButton
 	Mod        uv.KeyMod
 	ClickCount int // 1=single, 2=double, 3=triple, etc

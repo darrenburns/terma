@@ -60,12 +60,17 @@ func (t *mouseClickTracker) releaseCount(targetID string, button uv.MouseButton)
 
 func buildMouseEvent(m uv.Mouse, entry *WidgetEntry, clickCount int) MouseEvent {
 	widgetID := ""
+	localX, localY := m.X, m.Y
 	if entry != nil {
 		widgetID = entry.ID
+		localX = m.X - entry.Bounds.X
+		localY = m.Y - entry.Bounds.Y
 	}
 	return MouseEvent{
 		X:          m.X,
 		Y:          m.Y,
+		LocalX:     localX,
+		LocalY:     localY,
 		Button:     m.Button,
 		Mod:        m.Mod,
 		ClickCount: clickCount,

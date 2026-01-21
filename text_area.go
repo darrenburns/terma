@@ -290,6 +290,21 @@ func (s *TextAreaState) resetPreferredColumn() {
 	s.preferredColumn = -1
 }
 
+// SetCursorFromLocalPosition moves the cursor to the given local position within the widget.
+// It accounts for scroll offset internally. contentWidth is the width available for text
+// content (excluding scrollbar space).
+func (s *TextAreaState) SetCursorFromLocalPosition(localX, localY int, contentWidth int) {
+	displayLine := localY + s.scrollOffsetY
+	displayCol := localX + s.scrollOffsetX
+
+	graphemes := s.Content.Peek()
+	wrapMode := s.WrapMode.Peek()
+	layout := buildTextAreaLayout(graphemes, wrapMode, contentWidth, s.CursorIndex.Peek())
+	newIdx := cursorIndexForLineColumn(layout.lines, graphemes, displayLine, displayCol)
+	s.CursorIndex.Set(newIdx)
+	s.updatePreferredColumn()
+}
+
 func (s *TextAreaState) clampCursor() {
 	graphemes := s.Content.Peek()
 	cursor := s.CursorIndex.Peek()
@@ -1021,6 +1036,11 @@ func (t TextArea) OnClick(event MouseEvent) {
 // OnMouseDown is called when the mouse is pressed on the widget.
 // Implements the MouseDownHandler interface.
 func (t TextArea) OnMouseDown(event MouseEvent) {
+	if t.State != nil && t.State.lastWidth > 0 {
+		contentWidth := reservedContentWidth(t.State.lastWidth)
+		t.State.SetCursorFromLocalPosition(event.LocalX, event.LocalY, contentWidth)
+	}
+
 	if t.MouseDown != nil {
 		t.MouseDown(event)
 	}
