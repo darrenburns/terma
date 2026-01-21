@@ -461,7 +461,13 @@ func (fc *FocusCollector) ShouldTrackAncestor(widget Widget) bool {
 // Collect adds a focusable widget to the collection.
 // The autoID is the position-based auto-generated ID from BuildContext.
 // If the widget implements Identifiable with a non-empty ID, that is used instead.
-func (fc *FocusCollector) Collect(widget Widget, autoID string) {
+// Disabled widgets (ctx.IsDisabled() == true) are skipped and cannot receive focus.
+func (fc *FocusCollector) Collect(widget Widget, autoID string, ctx BuildContext) {
+	// Skip disabled widgets - they cannot receive focus
+	if ctx.IsDisabled() {
+		return
+	}
+
 	focusable, ok := widget.(Focusable)
 	if !ok || !focusable.IsFocusable() {
 		return

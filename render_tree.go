@@ -31,6 +31,15 @@ type RenderTree struct {
 // BuildRenderTree constructs the complete render tree with all layout computed.
 // Focus collection also happens here, keeping the render phase pure painting.
 func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constraints, fc *FocusCollector) RenderTree {
+	// Handle disabledWrapper specially - recurse into child with disabled context
+	// This makes the wrapper completely transparent to layout and focus collection
+	if dw, ok := widget.(disabledWrapper); ok {
+		if dw.disabled {
+			ctx = ctx.WithDisabled()
+		}
+		return BuildRenderTree(dw.child, ctx, constraints, fc)
+	}
+
 	autoID := ctx.AutoID()
 
 	// Determine event ID (explicit ID or auto)
@@ -43,7 +52,7 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 
 	// Collect focusables during tree build (not during render)
 	if fc != nil {
-		fc.Collect(widget, ctx.AutoID())
+		fc.Collect(widget, ctx.AutoID(), ctx)
 		if fc.ShouldTrackAncestor(widget) {
 			fc.PushAncestor(widget)
 			defer fc.PopAncestor()

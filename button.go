@@ -52,10 +52,11 @@ func (b *Button) OnKey(event KeyEvent) bool {
 }
 
 // Build returns a Text widget with appropriate styling based on focus state.
+// Buttons are rendered with bracket affordance: [label]
 // When focused, the button is highlighted with theme colors.
+// When disabled, the button shows disabled styling and brackets are faded.
 // If no explicit style colors are set, theme defaults are applied.
 func (b *Button) Build(ctx BuildContext) Widget {
-	label := b.Label
 	theme := ctx.Theme()
 	style := b.Style
 
@@ -67,17 +68,49 @@ func (b *Button) Build(ctx BuildContext) Widget {
 		style.BackgroundColor = theme.Surface
 	}
 
+	// Get actual Color values for blending (ColorProvider could be Color or Gradient)
+	// For blending, we use ColorAt(1,1,0,0) to get a representative color
+	fg := style.ForegroundColor.ColorAt(1, 1, 0, 0)
+	bg := style.BackgroundColor.ColorAt(1, 1, 0, 0)
+	var bracketColor Color
+
+	// Handle disabled state
+	if ctx.IsDisabled() {
+		style.ForegroundColor = theme.TextDisabled
+		// Brackets blend 70% toward background (very faded)
+		bracketColor = theme.TextDisabled.Blend(bg, 0.7)
+		return Text{
+			Spans: []Span{
+				ColorSpan("[", bracketColor),
+				PlainSpan(b.Label),
+				ColorSpan("]", bracketColor),
+			},
+			Width:  b.Width,
+			Height: b.Height,
+			Style:  style,
+		}
+	}
+
 	if ctx.IsFocused(b) {
 		// Highlight with theme colors when focused
 		style.BackgroundColor = theme.Primary
 		style.ForegroundColor = theme.TextOnPrimary
+		// Focused: brackets blend 55% toward background (visible but subtle)
+		bracketColor = theme.TextOnPrimary.Blend(theme.Primary, 0.55)
+	} else {
+		// Unfocused: brackets blend 85% toward background (very faded)
+		bracketColor = fg.Blend(bg, 0.85)
 	}
 
 	return Text{
-		Content: label,
-		Width:   b.Width,
-		Height:  b.Height,
-		Style:   style,
+		Spans: []Span{
+			ColorSpan("[", bracketColor),
+			PlainSpan(b.Label),
+			ColorSpan("]", bracketColor),
+		},
+		Width:  b.Width,
+		Height: b.Height,
+		Style:  style,
 	}
 }
 
