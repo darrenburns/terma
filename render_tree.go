@@ -41,6 +41,23 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 
 	built := widget.Build(ctx)
 
+	widthDim, heightDim := getWidgetDimensions(widget)
+	minWidthDim, maxWidthDim, minHeightDim, maxHeightDim := getWidgetMinMaxDimensions(widget)
+	padding, border := getWidgetInsets(built)
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+	effectiveConstraints := applyDimensionConstraints(
+		constraints,
+		widthDim,
+		heightDim,
+		minWidthDim,
+		maxWidthDim,
+		minHeightDim,
+		maxHeightDim,
+		hInset,
+		vInset,
+	)
+
 	// Collect focusables during tree build (not during render)
 	if fc != nil {
 		fc.Collect(widget, ctx.AutoID())
@@ -54,11 +71,11 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 	var computed layout.ComputedLayout
 	if builder, ok := built.(LayoutNodeBuilder); ok {
 		node := builder.BuildLayoutNode(ctx)
-		computed = node.ComputeLayout(constraints)
+		computed = node.ComputeLayout(effectiveConstraints)
 	} else {
 		// Fallback for widgets without LayoutNodeBuilder
 		// Use existing Layoutable interface to get size, create minimal BoxModel
-		computed = layoutFromLayoutable(built, ctx, constraints)
+		computed = layoutFromLayoutable(built, ctx, effectiveConstraints)
 	}
 
 	// Provide computed layout to observers before building child render trees.

@@ -486,6 +486,7 @@ type TextArea struct {
 	MouseUp           func(MouseEvent)  // Optional mouse up callback
 	Hover             func(bool)        // Optional hover callback
 	ExtraKeybinds     []Keybind         // Optional additional keybinds (checked before defaults)
+	MinMaxDimensions
 }
 
 // WidgetID returns the text area's unique identifier.
@@ -746,34 +747,12 @@ func (t TextArea) Build(ctx BuildContext) Widget {
 // BuildLayoutNode builds a layout node for this TextArea widget.
 // Implements the LayoutNodeBuilder interface so Scrollable can measure it.
 func (t TextArea) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
-	minWidth, maxWidth := dimensionToMinMax(t.Width)
-	minHeight, maxHeight := dimensionToMinMax(t.Height)
 	style := t.Style
 
 	padding := toLayoutEdgeInsets(style.Padding)
 	border := borderToEdgeInsets(style.Border)
 
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
-
 	return &layout.BoxNode{
-		MinWidth:  minWidth,
-		MaxWidth:  maxWidth,
-		MinHeight: minHeight,
-		MaxHeight: maxHeight,
 		Padding:   padding,
 		Border:    border,
 		Margin:    toLayoutEdgeInsets(style.Margin),

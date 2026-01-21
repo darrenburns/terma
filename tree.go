@@ -494,6 +494,7 @@ type Tree[T any] struct {
 	ExpandIndicator     string
 	CollapseIndicator   string
 	LeafIndicator       string
+	MinMaxDimensions
 }
 
 type treeRowLayout struct {

@@ -21,6 +21,7 @@ type KeybindBar struct {
 	// FormatKeyCaret, FormatKeyEmacs, FormatKeyVim, or FormatKeyVerbose,
 	// or provide a custom function.
 	FormatKey func(string) string
+	MinMaxDimensions
 }
 
 // GetContentDimensions returns the width and height dimension preferences.
@@ -50,7 +51,11 @@ func (f KeybindBar) Build(ctx BuildContext) Widget {
 	width, height := f.GetContentDimensions()
 
 	if len(keybinds) == 0 {
-		return Text{Width: width, Height: height, Style: f.Style}
+		return Text{
+			Width:  width,
+			Height: height,
+			Style:  f.Style,
+		}
 	}
 
 	// Filter out hidden keybinds and deduplicate by key

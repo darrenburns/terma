@@ -167,6 +167,7 @@ type Scrollable struct {
 	// Scrollbar appearance customization
 	ScrollbarThumbColor Color // Custom thumb color (default: White unfocused, BrightCyan focused)
 	ScrollbarTrackColor Color // Custom track color (default: BrightBlack)
+	MinMaxDimensions
 }
 
 // WidgetID returns the widget's unique identifier.
@@ -242,6 +243,11 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		childNode = buildFallbackLayoutNode(built, ctx.PushChild(0))
 	}
 
+	width, height := getWidgetDimensions(s.Child)
+	minWidth, maxWidth, minHeight, maxHeight := getWidgetMinMaxDimensions(s.Child)
+	childPadding, childBorder := getWidgetInsets(built)
+	childNode = wrapWithDimensionConstraints(childNode, width, height, minWidth, maxWidth, minHeight, maxHeight, childPadding, childBorder)
+
 	// Get scroll offset from state
 	scrollOffsetY := 0
 	if s.State != nil {
@@ -254,28 +260,8 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		scrollbarWidth = 1
 	}
 
-	// Get content-box constraints from dimensions
-	minWidth, maxWidth := dimensionToMinMax(s.Width)
-	minHeight, maxHeight := dimensionToMinMax(s.Height)
-
 	padding := toLayoutEdgeInsets(s.Style.Padding)
 	border := borderToEdgeInsets(s.Style.Border)
-
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
 
 	return &layout.ScrollableNode{
 		Child:           childNode,
@@ -285,10 +271,6 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		Padding:         padding,
 		Border:          border,
 		Margin:          toLayoutEdgeInsets(s.Style.Margin),
-		MinWidth:        minWidth,
-		MaxWidth:        maxWidth,
-		MinHeight:       minHeight,
-		MaxHeight:       maxHeight,
 	}
 }
 

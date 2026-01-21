@@ -45,6 +45,7 @@ type Row struct {
 	MouseDown  func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp    func(MouseEvent) // Optional callback invoked when mouse is released
 	Hover      func(bool)       // Optional callback invoked when hover state changes
+	MinMaxDimensions
 }
 
 // GetContentDimensions returns the width and height dimension preferences.
@@ -116,33 +117,24 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
 		}
 
-		// Wrap in FlexNode or PercentNode if child has Flex/Percent width (Row's main axis is horizontal)
-		mainAxisDim := getChildMainAxisDimension(built, true)
-		childNode = wrapInPercentIfNeeded(childNode, mainAxisDim, layout.Horizontal)
+		width, height := getWidgetDimensions(child)
+		minWidth, maxWidth, minHeight, maxHeight := getWidgetMinMaxDimensions(child)
+		if width.IsFlex() {
+			width = Dimension{}
+		}
+		if height.IsFlex() {
+			height = Dimension{}
+		}
+		padding, border := getWidgetInsets(built)
+		childNode = wrapWithDimensionConstraints(childNode, width, height, minWidth, maxWidth, minHeight, maxHeight, padding, border)
+
+		// Wrap in FlexNode if child has Flex width (Row's main axis is horizontal)
+		mainAxisDim := getChildMainAxisDimension(child, true)
 		children[i] = wrapInFlexIfNeeded(childNode, mainAxisDim)
 	}
 
-	minWidth, maxWidth := dimensionToMinMax(r.Width)
-	minHeight, maxHeight := dimensionToMinMax(r.Height)
-
 	padding := toLayoutEdgeInsets(r.Style.Padding)
 	border := borderToEdgeInsets(r.Style.Border)
-
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
 
 	// Explicit Auto means "fit content, don't stretch" - set preserve flags
 	preserveWidth := r.Width.IsAuto() && !r.Width.IsUnset()
@@ -156,10 +148,6 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		Padding:        padding,
 		Border:         border,
 		Margin:         toLayoutEdgeInsets(r.Style.Margin),
-		MinWidth:       minWidth,
-		MaxWidth:       maxWidth,
-		MinHeight:      minHeight,
-		MaxHeight:      maxHeight,
 		ExpandWidth:    r.Width.IsFlex(),
 		ExpandHeight:   r.Height.IsFlex(),
 		PreserveWidth:  preserveWidth,
@@ -188,6 +176,7 @@ type Column struct {
 	MouseDown  func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp    func(MouseEvent) // Optional callback invoked when mouse is released
 	Hover      func(bool)       // Optional callback invoked when hover state changes
+	MinMaxDimensions
 }
 
 // GetContentDimensions returns the width and height dimension preferences.
@@ -258,33 +247,24 @@ func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
 		}
 
-		// Wrap in FlexNode or PercentNode if child has Flex/Percent height (Column's main axis is vertical)
-		mainAxisDim := getChildMainAxisDimension(built, false)
-		childNode = wrapInPercentIfNeeded(childNode, mainAxisDim, layout.Vertical)
+		width, height := getWidgetDimensions(child)
+		minWidth, maxWidth, minHeight, maxHeight := getWidgetMinMaxDimensions(child)
+		if width.IsFlex() {
+			width = Dimension{}
+		}
+		if height.IsFlex() {
+			height = Dimension{}
+		}
+		padding, border := getWidgetInsets(built)
+		childNode = wrapWithDimensionConstraints(childNode, width, height, minWidth, maxWidth, minHeight, maxHeight, padding, border)
+
+		// Wrap in FlexNode if child has Flex height (Column's main axis is vertical)
+		mainAxisDim := getChildMainAxisDimension(child, false)
 		children[i] = wrapInFlexIfNeeded(childNode, mainAxisDim)
 	}
 
-	minWidth, maxWidth := dimensionToMinMax(c.Width)
-	minHeight, maxHeight := dimensionToMinMax(c.Height)
-
 	padding := toLayoutEdgeInsets(c.Style.Padding)
 	border := borderToEdgeInsets(c.Style.Border)
-
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
 
 	// Explicit Auto means "fit content, don't stretch" - set preserve flags
 	preserveWidth := c.Width.IsAuto() && !c.Width.IsUnset()
@@ -298,10 +278,6 @@ func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		Padding:        padding,
 		Border:         border,
 		Margin:         toLayoutEdgeInsets(c.Style.Margin),
-		MinWidth:       minWidth,
-		MaxWidth:       maxWidth,
-		MinHeight:      minHeight,
-		MaxHeight:      maxHeight,
 		ExpandWidth:    c.Width.IsFlex(),
 		ExpandHeight:   c.Height.IsFlex(),
 		PreserveWidth:  preserveWidth,

@@ -13,6 +13,7 @@ type Button struct {
 	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
 	Hover   func(bool) // Optional callback invoked when hover state changes
+	MinMaxDimensions
 }
 
 // WidgetID returns the button's unique identifier.

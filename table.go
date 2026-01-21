@@ -431,6 +431,7 @@ type Table[T any] struct {
 	MouseDown           func(MouseEvent)                                                                              // Optional callback invoked when mouse is pressed
 	MouseUp             func(MouseEvent)                                                                              // Optional callback invoked when mouse is released
 	Hover               func(bool)                                                                                    // Optional callback invoked when hover state changes
+	MinMaxDimensions
 }
 
 type tableRowLayout struct {
@@ -1373,30 +1374,16 @@ func (c tableContainer[T]) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
 		}
 
+		width, height := getWidgetDimensions(child)
+		minWidth, maxWidth, minHeight, maxHeight := getWidgetMinMaxDimensions(child)
+		padding, border := getWidgetInsets(built)
+		childNode = wrapWithDimensionConstraints(childNode, width, height, minWidth, maxWidth, minHeight, maxHeight, padding, border)
+
 		children[i] = childNode
 	}
 
-	minWidth, maxWidth := dimensionToMinMax(c.Width)
-	minHeight, maxHeight := dimensionToMinMax(c.Height)
-
 	padding := toLayoutEdgeInsets(c.Style.Padding)
 	border := borderToEdgeInsets(c.Style.Border)
-
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
 
 	preserveWidth := c.Width.IsAuto() && !c.Width.IsUnset()
 	preserveHeight := c.Height.IsAuto() && !c.Height.IsUnset()
@@ -1416,10 +1403,6 @@ func (c tableContainer[T]) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		Padding:        padding,
 		Border:         border,
 		Margin:         toLayoutEdgeInsets(c.Style.Margin),
-		MinWidth:       minWidth,
-		MaxWidth:       maxWidth,
-		MinHeight:      minHeight,
-		MaxHeight:      maxHeight,
 		ExpandWidth:    c.Width.IsFlex(),
 		ExpandHeight:   c.Height.IsFlex(),
 		PreserveWidth:  preserveWidth,

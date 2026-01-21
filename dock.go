@@ -36,6 +36,7 @@ type Dock struct {
 	Width     Dimension // Optional width
 	Height    Dimension // Optional height
 	Style     Style     // Optional styling
+	MinMaxDimensions
 }
 
 // GetContentDimensions returns dimensions (defaults to Flex(1) for both).
@@ -100,29 +101,14 @@ func (d Dock) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		} else {
 			body = buildFallbackLayoutNode(built, ctx.PushChild(childIndex))
 		}
+		width, height := getWidgetDimensions(d.Body)
+		minWidth, maxWidth, minHeight, maxHeight := getWidgetMinMaxDimensions(d.Body)
+		padding, border := getWidgetInsets(built)
+		body = wrapWithDimensionConstraints(body, width, height, minWidth, maxWidth, minHeight, maxHeight, padding, border)
 	}
-
-	minW, maxW := dimensionToMinMax(d.Width)
-	minH, maxH := dimensionToMinMax(d.Height)
 
 	padding := toLayoutEdgeInsets(d.Style.Padding)
 	border := borderToEdgeInsets(d.Style.Border)
-
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minW > 0 {
-		minW += hInset
-	}
-	if maxW > 0 {
-		maxW += hInset
-	}
-	if minH > 0 {
-		minH += vInset
-	}
-	if maxH > 0 {
-		maxH += vInset
-	}
 
 	return &layout.DockNode{
 		Top:       top,
@@ -134,10 +120,6 @@ func (d Dock) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		Padding:   padding,
 		Border:    border,
 		Margin:    toLayoutEdgeInsets(d.Style.Margin),
-		MinWidth:  minW,
-		MaxWidth:  maxW,
-		MinHeight: minH,
-		MaxHeight: maxH,
 	}
 }
 
@@ -153,29 +135,10 @@ func (d Dock) buildEdgeChildren(ctx BuildContext, widgets []Widget, index *int, 
 			node = buildFallbackLayoutNode(built, ctx.PushChild(*index))
 		}
 
-		// Wrap in PercentNode if the child has a percentage dimension on the relevant axis
-		// Top/Bottom: check Height (Vertical), Left/Right: check Width (Horizontal)
-		if dim, ok := built.(Dimensioned); ok {
-			width, height := dim.GetContentDimensions()
-			switch edge {
-			case Top, Bottom:
-				if height.IsPercent() {
-					node = &layout.PercentNode{
-						Percent: height.PercentValue(),
-						Child:   node,
-						Axis:    layout.Vertical,
-					}
-				}
-			case Left, Right:
-				if width.IsPercent() {
-					node = &layout.PercentNode{
-						Percent: width.PercentValue(),
-						Child:   node,
-						Axis:    layout.Horizontal,
-					}
-				}
-			}
-		}
+		width, height := getWidgetDimensions(child)
+		minWidth, maxWidth, minHeight, maxHeight := getWidgetMinMaxDimensions(child)
+		padding, border := getWidgetInsets(built)
+		node = wrapWithDimensionConstraints(node, width, height, minWidth, maxWidth, minHeight, maxHeight, padding, border)
 
 		nodes[i] = node
 		*index++

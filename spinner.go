@@ -127,6 +127,7 @@ type Spinner struct {
 	Width  Dimension     // Optional width
 	Height Dimension     // Optional height (typically 1)
 	Style  Style         // Optional styling
+	MinMaxDimensions
 }
 
 // WidgetID returns the spinner's unique identifier.
@@ -147,7 +148,9 @@ func (s Spinner) GetStyle() Style {
 // Build returns a Text widget showing the current frame.
 func (s Spinner) Build(ctx BuildContext) Widget {
 	if s.State == nil || s.State.animation == nil {
-		return Text{Content: " "}
+		return Text{
+			Content: " ",
+		}
 	}
 
 	// Subscribe to animation updates

@@ -1332,3 +1332,108 @@ func TestSnapshot_Dimension_PercentInStackPositioned(t *testing.T) {
 	}
 	AssertSnapshot(t, widget, 25, 12)
 }
+
+// =============================================================================
+// Min/Max Constraint Tests
+// =============================================================================
+
+func TestSnapshot_Dimension_MinMaxClampCells(t *testing.T) {
+	widget := Row{
+		Width: Cells(30),
+		Children: []Widget{
+			Text{
+				Content: "Min",
+				Width:   Cells(4),
+				MinMaxDimensions: MinMaxDimensions{
+					MinWidth: Cells(8),
+				},
+				Style: Style{BackgroundColor: layoutRed},
+			},
+			Text{
+				Content: "Max",
+				Width:   Cells(20),
+				MinMaxDimensions: MinMaxDimensions{
+					MaxWidth: Cells(10),
+				},
+				Style: Style{BackgroundColor: layoutGreen},
+			},
+		},
+	}
+	AssertSnapshot(t, widget, 30, 3,
+		"30-cell row. Red 'Min' width 4 clamped up to 8 by MinWidth. Green 'Max' width 20 clamped down to 10 by MaxWidth.")
+}
+
+func TestSnapshot_Dimension_MinMaxPercent(t *testing.T) {
+	widget := Row{
+		Width: Cells(20),
+		Children: []Widget{
+			Text{
+				Content: "Min%",
+				MinMaxDimensions: MinMaxDimensions{
+					MinWidth: Percent(50),
+				},
+				Style: Style{BackgroundColor: layoutRed},
+			},
+		},
+	}
+	AssertSnapshot(t, widget, 20, 3,
+		"20-cell row. Red 'Min%' expands to 10 cells (MinWidth 50%).")
+}
+
+func TestSnapshot_Dimension_MinMaxFlex(t *testing.T) {
+	widget := Row{
+		Width: Cells(20),
+		Children: []Widget{
+			Text{
+				Content: "FlexMin",
+				MinMaxDimensions: MinMaxDimensions{
+					MinWidth: Flex(1),
+				},
+				Style: Style{BackgroundColor: layoutPurple},
+			},
+		},
+	}
+	AssertSnapshot(t, widget, 20, 3,
+		"20-cell row. Purple 'FlexMin' uses MinWidth Flex(1) to fill full width.")
+}
+
+func TestSnapshot_Dimension_MaxWidthPercent(t *testing.T) {
+	widget := Row{
+		Width: Cells(20),
+		MinMaxDimensions: MinMaxDimensions{
+			MaxWidth: Percent(40),
+		},
+		Style: Style{BackgroundColor: layoutBlue},
+		Children: []Widget{
+			Text{Content: "Max%"},
+		},
+	}
+	AssertSnapshot(t, widget, 20, 3,
+		"20-cell row. Blue row clamps to 8 cells (MaxWidth 40%).")
+}
+
+func TestSnapshot_Dimension_MinMaxHeightPercent(t *testing.T) {
+	widget := Column{
+		Width:  Cells(20),
+		Height: Cells(10),
+		Children: []Widget{
+			Text{
+				Content: "MinH%",
+				MinMaxDimensions: MinMaxDimensions{
+					MinHeight: Percent(50),
+				},
+				Style: Style{BackgroundColor: layoutRed},
+			},
+			Text{
+				Content: "MaxH%",
+				Height:  Percent(80),
+				MinMaxDimensions: MinMaxDimensions{
+					MaxHeight: Percent(30),
+				},
+				Style: Style{BackgroundColor: layoutBlue},
+			},
+		},
+	}
+	AssertSnapshot(t, widget, 20, 10,
+		"10-row column. Red 'MinH%' clamps to 5 rows (MinHeight 50%). Blue 'MaxH%' clamps to 3 rows (MaxHeight 30%).")
+}

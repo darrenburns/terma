@@ -317,6 +317,7 @@ type TabBar struct {
 	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
 	Hover     func(bool)       // Optional callback invoked when hover state changes
+	MinMaxDimensions
 }
 
 // WidgetID returns the widget's unique identifier.
@@ -625,6 +626,7 @@ type TabView struct {
 	TabStyle       Style             // Inactive tab style
 	ActiveTabStyle Style             // Active tab style
 	ContentStyle   Style             // Style for the content area
+	MinMaxDimensions
 }
 
 // WidgetID returns the widget's unique identifier.

@@ -46,6 +46,7 @@ type ProgressBar struct {
 	Style         Style // General styling (padding, margins, border)
 	FilledColor   Color // Color of filled portion (default: theme Primary)
 	UnfilledColor Color // Color of unfilled portion (default: theme Surface)
+	MinMaxDimensions
 }
 
 // Build returns itself as ProgressBar is a leaf widget.
@@ -79,37 +80,13 @@ func (p ProgressBar) GetStyle() Style {
 
 // BuildLayoutNode builds a layout node for this ProgressBar widget.
 func (p ProgressBar) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
-	w, h := p.GetContentDimensions()
-	minWidth, maxWidth := dimensionToMinMax(w)
-	minHeight, maxHeight := dimensionToMinMax(h)
-
 	padding := toLayoutEdgeInsets(p.Style.Padding)
 	border := borderToEdgeInsets(p.Style.Border)
-
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
 
 	return &layout.BoxNode{
 		Padding:   padding,
 		Border:    border,
 		Margin:    toLayoutEdgeInsets(p.Style.Margin),
-		MinWidth:  minWidth,
-		MaxWidth:  maxWidth,
-		MinHeight: minHeight,
-		MaxHeight: maxHeight,
 	}
 }
 

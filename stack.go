@@ -59,6 +59,7 @@ type Stack struct {
 	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
 	Hover     func(bool)       // Optional callback invoked when hover state changes
+	MinMaxDimensions
 }
 
 // GetContentDimensions returns the width and height dimension preferences.
@@ -130,8 +131,10 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 				childNode = buildFallbackLayoutNode(innerBuilt, ctx.PushChild(i))
 			}
 
-			// Wrap in PercentNode for width/height if the inner child has percent dimensions
-			childNode = wrapInPercentNodesForStack(childNode, innerBuilt)
+			width, height := getWidgetDimensions(positioned.Child)
+			minWidth, maxWidth, minHeight, maxHeight := getWidgetMinMaxDimensions(positioned.Child)
+			padding, border := getWidgetInsets(innerBuilt)
+			childNode = wrapWithDimensionConstraints(childNode, width, height, minWidth, maxWidth, minHeight, maxHeight, padding, border)
 
 			stackChild = layout.StackChild{
 				Node:         childNode,
@@ -150,8 +153,10 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 				childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
 			}
 
-			// Wrap in PercentNode for width/height if child has percent dimensions
-			childNode = wrapInPercentNodesForStack(childNode, built)
+			width, height := getWidgetDimensions(child)
+			minWidth, maxWidth, minHeight, maxHeight := getWidgetMinMaxDimensions(child)
+			padding, border := getWidgetInsets(built)
+			childNode = wrapWithDimensionConstraints(childNode, width, height, minWidth, maxWidth, minHeight, maxHeight, padding, border)
 
 			stackChild = layout.StackChild{
 				Node:         childNode,
@@ -162,27 +167,8 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		children[i] = stackChild
 	}
 
-	minWidth, maxWidth := dimensionToMinMax(s.Width)
-	minHeight, maxHeight := dimensionToMinMax(s.Height)
-
 	padding := toLayoutEdgeInsets(s.Style.Padding)
 	border := borderToEdgeInsets(s.Style.Border)
-
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
 
 	return &layout.StackNode{
 		Children:      children,
@@ -191,10 +177,6 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		Padding:       padding,
 		Border:        border,
 		Margin:        toLayoutEdgeInsets(s.Style.Margin),
-		MinWidth:      minWidth,
-		MaxWidth:      maxWidth,
-		MinHeight:     minHeight,
-		MaxHeight:     maxHeight,
 		ExpandWidth:   s.Width.IsFlex(),
 		ExpandHeight:  s.Height.IsFlex(),
 	}

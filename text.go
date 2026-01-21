@@ -32,6 +32,7 @@ type Text struct {
 	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
 	Hover   func(bool) // Optional callback invoked when hover state changes
+	MinMaxDimensions
 }
 
 // Build returns itself as Text is a leaf widget.
@@ -93,27 +94,8 @@ func (t Text) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	// Get the text content (spans concatenated or plain content)
 	content := t.textContent()
 
-	minWidth, maxWidth := dimensionToMinMax(t.Width)
-	minHeight, maxHeight := dimensionToMinMax(t.Height)
-
 	padding := toLayoutEdgeInsets(t.Style.Padding)
 	border := borderToEdgeInsets(t.Style.Border)
-
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
 
 	return &layout.TextNode{
 		Content:   content,
@@ -121,10 +103,6 @@ func (t Text) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		Padding:   padding,
 		Border:    border,
 		Margin:    toLayoutEdgeInsets(t.Style.Margin),
-		MinWidth:  minWidth,
-		MaxWidth:  maxWidth,
-		MinHeight: minHeight,
-		MaxHeight: maxHeight,
 	}
 }
 

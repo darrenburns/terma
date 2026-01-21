@@ -299,6 +299,7 @@ type TextInput struct {
 	MouseUp        func(MouseEvent) // Optional mouse up callback
 	Hover          func(bool)       // Optional hover callback
 	ExtraKeybinds  []Keybind        // Optional additional keybinds (checked before defaults)
+	MinMaxDimensions
 }
 
 // WidgetID returns the text input's unique identifier.
@@ -505,6 +506,7 @@ func (t TextInput) Layout(ctx BuildContext, constraints Constraints) Size {
 
 	// Clamp to constraints
 	width = clampInt(width, constraints.MinWidth, constraints.MaxWidth)
+	height = clampInt(height, constraints.MinHeight, constraints.MaxHeight)
 
 	return Size{Width: width, Height: height}
 }

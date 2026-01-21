@@ -34,6 +34,7 @@ type Switcher struct {
 
 	// Style applies styling to the switcher container.
 	Style Style
+	MinMaxDimensions
 }
 
 // Build returns the active child widget, or EmptyWidget if the key is not found.

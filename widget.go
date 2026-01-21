@@ -44,6 +44,12 @@ type Dimensioned interface {
 	GetContentDimensions() (width, height Dimension)
 }
 
+// MinMaxDimensioned is implemented by widgets that expose min/max size preferences.
+// These dimensions are resolved against parent constraints at layout time.
+type MinMaxDimensioned interface {
+	GetMinMaxDimensions() (minWidth, maxWidth, minHeight, maxHeight Dimension)
+}
+
 // Styled is implemented by widgets that have a Style.
 // The framework uses this to extract padding and margin for automatic layout.
 type Styled interface {
