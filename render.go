@@ -423,14 +423,37 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		// Calculate decoration positions and mark occupied cells
 		type placedDecoration struct {
 			text  string
+			spans []Span // Parsed markup spans (if Markup was set)
 			start int
 			color ColorProvider
 		}
 		var placed []placedDecoration
 
 		for _, dec := range decorations {
-			// Add spacing around text: " text "
-			text := " " + dec.Text + " "
+			var text string
+			var spans []Span
+
+			if dec.Markup != "" {
+				// Parse markup at render time using theme from context
+				spans = ParseMarkup(dec.Markup, ctx.buildContext.Theme())
+				// Build plain text from spans for width calculation
+				var sb strings.Builder
+				for _, span := range spans {
+					sb.WriteString(span.Text)
+				}
+				text = " " + sb.String() + " "
+				// Prepend space to first span, append space to last span
+				if len(spans) > 0 {
+					spans[0].Text = " " + spans[0].Text
+					spans[len(spans)-1].Text = spans[len(spans)-1].Text + " "
+				} else {
+					spans = []Span{{Text: "  "}}
+				}
+			} else {
+				// Add spacing around text: " text "
+				text = " " + dec.Text + " "
+			}
+
 			textLen := ansi.StringWidth(text)
 
 			if textLen > edgeWidth {
@@ -464,6 +487,7 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 
 			placed = append(placed, placedDecoration{
 				text:  text,
+				spans: spans,
 				start: startPos,
 				color: dec.Color,
 			})
@@ -478,23 +502,112 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 
 		// Draw decoration text
 		for _, p := range placed {
-			runes := []rune(p.text)
-			textLen := len(runes)
-			for i, r := range runes {
-				if p.start+i < edgeWidth {
-					cellX := x + 1 + p.start + i
-					// Determine foreground color for this decoration character
-					var fgColor Color
-					if p.color != nil && p.color.IsSet() {
-						// Sample from decoration's color provider
-						// For horizontal gradients use angle=90; vertical (angle=0) on
-						// single-line text falls back to midpoint color
-						fgColor = p.color.ColorAt(textLen, 1, i, 0)
-					} else if borderColorProvider != nil && borderColorProvider.IsSet() {
-						// Fall back to border color gradient at this position
-						fgColor = borderColorProvider.ColorAt(width, height, cellX-x, edgeY-y)
+			if len(p.spans) > 0 {
+				// Render styled spans
+				col := 0
+				for _, span := range p.spans {
+					for _, r := range span.Text {
+						if p.start+col < edgeWidth {
+							cellX := x + 1 + p.start + col
+							absX := ctx.X + cellX
+							absY := ctx.Y + edgeY
+							// Skip if outside clip bounds
+							if !ctx.clip.Contains(absX, absY) {
+								col++
+								continue
+							}
+							// Read existing cell to get actual background (for transparency)
+							var bg Color
+							if existing := ctx.terminal.CellAt(absX, absY); existing != nil {
+								bg = FromANSI(existing.Style.Bg)
+							}
+							if !bg.IsSet() && ctx.inheritedBgAt != nil {
+								bg = ctx.inheritedBgAt(absX, absY)
+							}
+
+							// Determine foreground color
+							var fgColor Color
+							if span.Style.Foreground.IsSet() {
+								fgColor = blendForeground(span.Style.Foreground, bg)
+							} else if p.color != nil && p.color.IsSet() {
+								// Fall back to decoration color
+								textLen := ansi.StringWidth(p.text)
+								fgColor = p.color.ColorAt(textLen, 1, col, 0)
+							} else if borderColorProvider != nil && borderColorProvider.IsSet() {
+								// Fall back to border color
+								fgColor = borderColorProvider.ColorAt(width, height, cellX-x, edgeY-y)
+							}
+							fgColor = blendForeground(fgColor, bg)
+
+							// Build attributes from span style
+							var attrs uint8
+							if span.Style.Bold {
+								attrs |= uv.AttrBold
+							}
+							if span.Style.Faint {
+								attrs |= uv.AttrFaint
+							}
+							if span.Style.Italic {
+								attrs |= uv.AttrItalic
+							}
+							if span.Style.Blink {
+								attrs |= uv.AttrBlink
+							}
+							if span.Style.Reverse {
+								attrs |= uv.AttrReverse
+							}
+							if span.Style.Conceal {
+								attrs |= uv.AttrConceal
+							}
+							if span.Style.Strikethrough {
+								attrs |= uv.AttrStrikethrough
+							}
+
+							// Determine background color
+							cellBg := bg
+							if span.Style.Background.IsSet() {
+								cellBg = span.Style.Background
+								if !cellBg.IsOpaque() && bg.IsSet() {
+									cellBg = cellBg.BlendOver(bg)
+								}
+							}
+
+							cellStyle := uv.Style{
+								Fg:        fgColor.toANSI(),
+								Bg:        cellBg.toANSI(),
+								Attrs:     attrs,
+								Underline: toUVUnderline(span.Style.Underline),
+							}
+							if span.Style.UnderlineColor.IsSet() {
+								cellStyle.UnderlineColor = span.Style.UnderlineColor.toANSI()
+							}
+
+							cell := &uv.Cell{Content: string(r), Width: 1, Style: cellStyle}
+							ctx.terminal.SetCell(absX, absY, cell)
+						}
+						col++
 					}
-					setCellStyled(cellX, edgeY, string(r), fgColor)
+				}
+			} else {
+				// Render plain text (original behavior)
+				runes := []rune(p.text)
+				textLen := len(runes)
+				for i, r := range runes {
+					if p.start+i < edgeWidth {
+						cellX := x + 1 + p.start + i
+						// Determine foreground color for this decoration character
+						var fgColor Color
+						if p.color != nil && p.color.IsSet() {
+							// Sample from decoration's color provider
+							// For horizontal gradients use angle=90; vertical (angle=0) on
+							// single-line text falls back to midpoint color
+							fgColor = p.color.ColorAt(textLen, 1, i, 0)
+						} else if borderColorProvider != nil && borderColorProvider.IsSet() {
+							// Fall back to border color gradient at this position
+							fgColor = borderColorProvider.ColorAt(width, height, cellX-x, edgeY-y)
+						}
+						setCellStyled(cellX, edgeY, string(r), fgColor)
+					}
 				}
 			}
 		}

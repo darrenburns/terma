@@ -268,8 +268,8 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 		border = t.Border{
 			Style: t.BorderRounded,
 			Decorations: []t.BorderDecoration{
-				{"All done!", t.DecorationTopLeft, nil},
-				{countText, t.DecorationTopRight, nil},
+				{Text: "All done!", Position: t.DecorationTopLeft},
+				{Text: countText, Position: t.DecorationTopRight},
 			},
 			Color: t.NewGradient(
 				theme.Primary,
@@ -287,8 +287,8 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 		border = t.Border{
 			Style: t.BorderRounded,
 			Decorations: []t.BorderDecoration{
-				{headerText, t.DecorationTopLeft, nil},
-				{countText, t.DecorationTopRight, nil},
+				{Text: headerText, Position: t.DecorationTopLeft},
+				{Text: countText, Position: t.DecorationTopRight},
 			},
 			Color: t.NewGradient(
 				theme.Background.Blend(theme.Primary, 0.5),
