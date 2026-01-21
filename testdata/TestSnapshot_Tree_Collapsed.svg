@@ -8,7 +8,6 @@
     .strikethrough { text-decoration: line-through; }
   </style>
   <rect width="100%" height="100%" fill="#000000"/>
-  <text x="8.0" y="8.0" fill="#E0DEF4">▶</text>
-  <text x="24.8" y="8.0" fill="#E0DEF4">Project</text>
-  <text x="24.8" y="27.6" fill="#E0DEF4">LICENSE</text>
+  <text x="8.0" y="8.0" fill="#E0DEF4">▶Project</text>
+  <text x="16.4" y="27.6" fill="#E0DEF4">LICENSE</text>
 </svg>

@@ -619,6 +619,9 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 		collapseIndicator = "▶"
 	}
 	leafIndicator := t.LeafIndicator
+	if leafIndicator == "" {
+		leafIndicator = " "
+	}
 	showGuideLines := true
 	if t.ShowGuideLines != nil {
 		showGuideLines = *t.ShowGuideLines
@@ -895,7 +898,7 @@ func (t Tree[T]) prefixPartsForEntry(entry treeViewEntry[T], indent int, expande
 			indicator = collapsedIndicator
 		}
 	}
-	return indentation, indicator + " "
+	return indentation, indicator
 }
 
 func treePrefixSpans(rowPrefix, indentation, indicator string, showGuideLines bool, guideSpanStyle SpanStyle) []Span {
