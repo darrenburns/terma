@@ -25,6 +25,7 @@ Widgets that display content:
 - Table - Navigable multi-column table
 - [Tree](tree.md) - Hierarchical expandable list
 - [ProgressBar](progressbar.md) - Horizontal progress indicator
+- [Tabs](tabs.md) - TabBar and TabView for tab navigation
 
 ### Conditional & Switching Widgets
 

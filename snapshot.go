@@ -55,8 +55,16 @@ func RenderToBufferWithSize(widget Widget, width, height int) (buf *uv.Buffer, l
 	focusedSignal := NewAnySignal[Focusable](nil)
 	hoveredSignal := NewAnySignal[Widget](nil)
 
-	// Create renderer and render the widget, getting computed size
+	// Create renderer
 	renderer := NewRenderer(buf, width, height, focusManager, focusedSignal, hoveredSignal)
+
+	// First render to collect focusables
+	focusables := renderer.Render(widget)
+	focusManager.SetFocusables(focusables)
+
+	// Re-render with focus state set (needed for KeybindBar to show keybinds)
+	buf = uv.NewBuffer(width, height)
+	renderer = NewRenderer(buf, width, height, focusManager, focusedSignal, hoveredSignal)
 	layoutWidth, layoutHeight = renderer.RenderWithSize(widget)
 
 	return buf, layoutWidth, layoutHeight
