@@ -86,6 +86,7 @@ func (d *TextInputDemo) Build(ctx t.BuildContext) t.Widget {
 				&t.Button{
 					ID:    "submit-btn",
 					Label: " Submit Form ",
+					Width: t.Auto,
 					Style: t.Style{
 						BackgroundColor: theme.Primary,
 						ForegroundColor: theme.TextOnPrimary,

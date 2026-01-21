@@ -21,10 +21,10 @@ const (
 type CrossAxisAlign int
 
 const (
-	// CrossAxisStretch stretches children to fill the cross axis (default).
-	CrossAxisStretch CrossAxisAlign = iota
 	// CrossAxisStart aligns children at the start of the cross axis.
-	CrossAxisStart
+	CrossAxisStart CrossAxisAlign = iota
+	// CrossAxisStretch stretches children to fill the cross axis (default).
+	CrossAxisStretch
 	// CrossAxisCenter centers children along the cross axis.
 	CrossAxisCenter
 	// CrossAxisEnd aligns children at the end of the cross axis.

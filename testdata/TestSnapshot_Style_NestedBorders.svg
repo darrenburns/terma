@@ -10,15 +10,15 @@
   <rect width="100%" height="100%" fill="#000000"/>
   <text x="8.0" y="8.0" fill="#6464C8">╭───────────────────────╮</text>
   <text x="8.0" y="27.6" fill="#6464C8">│</text>
-  <text x="16.4" y="27.6" fill="#C86464">┌─────────────────────┐</text>
+  <text x="16.4" y="27.6" fill="#C86464">┌─────┐</text>
   <text x="209.6" y="27.6" fill="#6464C8">│</text>
   <text x="8.0" y="47.2" fill="#6464C8">│</text>
   <text x="16.4" y="47.2" fill="#C86464">│</text>
   <text x="24.8" y="47.2" fill="#E0DEF4">Inner</text>
-  <text x="201.2" y="47.2" fill="#C86464">│</text>
+  <text x="66.8" y="47.2" fill="#C86464">│</text>
   <text x="209.6" y="47.2" fill="#6464C8">│</text>
   <text x="8.0" y="66.8" fill="#6464C8">│</text>
-  <text x="16.4" y="66.8" fill="#C86464">└─────────────────────┘</text>
+  <text x="16.4" y="66.8" fill="#C86464">└─────┘</text>
   <text x="209.6" y="66.8" fill="#6464C8">│</text>
   <text x="8.0" y="86.4" fill="#6464C8">│</text>
   <text x="209.6" y="86.4" fill="#6464C8">│</text>
