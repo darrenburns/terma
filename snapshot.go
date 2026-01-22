@@ -46,6 +46,9 @@ func RenderToBuffer(widget Widget, width, height int) *uv.Buffer {
 // the widget's computed border-box dimensions (outer size including padding and borders).
 // This is useful for auto-sizing output where you want to know how much
 // space the widget actually occupies, not just the buffer size.
+//
+// The first focusable widget is automatically focused so that cursor/focus
+// styling is visible in the rendered output.
 func RenderToBufferWithSize(widget Widget, width, height int) (buf *uv.Buffer, layoutWidth, layoutHeight int) {
 	buf = uv.NewBuffer(width, height)
 
@@ -55,8 +58,17 @@ func RenderToBufferWithSize(widget Widget, width, height int) (buf *uv.Buffer, l
 	focusedSignal := NewAnySignal[Focusable](nil)
 	hoveredSignal := NewAnySignal[Widget](nil)
 
-	// Create renderer and render the widget, getting computed size
+	// Create renderer
 	renderer := NewRenderer(buf, width, height, focusManager, focusedSignal, hoveredSignal)
+
+	// First render pass: collect focusables
+	focusables := renderer.Render(widget)
+	focusManager.SetFocusables(focusables)
+
+	// Update the focused signal so widgets can see focus state
+	focusedSignal.Set(focusManager.Focused())
+
+	// Second render pass: render with focus established
 	layoutWidth, layoutHeight = renderer.RenderWithSize(widget)
 
 	return buf, layoutWidth, layoutHeight

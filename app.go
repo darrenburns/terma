@@ -27,6 +27,7 @@ type mouseClickTracker struct {
 	lastClickTime time.Time
 	lastTargetID  string
 	lastButton    uv.MouseButton
+	lastX, lastY  int
 	clickCount    int
 
 	lastDownTargetID string
@@ -34,14 +35,23 @@ type mouseClickTracker struct {
 	lastDownCount    int
 }
 
-func (t *mouseClickTracker) nextClick(targetID string, button uv.MouseButton, now time.Time) int {
-	if targetID == t.lastTargetID && button == t.lastButton && now.Sub(t.lastClickTime) <= clickChainTimeout {
+type mouseDragState struct {
+	isDragging    bool
+	dragWidgetID  string
+	pressedButton uv.MouseButton
+}
+
+func (t *mouseClickTracker) nextClick(targetID string, button uv.MouseButton, x, y int, now time.Time) int {
+	samePosition := targetID == t.lastTargetID && button == t.lastButton && x == t.lastX && y == t.lastY
+	if samePosition && now.Sub(t.lastClickTime) <= clickChainTimeout {
 		t.clickCount++
 	} else {
 		t.clickCount = 1
 	}
 	t.lastTargetID = targetID
 	t.lastButton = button
+	t.lastX = x
+	t.lastY = y
 	t.lastClickTime = now
 
 	t.lastDownTargetID = targetID
@@ -213,6 +223,7 @@ func Run(root Widget) error {
 	}
 
 	clickTracker := &mouseClickTracker{}
+	dragState := &mouseDragState{}
 	currentHoveredID := ""
 
 	resolveMouseTarget := func(x, y int, allowDismiss bool) (*WidgetEntry, bool) {
@@ -366,8 +377,13 @@ func Run(root Widget) error {
 					if entry != nil {
 						Log("  Found widget: ID=%q Type=%T", entry.ID, entry.EventWidget)
 						focusAt(ev.X, ev.Y)
-						clickCount := clickTracker.nextClick(entry.ID, ev.Button, time.Now())
+						clickCount := clickTracker.nextClick(entry.ID, ev.Button, ev.X, ev.Y, time.Now())
 						mouseEvent := buildMouseEvent(uv.Mouse(ev), entry, clickCount)
+
+						// Set drag state for mouse move tracking
+						dragState.isDragging = true
+						dragState.dragWidgetID = entry.ID
+						dragState.pressedButton = ev.Button
 
 						if downHandler, ok := entry.EventWidget.(MouseDownHandler); ok {
 							Log("  Widget has OnMouseDown")
@@ -390,6 +406,11 @@ func Run(root Widget) error {
 
 				case uv.MouseReleaseEvent:
 					Log("MouseReleaseEvent at X=%d Y=%d Button=%v", ev.X, ev.Y, ev.Button)
+
+					// Clear drag state
+					dragState.isDragging = false
+					dragState.dragWidgetID = ""
+					dragState.pressedButton = uv.MouseNone
 
 					entry, handled := resolveMouseTarget(ev.X, ev.Y, false)
 					if handled {
@@ -416,6 +437,29 @@ func Run(root Widget) error {
 
 				case uv.MouseMotionEvent:
 					// Log("MouseMotionEvent at X=%d Y=%d", ev.X, ev.Y)
+
+					// Handle drag - dispatch to the widget that received the mouse down
+					if dragState.isDragging && dragState.dragWidgetID != "" {
+						if dragEntry := renderer.WidgetByID(dragState.dragWidgetID); dragEntry != nil {
+							if moveHandler, ok := dragEntry.EventWidget.(MouseMoveHandler); ok {
+								// Build mouse event with local coordinates relative to the drag widget
+								localX := ev.X - dragEntry.Bounds.X
+								localY := ev.Y - dragEntry.Bounds.Y
+								mouseEvent := MouseEvent{
+									X:          ev.X,
+									Y:          ev.Y,
+									LocalX:     localX,
+									LocalY:     localY,
+									Button:     dragState.pressedButton,
+									Mod:        ev.Mod,
+									ClickCount: 1,
+									WidgetID:   dragEntry.ID,
+								}
+								moveHandler.OnMouseMove(mouseEvent)
+								display()
+							}
+						}
+					}
 
 					// Find the widget under the cursor
 					entry := renderer.WidgetAt(ev.X, ev.Y)

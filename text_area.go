@@ -4,6 +4,7 @@ import (
 	"strings"
 	"unicode"
 
+	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 	"terma/layout"
 )
@@ -12,10 +13,11 @@ import (
 // It is the source of truth for text content, cursor position,
 // wrapping mode, and insert mode.
 type TextAreaState struct {
-	Content     AnySignal[[]string] // Grapheme clusters for Unicode safety
-	CursorIndex Signal[int]         // Grapheme index (0 = before first char)
-	InsertMode  Signal[bool]        // True when edits are allowed
-	WrapMode    Signal[WrapMode]    // WrapNone or WrapSoft/WrapHard
+	Content         AnySignal[[]string] // Grapheme clusters for Unicode safety
+	CursorIndex     Signal[int]         // Grapheme index (0 = before first char)
+	InsertMode      Signal[bool]        // True when edits are allowed
+	WrapMode        Signal[WrapMode]    // WrapNone or WrapSoft/WrapHard
+	SelectionAnchor Signal[int]         // -1 = no selection, else anchor grapheme index
 
 	scrollOffsetX int
 	scrollOffsetY int
@@ -34,6 +36,7 @@ func NewTextAreaState(initial string) *TextAreaState {
 		CursorIndex:     NewSignal(len(graphemes)),
 		InsertMode:      NewSignal(true),
 		WrapMode:        NewSignal(WrapSoft),
+		SelectionAnchor: NewSignal(-1),
 		preferredColumn: -1,
 	}
 }
@@ -257,6 +260,130 @@ func (s *TextAreaState) ToggleWrap() {
 		s.WrapMode.Set(WrapNone)
 	}
 	s.resetPreferredColumn()
+}
+
+// HasSelection returns true if there is an active selection.
+func (s *TextAreaState) HasSelection() bool {
+	anchor := s.SelectionAnchor.Peek()
+	return anchor >= 0 && anchor != s.CursorIndex.Peek()
+}
+
+// GetSelectionBounds returns the normalized selection bounds (start, end).
+// Returns (-1, -1) if there is no selection.
+func (s *TextAreaState) GetSelectionBounds() (start, end int) {
+	anchor := s.SelectionAnchor.Peek()
+	cursor := s.CursorIndex.Peek()
+	if anchor < 0 || anchor == cursor {
+		return -1, -1
+	}
+	if anchor < cursor {
+		return anchor, cursor
+	}
+	return cursor, anchor
+}
+
+// GetSelectedText returns the selected text as a string.
+// Returns empty string if there is no selection.
+func (s *TextAreaState) GetSelectedText() string {
+	start, end := s.GetSelectionBounds()
+	if start < 0 {
+		return ""
+	}
+	graphemes := s.Content.Peek()
+	return joinGraphemes(graphemes[start:end])
+}
+
+// ClearSelection clears the selection anchor.
+func (s *TextAreaState) ClearSelection() {
+	s.SelectionAnchor.Set(-1)
+}
+
+// SetSelectionAnchor sets the selection anchor to the given index.
+func (s *TextAreaState) SetSelectionAnchor(index int) {
+	s.SelectionAnchor.Set(index)
+}
+
+// SelectAll selects all text (anchor=0, cursor=len).
+func (s *TextAreaState) SelectAll() {
+	graphemes := s.Content.Peek()
+	s.SelectionAnchor.Set(0)
+	s.CursorIndex.Set(len(graphemes))
+	s.updatePreferredColumn()
+}
+
+// SelectWord selects the word at the given grapheme index.
+func (s *TextAreaState) SelectWord(index int) {
+	graphemes := s.Content.Peek()
+	if len(graphemes) == 0 {
+		return
+	}
+	if index < 0 {
+		index = 0
+	}
+	if index >= len(graphemes) {
+		index = len(graphemes) - 1
+	}
+
+	// Find word boundaries
+	start := index
+	end := index
+
+	// If at a non-word char, select consecutive non-word chars
+	if !isWordChar(graphemes[index]) {
+		for start > 0 && !isWordChar(graphemes[start-1]) {
+			start--
+		}
+		for end < len(graphemes) && !isWordChar(graphemes[end]) {
+			end++
+		}
+	} else {
+		// Select word characters
+		for start > 0 && isWordChar(graphemes[start-1]) {
+			start--
+		}
+		for end < len(graphemes) && isWordChar(graphemes[end]) {
+			end++
+		}
+	}
+
+	s.SelectionAnchor.Set(start)
+	s.CursorIndex.Set(end)
+	s.updatePreferredColumn()
+}
+
+// SelectLine selects the line at the given grapheme index.
+func (s *TextAreaState) SelectLine(index int) {
+	graphemes := s.Content.Peek()
+	start, end := lineBoundsForIndex(graphemes, index)
+	// Include the newline if present
+	if end < len(graphemes) && graphemes[end] == "\n" {
+		end++
+	}
+	s.SelectionAnchor.Set(start)
+	s.CursorIndex.Set(end)
+	s.updatePreferredColumn()
+}
+
+// DeleteSelection deletes the selected text.
+// Returns true if selection was deleted, false if there was no selection.
+func (s *TextAreaState) DeleteSelection() bool {
+	start, end := s.GetSelectionBounds()
+	if start < 0 {
+		return false
+	}
+	s.Content.Update(func(graphemes []string) []string {
+		return append(graphemes[:start], graphemes[end:]...)
+	})
+	s.CursorIndex.Set(start)
+	s.SelectionAnchor.Set(-1)
+	s.updatePreferredColumn()
+	return true
+}
+
+// ReplaceSelection deletes any selected text and inserts the given text.
+func (s *TextAreaState) ReplaceSelection(text string) {
+	s.DeleteSelection()
+	s.Insert(text)
 }
 
 func (s *TextAreaState) cursorVerticalMove(delta int) {
@@ -538,13 +665,12 @@ func (t TextArea) Keybinds() []Keybind {
 	}
 
 	keybinds := []Keybind{
-		// Cursor movement
+		// Cursor movement (clears selection)
 		{Key: "left", Action: t.cursorLeft, Hidden: true},
 		{Key: "right", Action: t.cursorRight, Hidden: true},
 		{Key: "up", Action: t.cursorUp, Hidden: true},
 		{Key: "down", Action: t.cursorDown, Hidden: true},
 		{Key: "home", Action: t.cursorHome, Hidden: true},
-		{Key: "ctrl+a", Action: t.cursorHome, Hidden: true},
 		{Key: "end", Action: t.cursorEnd, Hidden: true},
 		{Key: "ctrl+e", Action: t.cursorEnd, Hidden: true},
 		{Key: "ctrl+left", Action: t.cursorWordLeft, Hidden: true},
@@ -553,6 +679,21 @@ func (t TextArea) Keybinds() []Keybind {
 		{Key: "alt+f", Action: t.cursorWordRight, Hidden: true},
 		{Key: "pgup", Action: t.cursorPageUp, Hidden: true},
 		{Key: "pgdown", Action: t.cursorPageDown, Hidden: true},
+
+		// Selection movement (extends selection)
+		{Key: "shift+left", Action: t.selectLeft, Hidden: true},
+		{Key: "shift+right", Action: t.selectRight, Hidden: true},
+		{Key: "shift+up", Action: t.selectUp, Hidden: true},
+		{Key: "shift+down", Action: t.selectDown, Hidden: true},
+		{Key: "shift+home", Action: t.selectHome, Hidden: true},
+		{Key: "shift+end", Action: t.selectEnd, Hidden: true},
+		{Key: "ctrl+shift+left", Action: t.selectWordLeft, Hidden: true},
+		{Key: "ctrl+shift+right", Action: t.selectWordRight, Hidden: true},
+		{Key: "shift+pgup", Action: t.selectPageUp, Hidden: true},
+		{Key: "shift+pgdown", Action: t.selectPageDown, Hidden: true},
+
+		// Select all
+		{Key: "ctrl+a", Action: t.selectAll, Hidden: true},
 	}
 
 	if t.RequireInsertMode {
@@ -611,13 +752,14 @@ func (t TextArea) exitInsertMode() {
 
 func (t TextArea) insertNewline() {
 	if t.State != nil {
-		t.State.InsertNewline()
+		t.State.ReplaceSelection("\n")
 		t.notifyChange()
 	}
 }
 
 func (t TextArea) cursorLeft() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorLeft()
 		t.scrollCursorIntoView()
 	}
@@ -625,6 +767,7 @@ func (t TextArea) cursorLeft() {
 
 func (t TextArea) cursorRight() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorRight()
 		t.scrollCursorIntoView()
 	}
@@ -632,6 +775,7 @@ func (t TextArea) cursorRight() {
 
 func (t TextArea) cursorUp() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorUp()
 		t.scrollCursorIntoView()
 	}
@@ -639,6 +783,7 @@ func (t TextArea) cursorUp() {
 
 func (t TextArea) cursorDown() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorDown()
 		t.scrollCursorIntoView()
 	}
@@ -646,6 +791,7 @@ func (t TextArea) cursorDown() {
 
 func (t TextArea) cursorPageUp() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorUpBy(max(1, t.State.lastHeight-1))
 		t.scrollCursorIntoView()
 	}
@@ -653,6 +799,7 @@ func (t TextArea) cursorPageUp() {
 
 func (t TextArea) cursorPageDown() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorDownBy(max(1, t.State.lastHeight-1))
 		t.scrollCursorIntoView()
 	}
@@ -660,6 +807,7 @@ func (t TextArea) cursorPageDown() {
 
 func (t TextArea) cursorHome() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorHome()
 		t.scrollCursorIntoView()
 	}
@@ -667,6 +815,7 @@ func (t TextArea) cursorHome() {
 
 func (t TextArea) cursorEnd() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorEnd()
 		t.scrollCursorIntoView()
 	}
@@ -674,6 +823,7 @@ func (t TextArea) cursorEnd() {
 
 func (t TextArea) cursorWordLeft() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorWordLeft()
 		t.scrollCursorIntoView()
 	}
@@ -681,6 +831,7 @@ func (t TextArea) cursorWordLeft() {
 
 func (t TextArea) cursorWordRight() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorWordRight()
 		t.scrollCursorIntoView()
 	}
@@ -688,36 +839,142 @@ func (t TextArea) cursorWordRight() {
 
 func (t TextArea) deleteBackward() {
 	if t.State != nil {
-		t.State.DeleteBackward()
+		if !t.State.DeleteSelection() {
+			t.State.DeleteBackward()
+		}
 		t.notifyChange()
 	}
 }
 
 func (t TextArea) deleteForward() {
 	if t.State != nil {
-		t.State.DeleteForward()
+		if !t.State.DeleteSelection() {
+			t.State.DeleteForward()
+		}
 		t.notifyChange()
 	}
 }
 
 func (t TextArea) deleteToBeginning() {
 	if t.State != nil {
-		t.State.DeleteToBeginning()
+		if !t.State.DeleteSelection() {
+			t.State.DeleteToBeginning()
+		}
 		t.notifyChange()
 	}
 }
 
 func (t TextArea) deleteToEnd() {
 	if t.State != nil {
-		t.State.DeleteToEnd()
+		if !t.State.DeleteSelection() {
+			t.State.DeleteToEnd()
+		}
 		t.notifyChange()
 	}
 }
 
 func (t TextArea) deleteWordBackward() {
 	if t.State != nil {
-		t.State.DeleteWordBackward()
+		if !t.State.DeleteSelection() {
+			t.State.DeleteWordBackward()
+		}
 		t.notifyChange()
+	}
+}
+
+// ensureAnchor sets the selection anchor to the current cursor position if not already set.
+func (t TextArea) ensureAnchor() {
+	if t.State != nil && t.State.SelectionAnchor.Peek() < 0 {
+		t.State.SetSelectionAnchor(t.State.CursorIndex.Peek())
+	}
+}
+
+// Selection action methods
+
+func (t TextArea) selectLeft() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorLeft()
+		t.scrollCursorIntoView()
+	}
+}
+
+func (t TextArea) selectRight() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorRight()
+		t.scrollCursorIntoView()
+	}
+}
+
+func (t TextArea) selectUp() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorUp()
+		t.scrollCursorIntoView()
+	}
+}
+
+func (t TextArea) selectDown() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorDown()
+		t.scrollCursorIntoView()
+	}
+}
+
+func (t TextArea) selectPageUp() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorUpBy(max(1, t.State.lastHeight-1))
+		t.scrollCursorIntoView()
+	}
+}
+
+func (t TextArea) selectPageDown() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorDownBy(max(1, t.State.lastHeight-1))
+		t.scrollCursorIntoView()
+	}
+}
+
+func (t TextArea) selectHome() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorHome()
+		t.scrollCursorIntoView()
+	}
+}
+
+func (t TextArea) selectEnd() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorEnd()
+		t.scrollCursorIntoView()
+	}
+}
+
+func (t TextArea) selectWordLeft() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorWordLeft()
+		t.scrollCursorIntoView()
+	}
+}
+
+func (t TextArea) selectWordRight() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorWordRight()
+		t.scrollCursorIntoView()
+	}
+}
+
+func (t TextArea) selectAll() {
+	if t.State != nil {
+		t.State.SelectAll()
+		t.scrollCursorIntoView()
 	}
 }
 
@@ -745,7 +1002,7 @@ func (t TextArea) OnKey(event KeyEvent) bool {
 
 	text := event.Text()
 	if text != "" {
-		t.State.Insert(text)
+		t.State.ReplaceSelection(text)
 		t.notifyChange()
 		return true
 	}
@@ -909,7 +1166,8 @@ func (t TextArea) Render(ctx *RenderContext) {
 	t.updateScrollOffsets(layout, contentWidth, ctx.Height)
 	t.scrollCursorIntoViewWithLayout(layout)
 
-	t.renderContent(ctx, graphemes, layout, cursorIdx, focused, baseStyle, contentWidth)
+	selStart, selEnd := t.State.GetSelectionBounds()
+	t.renderContent(ctx, graphemes, layout, cursorIdx, focused, baseStyle, contentWidth, selStart, selEnd, theme)
 }
 
 func (t TextArea) updateScrollOffsets(layout textAreaLayout, contentWidth, viewportHeight int) {
@@ -939,9 +1197,10 @@ func (t TextArea) updateScrollOffsets(layout textAreaLayout, contentWidth, viewp
 	}
 }
 
-func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout textAreaLayout, cursorIdx int, focused bool, baseStyle Style, contentWidth int) {
+func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout textAreaLayout, cursorIdx int, focused bool, baseStyle Style, contentWidth int, selStart, selEnd int, theme ThemeData) {
 	scrollY := t.State.scrollOffsetY
 	scrollX := t.State.scrollOffsetX
+	hasSelection := selStart >= 0
 
 	for lineIdx := scrollY; lineIdx < len(layout.lines) && lineIdx < scrollY+ctx.Height; lineIdx++ {
 		line := layout.lines[lineIdx]
@@ -969,8 +1228,15 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 			}
 
 			style := baseStyle
-			if focused && i == cursorIdx {
+			isSelected := hasSelection && i >= selStart && i < selEnd
+			isCursor := focused && i == cursorIdx
+
+			// Cursor style (reverse) takes precedence over selection
+			if isCursor {
 				style.Reverse = true
+			} else if isSelected {
+				// Match List/Table selection styling - just background, no foreground change
+				style.BackgroundColor = theme.Selection
 			}
 
 			ctx.DrawStyledText(visibleX, row, grapheme, style)
@@ -1036,14 +1302,60 @@ func (t TextArea) OnClick(event MouseEvent) {
 // OnMouseDown is called when the mouse is pressed on the widget.
 // Implements the MouseDownHandler interface.
 func (t TextArea) OnMouseDown(event MouseEvent) {
-	if t.State != nil && t.State.lastWidth > 0 {
-		contentWidth := reservedContentWidth(t.State.lastWidth)
+	if t.State == nil || t.State.lastWidth <= 0 {
+		if t.MouseDown != nil {
+			t.MouseDown(event)
+		}
+		return
+	}
+
+	contentWidth := reservedContentWidth(t.State.lastWidth)
+
+	// Shift+click: extend selection from current position
+	if event.Mod.Contains(uv.ModShift) {
+		t.ensureAnchor()
 		t.State.SetCursorFromLocalPosition(event.LocalX, event.LocalY, contentWidth)
+		if t.MouseDown != nil {
+			t.MouseDown(event)
+		}
+		return
+	}
+
+	// Clear any existing selection
+	t.State.ClearSelection()
+
+	// Position cursor at click location
+	t.State.SetCursorFromLocalPosition(event.LocalX, event.LocalY, contentWidth)
+	cursor := t.State.CursorIndex.Peek()
+
+	// Handle multi-click (click chain is reset at app level when position changes)
+	switch event.ClickCount {
+	case 2:
+		// Double-click: select word
+		t.State.SelectWord(cursor)
+	case 3:
+		// Triple-click: select line
+		t.State.SelectLine(cursor)
+	default:
+		// Single click: set anchor to prepare for drag
+		t.State.SetSelectionAnchor(cursor)
 	}
 
 	if t.MouseDown != nil {
 		t.MouseDown(event)
 	}
+}
+
+// OnMouseMove is called when the mouse is moved while dragging.
+// Implements the MouseMoveHandler interface.
+func (t TextArea) OnMouseMove(event MouseEvent) {
+	if t.State == nil || t.State.lastWidth <= 0 {
+		return
+	}
+
+	// Update cursor position; selection extends from anchor
+	contentWidth := reservedContentWidth(t.State.lastWidth)
+	t.State.SetCursorFromLocalPosition(event.LocalX, event.LocalY, contentWidth)
 }
 
 // OnMouseUp is called when the mouse is released on the widget.
