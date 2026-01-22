@@ -165,6 +165,8 @@ When you press `Up`, the action runs: it reads the current count, adds 1, and se
 
 Let's build something more visual using Terma's `ProgressBar` widget. This will teach you about using built-in widgets, conditional styling, and centering content.
 
+<video autoplay loop muted playsinline src="../assets/progressbar-tutorial.mp4"></video>
+
 ```go title="cmd/tutorial/03-progress-bar/main.go"
 --8<-- "cmd/tutorial/03-progress-bar/main.go"
 ```
@@ -239,6 +241,76 @@ To center content on screen, we use an outer `Column` that fills the entire term
 
 The actual content is wrapped in an inner `Column` so it's treated as a single unit for alignment.
 
+## Adding Animation
+
+Our progress bar works, but the jumps between values feel abrupt. Let's add smooth animation with minimal changes. We'll also set a custom theme.
+
+<video autoplay loop muted playsinline src="../assets/animation-tutorial.mp4"></video>
+
+```go title="cmd/tutorial/04-animation/main.go"
+--8<-- "cmd/tutorial/04-animation/main.go"
+```
+
+Run it:
+
+```bash
+go run ./cmd/tutorial/04-animation
+```
+
+Press `Up` to increase by 20, `Down` to decrease. Watch how the bar smoothly animates between values instead of jumping instantly.
+
+### From Signal to AnimatedValue
+
+The key change is replacing `Signal[int]` with `AnimatedValue[float64]`:
+
+```go
+// Before: instant updates
+progress t.Signal[int]
+
+// After: smooth animations
+progress *t.AnimatedValue[float64]
+```
+
+Create it with `NewAnimatedValue`:
+
+```go
+progress: t.NewAnimatedValue(t.AnimatedValueConfig[float64]{
+    Initial:  0,
+    Duration: 300 * time.Millisecond,
+    Easing:   t.EaseOutCubic,
+}),
+```
+
+The config specifies:
+
+- `Initial`: Starting value
+- `Duration`: How long the animation takes
+- `Easing`: The animation curve (`EaseOutCubic` starts fast and slows down)
+
+### Using AnimatedValue
+
+The API is almost identical to Signal. Reading works the same—call `Get()`:
+
+```go
+progress := a.progress.Get()  // Returns the current animated value
+```
+
+Setting triggers a smooth animation from the current value to the new one:
+
+```go
+a.progress.Set(a.progress.Target() + 20)
+```
+
+Notice we use `Target()` instead of `Get()` when calculating the next value. `Target()` returns where the animation is heading, while `Get()` returns the current interpolated value. This prevents compounding errors if the user presses keys quickly during an animation.
+
+### Setting a Theme
+
+```go
+t.SetTheme("catppuccin")
+```
+
+Terma includes several built-in themes. Available themes include `"catppuccin"`, `"dracula"`, `"tokyo-night"`, `"gruvbox"`, `"nord"`, and more—each with light and dark variants.
+
 ## The Declarative Model
 
 This is the core idea of Terma:
@@ -259,10 +331,12 @@ You've learned:
 - **Widgets** are the building blocks of Terma UIs. Your app is a widget.
 - **Build** returns a tree of widgets that describes your UI.
 - **Signals** hold reactive state. Read with `Get()`, write with `Set()`.
+- **AnimatedValue** adds smooth transitions—just swap `Signal` for `AnimatedValue`.
 - **Column** arranges children vertically, **Row** arranges them horizontally.
 - **Flex dimensions** (`Flex(1)`) make widgets expand to fill available space.
 - **Alignment** (`MainAlign`, `CrossAlign`) controls how children are positioned.
 - **Style** customizes appearance with colors, padding, and more.
+- **Themes** can be set with `SetTheme()` for different color schemes.
 - **Markup** styles text inline with `[b $Color]text[/]` syntax.
 - **Keybinds** define keyboard shortcuts with actions that update state.
 - **Conditional logic** in `Build` lets you change appearance based on state.
