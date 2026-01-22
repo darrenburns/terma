@@ -1,158 +1,170 @@
-# Building a Simple List with Terma
+# Chapter 1: Getting Started with Terma
 
-This tutorial walks through building a minimal interactive list. By the end, you'll understand the core concepts of Terma: widgets, signals, and declarative UI.
+Terma is a declarative terminal UI framework for Go. Instead of manually drawing characters to the screen, you describe *what* your UI should look like, and Terma handles the rendering.
 
-## The App is a Widget
+This tutorial will teach you the fundamentals by building progressively more complex applications.
 
-In Terma, everything is a widget—including your application itself. A widget is any type that implements the `Build` method:
+## Your First Terma App
+
+Let's start with the simplest possible Terma application:
 
 ```go
-func (d *SimpleListDemo) Build(ctx t.BuildContext) t.Widget
+// cmd/tutorial/01-hello-world/main.go
 ```
 
-The `Build` method returns a tree of widgets that describes your UI. When you call `t.Run(app)`, Terma renders this tree to the terminal and handles user input.
+Run it with:
+
+```bash
+go run ./cmd/tutorial/01-hello-world
+```
+
+You'll see "Hello, Terma!" in your terminal. Press `Ctrl+C` to exit.
+
+Let's break down what's happening.
+
+### The App Struct
 
 ```go
-type SimpleListDemo struct {
-    cursorIndex t.Signal[int]
-    selectedMsg t.Signal[string]
+type App struct{}
+```
+
+In Terma, your application is a **widget**. A widget is any Go type that has a `Build` method. The `App` struct is your root widget—it represents the entire application.
+
+### The Build Method
+
+```go
+func (a *App) Build(ctx t.BuildContext) t.Widget {
+    return t.Text{Content: "Hello, Terma!"}
 }
 ```
 
-Our app struct holds the state that drives the UI. Notice we're not storing UI elements—just data.
+The `Build` method returns a **widget tree** that describes your UI. Here we're returning a single `Text` widget. When Terma needs to render your app, it calls `Build` and draws whatever widgets you return.
 
-## Declarative UI with Signals
+The `ctx` parameter provides access to things like theming and focus state—we'll use it later.
 
-Terma uses a declarative model: you never update the UI directly. Instead, you update *state*, and the UI rebuilds automatically.
-
-This is where **Signals** come in. A Signal wraps a value and notifies Terma when it changes:
-
-```go
-func NewSimpleListDemo() *SimpleListDemo {
-    return &SimpleListDemo{
-        cursorIndex: t.NewSignal(0),
-        selectedMsg: t.NewSignal("No selection yet"),
-    }
-}
-```
-
-When a Signal's value changes, any widget that read from that Signal during its last build will automatically rebuild. You don't wire up subscriptions manually—Terma tracks dependencies for you.
-
-To read a Signal, call `Get()`. To write, call `Set()`:
-
-```go
-d.selectedMsg.Get()                              // read
-d.selectedMsg.Set("You selected: Apple")         // write
-```
-
-## Layout with Column and Row
-
-The `Column` widget arranges children vertically. Its counterpart, `Row`, arranges children horizontally. Here's our root layout using a Column:
-
-```go
-return t.Column{
-    ID:      "simple-list-root",
-    Spacing: 1,
-    Style: t.Style{
-        Padding: t.EdgeInsetsXY(2, 1),
-    },
-    Children: []t.Widget{
-        // ...
-    },
-}
-```
-
-`Spacing: 1` adds one blank line between each child. The `Style` field applies visual properties—here we add horizontal padding of 2 cells and vertical padding of 1 cell with `EdgeInsetsXY`.
-
-## Displaying Text
-
-The `Text` widget displays content. At its simplest:
-
-```go
-t.Text{
-    Content: "Simple String List Example",
-    Style: t.Style{
-        ForegroundColor: t.Black,
-        BackgroundColor: t.Cyan,
-        Padding:         t.EdgeInsetsXY(1, 0),
-    },
-}
-```
-
-For richer formatting, use `Spans` instead of `Content`. Each Span can have its own style:
-
-```go
-t.Text{
-    Spans: []t.Span{
-        t.PlainSpan("Use "),
-        t.BoldSpan("↑/↓", t.BrightCyan),
-        t.PlainSpan(" to navigate"),
-    },
-}
-```
-
-`PlainSpan` creates unstyled text. `BoldSpan` creates bold text with a specified color. You can combine as many spans as needed.
-
-## The List Widget
-
-`List` is a generic widget that displays a slice of items with keyboard navigation. First, we define our data:
-
-```go
-items := []string{
-    "Apple",
-    "Banana",
-    "Cherry",
-    "Date",
-    "Elderberry",
-}
-```
-
-Then we create the List, passing in this slice:
-
-```go
-&t.List[string]{
-    ID:          "simple-string-list",
-    Items:       items,
-    CursorIndex: d.cursorIndex,
-    OnSelect: func(item string) {
-        d.selectedMsg.Set(fmt.Sprintf("You selected: %s", item))
-    },
-}
-```
-
-A few things to note:
-
-**Generic type parameter**: `List[string]` works with any type. You could use `List[User]` or `List[MenuItem]` just as easily.
-
-**External cursor state**: We pass in `d.cursorIndex`, a Signal that the List reads and writes. When the user presses ↓, the List updates this Signal, which triggers a rebuild. This keeps cursor state outside the List itself—useful when you need to access or modify it elsewhere.
-
-**Selection callback**: `OnSelect` fires when the user presses Enter. Here we update `selectedMsg`, which causes the status text below the list to rebuild with the new message.
-
-**Default rendering**: Without a `RenderItem` function, List renders each item using its string representation. For custom layouts—like showing a title and description for each item—you'd supply a `RenderItem` function that maps each item to a widget tree.
-
-**Scrolling**: For lists longer than the available space, you can wrap the List in a `Scrollable` and provide a `ScrollController`. This example doesn't need scrolling with only five items.
-
-## Running the App
-
-The `main` function creates the app and runs it:
+### Running the App
 
 ```go
 func main() {
-    app := NewSimpleListDemo()
+    app := &App{}
     if err := t.Run(app); err != nil {
         log.Fatal(err)
     }
 }
 ```
 
-`t.Run` takes over the terminal, renders your widget tree, and enters an event loop. It returns when the user exits (Ctrl+C).
+`t.Run(app)` takes over your terminal, renders your widget tree, and starts the event loop. The event loop handles keyboard input, window resizing, and other events. It returns when the user quits (usually `Ctrl+C`).
+
+## Adding Interactivity with Signals
+
+A static "Hello World" isn't very useful. Let's build something interactive: a counter.
+
+```go
+// cmd/tutorial/02-counter/main.go
+```
+
+Run it:
+
+```bash
+go run ./cmd/tutorial/02-counter
+```
+
+Press `Up` to increment, `Down` to decrement, and `q` to quit.
+
+### Signals: Reactive State
+
+The key addition here is the **Signal**:
+
+```go
+type App struct {
+    count t.Signal[int]
+}
+```
+
+A Signal wraps a value and tracks when it changes. When you read from a Signal inside `Build`, Terma remembers that your widget depends on that Signal. When the Signal's value changes, Terma automatically rebuilds your widget.
+
+Create a Signal with `NewSignal`:
+
+```go
+app := &App{
+    count: t.NewSignal(0),  // Initial value is 0
+}
+```
+
+Read the current value with `Get()`:
+
+```go
+a.count.Get()  // Returns the current count
+```
+
+Update the value with `Set()`:
+
+```go
+a.count.Set(a.count.Get() + 1)  // Increment by 1
+```
+
+### Layout with Column
+
+```go
+return t.Column{
+    Spacing: 1,
+    Children: []t.Widget{
+        t.Text{Content: fmt.Sprintf("Count: %d", a.count.Get())},
+        t.Text{Content: "Press Up to increment..."},
+    },
+}
+```
+
+`Column` arranges its children vertically. `Spacing: 1` adds one blank line between each child. There's also `Row` for horizontal layout—we'll cover that later.
+
+Notice how we use `a.count.Get()` inside `Build`. This creates a dependency: whenever `count` changes, Terma will call `Build` again, and the Text widget will display the new value.
+
+### Handling Keyboard Input
+
+```go
+func (a *App) Keybinds() []t.Keybind {
+    return []t.Keybind{
+        {Key: "up", Name: "Increment", Action: func() {
+            a.count.Set(a.count.Get() + 1)
+        }},
+        {Key: "down", Name: "Decrement", Action: func() {
+            a.count.Set(a.count.Get() - 1)
+        }},
+        {Key: "q", Name: "Quit", Action: t.Quit},
+    }
+}
+```
+
+The `Keybinds()` method returns a list of keyboard shortcuts. Each keybind has:
+
+- `Key`: The key to listen for (e.g., `"up"`, `"down"`, `"enter"`, `"q"`)
+- `Name`: A human-readable description (shown in the KeybindBar widget, which we'll cover later)
+- `Action`: A function to call when the key is pressed
+
+When you press `Up`, the action runs: it reads the current count, adds 1, and sets the new value. Because `count` changed, Terma rebuilds the UI, and you see the updated number.
+
+## The Declarative Model
+
+This is the core idea of Terma:
+
+1. **State lives in Signals** — Your data is stored in Signals on your app struct
+2. **Build describes the UI** — Your `Build` method returns widgets that reflect the current state
+3. **Actions update Signals** — User interactions (key presses, clicks) update Signal values
+4. **Terma rebuilds automatically** — When a Signal changes, Terma calls `Build` again
+
+You never manually update the screen. You never say "change this text to show 5". Instead, you update the `count` Signal, and the UI updates automatically because it depends on that Signal.
+
+This is called **declarative UI**: you declare what the UI should look like for any given state, rather than imperatively describing how to transition between states.
 
 ## Summary
 
-The key ideas:
+You've learned:
 
-1. **Widgets** describe UI. Your app is a widget that returns other widgets from `Build`.
-2. **Signals** hold state. Update a Signal, and dependent widgets rebuild automatically.
-3. **Declarative** means you describe what the UI should look like given the current state—not how to transition between states.
-4. **Layout widgets** like `Column` and `Row` arrange children vertically and horizontally. Use `Spacing` and `Style` to control appearance.
-5. **List** handles keyboard navigation and selection. Pass a cursor Signal for state, and an `OnSelect` callback for actions.
+- **Widgets** are the building blocks of Terma UIs. Your app is a widget.
+- **Build** returns a tree of widgets that describes your UI.
+- **Signals** hold reactive state. Read with `Get()`, write with `Set()`.
+- **Column** arranges children vertically with optional spacing.
+- **Keybinds** define keyboard shortcuts with actions that update state.
+- **Declarative UI** means you describe the desired state, not the transitions.
+
+In the next chapter, we'll build a list with selection—a common pattern in terminal apps.

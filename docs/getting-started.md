@@ -1,58 +1,278 @@
 # Getting Started
 
-This guide will walk you through installing Terma and building your first terminal UI application.
+Terma is a declarative terminal UI framework for Go. Instead of manually drawing characters to the screen, you describe *what* your UI should look like, and Terma handles the rendering.
 
-## Chapter 1: Hello World
+This guide will teach you the fundamentals by building progressively more complex applications.
 
-Welcome to Terma! In this first chapter you'll build the smallest possible app: a single line of text rendered in the terminal.
+## Your First Terma App
 
-Concepts: Widget interface, Build pattern, Run()
+Let's start with the simplest possible Terma application. Create this file or find it at `cmd/tutorial/01-hello-world/main.go`:
 
-Build: Static text display
-
-### Define your app
-
-Terma apps are widgets. If your type implements `Build(ctx BuildContext) Widget`, it satisfies the `Widget` interface and can be rendered as the root of your UI.
-
-```go
-type App struct{}
-
-func (a *App) Build(ctx BuildContext) Widget {
-    return Text{Content: "Hello, Terminal!"}
-}
-
-func main() { Run(&App{}) }
+```go title="cmd/tutorial/01-hello-world/main.go"
+--8<-- "cmd/tutorial/01-hello-world/main.go"
 ```
 
-In `Build`, you return a widget tree that describes the UI for the current state. Here it's just a leaf widget (`Text`) with static content.
-
-### Run it
-
-`Run()` starts Terma's render loop and input handling, then blocks until the app exits. If you want a complete file you can run immediately:
-
-```go
-package main
-
-import t "terma"
-
-type App struct{}
-
-func (a *App) Build(ctx t.BuildContext) t.Widget {
-    return t.Text{Content: "Hello, Terminal!"}
-}
-
-func main() {
-    t.Run(&App{})
-}
-```
-
-Then run:
+Run it with:
 
 ```bash
-go run .
+go run ./cmd/tutorial/01-hello-world
 ```
 
-Teaches:
-- The Widget interface and Build() method
-- How Terma apps are structured
-- Running with Run()
+You'll see "Hello, Terma!" in your terminal. Press `Ctrl+C` to exit.
+
+Let's break down what's happening.
+
+### The App Struct
+
+```go
+type App struct{}
+```
+
+In Terma, your application is a **widget**. A widget is any Go type that has a `Build` method. The `App` struct is your root widget—it represents the entire application.
+
+The name `App` is just a convention. You can call it whatever you like—`Counter`, `MyTUI`, `Dashboard`—as long as it has a `Build` method, Terma can render it.
+
+### The Build Method
+
+```go
+func (a *App) Build(ctx t.BuildContext) t.Widget {
+    return t.Text{Content: "Hello, Terma!"}
+}
+```
+
+The `Build` method returns a **widget tree** that describes your UI. Here we're returning a single `Text` widget. When Terma needs to render your app, it calls `Build` and draws whatever widgets you return.
+
+The `ctx` parameter provides access to things like theming and focus state—we'll use it later.
+
+### Running the App
+
+```go
+func main() {
+    app := &App{}
+    if err := t.Run(app); err != nil {
+        log.Fatal(err)
+    }
+}
+```
+
+`t.Run(app)` takes over your terminal, renders your widget tree, and starts the event loop. The event loop handles keyboard input, window resizing, and other events. It returns when the user quits (usually `Ctrl+C`).
+
+## Adding Interactivity with Signals
+
+A static "Hello World" isn't very useful. Let's build something interactive: a counter.
+
+```go title="cmd/tutorial/02-counter/main.go"
+--8<-- "cmd/tutorial/02-counter/main.go"
+```
+
+Run it:
+
+```bash
+go run ./cmd/tutorial/02-counter
+```
+
+Press `Up` to increment, `Down` to decrement, and `q` to quit.
+
+### Signals: Reactive State
+
+The key addition here is the **Signal**:
+
+```go
+type App struct {
+    count t.Signal[int]
+}
+```
+
+A Signal wraps a value and tracks when it changes. When you read from a Signal inside `Build`, Terma remembers that your widget depends on that Signal. When the Signal's value changes, Terma automatically rebuilds your widget.
+
+Create a Signal with `NewSignal`:
+
+```go
+app := &App{
+    count: t.NewSignal(0),  // Initial value is 0
+}
+```
+
+Read the current value with `Get()`:
+
+```go
+a.count.Get()  // Returns the current count
+```
+
+Update the value with `Set()`:
+
+```go
+a.count.Set(a.count.Get() + 1)  // Increment by 1
+```
+
+### Layout with Column
+
+```go
+return t.Column{
+    Spacing: 1,
+    Children: []t.Widget{
+        t.Text{Content: fmt.Sprintf("Count: %d", a.count.Get())},
+        t.Text{Content: "Press Up to increment..."},
+    },
+}
+```
+
+`Column` arranges its children vertically. `Spacing: 1` adds one blank line between each child. There's also `Row` for horizontal layout—we'll cover that later.
+
+Notice how we use `a.count.Get()` inside `Build`. This creates a dependency: whenever `count` changes, Terma will call `Build` again, and the Text widget will display the new value.
+
+### Styling Text with Markup
+
+Notice the instruction text uses `ParseMarkupToText` instead of a plain `Text` widget:
+
+```go
+t.ParseMarkupToText("Press [b $Accent]Up[/] to increment...", theme)
+```
+
+This returns a `Text` widget with styled spans. The markup syntax is `[styles]text[/]` where:
+
+- `b` makes text bold
+- `$Accent`, `$Primary`, `$Error`, etc. apply theme colors
+- `[/]` closes the styled section
+
+You get the theme from the build context with `ctx.Theme()`. Using theme colors instead of hardcoded values ensures your app looks consistent and adapts to different color schemes.
+
+### Handling Keyboard Input
+
+```go
+func (a *App) Keybinds() []t.Keybind {
+    return []t.Keybind{
+        {Key: "up", Name: "Increment", Action: func() {
+            a.count.Set(a.count.Get() + 1)
+        }},
+        {Key: "down", Name: "Decrement", Action: func() {
+            a.count.Set(a.count.Get() - 1)
+        }},
+        {Key: "q", Name: "Quit", Action: t.Quit},
+    }
+}
+```
+
+The `Keybinds()` method returns a list of keyboard shortcuts. Any widget can implement this method, not just your root App—this lets you define context-specific shortcuts on individual components. Each keybind has:
+
+- `Key`: The key to listen for (e.g., `"up"`, `"down"`, `"enter"`, `"q"`)
+- `Name`: A human-readable description (shown in the KeybindBar widget, which we'll cover later)
+- `Action`: A function to call when the key is pressed
+
+When you press `Up`, the action runs: it reads the current count, adds 1, and sets the new value. Because `count` changed, Terma rebuilds the UI, and you see the updated number.
+
+## Building a Progress Bar
+
+Let's build something more visual using Terma's `ProgressBar` widget. This will teach you about using built-in widgets, conditional styling, and centering content.
+
+```go title="cmd/tutorial/03-progress-bar/main.go"
+--8<-- "cmd/tutorial/03-progress-bar/main.go"
+```
+
+Run it:
+
+```bash
+go run ./cmd/tutorial/03-progress-bar
+```
+
+Press `Up` to fill the bar, `Down` to empty it, and `q` to quit. When the bar reaches 100%, it turns green.
+
+### The ProgressBar Widget
+
+```go
+t.ProgressBar{
+    Progress:    float64(progress) / float64(maxProgress),
+    Width:       t.Flex(1),
+    FilledColor: fillColor,
+}
+```
+
+`ProgressBar` is a built-in widget that displays a horizontal bar. It takes:
+
+- `Progress`: A float from 0.0 to 1.0 representing completion
+- `Width`: How wide the bar should be (here we use `Flex(1)` to fill available space)
+- `FilledColor`: The color of the filled portion (defaults to `theme.Primary`)
+- `UnfilledColor`: The color of the empty portion (defaults to `theme.Surface`)
+
+### Conditional Styling
+
+```go
+fillColor := theme.Primary
+if progress == maxProgress {
+    fillColor = theme.Success
+}
+```
+
+This is standard Go—no special syntax needed. When the progress reaches the maximum, we switch from the primary color to the success color (green). Because `Build` is called on every state change, the color updates automatically when the bar fills up.
+
+### Guarding State Changes
+
+```go
+{Key: "up", Name: "Increase", Action: func() {
+    if a.progress.Get() < maxProgress {
+        a.progress.Set(a.progress.Get() + 1)
+    }
+}},
+```
+
+We check bounds before updating the signal. This prevents the progress from going below 0 or above the maximum. You could also clamp values in `Build`, but checking at the source keeps your rendering logic clean.
+
+### Centering Content
+
+```go
+return t.Column{
+    Width:      t.Flex(1),
+    Height:     t.Flex(1),
+    MainAlign:  t.MainAxisCenter,
+    CrossAlign: t.CrossAxisCenter,
+    Style:      t.Style{BackgroundColor: theme.Background},
+    Children:   []t.Widget{...},
+}
+```
+
+To center content on screen, we use an outer `Column` that fills the entire terminal:
+
+- `Width: t.Flex(1)` and `Height: t.Flex(1)` make the column expand to fill all available space
+- `MainAlign: t.MainAxisCenter` centers children along the main axis (vertically for a Column)
+- `CrossAlign: t.CrossAxisCenter` centers children along the cross axis (horizontally for a Column)
+- `Style: t.Style{BackgroundColor: theme.Background}` sets the app's background color
+
+The actual content is wrapped in an inner `Column` so it's treated as a single unit for alignment.
+
+## The Declarative Model
+
+This is the core idea of Terma:
+
+1. **State lives in Signals** — Your data is stored in Signals on your app struct
+2. **Build describes the UI** — Your `Build` method returns widgets that reflect the current state
+3. **Actions update Signals** — User interactions (key presses, clicks) update Signal values
+4. **Terma rebuilds automatically** — When a Signal changes, Terma calls `Build` again
+
+You never manually update the screen. You never say "change this text to show 5". Instead, you update the `count` Signal, and the UI updates automatically because it depends on that Signal.
+
+This is called **declarative UI**: you declare what the UI should look like for any given state, rather than imperatively describing how to transition between states.
+
+## Summary
+
+You've learned:
+
+- **Widgets** are the building blocks of Terma UIs. Your app is a widget.
+- **Build** returns a tree of widgets that describes your UI.
+- **Signals** hold reactive state. Read with `Get()`, write with `Set()`.
+- **Column** arranges children vertically, **Row** arranges them horizontally.
+- **Flex dimensions** (`Flex(1)`) make widgets expand to fill available space.
+- **Alignment** (`MainAlign`, `CrossAlign`) controls how children are positioned.
+- **Style** customizes appearance with colors, padding, and more.
+- **Markup** styles text inline with `[b $Color]text[/]` syntax.
+- **Keybinds** define keyboard shortcuts with actions that update state.
+- **Conditional logic** in `Build` lets you change appearance based on state.
+- **Declarative UI** means you describe the desired state, not the transitions.
+
+## Next Steps
+
+Now that you understand the basics, explore the other sections of the documentation:
+
+- [Signals](signals.md) — Deep dive into reactive state management
+- [Layout](layout/index.md) — Learn about Column, Row, and other layout widgets
+- [Styling](styling.md) — Add colors, padding, borders, and more
+- [Focus & Keyboard](focus-keyboard.md) — Handle keyboard navigation and focus

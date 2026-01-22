@@ -23,6 +23,12 @@ type BoxNode struct {
 	Border  EdgeInsets
 	Margin  EdgeInsets
 
+	// Expand flags force the box to fill available space on that axis.
+	// When true and Width/Height is 0, the box expands to MaxWidth/MaxHeight.
+	// This is used when a widget's dimension is Flex() or Percent().
+	ExpandWidth  bool
+	ExpandHeight bool
+
 	// MeasureFunc for dynamic sizing (overrides Width/Height if set).
 	// Receives CONTENT-BOX constraints (available space for content, after subtracting padding/border).
 	// Returns CONTENT-BOX dimensions (just the content size, not including padding/border).
@@ -54,6 +60,14 @@ func (b *BoxNode) ComputeLayout(constraints Constraints) ComputedLayout {
 	} else {
 		// Fixed sizing - Width/Height are already border-box
 		width, height = b.Width, b.Height
+
+		// If expand flags are set and size is 0, fill available space
+		if b.ExpandWidth && width == 0 {
+			width = effective.MaxWidth
+		}
+		if b.ExpandHeight && height == 0 {
+			height = effective.MaxHeight
+		}
 	}
 
 	// Step 3: Clamp to effective constraints (border-box)
