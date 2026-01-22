@@ -2,29 +2,22 @@
 
 A single-line focusable text entry widget with cursor navigation, editing commands, and automatic horizontal scrolling.
 
+=== "Demo"
+
+    <video autoplay loop muted playsinline src="../../assets/textinput-demo.mp4"></video>
+
+=== "Code"
+
+    ```go
+    --8<-- "cmd/text-input-example/main.go"
+    ```
+
 ## Overview
 
 `TextInput` provides a text entry field with built-in keyboard handling for cursor movement, text deletion, and submission. State is managed externally via `TextInputState`, which holds the text content and cursor position.
 
 ```go
-type App struct {
-    inputState *t.TextInputState
-}
-
-func NewApp() *App {
-    return &App{
-        inputState: t.NewTextInputState(""),
-    }
-}
-
-func (a *App) Build(ctx t.BuildContext) t.Widget {
-    return t.TextInput{
-        ID:          "username",
-        State:       a.inputState,
-        Placeholder: "Enter username...",
-        OnSubmit:    func(text string) { fmt.Println("Submitted:", text) },
-    }
-}
+--8<-- "docs/minimal-examples/textinput-basic/main.go"
 ```
 
 ## Fields
@@ -119,10 +112,18 @@ t.TextInput{
     Width: t.Cells(20),
     Style: t.Style{
         BorderStyle:     t.BorderRounded,
-        Padding:         t.EdgeInsetsHorizontal(1),
+        Padding:         t.EdgeInsetsXY(1, 0),
         BackgroundColor: theme.Surface,
     },
 }
+```
+
+## Callbacks
+
+Use `OnChange` to react to text changes in real-time, and `OnSubmit` to handle Enter key presses:
+
+```go
+--8<-- "docs/minimal-examples/textinput-callbacks/main.go"
 ```
 
 ## Custom Keybinds
@@ -149,18 +150,7 @@ t.TextInput{
 Apply visual styling through the `Style` field:
 
 ```go
-t.TextInput{
-    ID:    "styled",
-    State: a.inputState,
-    Width: t.Flex(1),
-    Style: t.Style{
-        BorderStyle:     t.BorderRounded,
-        BorderColor:     theme.Primary,
-        Padding:         t.EdgeInsetsHorizontal(1),
-        BackgroundColor: theme.Surface,
-        ForegroundColor: theme.Text,
-    },
-}
+--8<-- "docs/minimal-examples/textinput-styling/main.go"
 ```
 
 ## Notes

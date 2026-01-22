@@ -32,7 +32,7 @@ func (d *TextInputDemo) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
 
 	return t.Dock{
-		ID: "text-input-demo-root",
+		Style: t.Style{BackgroundColor: theme.Background},
 		Bottom: []t.Widget{
 			t.KeybindBar{},
 		},
@@ -42,77 +42,65 @@ func (d *TextInputDemo) Build(ctx t.BuildContext) t.Widget {
 				Padding: t.EdgeInsetsXY(2, 1),
 			},
 			Children: []t.Widget{
-				// Title
-				t.Text{
-					Content: " TextInput Demo ",
-					Style: t.Style{
-						ForegroundColor: theme.TextOnPrimary,
-						BackgroundColor: theme.Primary,
-					},
-				},
-
-				// Instructions
-				t.Text{
-					Spans: t.ParseMarkup(
-						"[b $Primary]Tab[/] to switch fields • [b $Primary]Enter[/] to submit • [b $Primary]Ctrl+C[/] to quit",
-						theme,
-					),
-				},
-
-				t.Text{Content: ""}, // Spacer
-
-				// Name field
-				d.buildField(ctx, "Name", "name-input", d.nameState, "Enter your name...", nil),
-
-				// Email field
-				d.buildField(ctx, "Email", "email-input", d.emailState, "Enter your email...", nil),
-
-				// Message field with character counter
-				d.buildField(ctx, "Message", "message-input", d.messageState, "Type a message...", func(text string) {
-					d.charCount.Set(len([]rune(text)))
-				}),
-
-				// Character count display
-				t.Text{
-					Content: fmt.Sprintf("Character count: %d", d.charCount.Get()),
-					Style: t.Style{
-						ForegroundColor: theme.TextMuted,
-					},
-				},
-
-				t.Text{Content: ""}, // Spacer
-
-				// Submit button
-				&t.Button{
-					ID:    "submit-btn",
-					Label: " Submit Form ",
-					Width: t.Auto,
-					Style: t.Style{
-						BackgroundColor: theme.Primary,
-						ForegroundColor: theme.TextOnPrimary,
-					},
-					OnPress: d.handleSubmit,
-				},
-
-				// Submission result
-				t.ShowWhen(d.submittedData.Get() != "", t.Column{
-					Spacing: 0,
+				// Header section
+				t.Column{
+					Spacing: 1,
 					Children: []t.Widget{
-						t.Text{Content: ""}, // Spacer
 						t.Text{
-							Content: "Submitted:",
+							Content: " TextInput Demo ",
 							Style: t.Style{
-								ForegroundColor: theme.Success,
+								ForegroundColor: theme.TextOnPrimary,
+								BackgroundColor: theme.Primary,
 							},
 						},
+						t.ParseMarkupToText("[b $Primary]Tab[/] to switch fields • [b $Primary]Enter[/] to submit • [b $Primary]Ctrl+C[/] to quit", theme),
+					},
+				},
+
+				// Form fields section
+				t.Column{
+					Spacing: 1,
+					Children: []t.Widget{
+						d.buildField(ctx, "Name", "name-input", d.nameState, "Enter your name...", nil),
+						d.buildField(ctx, "Email", "email-input", d.emailState, "Enter your email...", nil),
+						d.buildField(ctx, "Message", "message-input", d.messageState, "Type a message...", func(text string) {
+							d.charCount.Set(len([]rune(text)))
+						}),
 						t.Text{
-							Content: d.submittedData.Get(),
-							Style: t.Style{
-								ForegroundColor: theme.Text,
-							},
+							Content: fmt.Sprintf("Character count: %d", d.charCount.Get()),
+							Style:   t.Style{ForegroundColor: theme.TextMuted},
 						},
 					},
-				}),
+				},
+
+				// Submit section
+				t.Column{
+					Spacing: 1,
+					Children: []t.Widget{
+						&t.Button{
+							ID:    "submit-btn",
+							Label: " Submit Form ",
+							Width: t.Auto,
+							Style: t.Style{
+								BackgroundColor: theme.Primary,
+								ForegroundColor: theme.TextOnPrimary,
+							},
+							OnPress: d.handleSubmit,
+						},
+						t.ShowWhen(d.submittedData.Get() != "", t.Column{
+							Children: []t.Widget{
+								t.Text{
+									Content: "Submitted:",
+									Style:   t.Style{ForegroundColor: theme.Success},
+								},
+								t.Text{
+									Content: d.submittedData.Get(),
+									Style:   t.Style{ForegroundColor: theme.Text},
+								},
+							},
+						}),
+					},
+				},
 			},
 		},
 	}
