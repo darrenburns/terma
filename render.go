@@ -1234,8 +1234,8 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 		return
 	}
 
-	for i := range r.floatCollector.entries {
-		entry := &r.floatCollector.entries[i]
+	for i := 0; i < len(r.floatCollector.entries); i++ {
+		entry := r.floatCollector.entries[i]
 
 		// Record focusable count before building so we can find the first focusable
 		// in this float's subtree without calling Build() again
@@ -1268,6 +1268,7 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 		entry.Y = y
 		entry.Width = floatWidth
 		entry.Height = floatHeight
+		r.floatCollector.entries[i] = entry
 
 		// Render modal backdrop if needed
 		if entry.Config.Modal {
