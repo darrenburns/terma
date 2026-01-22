@@ -89,6 +89,50 @@ type ThemeData struct {
 
 	// Link
 	Link Color // Clickable text links
+
+	// Label text colors (variant colors blended toward readable text)
+	PrimaryText Color
+	AccentText  Color
+	SuccessText Color
+	ErrorText   Color
+	WarningText Color
+	InfoText    Color
+
+	// Label background colors (variant colors faded/dimmed)
+	PrimaryBg Color
+	AccentBg  Color
+	SuccessBg Color
+	ErrorBg   Color
+	WarningBg Color
+	InfoBg    Color
+}
+
+// computeLabelColors fills in derived label colors from base variant colors.
+func computeLabelColors(data *ThemeData) {
+	autoText := data.Background.AutoText()
+
+	// Text: 50% variant, 50% auto-text for readability with more color
+	data.PrimaryText = data.Primary.Blend(autoText, 0.5)
+	data.AccentText = data.Accent.Blend(autoText, 0.5)
+	data.SuccessText = data.Success.Blend(autoText, 0.5)
+	data.ErrorText = data.Error.Blend(autoText, 0.5)
+	data.WarningText = data.Warning.Blend(autoText, 0.5)
+	data.InfoText = data.Info.Blend(autoText, 0.5)
+
+	// Background: 35% variant blended into background
+	data.PrimaryBg = data.Background.Blend(data.Primary, 0.35)
+	data.AccentBg = data.Background.Blend(data.Accent, 0.35)
+	data.SuccessBg = data.Background.Blend(data.Success, 0.35)
+	data.ErrorBg = data.Background.Blend(data.Error, 0.35)
+	data.WarningBg = data.Background.Blend(data.Warning, 0.35)
+	data.InfoBg = data.Background.Blend(data.Info, 0.35)
+}
+
+func init() {
+	for name, theme := range themeRegistry {
+		computeLabelColors(&theme)
+		themeRegistry[name] = theme
+	}
 }
 
 // Built-in theme definitions
@@ -1051,6 +1095,7 @@ func SetTheme(name string) {
 // If this is the currently active theme, the change takes effect immediately.
 func RegisterTheme(name string, data ThemeData) {
 	data.Name = name
+	computeLabelColors(&data)
 	themeRegistry[name] = data
 	// If this is the active theme, update it
 	if name == activeThemeName {

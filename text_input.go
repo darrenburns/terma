@@ -281,6 +281,34 @@ func (s *TextInputState) clampCursor() {
 	}
 }
 
+// SetCursorFromLocalPosition moves the cursor to the given local X position.
+// It accounts for scroll offset internally. This mirrors TextArea's method
+// but is simplified for single-line input.
+func (s *TextInputState) SetCursorFromLocalPosition(localX int) {
+	// Account for horizontal scroll offset
+	displayX := localX + s.scrollOffset
+
+	// Convert display position to grapheme index
+	graphemes := s.Content.Peek()
+	if len(graphemes) == 0 || displayX <= 0 {
+		s.CursorIndex.Set(0)
+		return
+	}
+
+	x := 0
+	for i, grapheme := range graphemes {
+		gWidth := graphemeWidth(grapheme)
+		// Click in first half of grapheme -> position before it
+		if displayX < x+gWidth/2+1 {
+			s.CursorIndex.Set(i)
+			return
+		}
+		x += gWidth
+	}
+	// Click past end -> position at end
+	s.CursorIndex.Set(len(graphemes))
+}
+
 // --- TextInput Widget ---
 
 // TextInput is a single-line focusable text entry widget.
@@ -683,6 +711,11 @@ func (t TextInput) OnClick(event MouseEvent) {
 // OnMouseDown is called when the mouse is pressed on the widget.
 // Implements the MouseDownHandler interface.
 func (t TextInput) OnMouseDown(event MouseEvent) {
+	// Set cursor position from click (matches TextArea behavior)
+	if t.State != nil {
+		t.State.SetCursorFromLocalPosition(event.LocalX)
+	}
+
 	if t.MouseDown != nil {
 		t.MouseDown(event)
 	}

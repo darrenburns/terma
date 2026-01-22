@@ -158,7 +158,7 @@ func main() {
 
 | Widget | Purpose | Key Fields |
 |--------|---------|------------|
-| `Text` | Display text (plain or rich with Spans) | `Content`, `Spans`, `Wrap` |
+| `Text` | Display text (plain or rich with Spans) | `Content`, `Spans`, `Wrap`, `TextAlign` |
 | `Button` | Focusable button with press handler | `ID` (required), `Label`, `OnPress` |
 | `List[T]` | Generic navigable list | `State` (required), `OnSelect`, `RenderItem`, `MultiSelect` |
 
@@ -326,6 +326,38 @@ Text{Spans: ParseMarkup("Press [b $Accent]Enter[/] to continue", ctx.Theme())}
 //               $Error, $Warning, $Success, $Info
 // Hex colors: #rrggbb
 ```
+
+### Text Alignment
+
+Control horizontal text alignment within the available width using `TextAlign`:
+
+```go
+// Left-aligned (default)
+Text{Content: "Left", TextAlign: TextAlignLeft, Width: Cells(20)}
+
+// Center-aligned
+Text{Content: "Center", TextAlign: TextAlignCenter, Width: Cells(20)}
+
+// Right-aligned
+Text{Content: "Right", TextAlign: TextAlignRight, Width: Cells(20)}
+
+// Works with wrapping - each line is aligned independently
+Text{
+    Content:   "This is a longer text that will wrap",
+    TextAlign: TextAlignCenter,
+    Wrap:      WrapSoft,
+    Width:     Cells(20),
+}
+
+// Works with rich text spans
+Text{
+    Spans:     ParseMarkup("[b]Bold[/] text", ctx.Theme()),
+    TextAlign: TextAlignRight,
+    Width:     Cells(20),
+}
+```
+
+Available alignment values: `TextAlignLeft` (default), `TextAlignCenter`, `TextAlignRight`.
 
 ## Widget Conventions
 

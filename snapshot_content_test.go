@@ -96,6 +96,108 @@ func TestSnapshot_Text_WithForegroundColor(t *testing.T) {
 }
 
 // =============================================================================
+// Text Alignment Tests
+// =============================================================================
+
+func TestSnapshot_Text_AlignLeft(t *testing.T) {
+	widget := Text{
+		Content:   "Left",
+		TextAlign: TextAlignLeft,
+		Width:     Cells(20),
+	}
+	AssertSnapshot(t, widget, 20, 3,
+		"Text 'Left' aligned to the left edge within 20-cell width. Default alignment behavior.")
+}
+
+func TestSnapshot_Text_AlignCenter(t *testing.T) {
+	widget := Text{
+		Content:   "Center",
+		TextAlign: TextAlignCenter,
+		Width:     Cells(20),
+	}
+	AssertSnapshot(t, widget, 20, 3,
+		"Text 'Center' horizontally centered within 20-cell width. Equal spacing on both sides.")
+}
+
+func TestSnapshot_Text_AlignRight(t *testing.T) {
+	widget := Text{
+		Content:   "Right",
+		TextAlign: TextAlignRight,
+		Width:     Cells(20),
+	}
+	AssertSnapshot(t, widget, 20, 3,
+		"Text 'Right' aligned to the right edge within 20-cell width. Text starts at column 15.")
+}
+
+func TestSnapshot_Text_AlignCenter_Multiline(t *testing.T) {
+	widget := Text{
+		Content:   "Line 1\nLonger Line 2\nL3",
+		TextAlign: TextAlignCenter,
+		Width:     Cells(20),
+	}
+	AssertSnapshot(t, widget, 20, 5,
+		"Three centered lines. Each line independently centered within 20-cell width.")
+}
+
+func TestSnapshot_Text_AlignRight_Multiline(t *testing.T) {
+	widget := Text{
+		Content:   "Short\nMedium text\nA",
+		TextAlign: TextAlignRight,
+		Width:     Cells(20),
+	}
+	AssertSnapshot(t, widget, 20, 5,
+		"Three right-aligned lines. Each line independently aligned to right edge.")
+}
+
+func TestSnapshot_Text_AlignCenter_WithWrap(t *testing.T) {
+	widget := Text{
+		Content:   "This is a line that wraps",
+		TextAlign: TextAlignCenter,
+		Wrap:      WrapSoft,
+		Width:     Cells(15),
+	}
+	AssertSnapshot(t, widget, 15, 5,
+		"Text wraps at word boundaries, each wrapped line is centered within 15-cell width.")
+}
+
+func TestSnapshot_Text_AlignRight_WithWrap(t *testing.T) {
+	widget := Text{
+		Content:   "This text will wrap",
+		TextAlign: TextAlignRight,
+		Wrap:      WrapSoft,
+		Width:     Cells(12),
+	}
+	AssertSnapshot(t, widget, 12, 5,
+		"Text wraps at word boundaries, each wrapped line is right-aligned within 12-cell width.")
+}
+
+func TestSnapshot_Text_AlignCenter_Spans(t *testing.T) {
+	widget := Text{
+		Spans: []Span{
+			{Text: "Bold", Style: SpanStyle{Bold: true}},
+			{Text: " text"},
+		},
+		TextAlign: TextAlignCenter,
+		Width:     Cells(20),
+	}
+	AssertSnapshot(t, widget, 20, 3,
+		"Rich text 'Bold text' centered. 'Bold' in bold style, ' text' in normal style.")
+}
+
+func TestSnapshot_Text_AlignRight_Spans(t *testing.T) {
+	widget := Text{
+		Spans: []Span{
+			{Text: "Right ", Style: SpanStyle{Italic: true}},
+			{Text: "aligned"},
+		},
+		TextAlign: TextAlignRight,
+		Width:     Cells(20),
+	}
+	AssertSnapshot(t, widget, 20, 3,
+		"Rich text 'Right aligned' aligned to right edge. 'Right ' in italic, 'aligned' in normal.")
+}
+
+// =============================================================================
 // Button Widget Tests
 // =============================================================================
 

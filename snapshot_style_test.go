@@ -113,6 +113,98 @@ func TestSnapshot_Style_BorderWithSubtitle(t *testing.T) {
 		"20x5 column with rounded border. 'Footer' text embedded in bottom border line. 'Body' inside.")
 }
 
+func TestSnapshot_Style_BorderWithMarkupTitle(t *testing.T) {
+	widget := Column{
+		Width:  Cells(25),
+		Height: Cells(5),
+		Style: Style{
+			Border: SquareBorder(RGB(200, 200, 200), BorderTitleMarkup("[b]Bold Title[/]")),
+		},
+		Children: []Widget{
+			Text{Content: "Content"},
+		},
+	}
+	AssertSnapshot(t, widget, 25, 5,
+		"25x5 column with square border. 'Bold Title' in bold text embedded in top border. 'Content' inside.")
+}
+
+func TestSnapshot_Style_BorderWithMarkupColors(t *testing.T) {
+	widget := Column{
+		Width:  Cells(30),
+		Height: Cells(5),
+		Style: Style{
+			Border: SquareBorder(RGB(200, 200, 200), BorderTitleMarkup("[b $Accent]ESC[/] close")),
+		},
+		Children: []Widget{
+			Text{Content: "Dialog content"},
+		},
+	}
+	AssertSnapshot(t, widget, 30, 5,
+		"30x5 column with square border. Title 'ESC close' where 'ESC' is bold and accent-colored. 'Dialog content' inside.")
+}
+
+func TestSnapshot_Style_BorderMixedDecorations(t *testing.T) {
+	widget := Column{
+		Width:  Cells(30),
+		Height: Cells(5),
+		Style: Style{
+			Border: SquareBorder(RGB(200, 200, 200),
+				BorderTitleMarkup("[i]Styled[/]"),
+				BorderTitleRight("Plain"),
+			),
+		},
+		Children: []Widget{
+			Text{Content: "Mixed decorations"},
+		},
+	}
+	AssertSnapshot(t, widget, 30, 5,
+		"30x5 column with square border. 'Styled' in italic at top-left, 'Plain' at top-right. 'Mixed decorations' inside.")
+}
+
+func TestSnapshot_Style_BorderGradientWithMarkupTitle(t *testing.T) {
+	// Test that markup title text without explicit color samples from the gradient border
+	widget := Column{
+		Width:  Cells(30),
+		Height: Cells(5),
+		Style: Style{
+			Border: Border{
+				Style: BorderRounded,
+				Color: NewGradient(RGB(255, 0, 0), RGB(0, 0, 255)).WithAngle(90), // Red to blue horizontal
+				Decorations: []BorderDecoration{
+					BorderTitleMarkup("[b]Gradient Title[/]"), // Bold, but no color - should sample from gradient
+				},
+			},
+		},
+		Children: []Widget{
+			Text{Content: "Content"},
+		},
+	}
+	AssertSnapshot(t, widget, 30, 5,
+		"30x5 column with rounded gradient border (red to blue). 'Gradient Title' in bold, color sampled from gradient at title position.")
+}
+
+func TestSnapshot_Style_BorderGradientWithMarkupTitleExplicitColor(t *testing.T) {
+	// Test that markup title with explicit color overrides the gradient
+	widget := Column{
+		Width:  Cells(30),
+		Height: Cells(5),
+		Style: Style{
+			Border: Border{
+				Style: BorderRounded,
+				Color: NewGradient(RGB(255, 0, 0), RGB(0, 0, 255)).WithAngle(90), // Red to blue horizontal
+				Decorations: []BorderDecoration{
+					BorderTitleMarkup("[b #00ff00]Green Title[/]"), // Explicit green color should override gradient
+				},
+			},
+		},
+		Children: []Widget{
+			Text{Content: "Content"},
+		},
+	}
+	AssertSnapshot(t, widget, 30, 5,
+		"30x5 column with rounded gradient border (red to blue). 'Green Title' in bold green, overriding the gradient color.")
+}
+
 // =============================================================================
 // Padding Tests
 // =============================================================================
