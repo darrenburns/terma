@@ -505,6 +505,62 @@ When the list might be empty, guard operations that would fail on an empty list.
 
 `Clear()` removes all items from the list and resets the cursor to 0.
 
+### Adding Multi-Select for Bulk Delete
+
+<video autoplay loop muted playsinline src="../assets/todo-tutorial-d.mp4"></video>
+
+With just a few changes, we can enable multi-select to delete multiple items at once.
+
+```go title="cmd/tutorial/05d-todo-multiselect/main.go"
+--8<-- "cmd/tutorial/05d-todo-multiselect/main.go"
+```
+
+Run it:
+
+```bash
+go run ./cmd/tutorial/05d-todo-multiselect
+```
+
+Press `Space` to toggle selection on items, then `d` to delete all selected items at once.
+
+#### Enabling Multi-Select
+
+```go
+t.List[string]{
+    ID:          "todo-list",
+    State:       a.listState,
+    ScrollState: a.scrollState,
+    MultiSelect: true,
+}
+```
+
+Just add `MultiSelect: true` to the List widget. This enables:
+
+- `Space` to toggle selection on the current item
+- `Shift+j/k` (capital `J`/`K`) to extend selection while navigating
+
+#### Bulk Delete with SelectedIndices
+
+```go
+{Key: "d", Name: "Delete", Action: func() {
+    indices := a.listState.SelectedIndices()
+    if len(indices) > 0 {
+        // Delete selected items (in reverse order to preserve indices)
+        for i := len(indices) - 1; i >= 0; i-- {
+            a.listState.RemoveAt(indices[i])
+        }
+        a.listState.ClearSelection()
+    } else if a.listState.ItemCount() > 0 {
+        // No selection - delete item at cursor
+        a.listState.RemoveAt(a.listState.CursorIndex.Peek())
+    }
+}},
+```
+
+`SelectedIndices()` returns the indices of all selected items in ascending order. We delete in reverse order so that removing an item doesn't shift the indices of items we still need to delete. After deleting, `ClearSelection()` removes all selection state.
+
+If nothing is selected, we fall back to deleting the item at the cursor—giving users a consistent experience whether they use selection or not.
+
 ### What We've Learned
 
 In this section, you learned:
@@ -518,6 +574,8 @@ In this section, you learned:
 - **Shared state** between Scrollable and List enables scroll-into-view
 - **ShowWhen/HideWhen** conditionally include or exclude widgets
 - **ItemCount()** checks if a list is empty
+- **MultiSelect** enables selection of multiple items
+- **SelectedIndices/ClearSelection** manage multi-select state
 
 ## Summary
 
