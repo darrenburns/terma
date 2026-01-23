@@ -45,10 +45,12 @@ func (s Spacer) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minHeight, maxHeight := dimensionToMinMax(h)
 
 	return &layout.BoxNode{
-		MinWidth:  minWidth,
-		MaxWidth:  maxWidth,
-		MinHeight: minHeight,
-		MaxHeight: maxHeight,
+		MinWidth:     minWidth,
+		MaxWidth:     maxWidth,
+		MinHeight:    minHeight,
+		MaxHeight:    maxHeight,
+		ExpandWidth:  w.IsFlex() || w.IsPercent(),
+		ExpandHeight: h.IsFlex() || h.IsPercent(),
 	}
 }
 

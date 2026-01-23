@@ -33,6 +33,51 @@ You cannot run examples, but you can run snapshot tests. This means you can add 
 write a snapshot test which will exercise the logic and hit the logs, and then you can read the log file
 yourself.
 
+## Snapshot Testing
+
+**Visual features require snapshot tests.** Any change that affects widget appearance, layout, or rendering must include snapshot tests to verify correctness.
+
+### Running Snapshot Tests
+
+```bash
+# Run all tests (includes snapshot tests)
+go test ./...
+
+# Update golden files after intentional visual changes
+UPDATE_SNAPSHOTS=1 go test ./...
+```
+
+### Writing Snapshot Tests
+
+```go
+func TestMyWidget_Layout(t *testing.T) {
+    widget := Column{
+        Spacing: 1,
+        Children: []Widget{
+            Text{Content: "First"},
+            Text{Content: "Second"},
+        },
+    }
+    AssertSnapshot(t, widget, 20, 5, "Two text items stacked vertically with 1-cell gap")
+}
+
+// Use AssertSnapshotNamed for multiple snapshots in one test
+func TestMyWidget_States(t *testing.T) {
+    AssertSnapshotNamed(t, "default", widget, 20, 5, "Default state")
+    AssertSnapshotNamed(t, "focused", focusedWidget, 20, 5, "With focus ring")
+}
+```
+
+### Key Functions
+
+| Function | Purpose |
+|----------|---------|
+| `AssertSnapshot(t, widget, width, height, description...)` | Basic snapshot assertion |
+| `AssertSnapshotNamed(t, name, widget, width, height, description...)` | Named snapshot (multiple per test) |
+| `RenderToBuffer(widget, width, height)` | Render widget to buffer for inspection |
+
+Golden files are stored in `testdata/<TestName>.svg`. The test framework generates an HTML gallery at `testdata/snapshot_gallery.html` for visual review.
+
 ## Architecture
 
 ### Core Concepts
@@ -122,7 +167,43 @@ func main() {
 | Widget | Purpose | Key Fields |
 |--------|---------|------------|
 | `KeybindBar` | Displays active keybinds from focused widget | `Style`, `FormatKey` |
-| `Spacer` | Empty space for layout control | `Width`, `Height` (default Flex(1)) |
+| `Spacer` | Flexible empty space for layout control | `Width`, `Height` (default Flex(1)) |
+
+### Spacing: Prefer `Spacing` Field Over `Spacer` Widget
+
+For uniform gaps between children, use the `Spacing` field on `Column`/`Row` instead of inserting `Spacer` widgets:
+
+```go
+// ✓ Preferred: Use Spacing field for uniform gaps
+Column{
+    Spacing: 1,  // 1 cell gap between each child
+    Children: []Widget{item1, item2, item3},
+}
+
+// ✗ Avoid: Manual Spacer widgets for uniform gaps
+Column{
+    Children: []Widget{
+        item1,
+        Spacer{Height: Cells(1)},
+        item2,
+        Spacer{Height: Cells(1)},
+        item3,
+    },
+}
+```
+
+Use `Spacer` only for **flexible/proportional space** that pushes widgets apart:
+
+```go
+// ✓ Correct use of Spacer: push widgets to edges
+Row{
+    Children: []Widget{
+        leftItem,
+        Spacer{},      // Flex(1) - expands to fill available space
+        rightItem,     // Pushed to right edge
+    },
+}
+```
 
 ### Widget Examples
 
@@ -229,14 +310,21 @@ Stack{
 
 ### Rich Text with Markup
 
-Use `ParseMarkup` or `ParseMarkupToText` for styled text:
+Use `ParseMarkupToText` for styled text (preferred) or `ParseMarkup` when you need the raw `[]Span`:
 
 ```go
-// Markup syntax: [style $ThemeColor on $Background]text[/]
+// ✓ Preferred: Returns a ready-to-use Text widget
+ParseMarkupToText("Press [b $Accent]Enter[/] to continue", ctx.Theme())
+
+// Alternative: Returns []Span for custom use
 Text{Spans: ParseMarkup("Press [b $Accent]Enter[/] to continue", ctx.Theme())}
 
+// Markup syntax: [style $ThemeColor on $Background]text[/]
 // Styles: bold/b, italic/i, underline/u
-// Colors: $Primary, $Accent, $Text, $TextMuted, $Error, $Warning, $Success, #hexcolor
+// Theme colors: $Primary, $Secondary, $Accent, $Text, $TextMuted, $TextOnPrimary,
+//               $Surface, $SurfaceHover, $Background, $Border, $FocusRing,
+//               $Error, $Warning, $Success, $Info
+// Hex colors: #rrggbb
 ```
 
 ### Text Alignment
@@ -334,7 +422,7 @@ Style{
 }
 ```
 
-Available theme colors: `Primary`, `Accent`, `Text`, `TextMuted`, `Surface`, `Background`, `Error`, `Warning`, `Success`.
+Available theme colors: `Primary`, `Secondary`, `Accent`, `Text`, `TextMuted`, `TextOnPrimary`, `Surface`, `SurfaceHover`, `Background`, `Border`, `FocusRing`, `Error`, `Warning`, `Success`, `Info`.
 
 ### Standard Widget Field Order
 

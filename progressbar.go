@@ -103,13 +103,15 @@ func (p ProgressBar) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	}
 
 	return &layout.BoxNode{
-		Padding:   padding,
-		Border:    border,
-		Margin:    toLayoutEdgeInsets(p.Style.Margin),
-		MinWidth:  minWidth,
-		MaxWidth:  maxWidth,
-		MinHeight: minHeight,
-		MaxHeight: maxHeight,
+		Padding:      padding,
+		Border:       border,
+		Margin:       toLayoutEdgeInsets(p.Style.Margin),
+		MinWidth:     minWidth,
+		MaxWidth:     maxWidth,
+		MinHeight:    minHeight,
+		MaxHeight:    maxHeight,
+		ExpandWidth:  w.IsFlex() || w.IsPercent(),
+		ExpandHeight: h.IsFlex() || h.IsPercent(),
 	}
 }
 
