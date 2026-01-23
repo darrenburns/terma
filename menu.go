@@ -338,7 +338,7 @@ func (m Menu) renderItem(ctx BuildContext, item MenuItem, index int, active bool
 	} else if active && ctx.IsFocused(m) {
 		itemStyle.BackgroundColor = theme.ActiveCursor
 		labelStyle.ForegroundColor = theme.SelectionText
-		suffixStyle.ForegroundColor = theme.TextMuted
+		suffixStyle.ForegroundColor = theme.ActiveCursor.AutoText()
 	}
 
 	return Row{
