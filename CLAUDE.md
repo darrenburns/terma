@@ -100,11 +100,20 @@ Golden files are stored in `testdata/<TestName>.svg`. The test framework generat
 | `context.go` | `BuildContext` for focus/hover state |
 | `focus.go` | Focus management, `Focusable`, `KeyHandler` interfaces |
 | `list.go` | Generic `List[T]` with keyboard navigation |
+| `table.go` | Generic `Table[T]` for tabular data |
+| `tree.go` | Generic `Tree[T]` for hierarchical data |
 | `scroll.go` | `Scrollable` widget and `ScrollController` |
 | `style.go` | Styling: colors, padding, margins |
 | `keybind.go` | Declarative keybinding system |
 | `conditional.go` | Visibility wrappers: `ShowWhen`, `HideWhen`, etc. |
 | `switcher.go` | `Switcher` widget for content switching |
+| `text_input.go` | Single-line text entry widget |
+| `text_area.go` | Multi-line text editing widget |
+| `tab.go` | `TabBar` and `TabView` for tab navigation |
+| `progressbar.go` | Progress indicator widget |
+| `spinner.go` | Animated loading indicator |
+| `menu.go` | Dropdown/context menu widget |
+| `filter.go` | Text filtering/matching utilities |
 
 ### Widget Pattern
 
@@ -161,6 +170,30 @@ func main() {
 | `Text` | Display text (plain or rich with Spans) | `Content`, `Spans`, `Wrap`, `TextAlign` |
 | `Button` | Focusable button with press handler | `ID` (required), `Label`, `OnPress` |
 | `List[T]` | Generic navigable list | `State` (required), `OnSelect`, `RenderItem`, `MultiSelect` |
+| `Table[T]` | Generic navigable table | `State` (required), `Columns`, `RenderCell`, `SelectionMode` |
+| `Tree[T]` | Generic navigable tree | `State` (required), `RenderNode`, `OnExpand`, `MultiSelect` |
+
+### Input Widgets
+
+| Widget | Purpose | Key Fields |
+|--------|---------|------------|
+| `TextInput` | Single-line text entry | `ID` (required), `State` (required), `Placeholder`, `OnChange`, `OnSubmit` |
+| `TextArea` | Multi-line text editing | `ID` (required), `State` (required), `Placeholder`, `OnChange`, `OnSubmit` |
+
+### Navigation Widgets
+
+| Widget | Purpose | Key Fields |
+|--------|---------|------------|
+| `TabBar` | Horizontal row of tabs | `ID` (required), `State` (required), `OnTabChange`, `Closable` |
+| `TabView` | TabBar + content area | `State` (required), `OnTabChange`, `Closable` |
+| `Menu` | Dropdown/context menu | `ID` (required), `State` (required), `OnSelect`, `OnDismiss` |
+
+### Feedback Widgets
+
+| Widget | Purpose | Key Fields |
+|--------|---------|------------|
+| `ProgressBar` | Horizontal progress indicator | `Progress` (0.0-1.0), `FilledColor`, `UnfilledColor` |
+| `Spinner` | Animated loading indicator | `State` (required), `Style` |
 
 ### Utility Widgets
 
