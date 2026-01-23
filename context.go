@@ -1,6 +1,9 @@
 package terma
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // pendingFocusID holds the ID of a widget that should receive focus after the next render.
 // Set via RequestFocus() and consumed by the app loop.
@@ -52,14 +55,14 @@ func (ctx BuildContext) pathString() string {
 	if len(ctx.path) == 0 {
 		return "0"
 	}
-	result := ""
+	var b strings.Builder
 	for i, idx := range ctx.path {
 		if i > 0 {
-			result += "."
+			b.WriteByte('.')
 		}
-		result += fmt.Sprintf("%d", idx)
+		fmt.Fprintf(&b, "%d", idx)
 	}
-	return result
+	return b.String()
 }
 
 // PushChild creates a child context with the given index appended to the path.

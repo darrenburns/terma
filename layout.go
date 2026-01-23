@@ -105,15 +105,16 @@ func (r Row) Build(ctx BuildContext) Widget {
 func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	children := make([]layout.LayoutNode, len(r.Children))
 	for i, child := range r.Children {
-		built := child.Build(ctx.PushChild(i))
+		childCtx := ctx.PushChild(i)
+		built := child.Build(childCtx)
 
 		// Build the child's layout node
 		var childNode layout.LayoutNode
 		if builder, ok := built.(LayoutNodeBuilder); ok {
-			childNode = builder.BuildLayoutNode(ctx.PushChild(i))
+			childNode = builder.BuildLayoutNode(childCtx)
 		} else {
 			// Fallback: create a BoxNode for widgets without LayoutNodeBuilder
-			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
+			childNode = buildFallbackLayoutNode(built, childCtx)
 		}
 
 		// Wrap in FlexNode or PercentNode if child has Flex/Percent width (Row's main axis is horizontal)
@@ -247,15 +248,16 @@ func (c Column) Build(ctx BuildContext) Widget {
 func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	children := make([]layout.LayoutNode, len(c.Children))
 	for i, child := range c.Children {
-		built := child.Build(ctx.PushChild(i))
+		childCtx := ctx.PushChild(i)
+		built := child.Build(childCtx)
 
 		// Build the child's layout node
 		var childNode layout.LayoutNode
 		if builder, ok := built.(LayoutNodeBuilder); ok {
-			childNode = builder.BuildLayoutNode(ctx.PushChild(i))
+			childNode = builder.BuildLayoutNode(childCtx)
 		} else {
 			// Fallback: create a BoxNode for widgets without LayoutNodeBuilder
-			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
+			childNode = buildFallbackLayoutNode(built, childCtx)
 		}
 
 		// Wrap in FlexNode or PercentNode if child has Flex/Percent height (Column's main axis is vertical)

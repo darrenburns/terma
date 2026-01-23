@@ -1364,13 +1364,14 @@ func (t Table[T]) CursorRow() T {
 func (c tableContainer[T]) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	children := make([]layout.LayoutNode, len(c.children))
 	for i, child := range c.children {
-		built := child.Build(ctx.PushChild(i))
+		childCtx := ctx.PushChild(i)
+		built := child.Build(childCtx)
 
 		var childNode layout.LayoutNode
 		if builder, ok := built.(LayoutNodeBuilder); ok {
-			childNode = builder.BuildLayoutNode(ctx.PushChild(i))
+			childNode = builder.BuildLayoutNode(childCtx)
 		} else {
-			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
+			childNode = buildFallbackLayoutNode(built, childCtx)
 		}
 
 		children[i] = childNode

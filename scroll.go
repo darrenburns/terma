@@ -273,15 +273,18 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		return &layout.BoxNode{}
 	}
 
+	// Create child context once and reuse
+	childCtx := ctx.PushChild(0)
+
 	// Build the child widget
-	built := s.Child.Build(ctx.PushChild(0))
+	built := s.Child.Build(childCtx)
 
 	// Get child's layout node
 	var childNode layout.LayoutNode
 	if builder, ok := built.(LayoutNodeBuilder); ok {
-		childNode = builder.BuildLayoutNode(ctx.PushChild(0))
+		childNode = builder.BuildLayoutNode(childCtx)
 	} else {
-		childNode = buildFallbackLayoutNode(built, ctx.PushChild(0))
+		childNode = buildFallbackLayoutNode(built, childCtx)
 	}
 
 	// Get scroll offset from state

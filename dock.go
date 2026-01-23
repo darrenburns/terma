@@ -94,11 +94,12 @@ func (d Dock) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	// Convert body
 	var body layout.LayoutNode
 	if d.Body != nil {
-		built := d.Body.Build(ctx.PushChild(childIndex))
+		bodyCtx := ctx.PushChild(childIndex)
+		built := d.Body.Build(bodyCtx)
 		if builder, ok := built.(LayoutNodeBuilder); ok {
-			body = builder.BuildLayoutNode(ctx.PushChild(childIndex))
+			body = builder.BuildLayoutNode(bodyCtx)
 		} else {
-			body = buildFallbackLayoutNode(built, ctx.PushChild(childIndex))
+			body = buildFallbackLayoutNode(built, bodyCtx)
 		}
 	}
 
@@ -145,12 +146,13 @@ func (d Dock) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 func (d Dock) buildEdgeChildren(ctx BuildContext, widgets []Widget, index *int, edge Edge) []layout.LayoutNode {
 	nodes := make([]layout.LayoutNode, len(widgets))
 	for i, child := range widgets {
-		built := child.Build(ctx.PushChild(*index))
+		childCtx := ctx.PushChild(*index)
+		built := child.Build(childCtx)
 		var node layout.LayoutNode
 		if builder, ok := built.(LayoutNodeBuilder); ok {
-			node = builder.BuildLayoutNode(ctx.PushChild(*index))
+			node = builder.BuildLayoutNode(childCtx)
 		} else {
-			node = buildFallbackLayoutNode(built, ctx.PushChild(*index))
+			node = buildFallbackLayoutNode(built, childCtx)
 		}
 
 		// Wrap in PercentNode if the child has a percentage dimension on the relevant axis

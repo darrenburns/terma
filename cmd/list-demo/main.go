@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"runtime/pprof"
 	"strings"
 
 	t "terma"
@@ -246,6 +248,14 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 }
 
 func main() {
+	f, err := os.Create("cpu.prof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
 	t.SetTheme(themeNames[0])
 	app := NewListDemo()
 	//t.InitDebug()
