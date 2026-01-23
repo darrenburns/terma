@@ -324,6 +324,201 @@ You never manually update the screen. You never say "change this text to show 5"
 
 This is called **declarative UI**: you declare what the UI should look like for any given state, rather than imperatively describing how to transition between states.
 
+## Building a TODO List
+
+Let's put together what we've learned by building a TODO list application. We'll start simple and progressively add features: scrolling and empty state handling.
+
+### Basic TODO List
+
+<video autoplay loop muted playsinline src="../assets/todo-tutorial-a.mp4"></video>
+
+```go title="cmd/tutorial/05a-todo-list/main.go"
+--8<-- "cmd/tutorial/05a-todo-list/main.go"
+```
+
+Run it:
+
+```bash
+go run ./cmd/tutorial/05a-todo-list
+```
+
+Use `Up`/`Down` or `j`/`k` to navigate, `a` to add a task, `d` to delete the selected task, and `q` to quit.
+
+#### ListState: Managing List Data
+
+```go
+type App struct {
+    listState *t.ListState[string]
+    taskCount int
+}
+```
+
+`ListState` is a specialized state container for lists. It holds both the items and the cursor position. Unlike a plain Signal, ListState provides methods for common list operations.
+
+Create it with `NewListState`:
+
+```go
+listState: t.NewListState([]string{"Task 1", "Task 2", "Task 3"})
+```
+
+#### The List Widget
+
+```go
+t.List[string]{
+    ID:    "todo-list",
+    State: a.listState,
+}
+```
+
+The `List` widget renders a navigable list of items. It requires a `State` field pointing to a `ListState`. The ID is optional but recommended for focus management.
+
+List handles keyboard navigation automatically—you don't need to implement `OnKey` for basic up/down movement.
+
+#### Modifying List Data
+
+```go
+// Add an item to the end
+a.listState.Append(fmt.Sprintf("Task %d", a.taskCount))
+
+// Remove the item at the cursor position
+a.listState.RemoveAt(a.listState.CursorIndex.Peek())
+```
+
+`Append()` adds items to the list. `RemoveAt()` removes an item by index. We use `CursorIndex.Peek()` to get the current cursor position without subscribing to changes (since we're in an action callback, not in Build).
+
+### Adding Scrolling
+
+<video autoplay loop muted playsinline src="../assets/todo-tutorial-b.mp4"></video>
+
+When your list grows beyond the available space, you need scrolling. Terma provides the `Scrollable` widget for this.
+
+```go title="cmd/tutorial/05b-todo-scrollable/main.go"
+--8<-- "cmd/tutorial/05b-todo-scrollable/main.go"
+```
+
+Run it:
+
+```bash
+go run ./cmd/tutorial/05b-todo-scrollable
+```
+
+Add several tasks with `a` to see the scrollbar appear when the list exceeds 10 items.
+
+#### ScrollState and Shared State
+
+```go
+type App struct {
+    listState   *t.ListState[string]
+    scrollState *t.ScrollState
+    taskCount   int
+}
+```
+
+We add a `ScrollState` to track the scroll position. This state is shared between `Scrollable` and `List` so they can coordinate—when you navigate to an item outside the viewport, the list tells the scrollable to scroll it into view.
+
+Create it with `NewScrollState`:
+
+```go
+scrollState: t.NewScrollState()
+```
+
+#### Wrapping with Scrollable
+
+```go
+t.Scrollable{
+    State:  a.scrollState,
+    Height: t.Cells(10),
+    Child: t.List[string]{
+        ID:          "todo-list",
+        State:       a.listState,
+        ScrollState: a.scrollState,  // Share the state
+    },
+}
+```
+
+The pattern is:
+
+1. Wrap your content with `Scrollable`
+2. Pass the same `ScrollState` to both `Scrollable` and the child that needs scroll-into-view
+3. Set a fixed `Height` on `Scrollable` to create a viewport
+
+The `List` widget uses `ScrollState` to call `ScrollToView()` when the cursor moves, ensuring the selected item is always visible.
+
+### Handling Empty State
+
+<video autoplay loop muted playsinline src="../assets/todo-tutorial-c.mp4"></video>
+
+A good user experience shows helpful messages when there's no data. Let's add empty state handling.
+
+```go title="cmd/tutorial/05c-todo-empty-state/main.go"
+--8<-- "cmd/tutorial/05c-todo-empty-state/main.go"
+```
+
+Run it:
+
+```bash
+go run ./cmd/tutorial/05c-todo-empty-state
+```
+
+The app starts empty, showing a helpful message. Press `a` to add tasks. Press `c` to clear all tasks and see the empty state again.
+
+#### Conditional Rendering with ShowWhen/HideWhen
+
+```go
+isEmpty := a.listState.ItemCount() == 0
+
+t.ShowWhen(isEmpty, emptyMessage),
+t.HideWhen(isEmpty, scrollableList),
+```
+
+`ShowWhen(condition, widget)` renders the widget when the condition is true, otherwise renders nothing (takes no space). `HideWhen` is the inverse.
+
+This is different from making a widget invisible—`ShowWhen(false, widget)` completely removes the widget from layout, while `InvisibleWhen(true, widget)` reserves space but doesn't render.
+
+#### Checking Item Count
+
+```go
+isEmpty := a.listState.ItemCount() == 0
+```
+
+`ItemCount()` returns the number of items in the list. We use this to determine whether to show the empty message or the list.
+
+#### Guarding Operations
+
+```go
+{Key: "d", Name: "Delete", Action: func() {
+    if a.listState.ItemCount() > 0 {
+        a.listState.RemoveAt(a.listState.CursorIndex.Peek())
+    }
+}},
+```
+
+When the list might be empty, guard operations that would fail on an empty list. Here we check `ItemCount() > 0` before attempting to delete.
+
+#### Clearing All Items
+
+```go
+{Key: "c", Name: "Clear", Action: func() {
+    a.listState.Clear()
+}},
+```
+
+`Clear()` removes all items from the list and resets the cursor to 0.
+
+### What We've Learned
+
+In this section, you learned:
+
+- **ListState** manages list data and cursor position
+- **List** renders a navigable, focusable list of items
+- **Append/RemoveAt/Clear** modify list contents
+- **CursorIndex.Peek()** gets the cursor position in callbacks
+- **ScrollState** tracks scroll position
+- **Scrollable** adds scrolling with a viewport
+- **Shared state** between Scrollable and List enables scroll-into-view
+- **ShowWhen/HideWhen** conditionally include or exclude widgets
+- **ItemCount()** checks if a list is empty
+
 ## Summary
 
 You've learned:

@@ -312,7 +312,7 @@ func TestScrollableNode_ShrinkWrap(t *testing.T) {
 			MinHeight: 0, MaxHeight: 100,
 		})
 
-		assert.Equal(t, 50, result.Box.Width)
+		assert.Equal(t, 51, result.Box.Width)
 		assert.Equal(t, 100, result.Box.Height)
 		assert.True(t, result.Box.IsScrollableY()) // 200 > 100
 	})

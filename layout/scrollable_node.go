@@ -152,8 +152,17 @@ func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 	// This shrink-wraps when content fits, and caps at constraints when content overflows.
 	// ScrollableNode acts as a "boundary" - it contains content tightly rather than
 	// expanding to fill available space like layout containers do.
+	//
+	// If a scrollbar is present, reserve its space in the border-box so the
+	// content width/height isn't clipped during shrink-wrap.
 	viewportWidth := min(virtualWidth, contentMaxWidth)
 	viewportHeight := min(virtualHeight, contentMaxHeight)
+	if actualScrollbarWidth > 0 {
+		viewportWidth = min(viewportWidth+actualScrollbarWidth, contentMaxWidth)
+	}
+	if actualScrollbarHeight > 0 {
+		viewportHeight = min(viewportHeight+actualScrollbarHeight, contentMaxHeight)
+	}
 
 	// Clamp viewport to min constraints
 	viewportWidth = max(contentMinWidth, viewportWidth)
