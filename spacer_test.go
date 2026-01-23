@@ -21,8 +21,10 @@ func TestSpacer_GetDimensions_RespectsExplicitWidth(t *testing.T) {
 	if !w.IsCells() || w.CellsValue() != 10 {
 		t.Errorf("expected Width to be Cells(10), got %v", w)
 	}
-	if !h.IsFlex() || h.FlexValue() != 1 {
-		t.Errorf("expected Height to default to Flex(1), got %v", h)
+	// When only Width is set, Height defaults to Auto (not Flex(1))
+	// This makes Spacer{Width: Flex(1)} behave as a horizontal-only spacer
+	if !h.IsAuto() {
+		t.Errorf("expected Height to default to Auto when Width is set, got %v", h)
 	}
 }
 
@@ -30,8 +32,10 @@ func TestSpacer_GetDimensions_RespectsExplicitHeight(t *testing.T) {
 	s := Spacer{Height: Cells(5)}
 	w, h := s.GetContentDimensions()
 
-	if !w.IsFlex() || w.FlexValue() != 1 {
-		t.Errorf("expected Width to default to Flex(1), got %v", w)
+	// When only Height is set, Width defaults to Auto (not Flex(1))
+	// This makes Spacer{Height: Flex(1)} behave as a vertical-only spacer
+	if !w.IsAuto() {
+		t.Errorf("expected Width to default to Auto when Height is set, got %v", w)
 	}
 	if !h.IsCells() || h.CellsValue() != 5 {
 		t.Errorf("expected Height to be Cells(5), got %v", h)
