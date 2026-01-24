@@ -34,8 +34,8 @@ type Checkbox struct {
 	ID        string          // Unique identifier for the checkbox (required for focus management)
 	State     *CheckboxState  // Required - holds checked state
 	Label     string          // Optional text displayed after the indicator
-	Width     Dimension       // Optional width (zero value = auto)
-	Height    Dimension       // Optional height (zero value = auto)
+	Width     Dimension       // Deprecated: use Style.Width
+	Height    Dimension       // Deprecated: use Style.Height
 	Style     Style           // Optional styling applied when not focused
 	OnChange  func(bool)      // Optional callback invoked after state changes
 	Click     func(MouseEvent) // Optional callback invoked when clicked
@@ -88,6 +88,12 @@ func (c *Checkbox) OnKey(event KeyEvent) bool {
 func (c *Checkbox) Build(ctx BuildContext) Widget {
 	theme := ctx.Theme()
 	style := c.Style
+	if style.Width.IsUnset() {
+		style.Width = c.Width
+	}
+	if style.Height.IsUnset() {
+		style.Height = c.Height
+	}
 
 	// Subscribe to state changes and get current checked value
 	checked := false
@@ -120,8 +126,6 @@ func (c *Checkbox) Build(ctx BuildContext) Widget {
 		style.ForegroundColor = theme.TextDisabled
 		return Text{
 			Content: content,
-			Width:   c.Width,
-			Height:  c.Height,
 			Style:   style,
 		}
 	}
@@ -134,8 +138,6 @@ func (c *Checkbox) Build(ctx BuildContext) Widget {
 
 	return Text{
 		Content: content,
-		Width:   c.Width,
-		Height:  c.Height,
 		Style:   style,
 	}
 }
@@ -143,7 +145,15 @@ func (c *Checkbox) Build(ctx BuildContext) Widget {
 // GetContentDimensions returns the width and height dimension preferences.
 // Implements the Dimensioned interface.
 func (c *Checkbox) GetContentDimensions() (width, height Dimension) {
-	return c.Width, c.Height
+	dims := c.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = c.Width
+	}
+	if height.IsUnset() {
+		height = c.Height
+	}
+	return width, height
 }
 
 // OnClick is called when the widget is clicked.

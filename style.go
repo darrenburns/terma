@@ -283,6 +283,14 @@ type Style struct {
 	Padding EdgeInsets
 	Margin  EdgeInsets
 	Border  Border
+
+	// Dimensions (content-box)
+	Width     Dimension
+	Height    Dimension
+	MinWidth  Dimension
+	MinHeight Dimension
+	MaxWidth  Dimension
+	MaxHeight Dimension
 }
 
 // IsZero returns true if the style has no values set.
@@ -303,7 +311,25 @@ func (s Style) IsZero() bool {
 		!s.FillLine &&
 		s.Padding == (EdgeInsets{}) &&
 		s.Margin == (EdgeInsets{}) &&
-		s.Border.IsZero()
+		s.Border.IsZero() &&
+		s.Width.IsUnset() &&
+		s.Height.IsUnset() &&
+		s.MinWidth.IsUnset() &&
+		s.MinHeight.IsUnset() &&
+		s.MaxWidth.IsUnset() &&
+		s.MaxHeight.IsUnset()
+}
+
+// GetDimensions returns the style's dimension fields.
+func (s Style) GetDimensions() DimensionSet {
+	return DimensionSet{
+		Width:     s.Width,
+		Height:    s.Height,
+		MinWidth:  s.MinWidth,
+		MinHeight: s.MinHeight,
+		MaxWidth:  s.MaxWidth,
+		MaxHeight: s.MaxHeight,
+	}
 }
 
 // SpanStyle defines text attributes for a span (colors + formatting).

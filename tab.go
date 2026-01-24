@@ -308,8 +308,6 @@ type TabBar struct {
 	OnTabClose     func(key string)  // Close button callback
 	Closable       bool              // Show close buttons
 	AllowReorder   bool              // Enable ctrl+left/right reordering
-	Width          Dimension         // Optional width
-	Height         Dimension         // Optional height
 	Style          Style             // Container style
 	TabStyle       Style             // Inactive tab style
 	ActiveTabStyle Style             // Active tab style
@@ -326,7 +324,8 @@ func (t TabBar) WidgetID() string {
 
 // GetDimensions returns the width and height dimension preferences.
 func (t TabBar) GetDimensions() (width, height Dimension) {
-	return t.Width, t.Height
+	dims := t.Style.GetDimensions()
+	return dims.Width, dims.Height
 }
 
 // GetStyle returns the style of the tab bar.
@@ -597,8 +596,6 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 
 	return Row{
 		ID:        t.ID,
-		Width:     t.Width,
-		Height:    t.Height,
 		Style:     t.Style,
 		Children:  children,
 		Click:     t.Click,
@@ -618,8 +615,6 @@ type TabView struct {
 	OnTabClose     func(key string)  // Close button callback
 	Closable       bool              // Show close buttons
 	AllowReorder   bool              // Enable ctrl+left/right reordering
-	Width          Dimension         // Optional width
-	Height         Dimension         // Optional height
 	Style          Style             // Container style
 	TabBarStyle    Style             // Style for the tab bar row
 	TabStyle       Style             // Inactive tab style
@@ -634,7 +629,8 @@ func (t TabView) WidgetID() string {
 
 // GetDimensions returns the width and height dimension preferences.
 func (t TabView) GetDimensions() (width, height Dimension) {
-	return t.Width, t.Height
+	dims := t.Style.GetDimensions()
+	return dims.Width, dims.Height
 }
 
 // GetStyle returns the style of the tab view.
@@ -676,14 +672,15 @@ func (t TabView) Build(ctx BuildContext) Widget {
 	content := Switcher{
 		Active:   t.State.ActiveKey(),
 		Children: contentMap,
-		Height:   Flex(1),
-		Style:    t.ContentStyle,
+		Style:    func() Style {
+			style := t.ContentStyle
+			style.Height = Flex(1)
+			return style
+		}(),
 	}
 
 	return Column{
 		ID:     t.ID,
-		Width:  t.Width,
-		Height: t.Height,
 		Style:  t.Style,
 		Children: []Widget{
 			tabBar,

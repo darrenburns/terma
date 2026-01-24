@@ -80,3 +80,23 @@ func (d Dimension) PercentValue() float64 {
 func (d Dimension) IsUnset() bool {
 	return d == Dimension{}
 }
+
+// DimensionSet groups size preferences and constraints for a widget.
+// Width/Height describe the preferred content-box size.
+// Min/Max fields constrain the content-box size range.
+type DimensionSet struct {
+	Width, Height           Dimension
+	MinWidth, MinHeight     Dimension
+	MaxWidth, MaxHeight     Dimension
+}
+
+// WithDefaults applies default width/height if unset.
+func (d DimensionSet) WithDefaults(width, height Dimension) DimensionSet {
+	if d.Width.IsUnset() {
+		d.Width = width
+	}
+	if d.Height.IsUnset() {
+		d.Height = height
+	}
+	return d
+}

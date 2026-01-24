@@ -124,8 +124,8 @@ func (s *SpinnerState) Frame() string {
 type Spinner struct {
 	ID     string        // Optional unique identifier
 	State  *SpinnerState // Required - holds animation state
-	Width  Dimension     // Optional width
-	Height Dimension     // Optional height (typically 1)
+	Width  Dimension     // Deprecated: use Style.Width
+	Height Dimension     // Deprecated: use Style.Height
 	Style  Style         // Optional styling
 }
 
@@ -136,7 +136,15 @@ func (s Spinner) WidgetID() string {
 
 // GetContentDimensions returns the dimensions.
 func (s Spinner) GetContentDimensions() (width, height Dimension) {
-	return s.Width, s.Height
+	dims := s.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = s.Width
+	}
+	if height.IsUnset() {
+		height = s.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the style.
@@ -147,7 +155,14 @@ func (s Spinner) GetStyle() Style {
 // Build returns a Text widget showing the current frame.
 func (s Spinner) Build(ctx BuildContext) Widget {
 	if s.State == nil || s.State.animation == nil {
-		return Text{Content: " "}
+		style := s.Style
+		if style.Width.IsUnset() {
+			style.Width = s.Width
+		}
+		if style.Height.IsUnset() {
+			style.Height = s.Height
+		}
+		return Text{Content: " ", Style: style}
 	}
 
 	// Subscribe to animation updates
@@ -155,8 +170,15 @@ func (s Spinner) Build(ctx BuildContext) Widget {
 
 	return Text{
 		Content: frame,
-		Width:   s.Width,
-		Height:  s.Height,
-		Style:   s.Style,
+		Style: func() Style {
+			style := s.Style
+			if style.Width.IsUnset() {
+				style.Width = s.Width
+			}
+			if style.Height.IsUnset() {
+				style.Height = s.Height
+			}
+			return style
+		}(),
 	}
 }

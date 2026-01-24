@@ -483,8 +483,6 @@ type Tree[T any] struct {
 	OnSelect            func(node T, selected []T)
 	OnCursorChange      func(node T)
 	ScrollState         *ScrollState
-	Width               Dimension
-	Height              Dimension
 	Style               Style
 	MultiSelect         bool
 	CursorStyle         // Embedded - CursorPrefix/SelectedPrefix for optional indicators
@@ -552,7 +550,8 @@ func (t Tree[T]) WidgetID() string {
 
 // GetDimensions returns the width and height dimension preferences.
 func (t Tree[T]) GetDimensions() (width, height Dimension) {
-	return t.Width, t.Height
+	dims := t.Style.GetDimensions()
+	return dims.Width, dims.Height
 }
 
 // GetStyle returns the tree widget's style.
@@ -687,8 +686,6 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 	return treeContainer[T]{
 		Column: Column{
 			ID:       t.ID,
-			Width:    t.Width,
-			Height:   t.Height,
 			Style:    t.Style,
 			Children: children,
 		},
@@ -849,16 +846,16 @@ func (t Tree[T]) themedDefaultRenderNode(ctx BuildContext) func(node T, nodeCtx 
 		style := t.styleForContext(ctx, nodeCtx, ctx.IsFocused(t))
 		if match.Matched && len(match.Ranges) > 0 {
 			spans := HighlightSpans(content, match.Ranges, highlight)
+			style.Width = Flex(1)
 			return Text{
 				Spans: spans,
 				Style: style,
-				Width: Flex(1),
 			}
 		}
+		style.Width = Flex(1)
 		return Text{
 			Content: content,
 			Style:   style,
-			Width:   Flex(1),
 		}
 	}
 }
