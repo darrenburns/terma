@@ -187,6 +187,8 @@ func main() {
 | `TabBar` | Horizontal row of tabs | `ID` (required), `State` (required), `OnTabChange`, `Closable` |
 | `TabView` | TabBar + content area | `State` (required), `OnTabChange`, `Closable` |
 | `Menu` | Dropdown/context menu | `ID` (required), `State` (required), `OnSelect`, `OnDismiss` |
+| `CommandPalette` | Filterable command palette with nesting | `ID`, `State` (required), `OnSelect`, `RenderItem` |
+| `Breadcrumbs` | Breadcrumb trail navigation | `Path`, `OnSelect`, `Separator` |
 
 ### Feedback Widgets
 
