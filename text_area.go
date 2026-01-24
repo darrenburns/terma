@@ -315,6 +315,16 @@ func (s *TextAreaState) clampCursor() {
 	}
 }
 
+// CursorScreenPosition returns the screen offset of the cursor relative to the
+// widget's top-left corner. Used for positioning popups (like autocomplete) at
+// the cursor location.
+func (s *TextAreaState) CursorScreenPosition(widgetX, widgetY int) (screenX, screenY int) {
+	contentWidth := reservedContentWidth(s.lastWidth)
+	graphemes := s.Content.Peek()
+	layout := buildTextAreaLayout(graphemes, s.WrapMode.Peek(), contentWidth, s.CursorIndex.Peek())
+	return widgetX + layout.cursorCol - s.scrollOffsetX, widgetY + layout.cursorLine - s.scrollOffsetY
+}
+
 type textAreaLine struct {
 	start int
 	end   int
