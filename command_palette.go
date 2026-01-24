@@ -357,10 +357,11 @@ func (p CommandPalette) buildContent(ctx BuildContext, level *CommandPaletteLeve
 
 	children := make([]Widget, 0, 4)
 
-	if p.State.IsNested() {
-		children = append(children, Breadcrumbs{
+	headerChildren := make([]Widget, 0, 2)
+	if path := p.State.BreadcrumbPath(); len(path) > 0 {
+		headerChildren = append(headerChildren, Breadcrumbs{
 			ID:        p.ID + "-breadcrumbs",
-			Path:      p.State.BreadcrumbPath(),
+			Path:      path,
 			OnSelect:  p.onBreadcrumbSelect(),
 			Separator: ">",
 			Width:     Flex(1),
@@ -369,9 +370,13 @@ func (p CommandPalette) buildContent(ctx BuildContext, level *CommandPaletteLeve
 			},
 		})
 	}
+	headerChildren = append(headerChildren, p.buildInput(level, theme))
 
-	children = append(children, p.buildInput(level, theme))
-
+	children = append(children, Column{
+		CrossAlign: CrossAxisStretch,
+		Spacing:    0,
+		Children:   headerChildren,
+	})
 	children = append(children, p.buildList(ctx, level, theme))
 
 	return Column{
@@ -387,6 +392,8 @@ func (p CommandPalette) buildInput(level *CommandPaletteLevel, theme ThemeData) 
 	if level == nil {
 		return EmptyWidget{}
 	}
+
+	padding := EdgeInsetsTRBL(1, 1, 1, 1)
 
 	onFilterChange := func(text string) {
 		if level.FilterState != nil {
@@ -409,6 +416,7 @@ func (p CommandPalette) buildInput(level *CommandPaletteLevel, theme ThemeData) 
 		Style: Style{
 			BackgroundColor: theme.Surface,
 			ForegroundColor: theme.Text,
+			Padding:         padding,
 		},
 		OnChange: onFilterChange,
 		ExtraKeybinds: []Keybind{
@@ -447,6 +455,7 @@ func (p CommandPalette) buildList(ctx BuildContext, level *CommandPaletteLevel, 
 			TextAlign: TextAlignCenter,
 			Style: Style{
 				ForegroundColor: theme.TextMuted,
+				Padding:         EdgeInsetsXY(1, 0),
 			},
 		}
 	} else {
@@ -574,26 +583,22 @@ func (p CommandPalette) hintWidget(item CommandPaletteItem, style Style) Widget 
 
 func (p CommandPalette) dividerWidget(theme ThemeData, title string) Widget {
 	lineStyle := Style{ForegroundColor: theme.TextMuted}
+	dividerPadding := EdgeInsetsTRBL(1, 1, 0, 1)
 	if title == "" {
 		return Text{
 			Content: commandPaletteDividerLine,
 			Width:   Flex(1),
-			Style: Style{
-				ForegroundColor: lineStyle.ForegroundColor,
-				Padding:         EdgeInsetsXY(1, 0),
-			},
+			Style:   Style{ForegroundColor: lineStyle.ForegroundColor, Padding: dividerPadding},
 		}
 	}
 
 	return Row{
 		Width: Flex(1),
-		Style: Style{
-			Padding: EdgeInsetsXY(1, 0),
-		},
+		Style: Style{Padding: dividerPadding},
 		Children: []Widget{
 			Text{
 				Content: title + " ",
-				Style:   lineStyle,
+				Style:   Style{ForegroundColor: lineStyle.ForegroundColor, Bold: true},
 			},
 			Text{
 				Content: commandPaletteDividerLine,
@@ -751,9 +756,6 @@ func (p CommandPalette) containerStyle(theme ThemeData) Style {
 	style := p.Style
 	if style.BackgroundColor == nil || !style.BackgroundColor.IsSet() {
 		style.BackgroundColor = theme.Surface
-	}
-	if style.Padding == (EdgeInsets{}) {
-		style.Padding = EdgeInsetsAll(1)
 	}
 	return style
 }

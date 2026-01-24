@@ -55,11 +55,16 @@ func (b Breadcrumbs) Build(ctx BuildContext) Widget {
 		}
 	}
 
+	rowStyle := b.Style
+	if rowStyle.Padding == (EdgeInsets{}) {
+		rowStyle.Padding = EdgeInsetsTRBL(0, 1, 0, 1)
+	}
 	return Row{
 		ID:         b.ID,
 		Width:      b.Width,
 		Height:     b.Height,
 		CrossAlign: CrossAxisCenter,
 		Children:   children,
+		Style:      rowStyle,
 	}
 }
