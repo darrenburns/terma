@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	uv "github.com/charmbracelet/ultraviolet"
@@ -138,6 +139,7 @@ func Run(root Widget) error {
 	// Get initial terminal size
 	size := t.Size()
 	width, height := size.Width, size.Height
+	debugOverlayEnabled := os.Getenv("TERMA_DEBUG_OVERLAY") != ""
 
 	// Create focus manager and focused signal
 	focusManager := NewFocusManager()
@@ -161,6 +163,37 @@ func Run(root Widget) error {
 		focusedSignal.Set(focusManager.Focused())
 		return true
 	}
+
+	var (
+		coalescedRenderRequests int
+		overrunFrames           int
+		lastFrameDuration     time.Duration
+		lastOverlayWidth      int
+	)
+
+	drawDebugOverlay := func() {
+		if !debugOverlayEnabled || width <= 0 || height <= 0 {
+			return
+		}
+
+		frameMs := float64(lastFrameDuration.Microseconds()) / 1000.0
+		text := fmt.Sprintf("frame %.2fms coalesced %d overrun %d", frameMs, coalescedRenderRequests, overrunFrames)
+		textWidth := ansi.StringWidth(text)
+		if textWidth < lastOverlayWidth {
+			text += strings.Repeat(" ", lastOverlayWidth-textWidth)
+			textWidth = lastOverlayWidth
+		} else {
+			lastOverlayWidth = textWidth
+		}
+
+		ctx := NewRenderContext(t, width, height, nil, nil, BuildContext{}, nil)
+		ctx.DrawStyledText(0, 0, text, Style{
+			ForegroundColor: BrightWhite,
+			BackgroundColor: Black,
+		})
+	}
+
+	renderInterval := time.Second / time.Duration(defaultFPS)
 
 	// Render and update focusables
 	display := func() {
@@ -208,11 +241,16 @@ func Run(root Widget) error {
 			}
 		}
 
+		drawDebugOverlay()
 		_ = t.Display()
 
 		elapsed := time.Since(startTime)
+		lastFrameDuration = elapsed
+		if elapsed > renderInterval {
+			overrunFrames++
+		}
 
-	Log("Render complete in %.3fms, %d widgets registered", float64(elapsed.Microseconds())/1000.0, len(renderer.widgetRegistry.entries))
+		Log("Render complete in %.3fms, %d widgets registered", float64(elapsed.Microseconds())/1000.0, len(renderer.widgetRegistry.entries))
 	}
 
 	clickTracker := &mouseClickTracker{}
@@ -257,7 +295,6 @@ func Run(root Widget) error {
 	rootHandler, _ := root.(KeyHandler)
 	rootKeybindProvider, _ := root.(KeybindProvider)
 
-	renderInterval := time.Second / time.Duration(defaultFPS)
 	var (
 		lastRender    time.Time
 		renderPending bool
@@ -293,6 +330,7 @@ func Run(root Widget) error {
 			return
 		}
 		if renderPending {
+			coalescedRenderRequests++
 			return
 		}
 		renderPending = true
@@ -338,6 +376,8 @@ func Run(root Widget) error {
 				case uv.WindowSizeEvent:
 					_ = t.Resize(ev.Width, ev.Height)
 					renderer.Resize(ev.Width, ev.Height)
+					width = ev.Width
+					height = ev.Height
 					t.Erase()
 					requestRender()
 				case uv.KeyPressEvent:
