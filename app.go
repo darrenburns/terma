@@ -21,7 +21,10 @@ var appRenderer *Renderer
 // Buffered with size 1 to avoid blocking signal setters.
 var renderTrigger chan struct{}
 
-const clickChainTimeout = 500 * time.Millisecond
+const (
+	clickChainTimeout = 500 * time.Millisecond
+	defaultFPS        = 60
+)
 
 type mouseClickTracker struct {
 	lastClickTime time.Time
@@ -117,7 +120,7 @@ func Run(root Widget) error {
 	appCancel = cancel
 
 	// Create animation controller for this app
-	animController := NewAnimationController(60)
+	animController := NewAnimationController(defaultFPS)
 	currentController = animController
 
 	// Create render trigger channel for signal-driven re-renders
@@ -254,8 +257,62 @@ func Run(root Widget) error {
 	rootHandler, _ := root.(KeyHandler)
 	rootKeybindProvider, _ := root.(KeybindProvider)
 
+	renderInterval := time.Second / time.Duration(defaultFPS)
+	var (
+		lastRender    time.Time
+		renderPending bool
+		renderTimer   *time.Timer
+		renderTimerCh <-chan time.Time
+	)
+
+	stopRenderTimer := func() {
+		if renderTimer == nil {
+			renderTimerCh = nil
+			return
+		}
+		if !renderTimer.Stop() {
+			select {
+			case <-renderTimer.C:
+			default:
+			}
+		}
+		renderTimerCh = nil
+	}
+
+	renderNow := func() {
+		stopRenderTimer()
+		renderPending = false
+		display()
+		lastRender = time.Now()
+	}
+
+	requestRender := func() {
+		now := time.Now()
+		if lastRender.IsZero() || now.Sub(lastRender) >= renderInterval {
+			renderNow()
+			return
+		}
+		if renderPending {
+			return
+		}
+		renderPending = true
+		wait := renderInterval - now.Sub(lastRender)
+		if renderTimer == nil {
+			renderTimer = time.NewTimer(wait)
+		} else {
+			if !renderTimer.Stop() {
+				select {
+				case <-renderTimer.C:
+				default:
+				}
+			}
+			renderTimer.Reset(wait)
+		}
+		renderTimerCh = renderTimer.C
+	}
+
 	// Initial render
-	display()
+	renderNow()
 
 	// Event loop
 	go func() {
@@ -265,10 +322,14 @@ func Run(root Widget) error {
 			case <-ctx.Done():
 				return
 			case <-renderTrigger:
-				display()
+				requestRender()
 			case <-animController.Tick():
 				animController.Update()
-				display()
+				requestRender()
+			case <-renderTimerCh:
+				if renderPending {
+					renderNow()
+				}
 			case ev, ok := <-termEvents:
 				if !ok {
 					return
@@ -278,7 +339,7 @@ func Run(root Widget) error {
 					_ = t.Resize(ev.Width, ev.Height)
 					renderer.Resize(ev.Width, ev.Height)
 					t.Erase()
-					display()
+					requestRender()
 				case uv.KeyPressEvent:
 					// Check for app-level quit keys
 					if ev.MatchString("ctrl+c") {
@@ -320,7 +381,7 @@ func Run(root Widget) error {
 						_, _ = t.WriteString(ansi.SetModeMouseExtSgr)
 
 						// Redraw the screen
-						display()
+						requestRender()
 						continue
 					}
 
@@ -329,7 +390,7 @@ func Run(root Widget) error {
 						if topFloat := renderer.TopFloat(); topFloat != nil {
 							if topFloat.Config.shouldDismissOnEsc() && topFloat.Config.OnDismiss != nil {
 								topFloat.Config.OnDismiss()
-								display()
+								requestRender()
 								continue
 							}
 						}
@@ -351,7 +412,7 @@ func Run(root Widget) error {
 					}
 
 					// Re-render after key press (for signal updates and focus changes)
-					display()
+					requestRender()
 
 				case uv.MouseClickEvent:
 					Log("MouseClickEvent at X=%d Y=%d Button=%v", ev.X, ev.Y, ev.Button)
@@ -359,7 +420,7 @@ func Run(root Widget) error {
 					entry, handled := resolveMouseTarget(ev.X, ev.Y, true)
 					if handled {
 						Log("  Mouse click handled by float logic")
-						display()
+						requestRender()
 						continue
 					}
 
@@ -386,7 +447,7 @@ func Run(root Widget) error {
 					}
 
 					// Re-render after click
-					display()
+					requestRender()
 
 				case uv.MouseReleaseEvent:
 					Log("MouseReleaseEvent at X=%d Y=%d Button=%v", ev.X, ev.Y, ev.Button)
@@ -394,7 +455,7 @@ func Run(root Widget) error {
 					entry, handled := resolveMouseTarget(ev.X, ev.Y, false)
 					if handled {
 						Log("  Mouse release blocked by float logic")
-						display()
+						requestRender()
 						continue
 					}
 
@@ -412,7 +473,7 @@ func Run(root Widget) error {
 					}
 
 					// Re-render after mouse up
-					display()
+					requestRender()
 
 				case uv.MouseMotionEvent:
 					// Log("MouseMotionEvent at X=%d Y=%d", ev.X, ev.Y)
@@ -452,7 +513,7 @@ func Run(root Widget) error {
 						}
 
 						// Re-render after hover change
-						display()
+						requestRender()
 					}
 
 				case uv.MouseWheelEvent:
@@ -470,7 +531,7 @@ func Run(root Widget) error {
 							break
 						}
 					}
-					display()
+					requestRender()
 
 				default:
 					// Log other event types for debugging
