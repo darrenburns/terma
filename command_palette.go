@@ -850,7 +850,3 @@ func indexOf(values []int, target int) int {
 	}
 	return -1
 }
-
-func boolPtr(v bool) *bool {
-	return &v
-}

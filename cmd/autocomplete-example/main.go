@@ -131,6 +131,7 @@ func (a *App) buildCommandPaletteSection(ctx terma.BuildContext) terma.Widget {
 				State:     a.cmdAcState,
 				MatchMode: terma.FilterFuzzy,
 				Insert:    terma.InsertReplace,
+				Style:     terma.Style{Height: terma.Auto},
 				Child: terma.TextInput{
 					ID:          "cmd-input",
 					State:       a.cmdInputState,
@@ -141,41 +142,10 @@ func (a *App) buildCommandPaletteSection(ctx terma.BuildContext) terma.Widget {
 						Border:  terma.Border{Style: terma.BorderRounded, Color: theme.Border},
 					},
 				},
+				DismissOnBlur: true,
 				OnSelect: func(s terma.Suggestion) {
 					a.lastCommand.Set(fmt.Sprintf("%s (%s)", s.Label, s.Value))
 					a.cmdInputState.SetText("")
-				},
-				RenderSuggestion: func(s terma.Suggestion, active bool, match terma.MatchResult, ctx terma.BuildContext) terma.Widget {
-					style := terma.Style{Padding: terma.EdgeInsets{Left: 1, Right: 1}}
-					if active {
-						style.BackgroundColor = theme.ActiveCursor
-						style.ForegroundColor = theme.SelectionText
-					}
-
-					// Build label with match highlighting
-					var labelWidget terma.Widget
-					if match.Matched && len(match.Ranges) > 0 {
-						labelWidget = terma.Text{
-							Spans: terma.HighlightSpans(s.Label, match.Ranges, terma.SpanStyle{
-								Underline:      terma.UnderlineSingle,
-								UnderlineColor: theme.Accent,
-							}),
-						}
-					} else {
-						labelWidget = terma.Text{Content: s.Label}
-					}
-
-					return terma.Row{
-						Style:    style,
-						Width:    terma.Flex(1),
-						Spacing:  1,
-						Children: []terma.Widget{
-							terma.Text{Content: "[" + s.Icon + "]", Style: terma.Style{ForegroundColor: theme.Accent}},
-							labelWidget,
-							terma.Spacer{Width: terma.Flex(1)},
-							terma.Text{Content: s.Description, Style: terma.Style{ForegroundColor: theme.TextMuted}},
-						},
-					}
 				},
 			},
 			terma.Text{
@@ -276,8 +246,8 @@ func (a *App) buildTagSection(ctx terma.BuildContext) terma.Widget {
 					}
 
 					return terma.Row{
-						Style:    style,
-						Width:    terma.Flex(1),
+						Style: style,
+						Width: terma.Flex(1),
 						Children: []terma.Widget{
 							terma.Text{Content: "#", Style: terma.Style{ForegroundColor: tagColor}},
 							terma.Text{Content: label},

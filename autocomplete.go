@@ -738,9 +738,6 @@ func (a Autocomplete) buildPopup(ctx BuildContext, visible bool) Widget {
 	if popupStyle.BackgroundColor == nil {
 		popupStyle.BackgroundColor = ctx.Theme().Surface
 	}
-	if popupStyle.Border.Style == BorderNone {
-		popupStyle.Border = Border{Style: BorderRounded, Color: ctx.Theme().Border}
-	}
 
 	return Floating{
 		Visible: visible,
@@ -760,6 +757,7 @@ func (a Autocomplete) buildFloatConfig(anchorID string) FloatConfig {
 	config := FloatConfig{
 		OnDismiss:             a.dismiss,
 		DismissOnClickOutside: boolPtr(true),
+		DismissOnEsc:          boolPtr(true),
 	}
 
 	if anchorID != "" {
