@@ -110,8 +110,8 @@ const (
 
 // BorderDecoration defines a text label on a border edge.
 type BorderDecoration struct {
-	Text     string             // Plain text (used if Markup is empty)
-	Markup   string             // Markup string, parsed at render time for styled text
+	Text     string // Plain text (used if Markup is empty)
+	Markup   string // Markup string, parsed at render time for styled text
 	Position DecorationPosition
 	Color    ColorProvider // Fallback color if markup has no color (or for plain text)
 }
@@ -189,7 +189,7 @@ type Border struct {
 //	┌───┐
 //	│   │
 //	└───┘
-func SquareBorder(color Color, decorations ...BorderDecoration) Border {
+func SquareBorder(color ColorProvider, decorations ...BorderDecoration) Border {
 	return Border{Style: BorderSquare, Color: color, Decorations: decorations}
 }
 
@@ -198,7 +198,7 @@ func SquareBorder(color Color, decorations ...BorderDecoration) Border {
 //	╭───╮
 //	│   │
 //	╰───╯
-func RoundedBorder(color Color, decorations ...BorderDecoration) Border {
+func RoundedBorder(color ColorProvider, decorations ...BorderDecoration) Border {
 	return Border{Style: BorderRounded, Color: color, Decorations: decorations}
 }
 
@@ -207,7 +207,7 @@ func RoundedBorder(color Color, decorations ...BorderDecoration) Border {
 //	╔═══╗
 //	║   ║
 //	╚═══╝
-func DoubleBorder(color Color, decorations ...BorderDecoration) Border {
+func DoubleBorder(color ColorProvider, decorations ...BorderDecoration) Border {
 	return Border{Style: BorderDouble, Color: color, Decorations: decorations}
 }
 
@@ -216,12 +216,12 @@ func DoubleBorder(color Color, decorations ...BorderDecoration) Border {
 //	┏━━━┓
 //	┃   ┃
 //	┗━━━┛
-func HeavyBorder(color Color, decorations ...BorderDecoration) Border {
+func HeavyBorder(color ColorProvider, decorations ...BorderDecoration) Border {
 	return Border{Style: BorderHeavy, Color: color, Decorations: decorations}
 }
 
 // DashedBorder creates a dashed border with the given color and optional decorations.
-func DashedBorder(color Color, decorations ...BorderDecoration) Border {
+func DashedBorder(color ColorProvider, decorations ...BorderDecoration) Border {
 	return Border{Style: BorderDashed, Color: color, Decorations: decorations}
 }
 
@@ -231,7 +231,7 @@ func DashedBorder(color Color, decorations ...BorderDecoration) Border {
 //	+---+
 //	|   |
 //	+---+
-func AsciiBorder(color Color, decorations ...BorderDecoration) Border {
+func AsciiBorder(color ColorProvider, decorations ...BorderDecoration) Border {
 	return Border{Style: BorderAscii, Color: color, Decorations: decorations}
 }
 
