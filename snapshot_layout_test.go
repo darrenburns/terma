@@ -1138,6 +1138,69 @@ func TestSnapshot_Dimension_PercentMixedWithAuto(t *testing.T) {
 	AssertSnapshot(t, widget, 35, 3)
 }
 
+// =============================================================================
+// Dimension Constraint Tests
+// =============================================================================
+
+func TestSnapshot_Dimension_AutoHeightWithMaxHeight(t *testing.T) {
+	content := "one two three four five six seven eight nine ten eleven twelve thirteen"
+	widget := Column{
+		Style: Style{Width: Cells(12), Height: Cells(6), BackgroundColor: layoutGray},
+		Children: []Widget{
+			Text{
+				Content: content,
+				Wrap:    WrapSoft,
+				Style: Style{
+					BackgroundColor: layoutBlue,
+					Height:          Auto,
+					MaxHeight:       Cells(3),
+				},
+			},
+		},
+	}
+	AssertSnapshot(t, widget, 14, 8,
+		"Blue wrapped text would exceed 3 lines but is clamped by MaxHeight. Gray container remains 12x6.")
+}
+
+func TestSnapshot_Dimension_PercentHeightClampsTallContent(t *testing.T) {
+	content := "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho"
+	widget := Column{
+		Style: Style{Width: Cells(12), Height: Cells(20), BackgroundColor: layoutGray},
+		Children: []Widget{
+			Text{
+				Content: content,
+				Wrap:    WrapSoft,
+				Style: Style{
+					BackgroundColor: layoutGreen,
+					Height:          Percent(25), // 5 rows of 20
+				},
+			},
+		},
+	}
+	AssertSnapshot(t, widget, 14, 22,
+		"Green text is constrained to 25% height (5 rows) even though content would wrap taller. Gray container is 12x20.")
+}
+
+func TestSnapshot_Dimension_FlexHeightWithMaxHeight(t *testing.T) {
+	content := "red orange yellow green blue indigo violet black white gray brown magenta cyan"
+	widget := Column{
+		Style: Style{Width: Cells(12), Height: Cells(20), BackgroundColor: layoutGray},
+		Children: []Widget{
+			Text{
+				Content: content,
+				Wrap:    WrapSoft,
+				Style: Style{
+					BackgroundColor: layoutPurple,
+					Height:          Flex(1),
+					MaxHeight:       Cells(5),
+				},
+			},
+		},
+	}
+	AssertSnapshot(t, widget, 14, 22,
+		"Purple text is flexed but capped at MaxHeight (5 rows) despite available space. Gray container is 12x20.")
+}
+
 // --- Percentage Inside Non-Cells Containers ---
 
 func TestSnapshot_Dimension_PercentInsideFlexContainer(t *testing.T) {
