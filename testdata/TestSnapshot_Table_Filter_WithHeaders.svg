@@ -21,25 +21,25 @@
   <rect x="66.8" y="27.6" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="75.2" y="27.6" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="83.6" y="27.6" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+  <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="134.0" y="27.6" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#6B5433"/>
   <text x="8.0" y="27.6" fill="#191724">Alice</text>
   <text x="92.0" y="27.6" class="underline" fill="#E0DEF4">Engineer</text>
   <text x="192.8" y="27.6" fill="#E0DEF4">NYC</text>
-  <rect x="92.0" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="100.4" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="108.8" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="117.2" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="125.6" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="134.0" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="142.4" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="150.8" y="47.2" width="8.4" height="19.6" fill="#3D301D"/>
+  <rect x="92.0" y="47.2" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="100.4" y="47.2" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="108.8" y="47.2" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="117.2" y="47.2" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="125.6" y="47.2" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="134.0" y="47.2" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="142.4" y="47.2" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="150.8" y="47.2" width="8.4" height="19.6" fill="#6B5433"/>
   <text x="8.0" y="47.2" fill="#E0DEF4">Charlie</text>
   <text x="92.0" y="47.2" class="underline" fill="#E0DEF4">Engineer</text>
   <text x="192.8" y="47.2" fill="#E0DEF4">SF</text>
