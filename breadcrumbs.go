@@ -26,6 +26,8 @@ func (b Breadcrumbs) Build(ctx BuildContext) Widget {
 	children := make([]Widget, 0, len(b.Path)*2-1)
 	for i, label := range b.Path {
 		style := b.Style
+		style.Width = Dimension{}
+		style.Height = Dimension{}
 		if style.ForegroundColor == nil || !style.ForegroundColor.IsSet() {
 			if b.OnSelect != nil && i < len(b.Path)-1 {
 				style.ForegroundColor = ctx.Theme().Link
@@ -48,6 +50,8 @@ func (b Breadcrumbs) Build(ctx BuildContext) Widget {
 
 		if i < len(b.Path)-1 {
 			sepStyle := b.Style
+			sepStyle.Width = Dimension{}
+			sepStyle.Height = Dimension{}
 			if sepStyle.ForegroundColor == nil || !sepStyle.ForegroundColor.IsSet() {
 				sepStyle.ForegroundColor = ctx.Theme().TextMuted
 			}

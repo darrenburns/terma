@@ -382,6 +382,12 @@ func (p CommandPalette) buildContent(ctx BuildContext, level *CommandPaletteLeve
 	if containerStyle.Width.IsUnset() {
 		containerStyle.Width = p.paletteWidth()
 	}
+	if containerStyle.Height.IsUnset() {
+		containerStyle.Height = Auto
+	}
+	if containerStyle.MaxHeight.IsUnset() {
+		containerStyle.MaxHeight = p.paletteHeight()
+	}
 	return Column{
 		ID:         p.ID + "-content",
 		CrossAlign: CrossAxisStretch,
@@ -480,7 +486,6 @@ func (p CommandPalette) buildList(ctx BuildContext, level *CommandPaletteLevel, 
 		DisableFocus: true,
 		Style: Style{
 			BackgroundColor: theme.Surface,
-			Height:          p.paletteHeight(),
 		},
 		Child: listChild,
 	}
