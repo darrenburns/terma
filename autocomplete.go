@@ -122,6 +122,7 @@ type AutocompleteState struct {
 	triggerPosition Signal[int]    // Where trigger char was typed (-1 if none)
 	filterQuery     Signal[string] // Text after trigger (for filtering)
 	dismissed       bool           // Tracks manual dismissal (e.g. Escape) until query changes
+	anchorWidth     Signal[int]    // Border-box width of the input for anchored popups
 }
 
 // NewAutocompleteState creates a new AutocompleteState.
@@ -133,6 +134,7 @@ func NewAutocompleteState() *AutocompleteState {
 		scrollState:     NewScrollState(),
 		triggerPosition: NewSignal(-1),
 		filterQuery:     NewSignal(""),
+		anchorWidth:     NewSignal(0),
 	}
 }
 
@@ -190,9 +192,10 @@ type Autocomplete struct {
 	OnQueryChange func(string)     // For async loading - called when query changes
 
 	// Dimensions
-	Width          Dimension // Widget width
-	Height         Dimension // Widget height
-	PopupWidth     Dimension // Popup width (default: fit content)
+	Width         Dimension // Widget width
+	Height        Dimension // Widget height
+	PopupWidth    Dimension // Popup width (default: fit content)
+	AnchorToInput bool      // Anchor popup to input content area and match its width
 
 	// Styling
 	Style      Style // Widget styling
@@ -200,6 +203,59 @@ type Autocomplete struct {
 
 	// Custom rendering
 	RenderSuggestion func(Suggestion, bool, MatchResult, BuildContext) Widget
+}
+
+type autocompleteContainer struct {
+	Column
+	state         *AutocompleteState
+	contentInsets EdgeInsets
+}
+
+func (c autocompleteContainer) Build(ctx BuildContext) Widget {
+	return c
+}
+
+func (c autocompleteContainer) ChildWidgets() []Widget {
+	return c.Children
+}
+
+func (c autocompleteContainer) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
+	if c.state == nil {
+		return
+	}
+	bounds, ok := metrics.ChildBounds(0)
+	if !ok {
+		return
+	}
+	contentWidth := bounds.Width - c.contentInsets.Horizontal()
+	if contentWidth < 1 {
+		contentWidth = 1
+	}
+	c.state.anchorWidth.Set(contentWidth)
+}
+
+func (a Autocomplete) anchorContentInsets() EdgeInsets {
+	var style Style
+	switch child := a.Child.(type) {
+	case TextInput:
+		style = child.Style
+	case TextArea:
+		style = child.Style
+	default:
+		if styled, ok := a.Child.(Styled); ok {
+			style = styled.GetStyle()
+		} else {
+			return EdgeInsets{}
+		}
+	}
+	border := style.Border.Width()
+	padding := style.Padding
+	return EdgeInsets{
+		Top:    padding.Top + border,
+		Right:  padding.Right + border,
+		Bottom: padding.Bottom + border,
+		Left:   padding.Left + border,
+	}
 }
 
 // WidgetID returns the autocomplete's unique identifier.
@@ -257,7 +313,7 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 	// Build popup
 	popup := a.buildPopup(ctx, visible && hasItems)
 
-	return Column{
+	column := Column{
 		ID:     a.ID,
 		Width:  a.Width,
 		Height: a.Height,
@@ -267,6 +323,16 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 			popup,
 		},
 	}
+
+	if a.AnchorToInput {
+		return autocompleteContainer{
+			Column:        column,
+			state:         a.State,
+			contentInsets: a.anchorContentInsets(),
+		}
+	}
+
+	return column
 }
 
 // wrapChild wraps the child widget with autocomplete keybinds and change handlers.
@@ -798,15 +864,22 @@ func (a Autocomplete) buildPopup(ctx BuildContext, visible bool) Widget {
 	if popupStyle.MaxHeight.IsUnset() {
 		popupStyle.MaxHeight = Cells(maxVisible)
 	}
+	popupWidth := a.PopupWidth
+	if a.AnchorToInput && a.State != nil {
+		anchorWidth := a.State.anchorWidth.Get()
+		if anchorWidth > 0 {
+			popupWidth = Cells(anchorWidth)
+		}
+	}
 
 	return Floating{
 		Visible: visible,
 		Config:  floatConfig,
 		Child: Scrollable{
-			State:  a.State.scrollState,
-			Width:  a.PopupWidth,
-			Style:  popupStyle,
-			Child:  list,
+			State: a.State.scrollState,
+			Width: popupWidth,
+			Style: popupStyle,
+			Child: list,
 		},
 	}
 }
@@ -824,7 +897,13 @@ func (a Autocomplete) buildFloatConfig(anchorID string) FloatConfig {
 		config.Anchor = AnchorBottomLeft
 	}
 
-	if offset, ok := a.cursorPopupOffset(); ok {
+	if a.AnchorToInput {
+		inset := a.anchorContentInsets()
+		config.Offset = Offset{
+			X: inset.Left,
+			Y: -inset.Bottom,
+		}
+	} else if offset, ok := a.cursorPopupOffset(); ok {
 		config.Offset = offset
 	}
 
@@ -860,13 +939,18 @@ func (a Autocomplete) isChildFocused(ctx BuildContext) bool {
 // defaultRenderSuggestion renders a suggestion with the default style.
 func (a Autocomplete) defaultRenderSuggestion(item Suggestion, active bool, match MatchResult, ctx BuildContext) Widget {
 	theme := ctx.Theme()
+	widgetFocused := a.isChildFocused(ctx)
+	showCursor := active && widgetFocused
+	textColor := theme.Text
+	if showCursor {
+		textColor = theme.SelectionText
+	}
 
 	style := Style{
 		Padding: EdgeInsets{Left: 1, Right: 1},
 	}
-	if active {
+	if showCursor {
 		style.BackgroundColor = theme.ActiveCursor
-		style.ForegroundColor = theme.SelectionText
 	} else {
 		style.ForegroundColor = theme.Text
 	}
@@ -875,7 +959,10 @@ func (a Autocomplete) defaultRenderSuggestion(item Suggestion, active bool, matc
 	var children []Widget
 
 	if item.Icon != "" {
-		children = append(children, Text{Content: item.Icon + " "})
+		children = append(children, Text{
+			Content: item.Icon + " ",
+			Style:   Style{ForegroundColor: textColor},
+		})
 	}
 
 	// Main label with match highlighting
@@ -886,21 +973,25 @@ func (a Autocomplete) defaultRenderSuggestion(item Suggestion, active bool, matc
 		}
 		children = append(children, Text{
 			Spans: HighlightSpans(item.Label, match.Ranges, highlight),
+			Style: Style{ForegroundColor: textColor},
 		})
 	} else {
-		children = append(children, Text{Content: item.Label})
+		children = append(children, Text{
+			Content: item.Label,
+			Style:   Style{ForegroundColor: textColor},
+		})
 	}
 
 	// Add description if present
 	if item.Description != "" {
-		children = append(children, Spacer{
-			Width:    Flex(1),
-			MinWidth: Cells(4),
-			MaxWidth: Cells(10),
-		})
+		children = append(children, Spacer{Width: Flex(1)})
+		descColor := theme.TextMuted
+		if showCursor {
+			descColor = theme.SelectionText
+		}
 		children = append(children, Text{
 			Content: item.Description,
-			Style:   Style{ForegroundColor: theme.TextMuted},
+			Style:   Style{ForegroundColor: descColor},
 		})
 	}
 

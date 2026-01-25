@@ -127,17 +127,20 @@ func (a *App) buildCommandPaletteSection(ctx terma.BuildContext) terma.Widget {
 				Style:   terma.Style{ForegroundColor: theme.Accent, Bold: true},
 			},
 			terma.Autocomplete{
-				ID:         "cmd-palette",
-				State:      a.cmdAcState,
-				MatchMode:  terma.FilterFuzzy,
-				Insert:     terma.InsertReplace,
-				PopupWidth: terma.Cells(40),
-				Style:      terma.Style{Height: terma.Auto},
+				ID:            "cmd-palette",
+				State:         a.cmdAcState,
+				MatchMode:     terma.FilterFuzzy,
+				Insert:        terma.InsertReplace,
+				Style:         terma.Style{Height: terma.Auto},
+				AnchorToInput: true,
 				RenderSuggestion: func(s terma.Suggestion, active bool, match terma.MatchResult, ctx terma.BuildContext) terma.Widget {
 					style := terma.Style{Padding: terma.EdgeInsets{Left: 1, Right: 1}}
+					textColor := theme.Text
+					descColor := theme.TextMuted
 					if active {
 						style.BackgroundColor = theme.ActiveCursor
-						style.ForegroundColor = theme.SelectionText
+						textColor = theme.SelectionText
+						descColor = theme.SelectionText
 					} else {
 						style.ForegroundColor = theme.Text
 					}
@@ -145,14 +148,18 @@ func (a *App) buildCommandPaletteSection(ctx terma.BuildContext) terma.Widget {
 					return terma.Row{
 						Style: style,
 						Children: []terma.Widget{
-							terma.Text{Content: s.Label},
+							terma.Text{
+								Content: s.Label,
+								Style:   terma.Style{ForegroundColor: textColor},
+							},
 							terma.Spacer{
 								Width: terma.Flex(1),
 							},
 							terma.Text{
 								Content:   s.Description,
-								Style:     terma.Style{ForegroundColor: theme.TextMuted},
+								Style:     terma.Style{ForegroundColor: descColor},
 								TextAlign: terma.TextAlignRight,
+								Width:     terma.Flex(1),
 							},
 						},
 					}
@@ -161,8 +168,8 @@ func (a *App) buildCommandPaletteSection(ctx terma.BuildContext) terma.Widget {
 					ID:          "cmd-input",
 					State:       a.cmdInputState,
 					Placeholder: "Type a command...",
-					Width:       terma.Cells(40),
 					Style: terma.Style{
+						Width:   terma.Cells(40),
 						Padding: terma.EdgeInsetsXY(1, 0),
 						Border:  terma.Border{Style: terma.BorderRounded, Color: theme.Border},
 					},
