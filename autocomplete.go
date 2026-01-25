@@ -738,13 +738,15 @@ func (a Autocomplete) buildPopup(ctx BuildContext, visible bool) Widget {
 	if popupStyle.BackgroundColor == nil {
 		popupStyle.BackgroundColor = ctx.Theme().Surface
 	}
+	if popupStyle.MaxHeight.IsUnset() {
+		popupStyle.MaxHeight = popupMaxHeight
+	}
 
 	return Floating{
 		Visible: visible,
 		Config:  floatConfig,
 		Child: Scrollable{
 			State:  a.State.scrollState,
-			Height: popupMaxHeight,
 			Width:  a.PopupWidth,
 			Style:  popupStyle,
 			Child:  list,
