@@ -635,7 +635,15 @@ func (t TextInput) Render(ctx *RenderContext) {
 		if focused {
 			cursorStyle := baseStyle
 			cursorStyle.Reverse = true
-			ctx.DrawStyledText(0, 0, " ", cursorStyle)
+			// Show the first placeholder character under the cursor, or space if no placeholder
+			cursorChar := " "
+			if len(text) > 0 {
+				firstGrapheme, _ := ansi.FirstGraphemeCluster(text, ansi.GraphemeWidth)
+				if firstGrapheme != "" {
+					cursorChar = firstGrapheme
+				}
+			}
+			ctx.DrawStyledText(0, 0, cursorChar, cursorStyle)
 		}
 		return
 	}
