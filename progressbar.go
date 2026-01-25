@@ -29,7 +29,7 @@ var progressBarChars = []string{
 //
 //	ProgressBar{
 //	    Progress:    0.65,
-//	    Width:       Cells(20),
+//	    Style:       Style{Width: Cells(20)},
 //	    FilledColor: ctx.Theme().Primary,
 //	}
 type ProgressBar struct {
@@ -38,9 +38,9 @@ type ProgressBar struct {
 	// Core fields
 	Progress float64 // 0.0 to 1.0
 
-	// Dimensions
-	Width  Dimension // Default: Flex(1)
-	Height Dimension // Default: Cells(1)
+	// Legacy dimensions
+	Width  Dimension // Deprecated: use Style.Width
+	Height Dimension // Deprecated: use Style.Height
 
 	// Styling
 	Style         Style // General styling (padding, margins, border)
@@ -62,14 +62,21 @@ func (p ProgressBar) WidgetID() string {
 // GetContentDimensions returns the width and height dimension preferences.
 // Width defaults to Flex(1), Height defaults to Cells(1).
 func (p ProgressBar) GetContentDimensions() (width, height Dimension) {
-	w, h := p.Width, p.Height
-	if w.IsUnset() {
-		w = Flex(1)
+	dims := p.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = p.Width
 	}
-	if h.IsUnset() {
-		h = Cells(1)
+	if height.IsUnset() {
+		height = p.Height
 	}
-	return w, h
+	if width.IsUnset() {
+		width = Flex(1)
+	}
+	if height.IsUnset() {
+		height = Cells(1)
+	}
+	return width, height
 }
 
 // GetStyle returns the style of the progress bar.
@@ -79,30 +86,12 @@ func (p ProgressBar) GetStyle() Style {
 
 // BuildLayoutNode builds a layout node for this ProgressBar widget.
 func (p ProgressBar) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
-	w, h := p.GetContentDimensions()
-	minWidth, maxWidth := dimensionToMinMax(w)
-	minHeight, maxHeight := dimensionToMinMax(h)
-
 	padding := toLayoutEdgeInsets(p.Style.Padding)
 	border := borderToEdgeInsets(p.Style.Border)
+	dims := GetWidgetDimensionSet(p)
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
-
-	return &layout.BoxNode{
+	node := layout.LayoutNode(&layout.BoxNode{
 		Padding:      padding,
 		Border:       border,
 		Margin:       toLayoutEdgeInsets(p.Style.Margin),
@@ -110,9 +99,23 @@ func (p ProgressBar) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		MaxWidth:     maxWidth,
 		MinHeight:    minHeight,
 		MaxHeight:    maxHeight,
-		ExpandWidth:  w.IsFlex() || w.IsPercent(),
-		ExpandHeight: h.IsFlex() || h.IsPercent(),
+		ExpandWidth:  dims.Width.IsFlex() || dims.Width.IsPercent(),
+		ExpandHeight: dims.Height.IsFlex() || dims.Height.IsPercent(),
+	})
+
+	if hasPercentMinMax(dims) {
+		node = &percentConstraintWrapper{
+			child:     node,
+			minWidth:  dims.MinWidth,
+			maxWidth:  dims.MaxWidth,
+			minHeight: dims.MinHeight,
+			maxHeight: dims.MaxHeight,
+			padding:   padding,
+			border:    border,
+		}
 	}
+
+	return node
 }
 
 // Render draws the progress bar to the render context.

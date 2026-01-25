@@ -387,8 +387,8 @@ type List[T any] struct {
 	MatchItem           func(item T, query string, options FilterOptions) MatchResult      // Optional matcher for filtering/highlighting
 	ItemHeight          int                                                                // Optional uniform item height override (default 0 = layout metrics / fallback 1)
 	MultiSelect         bool                                                               // Enable multi-select mode (space to toggle, shift+move to extend)
-	Width               Dimension                                                          // Optional width (zero value = auto)
-	Height              Dimension                                                          // Optional height (zero value = auto)
+	Width               Dimension                                                          // Deprecated: use Style.Width
+	Height              Dimension                                                          // Deprecated: use Style.Height
 	Style               Style                                                              // Optional styling
 	Click               func(MouseEvent)                                                   // Optional callback invoked when clicked
 	MouseDown           func(MouseEvent)                                                   // Optional callback invoked when mouse is pressed
@@ -448,7 +448,15 @@ func (l List[T]) WidgetID() string {
 // GetContentDimensions returns the width and height dimension preferences.
 // Implements the Dimensioned interface.
 func (l List[T]) GetContentDimensions() (width, height Dimension) {
-	return l.Width, l.Height
+	dims := l.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = l.Width
+	}
+	if height.IsUnset() {
+		height = l.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the style of the list widget.
@@ -582,13 +590,18 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 	}
 
 	// Ensure cursor item is visible whenever we rebuild
+	style := l.Style
+	if style.Width.IsUnset() {
+		style.Width = l.Width
+	}
+	if style.Height.IsUnset() {
+		style.Height = l.Height
+	}
 	return listContainer[T]{
 		Column: Column{
 			ID:         l.ID,
 			CrossAlign: CrossAxisStretch,
-			Width:      l.Width,
-			Height:     l.Height,
-			Style:      l.Style,
+			Style:      style,
 			Children:   children,
 			Click:      l.Click,
 			Hover:      l.Hover,
@@ -638,17 +651,17 @@ func (l List[T]) themedDefaultRenderItem(ctx BuildContext) func(item T, active b
 				spans = append(spans, Span{Text: prefix})
 			}
 			spans = append(spans, HighlightSpans(content, match.Ranges, highlight)...)
+			style.Width = Flex(1)
 			return Text{
 				Spans: spans,
 				Style: style,
-				Width: Flex(1), // Fill available width for consistent background
 			}
 		}
 
+		style.Width = Flex(1)
 		return Text{
 			Content: prefix + content,
 			Style:   style,
-			Width:   Flex(1), // Fill available width for consistent background
 		}
 	}
 }

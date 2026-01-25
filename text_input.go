@@ -318,8 +318,8 @@ type TextInput struct {
 	ID            string            // Required for focus management
 	State         *TextInputState   // Required - holds text and cursor position
 	Placeholder   string            // Text shown when empty and unfocused
-	Width         Dimension         // Optional width
-	Height        Dimension         // Ignored - content is always 1 cell (single-line); use Style.Padding for visual spacing
+	Width         Dimension         // Deprecated: use Style.Width
+	Height        Dimension         // Deprecated: use Style.Height (ignored; content height is always 1)
 	Style         Style             // Optional styling (padding adds to outer size automatically)
 	OnChange      func(text string) // Callback when text changes
 	OnSubmit      func(text string) // Callback when Enter pressed
@@ -503,7 +503,11 @@ func (t TextInput) Build(ctx BuildContext) Widget {
 // Height is always 1 cell (single line of text). Padding/border from Style
 // are automatically added by the framework to compute the final outer size.
 func (t TextInput) GetContentDimensions() (width, height Dimension) {
-	return t.Width, Cells(1)
+	width = t.Style.GetDimensions().Width
+	if width.IsUnset() {
+		width = t.Width
+	}
+	return width, Cells(1)
 }
 
 // GetStyle returns the style.
@@ -514,31 +518,18 @@ func (t TextInput) GetStyle() Style {
 // BuildLayoutNode builds a layout node for this TextInput widget.
 // Implements the LayoutNodeBuilder interface.
 func (t TextInput) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
-	w, h := t.GetContentDimensions()
-	minWidth, maxWidth := dimensionToMinMax(w)
-	minHeight, maxHeight := dimensionToMinMax(h)
 	style := t.Style
 
 	padding := toLayoutEdgeInsets(style.Padding)
 	border := borderToEdgeInsets(style.Border)
+	dims := style.GetDimensions()
+	if dims.Width.IsUnset() {
+		dims.Width = t.Width
+	}
+	dims.Height = Cells(1)
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
-
-	return &layout.BoxNode{
+	node := layout.LayoutNode(&layout.BoxNode{
 		MinWidth:  minWidth,
 		MaxWidth:  maxWidth,
 		MinHeight: minHeight,
@@ -555,7 +546,21 @@ func (t TextInput) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			})
 			return size.Width, size.Height
 		},
+	})
+
+	if hasPercentMinMax(dims) {
+		node = &percentConstraintWrapper{
+			child:     node,
+			minWidth:  dims.MinWidth,
+			maxWidth:  dims.MaxWidth,
+			minHeight: dims.MinHeight,
+			maxHeight: dims.MaxHeight,
+			padding:   padding,
+			border:    border,
+		}
 	}
+
+	return node
 }
 
 // Layout computes the size of the text input.
@@ -564,11 +569,15 @@ func (t TextInput) Layout(ctx BuildContext, constraints Constraints) Size {
 	height := 1
 
 	// Width depends on Dimension setting
+	widthDim := t.Style.GetDimensions().Width
+	if widthDim.IsUnset() {
+		widthDim = t.Width
+	}
 	var width int
 	switch {
-	case t.Width.IsCells():
-		width = t.Width.CellsValue()
-	case t.Width.IsFlex():
+	case widthDim.IsCells():
+		width = widthDim.CellsValue()
+	case widthDim.IsFlex():
 		width = constraints.MaxWidth
 	default: // Auto - use content or placeholder width, minimum 1
 		contentWidth := 1

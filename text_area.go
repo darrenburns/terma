@@ -489,8 +489,8 @@ type TextArea struct {
 	ID                string            // Required for focus management
 	State             *TextAreaState    // Required - holds text and cursor position
 	Placeholder       string            // Text shown when empty and unfocused
-	Width             Dimension         // Optional width
-	Height            Dimension         // Optional height
+	Width             Dimension         // Deprecated: use Style.Width
+	Height            Dimension         // Deprecated: use Style.Height
 	Style             Style             // Optional styling
 	RequireInsertMode bool              // If true, require entering insert mode to edit
 	ScrollState       *ScrollState      // Optional state for scroll-into-view
@@ -761,30 +761,20 @@ func (t TextArea) Build(ctx BuildContext) Widget {
 // BuildLayoutNode builds a layout node for this TextArea widget.
 // Implements the LayoutNodeBuilder interface so Scrollable can measure it.
 func (t TextArea) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
-	minWidth, maxWidth := dimensionToMinMax(t.Width)
-	minHeight, maxHeight := dimensionToMinMax(t.Height)
 	style := t.Style
 
 	padding := toLayoutEdgeInsets(style.Padding)
 	border := borderToEdgeInsets(style.Border)
+	dims := style.GetDimensions()
+	if dims.Width.IsUnset() {
+		dims.Width = t.Width
+	}
+	if dims.Height.IsUnset() {
+		dims.Height = t.Height
+	}
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
-
-	return &layout.BoxNode{
+	node := layout.LayoutNode(&layout.BoxNode{
 		MinWidth:  minWidth,
 		MaxWidth:  maxWidth,
 		MinHeight: minHeight,
@@ -801,12 +791,34 @@ func (t TextArea) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			})
 			return size.Width, size.Height
 		},
+	})
+
+	if hasPercentMinMax(dims) {
+		node = &percentConstraintWrapper{
+			child:     node,
+			minWidth:  dims.MinWidth,
+			maxWidth:  dims.MaxWidth,
+			minHeight: dims.MinHeight,
+			maxHeight: dims.MaxHeight,
+			padding:   padding,
+			border:    border,
+		}
 	}
+
+	return node
 }
 
 // GetContentDimensions returns the width and height dimension preferences.
 func (t TextArea) GetContentDimensions() (width, height Dimension) {
-	return t.Width, t.Height
+	dims := t.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = t.Width
+	}
+	if height.IsUnset() {
+		height = t.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the style.
@@ -816,11 +828,20 @@ func (t TextArea) GetStyle() Style {
 
 // Layout computes the size of the text area.
 func (t TextArea) Layout(ctx BuildContext, constraints Constraints) Size {
+	dims := t.Style.GetDimensions()
+	widthDim := dims.Width
+	heightDim := dims.Height
+	if widthDim.IsUnset() {
+		widthDim = t.Width
+	}
+	if heightDim.IsUnset() {
+		heightDim = t.Height
+	}
 	var width int
 	switch {
-	case t.Width.IsCells():
-		width = t.Width.CellsValue()
-	case t.Width.IsFlex():
+	case widthDim.IsCells():
+		width = widthDim.CellsValue()
+	case widthDim.IsFlex():
 		width = constraints.MaxWidth
 	default:
 		contentWidth := 1
@@ -837,9 +858,9 @@ func (t TextArea) Layout(ctx BuildContext, constraints Constraints) Size {
 
 	var height int
 	switch {
-	case t.Height.IsCells():
-		height = t.Height.CellsValue()
-	case t.Height.IsFlex():
+	case heightDim.IsCells():
+		height = heightDim.CellsValue()
+	case heightDim.IsFlex():
 		height = constraints.MaxHeight
 	default:
 		contentLines := 1

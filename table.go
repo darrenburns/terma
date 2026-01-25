@@ -424,8 +424,8 @@ type Table[T any] struct {
 	RowSpacing          int                                                                                           // Space between rows
 	SelectionMode       TableSelectionMode                                                                            // Cursor/selection highlight mode (row/column/cursor)
 	MultiSelect         bool                                                                                          // Enable multi-select mode (shift+move to extend)
-	Width               Dimension                                                                                     // Optional width (zero value = auto)
-	Height              Dimension                                                                                     // Optional height (zero value = auto)
+	Width               Dimension                                                                                     // Deprecated: use Style.Width
+	Height              Dimension                                                                                     // Deprecated: use Style.Height
 	Style               Style                                                                                         // Optional styling
 	Click               func(MouseEvent)                                                                              // Optional callback invoked when clicked
 	MouseDown           func(MouseEvent)                                                                              // Optional callback invoked when mouse is pressed
@@ -514,7 +514,15 @@ func (t Table[T]) WidgetID() string {
 // GetContentDimensions returns the width and height dimension preferences.
 // Implements the Dimensioned interface.
 func (t Table[T]) GetContentDimensions() (width, height Dimension) {
-	return t.Width, t.Height
+	dims := t.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = t.Width
+	}
+	if height.IsUnset() {
+		height = t.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the style of the table widget.
@@ -1377,37 +1385,20 @@ func (c tableContainer[T]) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		children[i] = childNode
 	}
 
-	minWidth, maxWidth := dimensionToMinMax(c.Width)
-	minHeight, maxHeight := dimensionToMinMax(c.Height)
-
 	padding := toLayoutEdgeInsets(c.Style.Padding)
 	border := borderToEdgeInsets(c.Style.Border)
+	dims := GetWidgetDimensionSet(c)
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
-
-	preserveWidth := c.Width.IsAuto() && !c.Width.IsUnset()
-	preserveHeight := c.Height.IsAuto() && !c.Height.IsUnset()
+	preserveWidth := dims.Width.IsAuto() && !dims.Width.IsUnset()
+	preserveHeight := dims.Height.IsAuto() && !dims.Height.IsUnset()
 
 	columnWidths := make([]Dimension, len(c.Columns))
 	for i, col := range c.Columns {
 		columnWidths[i] = col.Width
 	}
 
-	return &tableNode{
+	node := layout.LayoutNode(&tableNode{
 		Columns:        c.columnCount,
 		Rows:           c.rowCount + c.headerRows,
 		ColumnWidths:   columnWidths,
@@ -1421,11 +1412,25 @@ func (c tableContainer[T]) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		MaxWidth:       maxWidth,
 		MinHeight:      minHeight,
 		MaxHeight:      maxHeight,
-		ExpandWidth:    c.Width.IsFlex(),
-		ExpandHeight:   c.Height.IsFlex(),
+		ExpandWidth:    dims.Width.IsFlex(),
+		ExpandHeight:   dims.Height.IsFlex(),
 		PreserveWidth:  preserveWidth,
 		PreserveHeight: preserveHeight,
+	})
+
+	if hasPercentMinMax(dims) {
+		node = &percentConstraintWrapper{
+			child:     node,
+			minWidth:  dims.MinWidth,
+			maxWidth:  dims.MaxWidth,
+			minHeight: dims.MinHeight,
+			maxHeight: dims.MaxHeight,
+			padding:   padding,
+			border:    border,
+		}
 	}
+
+	return node
 }
 
 func tableHasColumnHeaders(cols []TableColumn) bool {

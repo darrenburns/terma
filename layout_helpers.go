@@ -60,13 +60,135 @@ func toLayoutCrossAlign(a CrossAxisAlign) layout.CrossAxisAlignment {
 
 // dimensionToMinMax converts a terma Dimension to min/max constraints.
 // For Cells (fixed), both min and max are set to the value.
-// For Auto or Fr, returns 0,0 (no constraints from dimension).
+// For Auto/Flex/Percent, returns 0,0 (no constraints from dimension).
 func dimensionToMinMax(d Dimension) (min, max int) {
 	if d.IsCells() {
 		v := d.CellsValue()
 		return v, v
 	}
 	return 0, 0
+}
+
+func dimensionToCells(d Dimension) int {
+	if d.IsCells() {
+		return d.CellsValue()
+	}
+	return 0
+}
+
+func clampFixedDimension(value, minValue, maxValue int) int {
+	if minValue > 0 && maxValue > 0 && maxValue < minValue {
+		return minValue
+	}
+	if minValue > 0 && value < minValue {
+		value = minValue
+	}
+	if maxValue > 0 && value > maxValue {
+		value = maxValue
+	}
+	return value
+}
+
+func dimensionSetToMinMax(ds DimensionSet, padding, border layout.EdgeInsets) (minW, maxW, minH, maxH int) {
+	explicitMinW := dimensionToCells(ds.MinWidth)
+	explicitMaxW := dimensionToCells(ds.MaxWidth)
+	explicitMinH := dimensionToCells(ds.MinHeight)
+	explicitMaxH := dimensionToCells(ds.MaxHeight)
+
+	if ds.Width.IsCells() {
+		width := ds.Width.CellsValue()
+		if explicitMinW > 0 || explicitMaxW > 0 {
+			width = clampFixedDimension(width, explicitMinW, explicitMaxW)
+		}
+		minW, maxW = width, width
+	} else {
+		if explicitMinW > 0 {
+			minW = explicitMinW
+		}
+		if explicitMaxW > 0 {
+			maxW = explicitMaxW
+		}
+	}
+
+	if ds.Height.IsCells() {
+		height := ds.Height.CellsValue()
+		if explicitMinH > 0 || explicitMaxH > 0 {
+			height = clampFixedDimension(height, explicitMinH, explicitMaxH)
+		}
+		minH, maxH = height, height
+	} else {
+		if explicitMinH > 0 {
+			minH = explicitMinH
+		}
+		if explicitMaxH > 0 {
+			maxH = explicitMaxH
+		}
+	}
+
+	hInset := padding.Horizontal() + border.Horizontal()
+	vInset := padding.Vertical() + border.Vertical()
+	if minW > 0 {
+		minW += hInset
+	}
+	if maxW > 0 {
+		maxW += hInset
+	}
+	if minH > 0 {
+		minH += vInset
+	}
+	if maxH > 0 {
+		maxH += vInset
+	}
+
+	return minW, maxW, minH, maxH
+}
+
+func dimensionToPercentConstraint(d Dimension, maxAvailable int) int {
+	if d.IsPercent() {
+		return int(float64(maxAvailable) * d.PercentValue() / 100.0)
+	}
+	return 0
+}
+
+func hasPercentMinMax(ds DimensionSet) bool {
+	return ds.MinWidth.IsPercent() || ds.MaxWidth.IsPercent() ||
+		ds.MinHeight.IsPercent() || ds.MaxHeight.IsPercent()
+}
+
+type percentConstraintWrapper struct {
+	child                 layout.LayoutNode
+	minWidth, maxWidth     Dimension
+	minHeight, maxHeight   Dimension
+	padding, border        layout.EdgeInsets
+}
+
+func (p *percentConstraintWrapper) ComputeLayout(constraints layout.Constraints) layout.ComputedLayout {
+	minW := dimensionToPercentConstraint(p.minWidth, constraints.MaxWidth)
+	maxW := dimensionToPercentConstraint(p.maxWidth, constraints.MaxWidth)
+	minH := dimensionToPercentConstraint(p.minHeight, constraints.MaxHeight)
+	maxH := dimensionToPercentConstraint(p.maxHeight, constraints.MaxHeight)
+
+	if minW == 0 && maxW == 0 && minH == 0 && maxH == 0 {
+		return p.child.ComputeLayout(constraints)
+	}
+
+	hInset := p.padding.Horizontal() + p.border.Horizontal()
+	vInset := p.padding.Vertical() + p.border.Vertical()
+	if minW > 0 {
+		minW += hInset
+	}
+	if maxW > 0 {
+		maxW += hInset
+	}
+	if minH > 0 {
+		minH += vInset
+	}
+	if maxH > 0 {
+		maxH += vInset
+	}
+
+	effective := constraints.WithNodeConstraints(minW, maxW, minH, maxH)
+	return p.child.ComputeLayout(effective)
 }
 
 // wrapInFlexIfNeeded wraps a layout node in FlexNode if the dimension is Flex().
@@ -118,14 +240,11 @@ func wrapInPercentIfNeeded(node layout.LayoutNode, mainAxisDim Dimension, axis l
 // For horizontal (Row): returns Width
 // For vertical (Column): returns Height
 func getChildMainAxisDimension(widget Widget, horizontal bool) Dimension {
-	if dimensioned, ok := widget.(Dimensioned); ok {
-		width, height := dimensioned.GetContentDimensions()
-		if horizontal {
-			return width
-		}
-		return height
+	dims := GetWidgetDimensionSet(widget)
+	if horizontal {
+		return dims.Width
 	}
-	return Dimension{} // unset/auto
+	return dims.Height
 }
 
 // wrapInPercentNodesForStack wraps a layout node in PercentNode(s) for Stack children.
@@ -140,26 +259,21 @@ func getChildMainAxisDimension(widget Widget, horizontal bool) Dimension {
 //   - The original node if no percent dimensions
 //   - A PercentNode (or nested PercentNodes) wrapping the original if percent dimensions exist
 func wrapInPercentNodesForStack(node layout.LayoutNode, widget Widget) layout.LayoutNode {
-	dimensioned, ok := widget.(Dimensioned)
-	if !ok {
-		return node
-	}
-
-	width, height := dimensioned.GetContentDimensions()
+	dims := GetWidgetDimensionSet(widget)
 
 	// Wrap for width percent first
-	if width.IsPercent() {
+	if dims.Width.IsPercent() {
 		node = &layout.PercentNode{
-			Percent: width.PercentValue(),
+			Percent: dims.Width.PercentValue(),
 			Child:   node,
 			Axis:    layout.Horizontal,
 		}
 	}
 
 	// Wrap for height percent (wraps around any width percent wrapper)
-	if height.IsPercent() {
+	if dims.Height.IsPercent() {
 		node = &layout.PercentNode{
-			Percent: height.PercentValue(),
+			Percent: dims.Height.PercentValue(),
 			Child:   node,
 			Axis:    layout.Vertical,
 		}
@@ -175,10 +289,7 @@ func wrapInPercentNodesForStack(node layout.LayoutNode, widget Widget) layout.La
 // by adding padding and border. This allows widgets to specify their content size without
 // worrying about the box model - the framework handles adding space for decoration.
 func buildFallbackLayoutNode(widget Widget, ctx BuildContext) layout.LayoutNode {
-	var widthDim, heightDim Dimension
-	if dimensioned, ok := widget.(Dimensioned); ok {
-		widthDim, heightDim = dimensioned.GetContentDimensions()
-	}
+	dims := GetWidgetDimensionSet(widget)
 
 	// Extract style for insets first - we need these to compute border-box dimensions
 	var padding, border, margin layout.EdgeInsets
@@ -189,30 +300,9 @@ func buildFallbackLayoutNode(widget Widget, ctx BuildContext) layout.LayoutNode 
 		margin = toLayoutEdgeInsets(style.Margin)
 	}
 
-	// Convert content dimensions to min/max constraints
-	minWidth, maxWidth := dimensionToMinMax(widthDim)
-	minHeight, maxHeight := dimensionToMinMax(heightDim)
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
-	// Add padding and border to convert from content-box to border-box constraints.
-	// Only add insets when there's a fixed content dimension (non-zero constraint).
-	// Zero means "no constraint" in BoxNode, so we don't add insets to that.
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
-
-	return &layout.BoxNode{
+	node := layout.LayoutNode(&layout.BoxNode{
 		MinWidth:  minWidth,
 		MaxWidth:  maxWidth,
 		MinHeight: minHeight,
@@ -220,5 +310,21 @@ func buildFallbackLayoutNode(widget Widget, ctx BuildContext) layout.LayoutNode 
 		Padding:   padding,
 		Border:    border,
 		Margin:    margin,
+		ExpandWidth:  dims.Width.IsFlex() || dims.Width.IsPercent(),
+		ExpandHeight: dims.Height.IsFlex() || dims.Height.IsPercent(),
+	})
+
+	if hasPercentMinMax(dims) {
+		node = &percentConstraintWrapper{
+			child:     node,
+			minWidth:  dims.MinWidth,
+			maxWidth:  dims.MaxWidth,
+			minHeight: dims.MinHeight,
+			maxHeight: dims.MaxHeight,
+			padding:   padding,
+			border:    border,
+		}
 	}
+
+	return node
 }

@@ -60,6 +60,25 @@ type LayoutNodeBuilder interface {
 	BuildLayoutNode(ctx BuildContext) layout.LayoutNode
 }
 
+// GetWidgetDimensionSet returns resolved dimensions for a widget.
+// Style dimensions override Dimensioned dimensions when explicitly set.
+func GetWidgetDimensionSet(widget Widget) DimensionSet {
+	var dims DimensionSet
+	if styled, ok := widget.(Styled); ok {
+		dims = styled.GetStyle().GetDimensions()
+	}
+	if dimensioned, ok := widget.(Dimensioned); ok {
+		width, height := dimensioned.GetContentDimensions()
+		if dims.Width.IsUnset() {
+			dims.Width = width
+		}
+		if dims.Height.IsUnset() {
+			dims.Height = height
+		}
+	}
+	return dims
+}
+
 // LayoutObserver is implemented by widgets that want access to computed layout data.
 // OnLayout is called after layout is computed for the widget, before child render trees are built.
 // Use this to read resolved child positions/sizes without re-measuring.
