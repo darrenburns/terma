@@ -290,8 +290,8 @@ type CommandPalette struct {
 	OnCursorChange func(item CommandPaletteItem) // For live previews
 	OnDismiss      func()
 	RenderItem     func(item CommandPaletteItem, active bool, match MatchResult) Widget
-	Width          Dimension // Default: Cells(60)
-	Height         Dimension // Default: Cells(12)
+	Width          Dimension // Deprecated: use Style.Width (default: Cells(60))
+	Height         Dimension // Deprecated: use Style.Height (default: Cells(12))
 	Placeholder    string    // Default: "Type to search..."
 	Position       FloatPosition
 	Offset         Offset
@@ -364,9 +364,9 @@ func (p CommandPalette) buildContent(ctx BuildContext, level *CommandPaletteLeve
 			Path:      path,
 			OnSelect:  p.onBreadcrumbSelect(),
 			Separator: ">",
-			Width:     Flex(1),
 			Style: Style{
 				ForegroundColor: theme.TextMuted,
+				Width:           Flex(1),
 			},
 		})
 	}
@@ -379,9 +379,17 @@ func (p CommandPalette) buildContent(ctx BuildContext, level *CommandPaletteLeve
 	})
 	children = append(children, p.buildList(ctx, level, theme))
 
+	if containerStyle.Width.IsUnset() {
+		containerStyle.Width = p.paletteWidth()
+	}
+	if containerStyle.Height.IsUnset() {
+		containerStyle.Height = Auto
+	}
+	if containerStyle.MaxHeight.IsUnset() {
+		containerStyle.MaxHeight = p.paletteHeight()
+	}
 	return Column{
 		ID:         p.ID + "-content",
-		Width:      p.paletteWidth(),
 		CrossAlign: CrossAxisStretch,
 		Style:      containerStyle,
 		Children:   children,
@@ -412,11 +420,11 @@ func (p CommandPalette) buildInput(level *CommandPaletteLevel, theme ThemeData) 
 		ID:          p.inputID(),
 		State:       level.InputState,
 		Placeholder: p.placeholderText(),
-		Width:       Flex(1),
 		Style: Style{
 			BackgroundColor: theme.Surface,
 			ForegroundColor: theme.Text,
 			Padding:         padding,
+			Width:           Flex(1),
 		},
 		OnChange: onFilterChange,
 		ExtraKeybinds: []Keybind{
@@ -451,11 +459,11 @@ func (p CommandPalette) buildList(ctx BuildContext, level *CommandPaletteLevel, 
 	if !hasContent {
 		listChild = Text{
 			Content:   defaultCommandPaletteEmptyLabel,
-			Width:     Flex(1),
 			TextAlign: TextAlignCenter,
 			Style: Style{
 				ForegroundColor: theme.TextMuted,
 				Padding:         EdgeInsetsXY(1, 0),
+				Width:           Flex(1),
 			},
 		}
 	} else {
@@ -475,7 +483,6 @@ func (p CommandPalette) buildList(ctx BuildContext, level *CommandPaletteLevel, 
 	return Scrollable{
 		ID:           p.scrollID(),
 		State:        level.ScrollState,
-		Height:       p.paletteHeight(),
 		DisableFocus: true,
 		Style: Style{
 			BackgroundColor: theme.Surface,
@@ -526,25 +533,30 @@ func (p CommandPalette) defaultRenderItem(theme ThemeData, item CommandPaletteIt
 	if hintWidget != nil {
 		rowChildren = append(rowChildren, Spacer{Width: Flex(1)}, hintWidget)
 	}
+	rowStyle := Style{Width: Flex(1)}
 	row := Row{
-		Width:      Flex(1),
+		Style:      rowStyle,
 		CrossAlign: CrossAxisCenter,
 		Children:   rowChildren,
 	}
 
 	var content Widget = row
 	if item.Description != "" {
+		descStyle.Width = Flex(1)
 		content = Column{
-			Width:    Flex(1),
-			Children: []Widget{row, Text{Content: item.Description, Width: Flex(1), Style: descStyle}},
+			Children: []Widget{row, Text{Content: item.Description, Style: descStyle}},
+			Style:    Style{Width: Flex(1)},
 		}
 	}
 
 	return Stack{
 		Children: []Widget{
 			Column{
-				Width:    Flex(1),
-				Style:    itemStyle,
+				Style: func() Style {
+					style := itemStyle
+					style.Width = Flex(1)
+					return style
+				}(),
 				Children: []Widget{content},
 			},
 		},
@@ -552,6 +564,9 @@ func (p CommandPalette) defaultRenderItem(theme ThemeData, item CommandPaletteIt
 }
 
 func (p CommandPalette) labelWidget(label string, style Style, match MatchResult, theme ThemeData) Widget {
+	if style.Width.IsUnset() {
+		style.Width = Flex(1)
+	}
 	if match.Matched && len(match.Ranges) > 0 {
 		highlight := SpanStyle{
 			Underline:      UnderlineSingle,
@@ -561,13 +576,11 @@ func (p CommandPalette) labelWidget(label string, style Style, match MatchResult
 		return Text{
 			Spans: HighlightSpans(label, match.Ranges, highlight),
 			Style: style,
-			Width: Flex(1),
 		}
 	}
 	return Text{
 		Content: label,
 		Style:   style,
-		Width:   Flex(1),
 	}
 }
 
@@ -587,14 +600,12 @@ func (p CommandPalette) dividerWidget(theme ThemeData, title string) Widget {
 	if title == "" {
 		return Text{
 			Content: commandPaletteDividerLine,
-			Width:   Flex(1),
-			Style:   Style{ForegroundColor: lineStyle.ForegroundColor, Padding: dividerPadding},
+			Style:   Style{ForegroundColor: lineStyle.ForegroundColor, Padding: dividerPadding, Width: Flex(1)},
 		}
 	}
 
 	return Row{
-		Width: Flex(1),
-		Style: Style{Padding: dividerPadding},
+		Style: Style{Padding: dividerPadding, Width: Flex(1)},
 		Children: []Widget{
 			Text{
 				Content: title + " ",
@@ -602,8 +613,11 @@ func (p CommandPalette) dividerWidget(theme ThemeData, title string) Widget {
 			},
 			Text{
 				Content: commandPaletteDividerLine,
-				Style:   lineStyle,
-				Width:   Flex(1),
+				Style: func() Style {
+					style := lineStyle
+					style.Width = Flex(1)
+					return style
+				}(),
 			},
 		},
 	}
@@ -771,17 +785,25 @@ func (p CommandPalette) floatPosition() FloatPosition {
 }
 
 func (p CommandPalette) paletteWidth() Dimension {
-	if p.Width.IsUnset() {
-		return Cells(defaultCommandPaletteWidth)
+	width := p.Style.GetDimensions().Width
+	if width.IsUnset() {
+		width = p.Width
 	}
-	return p.Width
+	if width.IsUnset() {
+		width = Cells(defaultCommandPaletteWidth)
+	}
+	return width
 }
 
 func (p CommandPalette) paletteHeight() Dimension {
-	if p.Height.IsUnset() {
-		return Cells(defaultCommandPaletteHeight)
+	height := p.Style.GetDimensions().Height
+	if height.IsUnset() {
+		height = p.Height
 	}
-	return p.Height
+	if height.IsUnset() {
+		height = Cells(defaultCommandPaletteHeight)
+	}
+	return height
 }
 
 func (p CommandPalette) placeholderText() string {

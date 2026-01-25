@@ -27,9 +27,11 @@ type Switcher struct {
 	Children map[string]Widget
 
 	// Width specifies the width of the switcher container.
+	// Deprecated: use Style.Width.
 	Width Dimension
 
 	// Height specifies the height of the switcher container.
+	// Deprecated: use Style.Height.
 	Height Dimension
 
 	// Style applies styling to the switcher container.
@@ -46,7 +48,15 @@ func (s Switcher) Build(ctx BuildContext) Widget {
 
 // GetContentDimensions returns the configured width and height.
 func (s Switcher) GetContentDimensions() (Dimension, Dimension) {
-	return s.Width, s.Height
+	dims := s.Style.GetDimensions()
+	width, height := dims.Width, dims.Height
+	if width.IsUnset() {
+		width = s.Width
+	}
+	if height.IsUnset() {
+		height = s.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the configured style.

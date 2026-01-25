@@ -6,8 +6,8 @@ type Breadcrumbs struct {
 	Path      []string
 	OnSelect  func(index int) // Click to navigate
 	Separator string          // Default: ">"
-	Width     Dimension
-	Height    Dimension
+	Width     Dimension // Deprecated: use Style.Width
+	Height    Dimension // Deprecated: use Style.Height
 	Style     Style
 }
 
@@ -26,6 +26,8 @@ func (b Breadcrumbs) Build(ctx BuildContext) Widget {
 	children := make([]Widget, 0, len(b.Path)*2-1)
 	for i, label := range b.Path {
 		style := b.Style
+		style.Width = Dimension{}
+		style.Height = Dimension{}
 		if style.ForegroundColor == nil || !style.ForegroundColor.IsSet() {
 			if b.OnSelect != nil && i < len(b.Path)-1 {
 				style.ForegroundColor = ctx.Theme().Link
@@ -48,6 +50,8 @@ func (b Breadcrumbs) Build(ctx BuildContext) Widget {
 
 		if i < len(b.Path)-1 {
 			sepStyle := b.Style
+			sepStyle.Width = Dimension{}
+			sepStyle.Height = Dimension{}
 			if sepStyle.ForegroundColor == nil || !sepStyle.ForegroundColor.IsSet() {
 				sepStyle.ForegroundColor = ctx.Theme().TextMuted
 			}
@@ -59,10 +63,14 @@ func (b Breadcrumbs) Build(ctx BuildContext) Widget {
 	if rowStyle.Padding == (EdgeInsets{}) {
 		rowStyle.Padding = EdgeInsetsTRBL(0, 1, 0, 1)
 	}
+	if rowStyle.Width.IsUnset() {
+		rowStyle.Width = b.Width
+	}
+	if rowStyle.Height.IsUnset() {
+		rowStyle.Height = b.Height
+	}
 	return Row{
 		ID:         b.ID,
-		Width:      b.Width,
-		Height:     b.Height,
 		CrossAlign: CrossAxisCenter,
 		Children:   children,
 		Style:      rowStyle,

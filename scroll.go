@@ -198,8 +198,8 @@ type Scrollable struct {
 	State         *ScrollState // Required - holds scroll position
 	DisableScroll bool         // If true, scrolling is disabled and scrollbar hidden (default: false)
 	DisableFocus  bool         // If true, widget cannot receive focus (default: false = focusable)
-	Width         Dimension    // Optional width (zero value = auto)
-	Height        Dimension    // Optional height (zero value = auto)
+	Width         Dimension    // Deprecated: use Style.Width
+	Height        Dimension    // Deprecated: use Style.Height
 	Style         Style        // Optional styling
 	Click         func(MouseEvent) // Optional callback invoked when clicked
 	MouseDown     func(MouseEvent) // Optional callback invoked when mouse is pressed
@@ -219,7 +219,15 @@ func (s Scrollable) WidgetID() string {
 
 // GetContentDimensions returns the width and height dimension preferences.
 func (s Scrollable) GetContentDimensions() (width, height Dimension) {
-	return s.Width, s.Height
+	dims := s.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = s.Width
+	}
+	if height.IsUnset() {
+		height = s.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the style of the scrollable widget.
@@ -300,30 +308,12 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		scrollbarWidth = 1
 	}
 
-	// Get content-box constraints from dimensions
-	minWidth, maxWidth := dimensionToMinMax(s.Width)
-	minHeight, maxHeight := dimensionToMinMax(s.Height)
-
 	padding := toLayoutEdgeInsets(s.Style.Padding)
 	border := borderToEdgeInsets(s.Style.Border)
+	dims := GetWidgetDimensionSet(s)
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
-
-	return &layout.ScrollableNode{
+	node := layout.LayoutNode(&layout.ScrollableNode{
 		Child:           childNode,
 		ScrollOffsetY:   scrollOffsetY,
 		ScrollbarWidth:  scrollbarWidth,
@@ -335,7 +325,21 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		MaxWidth:        maxWidth,
 		MinHeight:       minHeight,
 		MaxHeight:       maxHeight,
+	})
+
+	if hasPercentMinMax(dims) {
+		node = &percentConstraintWrapper{
+			child:     node,
+			minWidth:  dims.MinWidth,
+			maxWidth:  dims.MaxWidth,
+			minHeight: dims.MinHeight,
+			maxHeight: dims.MaxHeight,
+			padding:   padding,
+			border:    border,
+		}
 	}
+
+	return node
 }
 
 // getScrollOffset returns the current scroll offset.
