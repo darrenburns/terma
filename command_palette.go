@@ -183,10 +183,18 @@ func (s *CommandPaletteState) SetItems(items []CommandPaletteItem) {
 }
 
 func (s *CommandPaletteState) resetToRoot() {
+	root := s.stack[0]
+	// Clear root input text
+	if root != nil && root.InputState != nil {
+		root.InputState.SetText("")
+		if root.FilterState != nil {
+			root.FilterState.Query.Set("")
+		}
+	}
 	if len(s.stack) <= 1 {
+		s.ensureSelectableCursor(root)
 		return
 	}
-	root := s.stack[0]
 	s.stack = []*CommandPaletteLevel{root}
 	s.depth.Set(1)
 	s.ensureSelectableCursor(root)

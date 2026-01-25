@@ -613,8 +613,8 @@ func (t TextInput) Render(ctx *RenderContext) {
 	bgColor := baseStyle.BackgroundColor.ColorAt(viewportWidth, 1, 0, 0)
 	ctx.FillRect(0, 0, viewportWidth, 1, bgColor)
 
-	// Show placeholder if empty and not focused
-	if len(graphemes) == 0 && !focused {
+	// Show placeholder if empty
+	if len(graphemes) == 0 {
 		placeholderStyle := baseStyle
 		placeholderStyle.ForegroundColor = theme.TextMuted
 		text := t.Placeholder
@@ -622,6 +622,12 @@ func (t TextInput) Render(ctx *RenderContext) {
 			text = ansi.Truncate(text, viewportWidth, "")
 		}
 		ctx.DrawStyledText(0, 0, text, placeholderStyle)
+		// Draw cursor at position 0 if focused
+		if focused {
+			cursorStyle := baseStyle
+			cursorStyle.Reverse = true
+			ctx.DrawStyledText(0, 0, " ", cursorStyle)
+		}
 		return
 	}
 
