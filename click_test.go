@@ -189,7 +189,7 @@ func TestClick_NestedWidgetsReturnsInnermost(t *testing.T) {
 func TestClick_ChainTracker_SingleClick(t *testing.T) {
 	tracker := &mouseClickTracker{}
 
-	count := tracker.nextClick("widget1", uv.MouseLeft, time.Now())
+	count := tracker.nextClick("widget1", uv.MouseLeft, 0, 0, time.Now())
 	assert.Equal(t, 1, count, "First click should have count 1")
 }
 
@@ -197,8 +197,8 @@ func TestClick_ChainTracker_DoubleClick(t *testing.T) {
 	tracker := &mouseClickTracker{}
 	now := time.Now()
 
-	tracker.nextClick("widget1", uv.MouseLeft, now)
-	count := tracker.nextClick("widget1", uv.MouseLeft, now.Add(100*time.Millisecond))
+	tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now)
+	count := tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now.Add(100*time.Millisecond))
 
 	assert.Equal(t, 2, count, "Second quick click should have count 2")
 }
@@ -207,9 +207,9 @@ func TestClick_ChainTracker_TripleClick(t *testing.T) {
 	tracker := &mouseClickTracker{}
 	now := time.Now()
 
-	tracker.nextClick("widget1", uv.MouseLeft, now)
-	tracker.nextClick("widget1", uv.MouseLeft, now.Add(100*time.Millisecond))
-	count := tracker.nextClick("widget1", uv.MouseLeft, now.Add(200*time.Millisecond))
+	tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now)
+	tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now.Add(100*time.Millisecond))
+	count := tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now.Add(200*time.Millisecond))
 
 	assert.Equal(t, 3, count, "Third quick click should have count 3")
 }
@@ -218,9 +218,9 @@ func TestClick_ChainTracker_TimeoutResetsChain(t *testing.T) {
 	tracker := &mouseClickTracker{}
 	now := time.Now()
 
-	tracker.nextClick("widget1", uv.MouseLeft, now)
+	tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now)
 	// Wait longer than clickChainTimeout (500ms)
-	count := tracker.nextClick("widget1", uv.MouseLeft, now.Add(600*time.Millisecond))
+	count := tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now.Add(600*time.Millisecond))
 
 	assert.Equal(t, 1, count, "Click after timeout should reset to count 1")
 }
@@ -229,8 +229,8 @@ func TestClick_ChainTracker_DifferentWidgetResetsChain(t *testing.T) {
 	tracker := &mouseClickTracker{}
 	now := time.Now()
 
-	tracker.nextClick("widget1", uv.MouseLeft, now)
-	count := tracker.nextClick("widget2", uv.MouseLeft, now.Add(100*time.Millisecond))
+	tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now)
+	count := tracker.nextClick("widget2", uv.MouseLeft, 0, 0, now.Add(100*time.Millisecond))
 
 	assert.Equal(t, 1, count, "Click on different widget should reset to count 1")
 }
@@ -239,10 +239,20 @@ func TestClick_ChainTracker_DifferentButtonResetsChain(t *testing.T) {
 	tracker := &mouseClickTracker{}
 	now := time.Now()
 
-	tracker.nextClick("widget1", uv.MouseLeft, now)
-	count := tracker.nextClick("widget1", uv.MouseRight, now.Add(100*time.Millisecond))
+	tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now)
+	count := tracker.nextClick("widget1", uv.MouseRight, 0, 0, now.Add(100*time.Millisecond))
 
 	assert.Equal(t, 1, count, "Click with different button should reset to count 1")
+}
+
+func TestClick_ChainTracker_DifferentPositionResetsChain(t *testing.T) {
+	tracker := &mouseClickTracker{}
+	now := time.Now()
+
+	tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now)
+	count := tracker.nextClick("widget1", uv.MouseLeft, 5, 0, now.Add(100*time.Millisecond))
+
+	assert.Equal(t, 1, count, "Click at different position should reset to count 1")
 }
 
 func TestClick_ChainTracker_ReleaseCountMatchesDown(t *testing.T) {
@@ -250,8 +260,8 @@ func TestClick_ChainTracker_ReleaseCountMatchesDown(t *testing.T) {
 	now := time.Now()
 
 	// Double click
-	tracker.nextClick("widget1", uv.MouseLeft, now)
-	tracker.nextClick("widget1", uv.MouseLeft, now.Add(100*time.Millisecond))
+	tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now)
+	tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now.Add(100*time.Millisecond))
 
 	// Release should have same count as the down
 	releaseCount := tracker.releaseCount("widget1", uv.MouseLeft)
@@ -262,8 +272,8 @@ func TestClick_ChainTracker_ReleaseOnDifferentWidgetReturns1(t *testing.T) {
 	tracker := &mouseClickTracker{}
 	now := time.Now()
 
-	tracker.nextClick("widget1", uv.MouseLeft, now)
-	tracker.nextClick("widget1", uv.MouseLeft, now.Add(100*time.Millisecond))
+	tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now)
+	tracker.nextClick("widget1", uv.MouseLeft, 0, 0, now.Add(100*time.Millisecond))
 
 	// Release on different widget
 	releaseCount := tracker.releaseCount("widget2", uv.MouseLeft)

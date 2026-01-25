@@ -75,6 +75,11 @@ type MouseUpHandler interface {
 	OnMouseUp(event MouseEvent)
 }
 
+// MouseMoveHandler is implemented by widgets that respond to mouse movement during drag.
+type MouseMoveHandler interface {
+	OnMouseMove(event MouseEvent)
+}
+
 // Hoverable is implemented by widgets that respond to mouse hover.
 type Hoverable interface {
 	OnHover(hovered bool)

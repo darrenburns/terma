@@ -27,8 +27,8 @@
   <text x="24.8" y="8.0" fill="#191724">ple</text>
   <text x="58.4" y="8.0" fill="#191724">Inc</text>
   <text x="134.0" y="8.0" fill="#E0DEF4">Technology</text>
-  <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
-  <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#3D301D"/>
+  <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#6B5433"/>
+  <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#6B5433"/>
   <text x="8.0" y="27.6" class="underline" fill="#E0DEF4">Ap</text>
   <text x="24.8" y="27.6" fill="#E0DEF4">ricot</text>
   <text x="75.2" y="27.6" fill="#E0DEF4">Co</text>
