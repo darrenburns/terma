@@ -38,6 +38,7 @@ Widgets that display content:
 - KeybindBar - Display active keybindings
 - [Spacer](spacer.md) - Empty space for layout control
 - [Spinner](../animation.md#spinner) - Animated loading indicators
+- [Tooltip](tooltip.md) - Contextual help text on focus
 
 ## Creating Custom Widgets
 
