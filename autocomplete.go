@@ -190,7 +190,6 @@ type Autocomplete struct {
 	Width          Dimension // Widget width
 	Height         Dimension // Widget height
 	PopupWidth     Dimension // Popup width (default: match input width)
-	PopupMaxHeight Dimension // Popup max height (default: Cells(MaxVisible))
 
 	// Styling
 	Style      Style // Widget styling
@@ -710,11 +709,6 @@ func (a Autocomplete) buildPopup(ctx BuildContext, visible bool) Widget {
 		maxVisible = 8
 	}
 
-	popupMaxHeight := a.PopupMaxHeight
-	if popupMaxHeight.IsAuto() {
-		popupMaxHeight = Cells(maxVisible)
-	}
-
 	// Get anchor ID from child
 	anchorID := a.getChildID()
 
@@ -739,7 +733,7 @@ func (a Autocomplete) buildPopup(ctx BuildContext, visible bool) Widget {
 		popupStyle.BackgroundColor = ctx.Theme().Surface
 	}
 	if popupStyle.MaxHeight.IsUnset() {
-		popupStyle.MaxHeight = popupMaxHeight
+		popupStyle.MaxHeight = Cells(maxVisible)
 	}
 
 	return Floating{
