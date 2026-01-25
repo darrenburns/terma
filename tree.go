@@ -620,15 +620,15 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 	}
 	expandIndicator := t.ExpandIndicator
 	if expandIndicator == "" {
-		expandIndicator = "▼"
+		expandIndicator = "▼ "
 	}
 	collapseIndicator := t.CollapseIndicator
 	if collapseIndicator == "" {
-		collapseIndicator = "▶"
+		collapseIndicator = "▶ "
 	}
 	leafIndicator := t.LeafIndicator
 	if leafIndicator == "" {
-		leafIndicator = " "
+		leafIndicator = "  "
 	}
 	showGuideLines := true
 	if t.ShowGuideLines != nil {

@@ -380,3 +380,37 @@ func TestTextInput_SpaceKeyRepresentation(t *testing.T) {
 		t.Errorf("space rune is %q, expected ' '", runes[0])
 	}
 }
+
+// --- Snapshot Tests ---
+
+func TestSnapshot_TextInput_PlaceholderFocused(t *testing.T) {
+	state := NewTextInputState("")
+	widget := TextInput{
+		ID:          "textinput-placeholder-focused",
+		State:       state,
+		Placeholder: "Type here...",
+		Width:       Cells(20),
+	}
+
+	AssertSnapshotNamed(t, "focused", widget, 20, 1,
+		"Empty TextInput with placeholder, focused. First placeholder character should be visible under cursor (reversed).")
+}
+
+func TestSnapshot_TextInput_PlaceholderUnfocused(t *testing.T) {
+	state := NewTextInputState("")
+	// Put a Button first so it takes focus, leaving the TextInput unfocused
+	widget := Column{
+		Children: []Widget{
+			&Button{ID: "focus-stealer", Label: ""},
+			TextInput{
+				ID:          "textinput-placeholder-unfocused",
+				State:       state,
+				Placeholder: "Type here...",
+				Width:       Cells(20),
+			},
+		},
+	}
+
+	AssertSnapshotNamed(t, "unfocused", widget, 20, 2,
+		"Empty TextInput with placeholder, unfocused. Full placeholder text visible without cursor.")
+}
