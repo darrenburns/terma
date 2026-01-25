@@ -203,6 +203,7 @@ func (a *App) buildMentionSection(ctx terma.BuildContext) terma.Widget {
 				State:        a.mentionAcState,
 				TriggerChars: []rune{'@'},
 				MinChars:     0,
+				PopupWidth:   terma.Cells(26),
 				Child: terma.TextArea{
 					ID:          "mention-input",
 					State:       a.mentionInputState,
@@ -257,8 +258,8 @@ func (a *App) buildTagSection(ctx terma.BuildContext) terma.Widget {
 				RenderSuggestion: func(s terma.Suggestion, active bool, match terma.MatchResult, ctx terma.BuildContext) terma.Widget {
 					style := terma.Style{Padding: terma.EdgeInsets{Left: 1, Right: 1}}
 					if active {
-						style.BackgroundColor = theme.Primary
-						style.ForegroundColor = theme.TextOnPrimary
+						style.BackgroundColor = theme.ActiveCursor
+						style.ForegroundColor = theme.ActiveCursor.AutoText()
 					} else {
 						style.ForegroundColor = theme.Text
 					}
@@ -281,7 +282,7 @@ func (a *App) buildTagSection(ctx terma.BuildContext) terma.Widget {
 						Style: style,
 						Children: []terma.Widget{
 							terma.Text{Content: "#", Style: terma.Style{ForegroundColor: tagColor}},
-							terma.Text{Content: label},
+							terma.Text{Content: label, Style: terma.Style{ForegroundColor: style.ForegroundColor}},
 						},
 					}
 				},
