@@ -18,6 +18,11 @@ import "terma/layout"
 type Spacer struct {
 	Width  Dimension // Defaults to Flex(1) if unset
 	Height Dimension // Defaults to Flex(1) if unset
+
+	MinWidth  Dimension
+	MaxWidth  Dimension
+	MinHeight Dimension
+	MaxHeight Dimension
 }
 
 // Build returns itself as Spacer is a leaf widget.
@@ -51,8 +56,18 @@ func (s Spacer) GetContentDimensions() (width, height Dimension) {
 // BuildLayoutNode builds a layout node for this Spacer widget.
 func (s Spacer) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	w, h := s.GetContentDimensions()
-	minWidth, maxWidth := dimensionToMinMax(w)
-	minHeight, maxHeight := dimensionToMinMax(h)
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(
+		DimensionSet{
+			Width:     w,
+			Height:    h,
+			MinWidth:  s.MinWidth,
+			MaxWidth:  s.MaxWidth,
+			MinHeight: s.MinHeight,
+			MaxHeight: s.MaxHeight,
+		},
+		layout.EdgeInsets{},
+		layout.EdgeInsets{},
+	)
 
 	return &layout.BoxNode{
 		MinWidth:     minWidth,

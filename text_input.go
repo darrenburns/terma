@@ -327,6 +327,7 @@ type TextInput struct {
 	MouseDown     func(MouseEvent)  // Optional mouse down callback
 	MouseUp       func(MouseEvent)  // Optional mouse up callback
 	Hover         func(bool)        // Optional hover callback
+	Blur          func()            // Optional blur callback
 	ExtraKeybinds []Keybind         // Optional additional keybinds (checked before defaults)
 }
 
@@ -748,6 +749,13 @@ func (t TextInput) OnMouseUp(event MouseEvent) {
 func (t TextInput) OnHover(hovered bool) {
 	if t.Hover != nil {
 		t.Hover(hovered)
+	}
+}
+
+// OnBlur is called when the widget loses focus.
+func (t TextInput) OnBlur() {
+	if t.Blur != nil {
+		t.Blur()
 	}
 }
 

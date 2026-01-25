@@ -510,6 +510,7 @@ type TextArea struct {
 	MouseDown         func(MouseEvent)  // Optional mouse down callback
 	MouseUp           func(MouseEvent)  // Optional mouse up callback
 	Hover             func(bool)        // Optional hover callback
+	Blur              func()            // Optional blur callback
 	ExtraKeybinds     []Keybind         // Optional additional keybinds (checked before defaults)
 }
 
@@ -1099,5 +1100,8 @@ func (t TextArea) OnBlur() {
 	}
 	if t.State != nil {
 		t.State.lastFocused = false
+	}
+	if t.Blur != nil {
+		t.Blur()
 	}
 }

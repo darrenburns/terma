@@ -181,8 +181,8 @@ type Autocomplete struct {
 	MatchMode  FilterMode     // FilterContains (default) or FilterFuzzy
 
 	// Dismissal behavior
-	DismissOnBlur    bool // Dismiss when input loses focus (default: true)
-	DismissWhenEmpty bool // Dismiss when no matches (default: false)
+	DismissOnBlur    *bool // Dismiss when input loses focus (default: true)
+	DismissWhenEmpty bool  // Dismiss when no matches (default: false)
 
 	// Callbacks
 	OnSelect      func(Suggestion) // Called when a suggestion is selected
@@ -192,7 +192,7 @@ type Autocomplete struct {
 	// Dimensions
 	Width          Dimension // Widget width
 	Height         Dimension // Widget height
-	PopupWidth     Dimension // Popup width (default: match input width)
+	PopupWidth     Dimension // Popup width (default: fit content)
 
 	// Styling
 	Style      Style // Widget styling
@@ -242,6 +242,12 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 	// Auto-dismiss when empty if configured
 	if a.DismissWhenEmpty && visible && !hasItems {
 		a.State.Visible.Set(false)
+		visible = false
+	}
+	if a.dismissOnBlurEnabled() && !a.isChildFocused(ctx) {
+		if visible {
+			a.State.Visible.Set(false)
+		}
 		visible = false
 	}
 
@@ -294,6 +300,16 @@ func (a Autocomplete) wrapTextInput(child TextInput, ctx BuildContext) Widget {
 		}
 	}
 
+	originalOnBlur := child.Blur
+	child.Blur = func() {
+		if a.dismissOnBlurEnabled() {
+			a.dismissOnBlur()
+		}
+		if originalOnBlur != nil {
+			originalOnBlur()
+		}
+	}
+
 	return child
 }
 
@@ -313,6 +329,16 @@ func (a Autocomplete) wrapTextArea(child TextArea, ctx BuildContext) Widget {
 		a.handleTextChange(text, cursorPos)
 		if originalOnChange != nil {
 			originalOnChange(text)
+		}
+	}
+
+	originalOnBlur := child.Blur
+	child.Blur = func() {
+		if a.dismissOnBlurEnabled() {
+			a.dismissOnBlur()
+		}
+		if originalOnBlur != nil {
+			originalOnBlur()
 		}
 	}
 
@@ -415,8 +441,11 @@ func (a Autocomplete) onEnterTextInput() {
 	}
 	if a.State.Visible.Peek() && a.State.listState.ItemCount() > 0 {
 		a.selectCurrentSuggestion()
+		return
 	}
-	// If popup not visible, don't consume - let TextInput handle it (OnSubmit)
+	if ti, ok := a.Child.(TextInput); ok && ti.OnSubmit != nil && ti.State != nil {
+		ti.OnSubmit(ti.State.GetText())
+	}
 }
 
 func (a Autocomplete) onTabTextInput() {
@@ -435,8 +464,14 @@ func (a Autocomplete) onEnterTextArea() {
 	}
 	if a.State.Visible.Peek() && a.State.listState.ItemCount() > 0 {
 		a.selectCurrentSuggestion()
+		return
 	}
-	// If popup not visible, let TextArea handle it (insert newline)
+	if ta, ok := a.Child.(TextArea); ok && ta.State != nil && ta.canInsert() {
+		ta.State.InsertNewline()
+		if ta.OnChange != nil {
+			ta.OnChange(ta.State.GetText())
+		}
+	}
 }
 
 func (a Autocomplete) onTabTextArea() {
@@ -451,6 +486,9 @@ func (a Autocomplete) onTabTextArea() {
 
 // handleTextChange processes text changes to update trigger and visibility.
 func (a Autocomplete) handleTextChange(text string, cursorPos int) {
+	if a.State != nil {
+		a.State.dismissed = false
+	}
 	a.updateTriggerAndQuery(text, cursorPos)
 }
 
@@ -463,14 +501,9 @@ func (a Autocomplete) updateTriggerAndQuery(text string, cursorPos int) {
 	// Find trigger position by searching backwards from cursor
 	triggerPos := a.findTriggerPosition(text, cursorPos)
 	query := a.extractQuery(text, cursorPos, triggerPos)
-	prevTrigger := a.State.triggerPosition.Peek()
-	prevQuery := a.State.filterQuery.Peek()
 
 	a.State.triggerPosition.Set(triggerPos)
 	a.State.filterQuery.Set(query)
-	if triggerPos != prevTrigger || query != prevQuery {
-		a.State.dismissed = false
-	}
 
 	// Determine if we should show the popup
 	queryRuneCount := utf8.RuneCountInString(query)
@@ -602,6 +635,13 @@ func (a Autocomplete) matchMode() FilterMode {
 	return a.MatchMode // defaults to FilterContains (0)
 }
 
+func (a Autocomplete) dismissOnBlurEnabled() bool {
+	if a.DismissOnBlur != nil {
+		return *a.DismissOnBlur
+	}
+	return true
+}
+
 // selectCurrentSuggestion selects the currently highlighted suggestion.
 func (a Autocomplete) selectCurrentSuggestion() {
 	if a.State == nil {
@@ -651,6 +691,16 @@ func (a Autocomplete) dismiss() {
 	}
 	if a.OnDismiss != nil {
 		a.OnDismiss()
+	}
+}
+
+// dismissOnBlur hides the popup without marking it as manually dismissed.
+func (a Autocomplete) dismissOnBlur() {
+	if a.State != nil && a.State.Visible.Peek() {
+		a.State.Visible.Set(false)
+		if a.OnDismiss != nil {
+			a.OnDismiss()
+		}
 	}
 }
 
@@ -765,8 +815,8 @@ func (a Autocomplete) buildPopup(ctx BuildContext, visible bool) Widget {
 func (a Autocomplete) buildFloatConfig(anchorID string) FloatConfig {
 	config := FloatConfig{
 		OnDismiss:             a.dismiss,
-		DismissOnClickOutside: boolPtr(true),
-		DismissOnEsc:          boolPtr(true),
+		DismissOnClickOutside: BoolPtr(true),
+		DismissOnEsc:          BoolPtr(true),
 	}
 
 	if anchorID != "" {
@@ -774,12 +824,8 @@ func (a Autocomplete) buildFloatConfig(anchorID string) FloatConfig {
 		config.Anchor = AnchorBottomLeft
 	}
 
-	// For TextArea, we could add offset based on cursor position
-	// but that requires the CursorScreenPosition method
-	if ta, ok := a.Child.(TextArea); ok && ta.State != nil {
-		// Position at cursor if possible
-		offsetX, offsetY := ta.State.CursorScreenPosition(0, 0)
-		config.Offset = Offset{X: offsetX, Y: offsetY + 1}
+	if offset, ok := a.cursorPopupOffset(); ok {
+		config.Offset = offset
 	}
 
 	return config
@@ -794,6 +840,21 @@ func (a Autocomplete) getChildID() string {
 		return child.ID
 	}
 	return ""
+}
+
+func (a Autocomplete) isChildFocused(ctx BuildContext) bool {
+	childID := a.getChildID()
+	if childID == "" {
+		return false
+	}
+	focused := ctx.Focused()
+	if focused == nil {
+		return false
+	}
+	if identifiable, ok := focused.(Identifiable); ok {
+		return identifiable.WidgetID() == childID
+	}
+	return false
 }
 
 // defaultRenderSuggestion renders a suggestion with the default style.
@@ -832,7 +893,11 @@ func (a Autocomplete) defaultRenderSuggestion(item Suggestion, active bool, matc
 
 	// Add description if present
 	if item.Description != "" {
-		children = append(children, Spacer{Width: Flex(1)})
+		children = append(children, Spacer{
+			Width:    Flex(1),
+			MinWidth: Cells(4),
+			MaxWidth: Cells(10),
+		})
 		children = append(children, Text{
 			Content: item.Description,
 			Style:   Style{ForegroundColor: theme.TextMuted},
@@ -841,12 +906,52 @@ func (a Autocomplete) defaultRenderSuggestion(item Suggestion, active bool, matc
 
 	return Row{
 		Style:    style,
-		Width:    Flex(1),
 		Children: children,
 	}
 }
 
-// boolPtr returns a pointer to a bool value.
-func boolPtr(b bool) *bool {
-	return &b
+// cursorPopupOffset returns the popup offset to align with the cursor position.
+func (a Autocomplete) cursorPopupOffset() (Offset, bool) {
+	switch child := a.Child.(type) {
+	case TextInput:
+		if child.State == nil {
+			return Offset{}, false
+		}
+		cursorX := child.State.cursorDisplayX() - child.State.scrollOffset
+		padding := child.Style.Padding
+		border := child.Style.Border.Width()
+		contentHeight := 1
+		return Offset{
+			X: cursorX + padding.Left + border,
+			Y: 1 - contentHeight - padding.Bottom - border,
+		}, true
+	case TextArea:
+		if child.State == nil {
+			return Offset{}, false
+		}
+		cursorX, cursorY := child.State.CursorScreenPosition(0, 0)
+		padding := child.Style.Padding
+		border := child.Style.Border.Width()
+		contentHeight := child.State.lastHeight
+		if contentHeight <= 0 {
+			contentHeight = textAreaContentHeight(child)
+		}
+		return Offset{
+			X: cursorX + padding.Left + border,
+			Y: cursorY + 1 - contentHeight - padding.Bottom - border,
+		}, true
+	default:
+		return Offset{}, false
+	}
+}
+
+func textAreaContentHeight(area TextArea) int {
+	heightDim := area.Style.Height
+	if heightDim.IsUnset() {
+		heightDim = area.Height
+	}
+	if heightDim.IsCells() {
+		return heightDim.CellsValue()
+	}
+	return 1
 }

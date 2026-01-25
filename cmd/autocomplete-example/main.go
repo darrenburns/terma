@@ -127,11 +127,36 @@ func (a *App) buildCommandPaletteSection(ctx terma.BuildContext) terma.Widget {
 				Style:   terma.Style{ForegroundColor: theme.Accent, Bold: true},
 			},
 			terma.Autocomplete{
-				ID:        "cmd-palette",
-				State:     a.cmdAcState,
-				MatchMode: terma.FilterFuzzy,
-				Insert:    terma.InsertReplace,
-				Style:     terma.Style{Height: terma.Auto},
+				ID:         "cmd-palette",
+				State:      a.cmdAcState,
+				MatchMode:  terma.FilterFuzzy,
+				Insert:     terma.InsertReplace,
+				PopupWidth: terma.Cells(40),
+				Style:      terma.Style{Height: terma.Auto},
+				RenderSuggestion: func(s terma.Suggestion, active bool, match terma.MatchResult, ctx terma.BuildContext) terma.Widget {
+					style := terma.Style{Padding: terma.EdgeInsets{Left: 1, Right: 1}}
+					if active {
+						style.BackgroundColor = theme.ActiveCursor
+						style.ForegroundColor = theme.SelectionText
+					} else {
+						style.ForegroundColor = theme.Text
+					}
+
+					return terma.Row{
+						Style: style,
+						Children: []terma.Widget{
+							terma.Text{Content: s.Label},
+							terma.Spacer{
+								Width: terma.Flex(1),
+							},
+							terma.Text{
+								Content:   s.Description,
+								Style:     terma.Style{ForegroundColor: theme.TextMuted},
+								TextAlign: terma.TextAlignRight,
+							},
+						},
+					}
+				},
 				Child: terma.TextInput{
 					ID:          "cmd-input",
 					State:       a.cmdInputState,
@@ -142,7 +167,7 @@ func (a *App) buildCommandPaletteSection(ctx terma.BuildContext) terma.Widget {
 						Border:  terma.Border{Style: terma.BorderRounded, Color: theme.Border},
 					},
 				},
-				DismissOnBlur: true,
+				DismissOnBlur: terma.BoolPtr(true),
 				OnSelect: func(s terma.Suggestion) {
 					a.lastCommand.Set(fmt.Sprintf("%s (%s)", s.Label, s.Value))
 					a.cmdInputState.SetText("")
@@ -170,14 +195,14 @@ func (a *App) buildMentionSection(ctx terma.BuildContext) terma.Widget {
 				ID:           "mention-ac",
 				State:        a.mentionAcState,
 				TriggerChars: []rune{'@'},
-				MinChars:     1,
+				MinChars:     0,
 				Child: terma.TextArea{
 					ID:          "mention-input",
 					State:       a.mentionInputState,
 					Placeholder: "Type @ to mention someone...",
-					Width:       terma.Cells(40),
-					Height:      terma.Cells(3),
 					Style: terma.Style{
+						Width:   terma.Cells(40),
+						Height:  terma.Cells(3),
 						Padding: terma.EdgeInsetsXY(1, 0),
 						Border:  terma.Border{Style: terma.BorderRounded, Color: theme.Border},
 					},
@@ -247,7 +272,6 @@ func (a *App) buildTagSection(ctx terma.BuildContext) terma.Widget {
 
 					return terma.Row{
 						Style: style,
-						Width: terma.Flex(1),
 						Children: []terma.Widget{
 							terma.Text{Content: "#", Style: terma.Style{ForegroundColor: tagColor}},
 							terma.Text{Content: label},

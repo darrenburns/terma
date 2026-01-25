@@ -102,6 +102,7 @@ func (l *LinearNode) ComputeLayout(constraints Constraints) ComputedLayout {
 type fixedLayoutInfo struct {
 	totalFixedContent int       // Sum of non-flex children's main-axis sizes (excludes spacing)
 	totalFlex         float64   // Sum of all Flex values
+	totalFlexMax      int       // Sum of flex children's max main-axis sizes
 	maxCross          int       // Maximum cross-axis size from non-flex children
 	hasFlex           bool      // True if any child is a FlexNode
 	isFlexChild       []bool    // Per-child: true if it's a FlexNode
@@ -179,7 +180,16 @@ func (l *LinearNode) measureNonFlexChildren(contentConstraints Constraints) ([]C
 			info.flexValues[i] = flexVal
 			info.totalFlex += flexVal
 
-			// Skip measuring - will be done in second pass
+			// Measure max main-axis size for shrink-wrapping when flex children
+			// have explicit max constraints (e.g., bounded spacers).
+			_, mainMax := l.mainConstraint(contentConstraints)
+			_, crossMax := l.crossConstraint(contentConstraints)
+			maxConstraints := l.makeConstraints(mainMax, mainMax, 0, crossMax, 0, 0)
+			maxLayout := flex.Child.ComputeLayout(maxConstraints)
+			flexMain := l.mainSize(maxLayout.Box.MarginBoxWidth(), maxLayout.Box.MarginBoxHeight())
+			info.totalFlexMax += flexMain
+
+			// Skip measuring for actual layout - will be done in second pass
 			continue
 		}
 
@@ -208,9 +218,11 @@ func (l *LinearNode) determineContainerSizeWithFlex(contentConstraints Constrain
 
 	var containerMain int
 	if info.hasFlex {
-		// With flex children, container expands to fill available space
-		// This gives flex children space to fill
-		containerMain = mainMax
+		// With flex children, expand based on their max size (if bounded),
+		// otherwise fill available space.
+		totalSpacing := l.totalSpacing()
+		totalMain := info.totalFixedContent + info.totalFlexMax + totalSpacing
+		containerMain = max(mainMin, min(mainMax, totalMain))
 	} else {
 		// Without flex children, shrink-wrap to content (including spacing)
 		totalSpacing := l.totalSpacing()
