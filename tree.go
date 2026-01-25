@@ -483,6 +483,8 @@ type Tree[T any] struct {
 	OnSelect            func(node T, selected []T)
 	OnCursorChange      func(node T)
 	ScrollState         *ScrollState
+	Width               Dimension // Deprecated: use Style.Width
+	Height              Dimension // Deprecated: use Style.Height
 	Style               Style
 	MultiSelect         bool
 	CursorStyle         // Embedded - CursorPrefix/SelectedPrefix for optional indicators
@@ -551,7 +553,14 @@ func (t Tree[T]) WidgetID() string {
 // GetDimensions returns the width and height dimension preferences.
 func (t Tree[T]) GetDimensions() (width, height Dimension) {
 	dims := t.Style.GetDimensions()
-	return dims.Width, dims.Height
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = t.Width
+	}
+	if height.IsUnset() {
+		height = t.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the tree widget's style.
@@ -686,7 +695,16 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 	return treeContainer[T]{
 		Column: Column{
 			ID:       t.ID,
-			Style:    t.Style,
+			Style: func() Style {
+				style := t.Style
+				if style.Width.IsUnset() {
+					style.Width = t.Width
+				}
+				if style.Height.IsUnset() {
+					style.Height = t.Height
+				}
+				return style
+			}(),
 			Children: children,
 		},
 		tree: t,

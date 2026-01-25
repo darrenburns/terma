@@ -308,6 +308,8 @@ type TabBar struct {
 	OnTabClose     func(key string)  // Close button callback
 	Closable       bool              // Show close buttons
 	AllowReorder   bool              // Enable ctrl+left/right reordering
+	Width          Dimension         // Deprecated: use Style.Width
+	Height         Dimension         // Deprecated: use Style.Height
 	Style          Style             // Container style
 	TabStyle       Style             // Inactive tab style
 	ActiveTabStyle Style             // Active tab style
@@ -325,7 +327,14 @@ func (t TabBar) WidgetID() string {
 // GetDimensions returns the width and height dimension preferences.
 func (t TabBar) GetDimensions() (width, height Dimension) {
 	dims := t.Style.GetDimensions()
-	return dims.Width, dims.Height
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = t.Width
+	}
+	if height.IsUnset() {
+		height = t.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the style of the tab bar.
@@ -594,9 +603,16 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 		}
 	}
 
+	style := t.Style
+	if style.Width.IsUnset() {
+		style.Width = t.Width
+	}
+	if style.Height.IsUnset() {
+		style.Height = t.Height
+	}
 	return Row{
 		ID:        t.ID,
-		Style:     t.Style,
+		Style:     style,
 		Children:  children,
 		Click:     t.Click,
 		MouseDown: t.MouseDown,
@@ -615,6 +631,8 @@ type TabView struct {
 	OnTabClose     func(key string)  // Close button callback
 	Closable       bool              // Show close buttons
 	AllowReorder   bool              // Enable ctrl+left/right reordering
+	Width          Dimension         // Deprecated: use Style.Width
+	Height         Dimension         // Deprecated: use Style.Height
 	Style          Style             // Container style
 	TabBarStyle    Style             // Style for the tab bar row
 	TabStyle       Style             // Inactive tab style
@@ -630,7 +648,14 @@ func (t TabView) WidgetID() string {
 // GetDimensions returns the width and height dimension preferences.
 func (t TabView) GetDimensions() (width, height Dimension) {
 	dims := t.Style.GetDimensions()
-	return dims.Width, dims.Height
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = t.Width
+	}
+	if height.IsUnset() {
+		height = t.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the style of the tab view.
@@ -674,14 +699,23 @@ func (t TabView) Build(ctx BuildContext) Widget {
 		Children: contentMap,
 		Style:    func() Style {
 			style := t.ContentStyle
-			style.Height = Flex(1)
+			if style.Height.IsUnset() {
+				style.Height = Flex(1)
+			}
 			return style
 		}(),
 	}
 
+	containerStyle := t.Style
+	if containerStyle.Width.IsUnset() {
+		containerStyle.Width = t.Width
+	}
+	if containerStyle.Height.IsUnset() {
+		containerStyle.Height = t.Height
+	}
 	return Column{
 		ID:     t.ID,
-		Style:  t.Style,
+		Style:  containerStyle,
 		Children: []Widget{
 			tabBar,
 			content,

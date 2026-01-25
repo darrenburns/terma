@@ -27,8 +27,8 @@ type Sparkline struct {
 
 	Values []float64 // Data points to render
 
-	Width  Dimension // Default: Cells(len(Values))
-	Height Dimension // Default: Cells(1)
+	Width  Dimension // Deprecated: use Style.Width
+	Height Dimension // Deprecated: use Style.Height
 
 	Style Style // General styling (padding, margin, border)
 
@@ -59,7 +59,13 @@ func (s Sparkline) WidgetID() string {
 
 // GetContentDimensions returns the width and height dimension preferences.
 func (s Sparkline) GetContentDimensions() (width, height Dimension) {
-	w, h := s.Width, s.Height
+	w, h := s.Style.GetDimensions().Width, s.Style.GetDimensions().Height
+	if w.IsUnset() {
+		w = s.Width
+	}
+	if h.IsUnset() {
+		h = s.Height
+	}
 	if w.IsUnset() {
 		w = Cells(len(s.Values))
 	}
@@ -76,30 +82,18 @@ func (s Sparkline) GetStyle() Style {
 
 // BuildLayoutNode builds a layout node for this Sparkline widget.
 func (s Sparkline) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
-	w, h := s.GetContentDimensions()
-	minWidth, maxWidth := dimensionToMinMax(w)
-	minHeight, maxHeight := dimensionToMinMax(h)
-
 	padding := toLayoutEdgeInsets(s.Style.Padding)
 	border := borderToEdgeInsets(s.Style.Border)
+	dims := s.Style.GetDimensions()
+	if dims.Width.IsUnset() {
+		dims.Width = s.Width
+	}
+	if dims.Height.IsUnset() {
+		dims.Height = s.Height
+	}
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
-
-	return &layout.BoxNode{
+	node := layout.LayoutNode(&layout.BoxNode{
 		MinWidth:  minWidth,
 		MaxWidth:  maxWidth,
 		MinHeight: minHeight,
@@ -116,16 +110,39 @@ func (s Sparkline) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			})
 			return size.Width, size.Height
 		},
+	})
+
+	if hasPercentMinMax(dims) {
+		node = &percentConstraintWrapper{
+			child:     node,
+			minWidth:  dims.MinWidth,
+			maxWidth:  dims.MaxWidth,
+			minHeight: dims.MinHeight,
+			maxHeight: dims.MaxHeight,
+			padding:   padding,
+			border:    border,
+		}
 	}
+
+	return node
 }
 
 // Layout computes the size of the sparkline.
 func (s Sparkline) Layout(ctx BuildContext, constraints Constraints) Size {
+	dims := s.Style.GetDimensions()
+	widthDim := dims.Width
+	heightDim := dims.Height
+	if widthDim.IsUnset() {
+		widthDim = s.Width
+	}
+	if heightDim.IsUnset() {
+		heightDim = s.Height
+	}
 	var width int
 	switch {
-	case s.Width.IsCells():
-		width = s.Width.CellsValue()
-	case s.Width.IsFlex(), s.Width.IsPercent():
+	case widthDim.IsCells():
+		width = widthDim.CellsValue()
+	case widthDim.IsFlex(), widthDim.IsPercent():
 		width = constraints.MaxWidth
 	default:
 		width = len(s.Values)
@@ -133,9 +150,9 @@ func (s Sparkline) Layout(ctx BuildContext, constraints Constraints) Size {
 
 	var height int
 	switch {
-	case s.Height.IsCells():
-		height = s.Height.CellsValue()
-	case s.Height.IsFlex(), s.Height.IsPercent():
+	case heightDim.IsCells():
+		height = heightDim.CellsValue()
+	case heightDim.IsFlex(), heightDim.IsPercent():
 		height = constraints.MaxHeight
 	default:
 		height = 1

@@ -6,8 +6,8 @@ type Breadcrumbs struct {
 	Path      []string
 	OnSelect  func(index int) // Click to navigate
 	Separator string          // Default: ">"
-	Width     Dimension
-	Height    Dimension
+	Width     Dimension // Deprecated: use Style.Width
+	Height    Dimension // Deprecated: use Style.Height
 	Style     Style
 }
 
@@ -59,10 +59,14 @@ func (b Breadcrumbs) Build(ctx BuildContext) Widget {
 	if rowStyle.Padding == (EdgeInsets{}) {
 		rowStyle.Padding = EdgeInsetsTRBL(0, 1, 0, 1)
 	}
+	if rowStyle.Width.IsUnset() {
+		rowStyle.Width = b.Width
+	}
+	if rowStyle.Height.IsUnset() {
+		rowStyle.Height = b.Height
+	}
 	return Row{
 		ID:         b.ID,
-		Width:      b.Width,
-		Height:     b.Height,
 		CrossAlign: CrossAxisCenter,
 		Children:   children,
 		Style:      rowStyle,
