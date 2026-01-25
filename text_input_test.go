@@ -381,6 +381,170 @@ func TestTextInput_SpaceKeyRepresentation(t *testing.T) {
 	}
 }
 
+// --- Selection Tests ---
+
+func TestTextInputState_Selection(t *testing.T) {
+	t.Run("no selection initially", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		if state.HasSelection() {
+			t.Error("HasSelection() = true, want false")
+		}
+		start, end := state.GetSelectionBounds()
+		if start != -1 || end != -1 {
+			t.Errorf("GetSelectionBounds() = (%d, %d), want (-1, -1)", start, end)
+		}
+		if state.GetSelectedText() != "" {
+			t.Errorf("GetSelectedText() = %q, want empty", state.GetSelectedText())
+		}
+	})
+
+	t.Run("select all", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		state.SelectAll()
+		if !state.HasSelection() {
+			t.Error("HasSelection() = false after SelectAll()")
+		}
+		start, end := state.GetSelectionBounds()
+		if start != 0 || end != 5 {
+			t.Errorf("GetSelectionBounds() = (%d, %d), want (0, 5)", start, end)
+		}
+		if state.GetSelectedText() != "hello" {
+			t.Errorf("GetSelectedText() = %q, want %q", state.GetSelectedText(), "hello")
+		}
+	})
+
+	t.Run("manual selection anchor to cursor", func(t *testing.T) {
+		state := NewTextInputState("hello world")
+		state.SetSelectionAnchor(0)
+		state.CursorIndex.Set(5)
+		if !state.HasSelection() {
+			t.Error("HasSelection() = false, want true")
+		}
+		start, end := state.GetSelectionBounds()
+		if start != 0 || end != 5 {
+			t.Errorf("GetSelectionBounds() = (%d, %d), want (0, 5)", start, end)
+		}
+		if state.GetSelectedText() != "hello" {
+			t.Errorf("GetSelectedText() = %q, want %q", state.GetSelectedText(), "hello")
+		}
+	})
+
+	t.Run("selection bounds normalized when cursor before anchor", func(t *testing.T) {
+		state := NewTextInputState("hello world")
+		state.SetSelectionAnchor(5)
+		state.CursorIndex.Set(0)
+		start, end := state.GetSelectionBounds()
+		if start != 0 || end != 5 {
+			t.Errorf("GetSelectionBounds() = (%d, %d), want (0, 5)", start, end)
+		}
+	})
+
+	t.Run("clear selection", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		state.SelectAll()
+		state.ClearSelection()
+		if state.HasSelection() {
+			t.Error("HasSelection() = true after ClearSelection()")
+		}
+	})
+
+	t.Run("no selection when anchor equals cursor", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		state.SetSelectionAnchor(2)
+		state.CursorIndex.Set(2)
+		if state.HasSelection() {
+			t.Error("HasSelection() = true when anchor == cursor")
+		}
+	})
+}
+
+func TestTextInputState_SelectWord(t *testing.T) {
+	t.Run("select word in middle", func(t *testing.T) {
+		state := NewTextInputState("hello world foo")
+		state.SelectWord(7) // Inside "world"
+		if state.GetSelectedText() != "world" {
+			t.Errorf("GetSelectedText() = %q, want %q", state.GetSelectedText(), "world")
+		}
+	})
+
+	t.Run("select first word", func(t *testing.T) {
+		state := NewTextInputState("hello world")
+		state.SelectWord(2) // Inside "hello"
+		if state.GetSelectedText() != "hello" {
+			t.Errorf("GetSelectedText() = %q, want %q", state.GetSelectedText(), "hello")
+		}
+	})
+
+	t.Run("select last word", func(t *testing.T) {
+		state := NewTextInputState("hello world")
+		state.SelectWord(8) // Inside "world"
+		if state.GetSelectedText() != "world" {
+			t.Errorf("GetSelectedText() = %q, want %q", state.GetSelectedText(), "world")
+		}
+	})
+
+	t.Run("select non-word chars", func(t *testing.T) {
+		state := NewTextInputState("hello   world")
+		state.SelectWord(6) // Inside spaces
+		if state.GetSelectedText() != "   " {
+			t.Errorf("GetSelectedText() = %q, want %q", state.GetSelectedText(), "   ")
+		}
+	})
+}
+
+func TestTextInputState_DeleteSelection(t *testing.T) {
+	t.Run("delete selection", func(t *testing.T) {
+		state := NewTextInputState("hello world")
+		state.SetSelectionAnchor(0)
+		state.CursorIndex.Set(6) // Select "hello "
+		deleted := state.DeleteSelection()
+		if !deleted {
+			t.Error("DeleteSelection() = false, want true")
+		}
+		if state.GetText() != "world" {
+			t.Errorf("GetText() = %q, want %q", state.GetText(), "world")
+		}
+		if state.CursorIndex.Peek() != 0 {
+			t.Errorf("CursorIndex = %d, want 0", state.CursorIndex.Peek())
+		}
+		if state.HasSelection() {
+			t.Error("HasSelection() = true after delete")
+		}
+	})
+
+	t.Run("delete selection returns false when no selection", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		deleted := state.DeleteSelection()
+		if deleted {
+			t.Error("DeleteSelection() = true with no selection")
+		}
+		if state.GetText() != "hello" {
+			t.Errorf("GetText() = %q, want %q", state.GetText(), "hello")
+		}
+	})
+}
+
+func TestTextInputState_ReplaceSelection(t *testing.T) {
+	t.Run("replace selection", func(t *testing.T) {
+		state := NewTextInputState("hello world")
+		state.SetSelectionAnchor(6)
+		state.CursorIndex.Set(11) // Select "world"
+		state.ReplaceSelection("there")
+		if state.GetText() != "hello there" {
+			t.Errorf("GetText() = %q, want %q", state.GetText(), "hello there")
+		}
+	})
+
+	t.Run("replace selection with no selection just inserts", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		state.CursorIndex.Set(5) // At end
+		state.ReplaceSelection(" world")
+		if state.GetText() != "hello world" {
+			t.Errorf("GetText() = %q, want %q", state.GetText(), "hello world")
+		}
+	})
+}
+
 // --- Snapshot Tests ---
 
 func TestSnapshot_TextInput_PlaceholderFocused(t *testing.T) {
@@ -413,4 +577,44 @@ func TestSnapshot_TextInput_PlaceholderUnfocused(t *testing.T) {
 
 	AssertSnapshotNamed(t, "unfocused", widget, 20, 2,
 		"Empty TextInput with placeholder, unfocused. Full placeholder text visible without cursor.")
+}
+
+func TestSnapshot_TextInput_Selection(t *testing.T) {
+	t.Run("partial selection", func(t *testing.T) {
+		state := NewTextInputState("hello world")
+		state.SetSelectionAnchor(0)
+		state.CursorIndex.Set(5) // Select "hello"
+		widget := TextInput{
+			ID:    "textinput-selection-partial",
+			State: state,
+			Width: Cells(20),
+		}
+		AssertSnapshotNamed(t, "partial", widget, 20, 1,
+			"TextInput with 'hello' selected (first 5 chars). Selection should be highlighted.")
+	})
+
+	t.Run("select all", func(t *testing.T) {
+		state := NewTextInputState("hello world")
+		state.SelectAll()
+		widget := TextInput{
+			ID:    "textinput-selection-all",
+			State: state,
+			Width: Cells(20),
+		}
+		AssertSnapshotNamed(t, "select-all", widget, 20, 1,
+			"TextInput with all text selected. Entire text should be highlighted with cursor at end.")
+	})
+
+	t.Run("selection in middle", func(t *testing.T) {
+		state := NewTextInputState("hello world foo")
+		state.SetSelectionAnchor(6)
+		state.CursorIndex.Set(11) // Select "world"
+		widget := TextInput{
+			ID:    "textinput-selection-middle",
+			State: state,
+			Width: Cells(20),
+		}
+		AssertSnapshotNamed(t, "middle", widget, 20, 1,
+			"TextInput with 'world' selected in middle. Only 'world' should be highlighted.")
+	})
 }
