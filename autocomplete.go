@@ -121,6 +121,7 @@ type AutocompleteState struct {
 	scrollState     *ScrollState
 	triggerPosition Signal[int]    // Where trigger char was typed (-1 if none)
 	filterQuery     Signal[string] // Text after trigger (for filtering)
+	dismissed       bool           // Tracks manual dismissal (e.g. Escape) until query changes
 }
 
 // NewAutocompleteState creates a new AutocompleteState.
@@ -142,11 +143,13 @@ func (s *AutocompleteState) SetSuggestions(suggestions []Suggestion) {
 
 // Show makes the popup visible.
 func (s *AutocompleteState) Show() {
+	s.dismissed = false
 	s.Visible.Set(true)
 }
 
 // Hide hides the popup.
 func (s *AutocompleteState) Hide() {
+	s.dismissed = true
 	s.Visible.Set(false)
 }
 
@@ -347,6 +350,7 @@ func (a Autocomplete) onDown() {
 	if !a.State.Visible.Peek() {
 		// Popup hidden - show it if we have suggestions
 		if a.State.listState.ItemCount() > 0 {
+			a.State.dismissed = false
 			a.State.Visible.Set(true)
 		}
 		return
@@ -459,9 +463,14 @@ func (a Autocomplete) updateTriggerAndQuery(text string, cursorPos int) {
 	// Find trigger position by searching backwards from cursor
 	triggerPos := a.findTriggerPosition(text, cursorPos)
 	query := a.extractQuery(text, cursorPos, triggerPos)
+	prevTrigger := a.State.triggerPosition.Peek()
+	prevQuery := a.State.filterQuery.Peek()
 
 	a.State.triggerPosition.Set(triggerPos)
 	a.State.filterQuery.Set(query)
+	if triggerPos != prevTrigger || query != prevQuery {
+		a.State.dismissed = false
+	}
 
 	// Determine if we should show the popup
 	queryRuneCount := utf8.RuneCountInString(query)
@@ -473,6 +482,9 @@ func (a Autocomplete) updateTriggerAndQuery(text string, cursorPos int) {
 		shouldShow = true
 	}
 
+	if a.State.dismissed && shouldShow {
+		shouldShow = false
+	}
 	a.State.Visible.Set(shouldShow)
 
 	if a.OnQueryChange != nil && shouldShow {
@@ -634,6 +646,7 @@ func (a Autocomplete) selectSuggestion(suggestion Suggestion) {
 // dismiss hides the popup and calls OnDismiss if set.
 func (a Autocomplete) dismiss() {
 	if a.State != nil {
+		a.State.dismissed = true
 		a.State.Visible.Set(false)
 	}
 	if a.OnDismiss != nil {
