@@ -626,6 +626,8 @@ type TextArea struct {
 	ID                string            // Required for focus management
 	State             *TextAreaState    // Required - holds text and cursor position
 	Placeholder       string            // Text shown when empty and unfocused
+	Highlighter       Highlighter       // Optional: dynamic text highlighting
+	LineHighlights    []LineHighlight   // Optional: line-based background highlights
 	Width             Dimension         // Deprecated: use Style.Width
 	Height            Dimension         // Deprecated: use Style.Height
 	Style             Style             // Optional styling
@@ -1198,8 +1200,17 @@ func (t TextArea) Render(ctx *RenderContext) {
 	t.updateScrollOffsets(layout, contentWidth, ctx.Height)
 	t.scrollCursorIntoViewWithLayout(layout)
 
+	// Build highlight maps
+	var highlightMap map[int]SpanStyle
+	if t.Highlighter != nil && len(graphemes) > 0 {
+		text := joinGraphemes(graphemes)
+		highlights := t.Highlighter.Highlight(text, graphemes)
+		highlightMap = buildHighlightMap(highlights)
+	}
+	lineHighlightMap := buildLineHighlightMap(t.LineHighlights, len(layout.lines))
+
 	selStart, selEnd := t.State.GetSelectionBounds()
-	t.renderContent(ctx, graphemes, layout, cursorIdx, focused, baseStyle, contentWidth, selStart, selEnd, theme)
+	t.renderContent(ctx, graphemes, layout, cursorIdx, focused, baseStyle, contentWidth, selStart, selEnd, theme, highlightMap, lineHighlightMap)
 }
 
 func (t TextArea) updateScrollOffsets(layout textAreaLayout, contentWidth, viewportHeight int) {
@@ -1229,7 +1240,7 @@ func (t TextArea) updateScrollOffsets(layout textAreaLayout, contentWidth, viewp
 	}
 }
 
-func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout textAreaLayout, cursorIdx int, focused bool, baseStyle Style, contentWidth int, selStart, selEnd int, theme ThemeData) {
+func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout textAreaLayout, cursorIdx int, focused bool, baseStyle Style, contentWidth int, selStart, selEnd int, theme ThemeData, highlightMap map[int]SpanStyle, lineHighlightMap map[int]Style) {
 	scrollY := t.State.scrollOffsetY
 	scrollX := t.State.scrollOffsetX
 	hasSelection := selStart >= 0
@@ -1237,6 +1248,14 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 	for lineIdx := scrollY; lineIdx < len(layout.lines) && lineIdx < scrollY+ctx.Height; lineIdx++ {
 		line := layout.lines[lineIdx]
 		row := lineIdx - scrollY
+
+		// Apply line highlight background if present
+		if lineStyle, ok := lineHighlightMap[lineIdx]; ok {
+			if lineStyle.BackgroundColor != nil && lineStyle.BackgroundColor.IsSet() {
+				bgColor := lineStyle.BackgroundColor.ColorAt(ctx.Width, 1, 0, 0)
+				ctx.FillRect(0, row, ctx.Width, 1, bgColor)
+			}
+		}
 
 		displayX := 0
 		for i := line.start; i < line.end; i++ {
@@ -1259,7 +1278,17 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 				continue
 			}
 
+			// Build style with highlight precedence:
+			// 1. Base style
+			// 2. Line highlights (background colors already applied above)
+			// 3. Text highlights (from Highlighter)
+			// 4. Selection (theme.Selection background)
+			// 5. Cursor (reverse video)
 			style := baseStyle
+			if hs, ok := highlightMap[i]; ok {
+				style = applySpanStyle(style, hs)
+			}
+
 			isSelected := hasSelection && i >= selStart && i < selEnd
 			isCursor := focused && i == cursorIdx
 

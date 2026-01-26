@@ -318,6 +318,7 @@ type TextInput struct {
 	ID            string            // Required for focus management
 	State         *TextInputState   // Required - holds text and cursor position
 	Placeholder   string            // Text shown when empty and unfocused
+	Highlighter   Highlighter       // Optional: dynamic text highlighting
 	Width         Dimension         // Deprecated: use Style.Width
 	Height        Dimension         // Deprecated: use Style.Height (ignored; content height is always 1)
 	Style         Style             // Optional styling (padding adds to outer size automatically)
@@ -677,6 +678,14 @@ func (t TextInput) updateScrollOffset(viewportWidth int) {
 
 // renderContent renders the text with cursor highlighting.
 func (t TextInput) renderContent(ctx *RenderContext, graphemes []string, cursorIdx, scrollOffset, viewportWidth int, focused bool, baseStyle Style) {
+	// Build highlight map from grapheme index -> SpanStyle
+	var highlightMap map[int]SpanStyle
+	if t.Highlighter != nil && len(graphemes) > 0 {
+		text := joinGraphemes(graphemes)
+		highlights := t.Highlighter.Highlight(text, graphemes)
+		highlightMap = buildHighlightMap(highlights)
+	}
+
 	displayX := 0 // Position in content (display cells)
 
 	for i, grapheme := range graphemes {
@@ -696,18 +705,24 @@ func (t TextInput) renderContent(ctx *RenderContext, graphemes []string, cursorI
 			break
 		}
 
-		// Determine style - reverse for cursor when focused
-		style := baseStyle
-		if focused && i == cursorIdx {
-			style.Reverse = true
-		}
-
 		// Handle partial visibility at left edge
 		if visibleX < 0 {
 			// Grapheme starts before viewport but extends into it
 			// Skip it for simplicity (could render partial but complex)
 			displayX += gWidth
 			continue
+		}
+
+		// Build style with highlight precedence:
+		// 1. Base style
+		// 2. Text highlights (from Highlighter)
+		// 3. Cursor (reverse video)
+		style := baseStyle
+		if hs, ok := highlightMap[i]; ok {
+			style = applySpanStyle(style, hs)
+		}
+		if focused && i == cursorIdx {
+			style.Reverse = true
 		}
 
 		ctx.DrawStyledText(visibleX, 0, grapheme, style)
