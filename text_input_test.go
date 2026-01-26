@@ -618,3 +618,139 @@ func TestSnapshot_TextInput_Selection(t *testing.T) {
 			"TextInput with 'world' selected in middle. Only 'world' should be highlighted.")
 	})
 }
+
+// --- ReadOnly Tests ---
+
+func TestTextInputState_ReadOnly(t *testing.T) {
+	t.Run("default is not read-only", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		if state.ReadOnly.Peek() {
+			t.Error("ReadOnly should be false by default")
+		}
+	})
+
+	t.Run("can set read-only", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		state.ReadOnly.Set(true)
+		if !state.ReadOnly.Peek() {
+			t.Error("ReadOnly should be true after Set(true)")
+		}
+	})
+}
+
+func TestTextInput_CanEdit(t *testing.T) {
+	t.Run("canEdit returns true when not read-only", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		widget := TextInput{ID: "test", State: state}
+		if !widget.canEdit() {
+			t.Error("canEdit() should return true when not read-only")
+		}
+	})
+
+	t.Run("canEdit returns false when read-only", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		state.ReadOnly.Set(true)
+		widget := TextInput{ID: "test", State: state}
+		if widget.canEdit() {
+			t.Error("canEdit() should return false when read-only")
+		}
+	})
+
+	t.Run("canEdit returns false when state is nil", func(t *testing.T) {
+		widget := TextInput{ID: "test", State: nil}
+		if widget.canEdit() {
+			t.Error("canEdit() should return false when state is nil")
+		}
+	})
+}
+
+func TestTextInput_CapturesKey_ReadOnly(t *testing.T) {
+	t.Run("captures printable key when not read-only", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		widget := TextInput{ID: "test", State: state}
+		if !widget.CapturesKey("a") {
+			t.Error("CapturesKey('a') should return true when not read-only")
+		}
+	})
+
+	t.Run("does not capture printable key when read-only", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		state.ReadOnly.Set(true)
+		widget := TextInput{ID: "test", State: state}
+		if widget.CapturesKey("a") {
+			t.Error("CapturesKey('a') should return false when read-only")
+		}
+	})
+}
+
+func TestTextInput_Keybinds_ReadOnly(t *testing.T) {
+	t.Run("includes editing keybinds when not read-only", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		widget := TextInput{ID: "test", State: state}
+		keybinds := widget.Keybinds()
+
+		// Check that backspace is present
+		hasBackspace := false
+		for _, kb := range keybinds {
+			if kb.Key == "backspace" {
+				hasBackspace = true
+				break
+			}
+		}
+		if !hasBackspace {
+			t.Error("Keybinds should include 'backspace' when not read-only")
+		}
+	})
+
+	t.Run("excludes editing keybinds when read-only", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		state.ReadOnly.Set(true)
+		widget := TextInput{ID: "test", State: state}
+		keybinds := widget.Keybinds()
+
+		// Check that backspace is NOT present
+		for _, kb := range keybinds {
+			if kb.Key == "backspace" {
+				t.Error("Keybinds should NOT include 'backspace' when read-only")
+				break
+			}
+		}
+	})
+
+	t.Run("includes navigation keybinds when read-only", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		state.ReadOnly.Set(true)
+		widget := TextInput{ID: "test", State: state}
+		keybinds := widget.Keybinds()
+
+		// Check that navigation keys are present
+		navKeys := []string{"left", "right", "home", "end", "ctrl+a"}
+		for _, key := range navKeys {
+			found := false
+			for _, kb := range keybinds {
+				if kb.Key == key {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Keybinds should include '%s' when read-only", key)
+			}
+		}
+	})
+}
+
+func TestSnapshot_TextInput_ReadOnly(t *testing.T) {
+	state := NewTextInputState("read-only text")
+	state.ReadOnly.Set(true)
+	state.CursorIndex.Set(5) // Position cursor in middle
+
+	widget := TextInput{
+		ID:    "textinput-readonly",
+		State: state,
+		Width: Cells(20),
+	}
+
+	AssertSnapshot(t, widget, 20, 1,
+		"TextInput in read-only mode with cursor in middle. Cursor should be visible but editing is disabled.")
+}

@@ -18,6 +18,7 @@ type TextAreaState struct {
 	InsertMode      Signal[bool]        // True when edits are allowed
 	WrapMode        Signal[WrapMode]    // WrapNone or WrapSoft/WrapHard
 	SelectionAnchor Signal[int]         // -1 = no selection, else anchor grapheme index
+	ReadOnly        Signal[bool]        // When true, content cannot be edited but cursor can move
 
 	scrollOffsetX int
 	scrollOffsetY int
@@ -37,6 +38,7 @@ func NewTextAreaState(initial string) *TextAreaState {
 		InsertMode:      NewSignal(true),
 		WrapMode:        NewSignal(WrapSoft),
 		SelectionAnchor: NewSignal(-1),
+		ReadOnly:        NewSignal(false),
 		preferredColumn: -1,
 	}
 }
@@ -999,6 +1001,10 @@ func (t TextArea) notifyChange() {
 
 func (t TextArea) canInsert() bool {
 	if t.State == nil {
+		return false
+	}
+	// Read-only mode prevents all editing
+	if t.State.ReadOnly.Peek() {
 		return false
 	}
 	if !t.RequireInsertMode {

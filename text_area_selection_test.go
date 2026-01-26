@@ -271,3 +271,149 @@ func TestTextAreaState_HasSelection_SamePosition(t *testing.T) {
 		t.Error("expected no selection when anchor equals cursor")
 	}
 }
+
+// --- ReadOnly Tests ---
+
+func TestTextAreaState_ReadOnly(t *testing.T) {
+	t.Run("default is not read-only", func(t *testing.T) {
+		state := NewTextAreaState("hello")
+		if state.ReadOnly.Peek() {
+			t.Error("ReadOnly should be false by default")
+		}
+	})
+
+	t.Run("can set read-only", func(t *testing.T) {
+		state := NewTextAreaState("hello")
+		state.ReadOnly.Set(true)
+		if !state.ReadOnly.Peek() {
+			t.Error("ReadOnly should be true after Set(true)")
+		}
+	})
+}
+
+func TestTextArea_CanInsert_ReadOnly(t *testing.T) {
+	t.Run("canInsert returns true when not read-only", func(t *testing.T) {
+		state := NewTextAreaState("hello")
+		widget := TextArea{ID: "test", State: state}
+		if !widget.canInsert() {
+			t.Error("canInsert() should return true when not read-only")
+		}
+	})
+
+	t.Run("canInsert returns false when read-only", func(t *testing.T) {
+		state := NewTextAreaState("hello")
+		state.ReadOnly.Set(true)
+		widget := TextArea{ID: "test", State: state}
+		if widget.canInsert() {
+			t.Error("canInsert() should return false when read-only")
+		}
+	})
+
+	t.Run("canInsert returns false when state is nil", func(t *testing.T) {
+		widget := TextArea{ID: "test", State: nil}
+		if widget.canInsert() {
+			t.Error("canInsert() should return false when state is nil")
+		}
+	})
+
+	t.Run("canInsert respects ReadOnly even when RequireInsertMode is false", func(t *testing.T) {
+		state := NewTextAreaState("hello")
+		state.ReadOnly.Set(true)
+		widget := TextArea{ID: "test", State: state, RequireInsertMode: false}
+		if widget.canInsert() {
+			t.Error("canInsert() should return false when read-only, regardless of RequireInsertMode")
+		}
+	})
+}
+
+func TestTextArea_CapturesKey_ReadOnly(t *testing.T) {
+	t.Run("captures printable key when not read-only", func(t *testing.T) {
+		state := NewTextAreaState("hello")
+		widget := TextArea{ID: "test", State: state}
+		if !widget.CapturesKey("a") {
+			t.Error("CapturesKey('a') should return true when not read-only")
+		}
+	})
+
+	t.Run("does not capture printable key when read-only", func(t *testing.T) {
+		state := NewTextAreaState("hello")
+		state.ReadOnly.Set(true)
+		widget := TextArea{ID: "test", State: state}
+		if widget.CapturesKey("a") {
+			t.Error("CapturesKey('a') should return false when read-only")
+		}
+	})
+}
+
+func TestTextArea_Keybinds_ReadOnly(t *testing.T) {
+	t.Run("includes editing keybinds when not read-only", func(t *testing.T) {
+		state := NewTextAreaState("hello")
+		widget := TextArea{ID: "test", State: state}
+		keybinds := widget.Keybinds()
+
+		// Check that backspace is present
+		hasBackspace := false
+		for _, kb := range keybinds {
+			if kb.Key == "backspace" {
+				hasBackspace = true
+				break
+			}
+		}
+		if !hasBackspace {
+			t.Error("Keybinds should include 'backspace' when not read-only")
+		}
+	})
+
+	t.Run("excludes editing keybinds when read-only", func(t *testing.T) {
+		state := NewTextAreaState("hello")
+		state.ReadOnly.Set(true)
+		widget := TextArea{ID: "test", State: state}
+		keybinds := widget.Keybinds()
+
+		// Check that backspace is NOT present
+		for _, kb := range keybinds {
+			if kb.Key == "backspace" {
+				t.Error("Keybinds should NOT include 'backspace' when read-only")
+				break
+			}
+		}
+	})
+
+	t.Run("includes navigation keybinds when read-only", func(t *testing.T) {
+		state := NewTextAreaState("hello")
+		state.ReadOnly.Set(true)
+		widget := TextArea{ID: "test", State: state}
+		keybinds := widget.Keybinds()
+
+		// Check that navigation keys are present
+		navKeys := []string{"left", "right", "up", "down", "home", "end", "ctrl+a"}
+		for _, key := range navKeys {
+			found := false
+			for _, kb := range keybinds {
+				if kb.Key == key {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Keybinds should include '%s' when read-only", key)
+			}
+		}
+	})
+}
+
+func TestSnapshot_TextArea_ReadOnly(t *testing.T) {
+	state := NewTextAreaState("line 1\nline 2\nline 3")
+	state.ReadOnly.Set(true)
+	state.CursorIndex.Set(8) // Position cursor on line 2
+
+	widget := TextArea{
+		ID:     "textarea-readonly",
+		State:  state,
+		Width:  Cells(15),
+		Height: Cells(4),
+	}
+
+	AssertSnapshot(t, widget, 15, 4,
+		"TextArea in read-only mode with cursor on line 2. Cursor should be visible but editing is disabled.")
+}

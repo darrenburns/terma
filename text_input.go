@@ -59,6 +59,7 @@ type TextInputState struct {
 	Content         AnySignal[[]string] // Grapheme clusters for Unicode safety
 	CursorIndex     Signal[int]         // Grapheme index (0 = before first char)
 	SelectionAnchor Signal[int]         // -1 = no selection, else anchor grapheme index
+	ReadOnly        Signal[bool]        // When true, content cannot be edited but cursor can move
 
 	// scrollOffset is calculated during render to keep cursor visible.
 	// Not a signal because it's derived state, not source of truth.
@@ -72,6 +73,7 @@ func NewTextInputState(initial string) *TextInputState {
 		Content:         NewAnySignal(graphemes),
 		CursorIndex:     NewSignal(len(graphemes)), // Cursor at end
 		SelectionAnchor: NewSignal(-1),
+		ReadOnly:        NewSignal(false),
 	}
 }
 
@@ -457,8 +459,13 @@ func (t TextInput) IsFocusable() bool {
 
 // CapturesKey returns true if this key would be captured by the text input
 // (i.e., typed as text rather than bubbling to ancestors). This is true for
-// printable characters without modifiers.
+// printable characters without modifiers when not read-only.
 func (t TextInput) CapturesKey(key string) bool {
+	// Read-only mode doesn't capture text input
+	if !t.canEdit() {
+		return false
+	}
+
 	// Keys with modifiers are not captured (they may have special handling)
 	if strings.Contains(key, "+") {
 		return false
@@ -477,9 +484,8 @@ func (t TextInput) CapturesKey(key string) bool {
 // Keybinds returns the declarative keybindings for this text input.
 // ExtraKeybinds are checked first, allowing custom behavior to override defaults.
 func (t TextInput) Keybinds() []Keybind {
-	defaults := []Keybind{
-		{Key: "enter", Name: "Submit", Action: t.submit},
-		// Cursor movement (clears selection)
+	keybinds := []Keybind{
+		// Cursor movement (clears selection) - always allowed
 		{Key: "left", Action: t.cursorLeft, Hidden: true},
 		{Key: "right", Action: t.cursorRight, Hidden: true},
 		{Key: "home", Action: t.cursorHome, Hidden: true},
@@ -489,29 +495,44 @@ func (t TextInput) Keybinds() []Keybind {
 		{Key: "alt+b", Action: t.cursorWordLeft, Hidden: true},
 		{Key: "ctrl+right", Action: t.cursorWordRight, Hidden: true},
 		{Key: "alt+f", Action: t.cursorWordRight, Hidden: true},
-		// Selection movement (extends selection)
+		// Selection movement (extends selection) - always allowed
 		{Key: "shift+left", Action: t.selectLeft, Hidden: true},
 		{Key: "shift+right", Action: t.selectRight, Hidden: true},
 		{Key: "shift+home", Action: t.selectHome, Hidden: true},
 		{Key: "shift+end", Action: t.selectEnd, Hidden: true},
 		{Key: "ctrl+shift+left", Action: t.selectWordLeft, Hidden: true},
 		{Key: "ctrl+shift+right", Action: t.selectWordRight, Hidden: true},
-		// Select all
+		// Select all - always allowed
 		{Key: "ctrl+a", Action: t.selectAll, Hidden: true},
-		// Deletion
-		{Key: "backspace", Action: t.deleteBackward, Hidden: true},
-		{Key: "delete", Action: t.deleteForward, Hidden: true},
-		{Key: "ctrl+d", Action: t.deleteForward, Hidden: true},
-		{Key: "ctrl+u", Action: t.deleteToBeginning, Hidden: true},
-		{Key: "ctrl+k", Action: t.deleteToEnd, Hidden: true},
-		{Key: "ctrl+w", Action: t.deleteWordBackward, Hidden: true},
-		{Key: "alt+backspace", Action: t.deleteWordBackward, Hidden: true},
 	}
+
+	// Editing keybinds are only available when not read-only
+	if t.canEdit() {
+		keybinds = append(keybinds,
+			Keybind{Key: "enter", Name: "Submit", Action: t.submit},
+			Keybind{Key: "backspace", Action: t.deleteBackward, Hidden: true},
+			Keybind{Key: "delete", Action: t.deleteForward, Hidden: true},
+			Keybind{Key: "ctrl+d", Action: t.deleteForward, Hidden: true},
+			Keybind{Key: "ctrl+u", Action: t.deleteToBeginning, Hidden: true},
+			Keybind{Key: "ctrl+k", Action: t.deleteToEnd, Hidden: true},
+			Keybind{Key: "ctrl+w", Action: t.deleteWordBackward, Hidden: true},
+			Keybind{Key: "alt+backspace", Action: t.deleteWordBackward, Hidden: true},
+		)
+	}
+
 	// Prepend extra keybinds so they're checked first
 	if len(t.ExtraKeybinds) > 0 {
-		return append(t.ExtraKeybinds, defaults...)
+		return append(t.ExtraKeybinds, keybinds...)
 	}
-	return defaults
+	return keybinds
+}
+
+// canEdit returns true if text editing is allowed (not read-only).
+func (t TextInput) canEdit() bool {
+	if t.State == nil {
+		return false
+	}
+	return !t.State.ReadOnly.Peek()
 }
 
 // Keybind action methods
@@ -674,7 +695,7 @@ func (t TextInput) notifyChange() {
 
 // OnKey handles printable character input not covered by Keybinds().
 func (t TextInput) OnKey(event KeyEvent) bool {
-	if t.State == nil {
+	if t.State == nil || !t.canEdit() {
 		return false
 	}
 
