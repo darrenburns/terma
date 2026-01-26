@@ -159,6 +159,7 @@ func main() {
 | `Row` | Arranges children horizontally | `Children`, `Spacing`, `MainAlign`, `CrossAlign` |
 | `Stack` | Overlays children in z-order | `Children`, `Alignment` |
 | `Dock` | Edge-docking layout (like WPF DockPanel) | `Top`, `Bottom`, `Left`, `Right`, `Body`, `DockOrder` |
+| `SplitPane` | Two-pane layout with draggable divider | `State` (required), `First`, `Second`, `Orientation`, `DividerSize` |
 | `Scrollable` | Scrolling container with scrollbar | `Child`, `State` (required), `DisableScroll` |
 | `Floating` | Overlay/modal positioning | `Visible`, `Config`, `Child` |
 | `Switcher` | Shows one keyed child at a time | `Active`, `Children` |
