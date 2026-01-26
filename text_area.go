@@ -1249,11 +1249,15 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 		line := layout.lines[lineIdx]
 		row := lineIdx - scrollY
 
-		// Apply line highlight background if present
+		// Determine base style for this line (may include line highlight background)
+		lineBaseStyle := baseStyle
 		if lineStyle, ok := lineHighlightMap[lineIdx]; ok {
 			if lineStyle.BackgroundColor != nil && lineStyle.BackgroundColor.IsSet() {
+				// Fill the entire line with the highlight background
 				bgColor := lineStyle.BackgroundColor.ColorAt(ctx.Width, 1, 0, 0)
 				ctx.FillRect(0, row, ctx.Width, 1, bgColor)
+				// Use line highlight background as base for text on this line
+				lineBaseStyle.BackgroundColor = lineStyle.BackgroundColor
 			}
 		}
 
@@ -1279,12 +1283,11 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 			}
 
 			// Build style with highlight precedence:
-			// 1. Base style
-			// 2. Line highlights (background colors already applied above)
-			// 3. Text highlights (from Highlighter)
-			// 4. Selection (theme.Selection background)
-			// 5. Cursor (reverse video)
-			style := baseStyle
+			// 1. Base style (with line highlight background if applicable)
+			// 2. Text highlights (from Highlighter)
+			// 3. Selection (theme.Selection background)
+			// 4. Cursor (reverse video)
+			style := lineBaseStyle
 			if hs, ok := highlightMap[i]; ok {
 				style = applySpanStyle(style, hs)
 			}
@@ -1372,10 +1375,15 @@ func (t TextArea) OnMouseDown(event MouseEvent) {
 
 	contentWidth := reservedContentWidth(t.State.lastWidth)
 
+	// Adjust local coordinates for border and padding
+	// LocalX/LocalY are relative to border-box, but content is inside padding/border
+	localX := event.LocalX - t.Style.Border.Width() - t.Style.Padding.Left
+	localY := event.LocalY - t.Style.Border.Width() - t.Style.Padding.Top
+
 	// Shift+click: extend selection from current position
 	if event.Mod.Contains(uv.ModShift) {
 		t.ensureAnchor()
-		t.State.SetCursorFromLocalPosition(event.LocalX, event.LocalY, contentWidth)
+		t.State.SetCursorFromLocalPosition(localX, localY, contentWidth)
 		if t.MouseDown != nil {
 			t.MouseDown(event)
 		}
@@ -1386,7 +1394,7 @@ func (t TextArea) OnMouseDown(event MouseEvent) {
 	t.State.ClearSelection()
 
 	// Position cursor at click location
-	t.State.SetCursorFromLocalPosition(event.LocalX, event.LocalY, contentWidth)
+	t.State.SetCursorFromLocalPosition(localX, localY, contentWidth)
 	cursor := t.State.CursorIndex.Peek()
 
 	// Handle multi-click (click chain is reset at app level when position changes)
@@ -1414,9 +1422,13 @@ func (t TextArea) OnMouseMove(event MouseEvent) {
 		return
 	}
 
+	// Adjust local coordinates for border and padding
+	localX := event.LocalX - t.Style.Border.Width() - t.Style.Padding.Left
+	localY := event.LocalY - t.Style.Border.Width() - t.Style.Padding.Top
+
 	// Update cursor position; selection extends from anchor
 	contentWidth := reservedContentWidth(t.State.lastWidth)
-	t.State.SetCursorFromLocalPosition(event.LocalX, event.LocalY, contentWidth)
+	t.State.SetCursorFromLocalPosition(localX, localY, contentWidth)
 }
 
 // OnMouseUp is called when the mouse is released on the widget.

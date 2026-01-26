@@ -4,6 +4,7 @@ import (
 	"strings"
 	"unicode"
 
+	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 	"terma/layout"
 )
@@ -55,8 +56,9 @@ func isWordChar(g string) bool {
 // It is the source of truth for text content and cursor position,
 // and must be provided to TextInput.
 type TextInputState struct {
-	Content     AnySignal[[]string] // Grapheme clusters for Unicode safety
-	CursorIndex Signal[int]         // Grapheme index (0 = before first char)
+	Content         AnySignal[[]string] // Grapheme clusters for Unicode safety
+	CursorIndex     Signal[int]         // Grapheme index (0 = before first char)
+	SelectionAnchor Signal[int]         // -1 = no selection, else anchor grapheme index
 
 	// scrollOffset is calculated during render to keep cursor visible.
 	// Not a signal because it's derived state, not source of truth.
@@ -67,8 +69,9 @@ type TextInputState struct {
 func NewTextInputState(initial string) *TextInputState {
 	graphemes := splitGraphemes(initial)
 	return &TextInputState{
-		Content:     NewAnySignal(graphemes),
-		CursorIndex: NewSignal(len(graphemes)), // Cursor at end
+		Content:         NewAnySignal(graphemes),
+		CursorIndex:     NewSignal(len(graphemes)), // Cursor at end
+		SelectionAnchor: NewSignal(-1),
 	}
 }
 
@@ -281,6 +284,116 @@ func (s *TextInputState) clampCursor() {
 	}
 }
 
+// --- Selection Methods ---
+
+// HasSelection returns true if there is an active selection.
+func (s *TextInputState) HasSelection() bool {
+	anchor := s.SelectionAnchor.Peek()
+	return anchor >= 0 && anchor != s.CursorIndex.Peek()
+}
+
+// GetSelectionBounds returns the normalized selection bounds (start, end).
+// Returns (-1, -1) if there is no selection.
+func (s *TextInputState) GetSelectionBounds() (start, end int) {
+	anchor := s.SelectionAnchor.Peek()
+	cursor := s.CursorIndex.Peek()
+	if anchor < 0 || anchor == cursor {
+		return -1, -1
+	}
+	if anchor < cursor {
+		return anchor, cursor
+	}
+	return cursor, anchor
+}
+
+// GetSelectedText returns the selected text as a string.
+// Returns empty string if there is no selection.
+func (s *TextInputState) GetSelectedText() string {
+	start, end := s.GetSelectionBounds()
+	if start < 0 {
+		return ""
+	}
+	graphemes := s.Content.Peek()
+	return joinGraphemes(graphemes[start:end])
+}
+
+// ClearSelection clears the selection anchor.
+func (s *TextInputState) ClearSelection() {
+	s.SelectionAnchor.Set(-1)
+}
+
+// SetSelectionAnchor sets the selection anchor to the given index.
+func (s *TextInputState) SetSelectionAnchor(index int) {
+	s.SelectionAnchor.Set(index)
+}
+
+// SelectAll selects all text (anchor=0, cursor=len).
+func (s *TextInputState) SelectAll() {
+	graphemes := s.Content.Peek()
+	s.SelectionAnchor.Set(0)
+	s.CursorIndex.Set(len(graphemes))
+}
+
+// SelectWord selects the word at the given grapheme index.
+func (s *TextInputState) SelectWord(index int) {
+	graphemes := s.Content.Peek()
+	if len(graphemes) == 0 {
+		return
+	}
+	if index < 0 {
+		index = 0
+	}
+	if index >= len(graphemes) {
+		index = len(graphemes) - 1
+	}
+
+	// Find word boundaries
+	start := index
+	end := index
+
+	// If at a non-word char, select consecutive non-word chars
+	if !isWordChar(graphemes[index]) {
+		for start > 0 && !isWordChar(graphemes[start-1]) {
+			start--
+		}
+		for end < len(graphemes) && !isWordChar(graphemes[end]) {
+			end++
+		}
+	} else {
+		// Select word characters
+		for start > 0 && isWordChar(graphemes[start-1]) {
+			start--
+		}
+		for end < len(graphemes) && isWordChar(graphemes[end]) {
+			end++
+		}
+	}
+
+	s.SelectionAnchor.Set(start)
+	s.CursorIndex.Set(end)
+}
+
+// DeleteSelection deletes the selected text.
+// Returns true if selection was deleted, false if there was no selection.
+func (s *TextInputState) DeleteSelection() bool {
+	start, end := s.GetSelectionBounds()
+	if start < 0 {
+		return false
+	}
+	s.Content.Update(func(graphemes []string) []string {
+		return append(graphemes[:start], graphemes[end:]...)
+	})
+	s.CursorIndex.Set(start)
+	s.SelectionAnchor.Set(-1)
+	return true
+}
+
+// ReplaceSelection deletes any selected text and inserts the given text.
+func (s *TextInputState) ReplaceSelection(text string) {
+	s.DeleteSelection()
+	s.Insert(text)
+}
+
 // SetCursorFromLocalPosition moves the cursor to the given local X position.
 // It accounts for scroll offset internally. This mirrors TextArea's method
 // but is simplified for single-line input.
@@ -366,17 +479,25 @@ func (t TextInput) CapturesKey(key string) bool {
 func (t TextInput) Keybinds() []Keybind {
 	defaults := []Keybind{
 		{Key: "enter", Name: "Submit", Action: t.submit},
-		// Cursor movement
+		// Cursor movement (clears selection)
 		{Key: "left", Action: t.cursorLeft, Hidden: true},
 		{Key: "right", Action: t.cursorRight, Hidden: true},
 		{Key: "home", Action: t.cursorHome, Hidden: true},
-		{Key: "ctrl+a", Action: t.cursorHome, Hidden: true},
 		{Key: "end", Action: t.cursorEnd, Hidden: true},
 		{Key: "ctrl+e", Action: t.cursorEnd, Hidden: true},
 		{Key: "ctrl+left", Action: t.cursorWordLeft, Hidden: true},
 		{Key: "alt+b", Action: t.cursorWordLeft, Hidden: true},
 		{Key: "ctrl+right", Action: t.cursorWordRight, Hidden: true},
 		{Key: "alt+f", Action: t.cursorWordRight, Hidden: true},
+		// Selection movement (extends selection)
+		{Key: "shift+left", Action: t.selectLeft, Hidden: true},
+		{Key: "shift+right", Action: t.selectRight, Hidden: true},
+		{Key: "shift+home", Action: t.selectHome, Hidden: true},
+		{Key: "shift+end", Action: t.selectEnd, Hidden: true},
+		{Key: "ctrl+shift+left", Action: t.selectWordLeft, Hidden: true},
+		{Key: "ctrl+shift+right", Action: t.selectWordRight, Hidden: true},
+		// Select all
+		{Key: "ctrl+a", Action: t.selectAll, Hidden: true},
 		// Deletion
 		{Key: "backspace", Action: t.deleteBackward, Hidden: true},
 		{Key: "delete", Action: t.deleteForward, Hidden: true},
@@ -403,71 +524,144 @@ func (t TextInput) submit() {
 
 func (t TextInput) cursorLeft() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorLeft()
 	}
 }
 
 func (t TextInput) cursorRight() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorRight()
 	}
 }
 
 func (t TextInput) cursorHome() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorHome()
 	}
 }
 
 func (t TextInput) cursorEnd() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorEnd()
 	}
 }
 
 func (t TextInput) cursorWordLeft() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorWordLeft()
 	}
 }
 
 func (t TextInput) cursorWordRight() {
 	if t.State != nil {
+		t.State.ClearSelection()
 		t.State.CursorWordRight()
+	}
+}
+
+// ensureAnchor sets the selection anchor to the current cursor position if not already set.
+func (t TextInput) ensureAnchor() {
+	if t.State != nil && t.State.SelectionAnchor.Peek() < 0 {
+		t.State.SetSelectionAnchor(t.State.CursorIndex.Peek())
+	}
+}
+
+// Selection action methods
+
+func (t TextInput) selectLeft() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorLeft()
+	}
+}
+
+func (t TextInput) selectRight() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorRight()
+	}
+}
+
+func (t TextInput) selectHome() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorHome()
+	}
+}
+
+func (t TextInput) selectEnd() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorEnd()
+	}
+}
+
+func (t TextInput) selectWordLeft() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorWordLeft()
+	}
+}
+
+func (t TextInput) selectWordRight() {
+	if t.State != nil {
+		t.ensureAnchor()
+		t.State.CursorWordRight()
+	}
+}
+
+func (t TextInput) selectAll() {
+	if t.State != nil {
+		t.State.SelectAll()
 	}
 }
 
 func (t TextInput) deleteBackward() {
 	if t.State != nil {
-		t.State.DeleteBackward()
+		if !t.State.DeleteSelection() {
+			t.State.DeleteBackward()
+		}
 		t.notifyChange()
 	}
 }
 
 func (t TextInput) deleteForward() {
 	if t.State != nil {
-		t.State.DeleteForward()
+		if !t.State.DeleteSelection() {
+			t.State.DeleteForward()
+		}
 		t.notifyChange()
 	}
 }
 
 func (t TextInput) deleteToBeginning() {
 	if t.State != nil {
-		t.State.DeleteToBeginning()
+		if !t.State.DeleteSelection() {
+			t.State.DeleteToBeginning()
+		}
 		t.notifyChange()
 	}
 }
 
 func (t TextInput) deleteToEnd() {
 	if t.State != nil {
-		t.State.DeleteToEnd()
+		if !t.State.DeleteSelection() {
+			t.State.DeleteToEnd()
+		}
 		t.notifyChange()
 	}
 }
 
 func (t TextInput) deleteWordBackward() {
 	if t.State != nil {
-		t.State.DeleteWordBackward()
+		if !t.State.DeleteSelection() {
+			t.State.DeleteWordBackward()
+		}
 		t.notifyChange()
 	}
 }
@@ -488,7 +682,7 @@ func (t TextInput) OnKey(event KeyEvent) bool {
 	// Text() returns empty string for non-text keys like arrows, function keys, etc.
 	text := event.Text()
 	if text != "" {
-		t.State.Insert(text)
+		t.State.ReplaceSelection(text)
 		t.notifyChange()
 		return true
 	}
@@ -608,6 +802,7 @@ func (t TextInput) Render(ctx *RenderContext) {
 	// Subscribe to state changes by calling Get()
 	graphemes := t.State.Content.Get()
 	cursorIdx := t.State.CursorIndex.Get()
+	_ = t.State.SelectionAnchor.Get() // Subscribe to selection changes
 
 	viewportWidth := ctx.Width
 
@@ -654,8 +849,11 @@ func (t TextInput) Render(ctx *RenderContext) {
 	t.updateScrollOffset(viewportWidth)
 	scrollOffset := t.State.scrollOffset
 
-	// Render text with cursor
-	t.renderContent(ctx, graphemes, cursorIdx, scrollOffset, viewportWidth, focused, baseStyle)
+	// Get selection bounds
+	selStart, selEnd := t.State.GetSelectionBounds()
+
+	// Render text with cursor and selection
+	t.renderContent(ctx, graphemes, cursorIdx, scrollOffset, viewportWidth, focused, baseStyle, selStart, selEnd, theme)
 }
 
 // updateScrollOffset ensures the cursor is visible within the viewport.
@@ -676,8 +874,8 @@ func (t TextInput) updateScrollOffset(viewportWidth int) {
 	}
 }
 
-// renderContent renders the text with cursor highlighting.
-func (t TextInput) renderContent(ctx *RenderContext, graphemes []string, cursorIdx, scrollOffset, viewportWidth int, focused bool, baseStyle Style) {
+// renderContent renders the text with cursor and selection highlighting.
+func (t TextInput) renderContent(ctx *RenderContext, graphemes []string, cursorIdx, scrollOffset, viewportWidth int, focused bool, baseStyle Style, selStart, selEnd int, theme ThemeData) {
 	// Build highlight map from grapheme index -> SpanStyle
 	var highlightMap map[int]SpanStyle
 	if t.Highlighter != nil && len(graphemes) > 0 {
@@ -685,8 +883,8 @@ func (t TextInput) renderContent(ctx *RenderContext, graphemes []string, cursorI
 		highlights := t.Highlighter.Highlight(text, graphemes)
 		highlightMap = buildHighlightMap(highlights)
 	}
-
 	displayX := 0 // Position in content (display cells)
+	hasSelection := selStart >= 0
 
 	for i, grapheme := range graphemes {
 		gWidth := graphemeWidth(grapheme)
@@ -716,13 +914,22 @@ func (t TextInput) renderContent(ctx *RenderContext, graphemes []string, cursorI
 		// Build style with highlight precedence:
 		// 1. Base style
 		// 2. Text highlights (from Highlighter)
-		// 3. Cursor (reverse video)
+		// 3. Selection (theme.Selection background)
+		// 4. Cursor (reverse video)
 		style := baseStyle
 		if hs, ok := highlightMap[i]; ok {
 			style = applySpanStyle(style, hs)
 		}
-		if focused && i == cursorIdx {
+
+		isSelected := hasSelection && i >= selStart && i < selEnd
+		isCursor := focused && i == cursorIdx
+
+		// Cursor style (reverse) takes precedence over selection
+		if isCursor {
 			style.Reverse = true
+		} else if isSelected {
+			// Match List/Table selection styling - just background, no foreground change
+			style.BackgroundColor = theme.Selection
 		}
 
 		ctx.DrawStyledText(visibleX, 0, grapheme, style)
@@ -750,14 +957,61 @@ func (t TextInput) OnClick(event MouseEvent) {
 // OnMouseDown is called when the mouse is pressed on the widget.
 // Implements the MouseDownHandler interface.
 func (t TextInput) OnMouseDown(event MouseEvent) {
-	// Set cursor position from click (matches TextArea behavior)
-	if t.State != nil {
-		t.State.SetCursorFromLocalPosition(event.LocalX)
+	if t.State == nil {
+		if t.MouseDown != nil {
+			t.MouseDown(event)
+		}
+		return
+	}
+
+	// Adjust local X coordinate for border and padding
+	// LocalX is relative to border-box, but content is inside padding/border
+	localX := event.LocalX - t.Style.Border.Width() - t.Style.Padding.Left
+
+	// Shift+click: extend selection from current position
+	if event.Mod.Contains(uv.ModShift) {
+		t.ensureAnchor()
+		t.State.SetCursorFromLocalPosition(localX)
+		if t.MouseDown != nil {
+			t.MouseDown(event)
+		}
+		return
+	}
+
+	// Clear any existing selection
+	t.State.ClearSelection()
+
+	// Position cursor at click location
+	t.State.SetCursorFromLocalPosition(localX)
+	cursor := t.State.CursorIndex.Peek()
+
+	// Handle multi-click
+	switch event.ClickCount {
+	case 2:
+		// Double-click: select word
+		t.State.SelectWord(cursor)
+	default:
+		// Single click: set anchor to prepare for drag
+		t.State.SetSelectionAnchor(cursor)
 	}
 
 	if t.MouseDown != nil {
 		t.MouseDown(event)
 	}
+}
+
+// OnMouseMove is called when the mouse is moved while dragging.
+// Implements the MouseMoveHandler interface.
+func (t TextInput) OnMouseMove(event MouseEvent) {
+	if t.State == nil {
+		return
+	}
+
+	// Adjust local X coordinate for border and padding
+	localX := event.LocalX - t.Style.Border.Width() - t.Style.Padding.Left
+
+	// Update cursor position; selection extends from anchor
+	t.State.SetCursorFromLocalPosition(localX)
 }
 
 // OnMouseUp is called when the mouse is released on the widget.
