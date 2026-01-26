@@ -26,7 +26,6 @@
   <text x="8.0" y="8.0" fill="#E0DEF4">line</text>
   <text x="50.0" y="8.0" fill="#E0DEF4">1</text>
   <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="33.2" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="41.6" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
@@ -41,7 +40,8 @@
   <rect x="117.2" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="125.6" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <text x="8.0" y="27.6" fill="#E0DEF4">l</text>
-  <text x="16.4" y="27.6" fill="#E0DEF4">i</text>
+  <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#E0DEF4"/>
+  <text x="16.4" y="27.6" fill="#1F1D2E">i</text>
   <text x="24.8" y="27.6" fill="#E0DEF4">ne</text>
   <text x="50.0" y="27.6" fill="#E0DEF4">2</text>
   <rect x="8.0" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
