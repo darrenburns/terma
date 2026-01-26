@@ -165,6 +165,12 @@ func (s *AutocompleteState) SelectedSuggestion() (Suggestion, bool) {
 	return s.listState.SelectedItem()
 }
 
+// TriggerPosition returns the position of the trigger character in the text,
+// or -1 if no trigger is active.
+func (s *AutocompleteState) TriggerPosition() int {
+	return s.triggerPosition.Peek()
+}
+
 // Autocomplete is a widget that wraps TextInput or TextArea to provide
 // dropdown suggestions. The input keeps focus while navigating the popup.
 type Autocomplete struct {
@@ -469,6 +475,7 @@ func (a Autocomplete) onDownTextArea() {
 	if !a.State.Visible.Peek() {
 		// Popup hidden - invoke TextArea's default cursor movement
 		if state := a.textAreaState(); state != nil {
+			state.ClearSelection()
 			state.CursorDown()
 		}
 		return
@@ -484,6 +491,7 @@ func (a Autocomplete) onUpTextArea() {
 	if !a.State.Visible.Peek() {
 		// Popup hidden - invoke TextArea's default cursor movement
 		if state := a.textAreaState(); state != nil {
+			state.ClearSelection()
 			state.CursorUp()
 		}
 		return
