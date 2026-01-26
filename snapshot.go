@@ -155,8 +155,8 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 				continue
 			}
 
-			// Check for background color
-			if cell.Style.Bg != nil {
+			// Check for background color (skip reversed cells, handled in second pass)
+			if cell.Style.Bg != nil && cell.Style.Attrs&uv.AttrReverse == 0 {
 				bgColor := FromANSI(cell.Style.Bg)
 				if bgColor.IsSet() && bgColor.Hex() != opts.Background.Hex() {
 					cellX := float64(opts.Padding) + float64(x)*opts.CellWidth
@@ -183,7 +183,18 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 		x = 0
 		for x < width {
 			cell := buf.CellAt(x, y)
-			if cell == nil || cell.Content == "" || cell.Content == " " {
+			if cell == nil || cell.Content == "" {
+				x++
+				continue
+			}
+
+			// Check if cell has styling that requires spaces to be rendered in text spans
+			// (reverse swaps fg/bg so needs text span; underline needs text span for decoration)
+			// Background colors are handled in first pass and don't need spaces in text spans
+			hasTextSpanStyle := cell.Style.Attrs&uv.AttrReverse != 0 || cell.Style.Underline != uv.UnderlineNone
+
+			// Skip spaces unless they have text-span styling (reverse, underline)
+			if cell.Content == " " && !hasTextSpanStyle {
 				x++
 				continue
 			}
@@ -194,19 +205,22 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 			textContent.WriteString(cell.Content)
 			baseStyle := cell.Style
 			baseFg := FromANSI(cell.Style.Fg)
+			baseBg := FromANSI(cell.Style.Bg)
+			cellsWidth := 0
 
 			// Advance past this cell
 			if cell.Width > 1 {
+				cellsWidth += cell.Width
 				x += cell.Width
 			} else {
+				cellsWidth++
 				x++
 			}
 
-			// Look ahead for same-style cells (including same background)
-			baseBg := FromANSI(baseStyle.Bg)
+			// Look ahead for same-style cells (including spaces with same style)
 			for x < width {
 				nextCell := buf.CellAt(x, y)
-				if nextCell == nil || nextCell.Content == "" || nextCell.Content == " " {
+				if nextCell == nil || nextCell.Content == "" {
 					break
 				}
 				nextFg := FromANSI(nextCell.Style.Fg)
@@ -215,10 +229,17 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 				if !sameStyle(baseStyle, nextCell.Style) || baseFg.Hex() != nextFg.Hex() || baseBg.Hex() != nextBg.Hex() {
 					break
 				}
+				// For spaces, only include if they have text-span styling
+				nextHasTextSpanStyle := nextCell.Style.Attrs&uv.AttrReverse != 0 || nextCell.Style.Underline != uv.UnderlineNone
+				if nextCell.Content == " " && !nextHasTextSpanStyle {
+					break
+				}
 				textContent.WriteString(nextCell.Content)
 				if nextCell.Width > 1 {
+					cellsWidth += nextCell.Width
 					x += nextCell.Width
 				} else {
+					cellsWidth++
 					x++
 				}
 			}
@@ -226,6 +247,30 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 			// Render the text span
 			textX := float64(opts.Padding) + float64(startX)*opts.CellWidth
 			textY := rowY
+
+			// Handle reverse video: swap foreground and background
+			textFg := baseFg
+			textBg := baseBg
+			if baseStyle.Attrs&uv.AttrReverse != 0 {
+				textFg, textBg = textBg, textFg
+				// If fg/bg weren't set, use defaults
+				if !textFg.IsSet() {
+					textFg = opts.Background // Use background as text color
+				}
+				if !textBg.IsSet() {
+					textBg = RGB(255, 255, 255) // Use white as background
+				}
+			}
+
+			// Render background for reversed text (if different from page background)
+			if baseStyle.Attrs&uv.AttrReverse != 0 {
+				if textBg.IsSet() && textBg.Hex() != opts.Background.Hex() {
+					cellW := float64(cellsWidth) * opts.CellWidth
+					sb.WriteString(fmt.Sprintf(`  <rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="%s"/>`,
+						textX, rowY, cellW, cellHeight, textBg.Hex()))
+					sb.WriteString("\n")
+				}
+			}
 
 			// Build style classes
 			var classes []string
@@ -248,8 +293,8 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 			}
 
 			fillAttr := ""
-			if baseFg.IsSet() {
-				fillAttr = fmt.Sprintf(` fill="%s"`, baseFg.Hex())
+			if textFg.IsSet() {
+				fillAttr = fmt.Sprintf(` fill="%s"`, textFg.Hex())
 			} else {
 				fillAttr = ` fill="#FFFFFF"` // default to white text
 			}
