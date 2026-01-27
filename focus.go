@@ -601,3 +601,15 @@ func (fc *FocusCollector) Len() int {
 	return len(fc.focusables)
 }
 
+// FirstFocusableIDAfter returns the ID of the first focusable widget collected
+// after the given index that reports IsFocusable() == true.
+// Returns empty string if no such focusable exists.
+func (fc *FocusCollector) FirstFocusableIDAfter(index int) string {
+	for i := index; i < len(fc.focusables); i++ {
+		if fc.focusables[i].Focusable.IsFocusable() {
+			return fc.focusables[i].ID
+		}
+	}
+	return ""
+}
+

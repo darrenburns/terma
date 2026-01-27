@@ -57,7 +57,6 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 							Label: "Confirmation",
 							OnPress: func() {
 								a.showConfirm.Set(true)
-								t.RequestFocus("confirm-yes")
 							},
 						},
 						&t.Button{
@@ -67,7 +66,6 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 								a.nameInput.SetText("")
 								a.emailInput.SetText("")
 								a.showForm.Set(true)
-								t.RequestFocus("form-name")
 							},
 						},
 						&t.Button{
@@ -75,7 +73,6 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 							Label: "Info",
 							OnPress: func() {
 								a.showInfo.Set(true)
-								t.RequestFocus("info-ok")
 							},
 						},
 					},
