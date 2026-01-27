@@ -40,10 +40,23 @@ nav:
   - Getting Started: getting-started.md
   - Widgets:
     - Overview: widgets/index.md
+    - Autocomplete: widgets/autocomplete.md
+    - Breadcrumbs: widgets/breadcrumbs.md
+    - Button: widgets/button.md
+    - Checkbox: widgets/checkbox.md
+    - CommandPalette: widgets/commandpalette.md
+    - FocusTrap: widgets/focustrap.md
+    - KeybindBar: widgets/keybindbar.md
+    - List: widgets/list.md
+    - Menu: widgets/menu.md
     - ProgressBar: widgets/progressbar.md
+    - Sparkline: widgets/sparkline.md
+    - Spinner: widgets/spinner.md
     - Switcher: widgets/switcher.md
     - Tabs: widgets/tabs.md
     - Table: widgets/table.md
+    - Text: widgets/text.md
+    - TextArea: widgets/textarea.md
     - TextInput: widgets/textinput.md
     - Tooltip: widgets/tooltip.md
     - Tree: widgets/tree.md
@@ -53,6 +66,8 @@ nav:
     - Dock: layout/dock.md
     - Scrollable: layout/scrollable.md
     - Spacer: layout/spacer.md
+    - SplitPane: layout/splitpane.md
+    - Stack: layout/stack.md
   - Signals: signals.md
   - Styling: styling.md
   - Focus & Keyboard: focus-keyboard.md
