@@ -230,15 +230,6 @@ func Run(root Widget) error {
 			}
 		}
 
-		// Auto-focus into modal floats when they open
-		if modalTarget := renderer.ModalFocusTarget(); modalTarget != "" {
-			focusManager.FocusByID(modalTarget)
-			// Update the signal and re-render so the focused widget shows focus style
-			if updateFocusedSignal() {
-				renderer.Render(root)
-			}
-		}
-
 		// Position terminal cursor for IME support (emoji picker, input methods)
 		// Must be before Display() since MoveTo only takes effect on next Display call
 		if focusedID := focusManager.FocusedID(); focusedID != "" {
