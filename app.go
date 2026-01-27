@@ -2,8 +2,10 @@ package terma
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -11,6 +13,10 @@ import (
 	"github.com/charmbracelet/ultraviolet/screen"
 	"github.com/charmbracelet/x/ansi"
 )
+
+// ErrPanicked is returned by Run when the application panicked.
+// The detailed panic message is printed to stderr.
+var ErrPanicked = errors.New("terma: application panicked (see stderr for details)")
 
 // appCancel holds the cancel function for the currently running app.
 var appCancel func()
@@ -112,7 +118,7 @@ func ScreenText() string {
 // Run starts the application with the given root widget and blocks until it exits.
 // The root widget can implement KeyHandler to receive key events that bubble up
 // from focused descendants.
-func Run(root Widget) error {
+func Run(root Widget) (runErr error) {
 	t := uv.DefaultTerminal()
 
 	if err := t.Start(); err != nil {
@@ -127,6 +133,30 @@ func Run(root Widget) error {
 	_, _ = t.WriteString(ansi.SetModeMouseButtonEvent)
 	_, _ = t.WriteString(ansi.SetModeMouseExtSgr)
 
+	// shutdownTerminal restores the terminal to its normal state.
+	// Safe to call multiple times (Shutdown is idempotent).
+	shutdownTerminal := func() {
+		_ = t.Shutdown(context.Background())
+		// Write restore sequences directly to stdout after Shutdown.
+		//
+		// When a panic occurs before the first Display() call, Shutdown's
+		// restoreState has no recorded lastState, so it skips exiting alt
+		// screen and showing the cursor. However, Shutdown DOES flush the
+		// internal buffer which contains the enter-alt-screen and mouse-enable
+		// sequences that were buffered during Start(). This leaves the
+		// terminal stuck in alt screen with mouse tracking enabled.
+		//
+		// Writing these sequences directly to stdout (the output device used
+		// by DefaultTerminal) ensures the terminal is fully restored. These
+		// are idempotent — harmless if Shutdown already handled them.
+		_, _ = os.Stdout.WriteString(ansi.ResetModeAltScreenSaveCursor)
+		_, _ = os.Stdout.WriteString(ansi.SetModeTextCursorEnable)
+		_, _ = os.Stdout.WriteString(ansi.ResetModeMouseNormal)
+		_, _ = os.Stdout.WriteString(ansi.ResetModeMouseAnyEvent)
+		_, _ = os.Stdout.WriteString(ansi.ResetModeMouseButtonEvent)
+		_, _ = os.Stdout.WriteString(ansi.ResetModeMouseExtSgr)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	appCancel = cancel
 
@@ -137,13 +167,37 @@ func Run(root Widget) error {
 	// Create render trigger channel for signal-driven re-renders
 	renderTrigger = make(chan struct{}, 1)
 
+	// Track event loop goroutine so we can wait for it during shutdown.
+	eventLoopDone := make(chan struct{})
+	eventLoopStarted := false
+
+	// Single cleanup defer handles both normal exit and panic recovery.
+	// On panic: recover captures it, then we cancel context, wait for the
+	// event loop goroutine to exit, and restore the terminal cleanly.
+	// Without recovery, panics write to the alternate screen buffer which
+	// is discarded on exit, making the error invisible.
 	defer func() {
+		if r := recover(); r != nil {
+			recordPanic(Panic{
+				Message:    fmt.Sprint(r),
+				StackTrace: string(debug.Stack()),
+			})
+			runErr = ErrPanicked
+		}
+
+		cancel()
+		if eventLoopStarted {
+			<-eventLoopDone
+		}
+
 		appCancel = nil
 		appRenderer = nil
 		renderTrigger = nil
 		currentController = nil
 		animController.Stop()
-		cancel()
+
+		shutdownTerminal()
+		renderPanics()
 	}()
 
 	// Get initial terminal size
@@ -380,7 +434,18 @@ func Run(root Widget) error {
 	renderNow()
 
 	// Event loop
+	eventLoopStarted = true
 	go func() {
+		defer close(eventLoopDone)
+		defer func() {
+			if r := recover(); r != nil {
+				recordPanic(Panic{
+					Message:    fmt.Sprint(r),
+					StackTrace: string(debug.Stack()),
+				})
+				cancel()
+			}
+		}()
 		termEvents := t.Events()
 		for {
 			select {
@@ -642,14 +707,7 @@ func Run(root Widget) error {
 	}()
 
 	<-ctx.Done()
-
-	// Disable mouse tracking before shutdown
-	_, _ = t.WriteString(ansi.ResetModeMouseNormal)
-	_, _ = t.WriteString(ansi.ResetModeMouseAnyEvent)
-	_, _ = t.WriteString(ansi.ResetModeMouseButtonEvent)
-	_, _ = t.WriteString(ansi.ResetModeMouseExtSgr)
-
-	return t.Shutdown(context.Background())
+	return runErr
 }
 
 // exportScreenToFile saves the current screen content to a timestamped file.

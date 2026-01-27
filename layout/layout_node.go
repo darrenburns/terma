@@ -67,6 +67,15 @@ func Unbounded() Constraints {
 // maxInt is the maximum int value, used for unbounded constraints.
 const maxInt = int(^uint(0) >> 1)
 
+// isUnbounded reports whether a constraint value is effectively unbounded.
+// Unbounded sentinels include maxInt (used by table/layout) and math.MaxInt32
+// (used by Scrollable). After subtracting insets, these become slightly smaller.
+// No real terminal exceeds 100,000 cells on either axis, so any value above
+// that threshold is certainly derived from an unbounded sentinel.
+func isUnbounded(v int) bool {
+	return v > 100_000
+}
+
 // --- Constraint methods ---
 
 // IsTight returns true if both dimensions are tightly constrained (min == max).

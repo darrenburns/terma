@@ -11,9 +11,9 @@ import (
 type Task struct {
 	Name         string
 	Status       TaskStatus
-	Progress     *t.Animation[float64]      // Animated progress for running tasks
-	Metrics      [][]string                 // 2x3 nested table data
-	MetricsState *t.TableState[[]string]    // State for nested table
+	Progress     *t.Animation[float64]   // Animated progress for running tasks
+	Metrics      [][]string              // 2x3 nested table data
+	MetricsState *t.TableState[[]string] // State for nested table
 }
 
 type TaskStatus int
@@ -126,9 +126,9 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 	spinnerFrame := a.spinnerState.Frame()
 
 	return t.Column{
-		Width:  t.Flex(1),
-		Height: t.Flex(1),
 		Style: t.Style{
+			Width:           t.Flex(1),
+			Height:          t.Flex(1),
 			Padding:         t.EdgeInsetsAll(1),
 			BackgroundColor: theme.Background,
 		},
@@ -213,11 +213,11 @@ func (a *App) renderCell(ctx t.BuildContext, spinnerFrame string) func(row Task,
 
 			return t.ProgressBar{
 				Progress:      progress,
-				Width:         t.Flex(1),
 				FilledColor:   filledColor,
 				UnfilledColor: theme.Surface,
 				Style: t.Style{
 					BackgroundColor: bg,
+					Height:          t.Flex(1),
 				},
 			}
 

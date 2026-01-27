@@ -1390,3 +1390,83 @@ func TestLinearNode_ExpandFlags(t *testing.T) {
 		assert.Equal(t, 50, result.Children[1].X)
 	})
 }
+
+func TestLinearNode_FlexInUnboundedContext_Panics(t *testing.T) {
+	t.Run("Column with unbounded height", func(t *testing.T) {
+		col := &ColumnNode{
+			Children: []LayoutNode{
+				&FlexNode{Flex: 1, Child: box(10, 5)},
+			},
+		}
+		assert.PanicsWithValue(t,
+			"terma: Flex dimension in unbounded height context. "+
+				"A child of this Column has a Flex height, but the Column's max height is unbounded. "+
+				"Flex distributes remaining space proportionally, so it requires a bounded parent. "+
+				"Use Cells(n) for a fixed size, or ensure the parent has a bounded height.",
+			func() {
+				col.ComputeLayout(Constraints{
+					MinWidth: 0, MaxWidth: 100,
+					MinHeight: 0, MaxHeight: maxInt,
+				})
+			},
+		)
+	})
+
+	t.Run("Row with unbounded width", func(t *testing.T) {
+		row := &RowNode{
+			Children: []LayoutNode{
+				&FlexNode{Flex: 1, Child: box(10, 5)},
+			},
+		}
+		assert.PanicsWithValue(t,
+			"terma: Flex dimension in unbounded width context. "+
+				"A child of this Row has a Flex width, but the Row's max width is unbounded. "+
+				"Flex distributes remaining space proportionally, so it requires a bounded parent. "+
+				"Use Cells(n) for a fixed size, or ensure the parent has a bounded width.",
+			func() {
+				row.ComputeLayout(Constraints{
+					MinWidth: 0, MaxWidth: maxInt,
+					MinHeight: 0, MaxHeight: 100,
+				})
+			},
+		)
+	})
+
+	t.Run("Column with unbounded height after inset subtraction", func(t *testing.T) {
+		// When a parent subtracts padding/border from maxInt, the result is
+		// maxInt-N which is still effectively unbounded.
+		col := &ColumnNode{
+			Children: []LayoutNode{
+				&FlexNode{Flex: 1, Child: box(10, 5)},
+			},
+		}
+		assert.Panics(t, func() {
+			col.ComputeLayout(Constraints{
+				MinWidth: 0, MaxWidth: 100,
+				MinHeight: 0, MaxHeight: maxInt - 20, // Simulates padding/border subtracted
+			})
+		})
+	})
+
+	t.Run("Column with bounded height does not panic", func(t *testing.T) {
+		col := &ColumnNode{
+			Children: []LayoutNode{
+				&FlexNode{Flex: 1, Child: box(10, 5)},
+			},
+		}
+		assert.NotPanics(t, func() {
+			col.ComputeLayout(Loose(100, 50))
+		})
+	})
+
+	t.Run("Row with bounded width does not panic", func(t *testing.T) {
+		row := &RowNode{
+			Children: []LayoutNode{
+				&FlexNode{Flex: 1, Child: box(10, 5)},
+			},
+		}
+		assert.NotPanics(t, func() {
+			row.ComputeLayout(Loose(100, 50))
+		})
+	})
+}

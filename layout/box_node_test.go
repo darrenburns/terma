@@ -432,3 +432,49 @@ func TestBoxNode_IsLeafNode(t *testing.T) {
 
 	assert.Nil(t, result.Children, "BoxNode is a leaf node with no children")
 }
+
+func TestBoxNode_ExpandInUnboundedContext_Panics(t *testing.T) {
+	t.Run("ExpandHeight with unbounded height", func(t *testing.T) {
+		node := &BoxNode{ExpandHeight: true}
+		assert.Panics(t, func() {
+			node.ComputeLayout(Constraints{
+				MinWidth: 0, MaxWidth: 100,
+				MinHeight: 0, MaxHeight: maxInt,
+			})
+		})
+	})
+
+	t.Run("ExpandHeight with unbounded height after inset subtraction", func(t *testing.T) {
+		node := &BoxNode{ExpandHeight: true}
+		assert.Panics(t, func() {
+			node.ComputeLayout(Constraints{
+				MinWidth: 0, MaxWidth: 100,
+				MinHeight: 0, MaxHeight: maxInt - 20,
+			})
+		})
+	})
+
+	t.Run("ExpandWidth with unbounded width", func(t *testing.T) {
+		node := &BoxNode{ExpandWidth: true}
+		assert.Panics(t, func() {
+			node.ComputeLayout(Constraints{
+				MinWidth: 0, MaxWidth: maxInt,
+				MinHeight: 0, MaxHeight: 100,
+			})
+		})
+	})
+
+	t.Run("ExpandHeight with bounded height does not panic", func(t *testing.T) {
+		node := &BoxNode{ExpandHeight: true}
+		assert.NotPanics(t, func() {
+			node.ComputeLayout(Loose(100, 50))
+		})
+	})
+
+	t.Run("ExpandWidth with bounded width does not panic", func(t *testing.T) {
+		node := &BoxNode{ExpandWidth: true}
+		assert.NotPanics(t, func() {
+			node.ComputeLayout(Loose(100, 50))
+		})
+	})
+}
