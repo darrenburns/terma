@@ -210,7 +210,8 @@ func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, sc
 }
 
 // IsFocused returns true if the given widget currently has focus.
-// The widget must implement Identifiable for reliable focus tracking across rebuilds.
+// Widgets with an explicit ID are matched by that ID; otherwise the
+// position-based AutoID is used as a fallback.
 func (ctx *RenderContext) IsFocused(widget Widget) bool {
 	if ctx.focusManager == nil {
 		return false
@@ -222,7 +223,7 @@ func (ctx *RenderContext) IsFocused(widget Widget) bool {
 	}
 
 	// Check if widget has an explicit ID
-	if identifiable, ok := widget.(Identifiable); ok {
+	if identifiable, ok := widget.(Identifiable); ok && identifiable.WidgetID() != "" {
 		return identifiable.WidgetID() == focusedID
 	}
 

@@ -219,10 +219,9 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 
 			// The list with scrolling
 			t.Scrollable{
-				ID:           "list-scroll",
-				State:        d.scrollState,
-				Height:       t.Cells(10),
-				DisableFocus: true,
+				ID:     "list-scroll",
+				State:  d.scrollState,
+				Height: t.Cells(10),
 				Style: t.Style{
 					Border:  t.RoundedBorder(theme.Primary, t.BorderTitle("Items")),
 					Padding: t.EdgeInsetsXY(1, 0),

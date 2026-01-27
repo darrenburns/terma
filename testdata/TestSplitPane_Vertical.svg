@@ -10,7 +10,7 @@
   <rect width="100%" height="100%" fill="#000000"/>
   <text x="8.0" y="8.0" fill="#E0DEF4">Top</text>
   <text x="41.6" y="8.0" fill="#E0DEF4">pane</text>
-  <text x="8.0" y="47.2" fill="#403D52">────────────────────────────────────────</text>
+  <text x="8.0" y="47.2" fill="#C4A7E7">────────────────────────────────────────</text>
   <text x="8.0" y="66.8" fill="#E0DEF4">Bottom</text>
   <text x="66.8" y="66.8" fill="#E0DEF4">pane</text>
 </svg>

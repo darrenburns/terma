@@ -625,7 +625,7 @@ func reservedContentWidth(viewportWidth int) int {
 
 // TextArea is a multi-line focusable text entry widget.
 type TextArea struct {
-	ID                string            // Required for focus management
+	ID                string            // Optional unique identifier
 	State             *TextAreaState    // Required - holds text and cursor position
 	Placeholder       string            // Text shown when empty and unfocused
 	Highlighter       Highlighter       // Optional: dynamic text highlighting

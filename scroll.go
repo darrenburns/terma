@@ -197,7 +197,7 @@ type Scrollable struct {
 	Child         Widget       // The child widget to scroll
 	State         *ScrollState // Required - holds scroll position
 	DisableScroll bool         // If true, scrolling is disabled and scrollbar hidden (default: false)
-	DisableFocus  bool         // If true, widget cannot receive focus (default: false = focusable)
+	Focusable     bool         // If true, widget can receive keyboard focus for scroll navigation
 	Width         Dimension    // Deprecated: use Style.Width
 	Height        Dimension    // Deprecated: use Style.Height
 	Style         Style        // Optional styling
@@ -543,11 +543,10 @@ func (s Scrollable) renderScrollbar(ctx *RenderContext, scrollOffset int, focuse
 }
 
 // IsFocusable returns true if this widget can receive focus.
-// Returns true if scrolling is enabled, focus is not disabled, and the widget has an ID.
-// Set DisableFocus=true to prevent focus while still showing the scrollbar.
+// Returns true if Focusable is set and scrolling is enabled.
 // Note: We can't check canScroll() here because Layout hasn't run yet during focus collection.
 func (s Scrollable) IsFocusable() bool {
-	return !s.DisableScroll && !s.DisableFocus && s.ID != ""
+	return s.Focusable && !s.DisableScroll
 }
 
 // OnKey handles key events when the widget is focused.

@@ -259,7 +259,7 @@ func (a *App) renderCell(ctx t.BuildContext, spinnerFrame string) func(row Task,
 			}
 
 		case 3: // Nested table column
-			return t.Table[[]string]{
+			return t.Inert(t.Table[[]string]{
 				State: row.MetricsState,
 				Columns: []t.TableColumn{
 					{Width: t.Cells(4)},
@@ -269,7 +269,7 @@ func (a *App) renderCell(ctx t.BuildContext, spinnerFrame string) func(row Task,
 				Style: t.Style{
 					BackgroundColor: bg,
 				},
-			}
+			})
 		}
 
 		return t.Text{Content: ""}

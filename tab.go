@@ -301,7 +301,7 @@ const (
 // TabBar is a focusable widget that renders a horizontal row of tabs.
 // It supports keyboard navigation and position-based keybindings.
 type TabBar struct {
-	ID             string            // Required for focus
+	ID             string            // Optional unique identifier
 	State          *TabState         // Required - holds tabs and active key
 	KeybindPattern TabKeybindPattern // Position keybind style
 	OnTabChange    func(key string)  // Tab selection callback

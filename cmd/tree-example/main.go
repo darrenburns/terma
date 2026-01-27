@@ -108,9 +108,8 @@ func (a *TreeExampleApp) Build(ctx t.BuildContext) t.Widget {
 					},
 				},
 				t.Scrollable{
-					ID:                  "tree-scroll",
-					State:               a.scrollState,
-					DisableFocus:        true,
+					ID:    "tree-scroll",
+					State: a.scrollState,
 					ScrollbarThumbColor: theme.ScrollbarThumb,
 					ScrollbarTrackColor: theme.ScrollbarTrack,
 					Style: t.Style{
