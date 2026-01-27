@@ -34,8 +34,8 @@ const (
 // Row arranges its children horizontally.
 type Row struct {
 	ID         string         // Optional unique identifier for the widget
-	Width      Dimension      // Optional width (zero value = auto, Flex(1) = fill)
-	Height     Dimension      // Optional height (zero value = auto, Flex(1) = fill)
+	Width      Dimension      // Deprecated: use Style.Width
+	Height     Dimension      // Deprecated: use Style.Height
 	Style      Style          // Optional styling (background color)
 	Spacing    int            // Space between children
 	MainAlign  MainAxisAlign  // Main axis (horizontal) alignment
@@ -49,7 +49,15 @@ type Row struct {
 
 // GetContentDimensions returns the width and height dimension preferences.
 func (r Row) GetContentDimensions() (width, height Dimension) {
-	return r.Width, r.Height
+	dims := r.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = r.Width
+	}
+	if height.IsUnset() {
+		height = r.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the style of the row.
@@ -105,15 +113,16 @@ func (r Row) Build(ctx BuildContext) Widget {
 func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	children := make([]layout.LayoutNode, len(r.Children))
 	for i, child := range r.Children {
-		built := child.Build(ctx.PushChild(i))
+		childCtx := ctx.PushChild(i)
+		built := child.Build(childCtx)
 
 		// Build the child's layout node
 		var childNode layout.LayoutNode
 		if builder, ok := built.(LayoutNodeBuilder); ok {
-			childNode = builder.BuildLayoutNode(ctx.PushChild(i))
+			childNode = builder.BuildLayoutNode(childCtx)
 		} else {
 			// Fallback: create a BoxNode for widgets without LayoutNodeBuilder
-			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
+			childNode = buildFallbackLayoutNode(built, childCtx)
 		}
 
 		// Wrap in FlexNode or PercentNode if child has Flex/Percent width (Row's main axis is horizontal)
@@ -122,33 +131,16 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		children[i] = wrapInFlexIfNeeded(childNode, mainAxisDim)
 	}
 
-	minWidth, maxWidth := dimensionToMinMax(r.Width)
-	minHeight, maxHeight := dimensionToMinMax(r.Height)
-
 	padding := toLayoutEdgeInsets(r.Style.Padding)
 	border := borderToEdgeInsets(r.Style.Border)
-
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
+	dims := GetWidgetDimensionSet(r)
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
 	// Explicit Auto means "fit content, don't stretch" - set preserve flags
-	preserveWidth := r.Width.IsAuto() && !r.Width.IsUnset()
-	preserveHeight := r.Height.IsAuto() && !r.Height.IsUnset()
+	preserveWidth := dims.Width.IsAuto() && !dims.Width.IsUnset()
+	preserveHeight := dims.Height.IsAuto() && !dims.Height.IsUnset()
 
-	return &layout.RowNode{
+	node := layout.LayoutNode(&layout.RowNode{
 		Spacing:        r.Spacing,
 		MainAlign:      toLayoutMainAlign(r.MainAlign),
 		CrossAlign:     toLayoutCrossAlign(r.CrossAlign),
@@ -160,11 +152,25 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		MaxWidth:       maxWidth,
 		MinHeight:      minHeight,
 		MaxHeight:      maxHeight,
-		ExpandWidth:    r.Width.IsFlex(),
-		ExpandHeight:   r.Height.IsFlex(),
+		ExpandWidth:    dims.Width.IsFlex(),
+		ExpandHeight:   dims.Height.IsFlex(),
 		PreserveWidth:  preserveWidth,
 		PreserveHeight: preserveHeight,
+	})
+
+	if hasPercentMinMax(dims) {
+		node = &percentConstraintWrapper{
+			child:     node,
+			minWidth:  dims.MinWidth,
+			maxWidth:  dims.MaxWidth,
+			minHeight: dims.MinHeight,
+			maxHeight: dims.MaxHeight,
+			padding:   padding,
+			border:    border,
+		}
 	}
+
+	return node
 }
 
 // Render is a no-op for Row when using the RenderTree-based rendering path.
@@ -177,8 +183,8 @@ func (r Row) Render(ctx *RenderContext) {
 // Column arranges its children vertically.
 type Column struct {
 	ID         string         // Optional unique identifier for the widget
-	Width      Dimension      // Optional width (zero value = auto, Flex(1) = fill)
-	Height     Dimension      // Optional height (zero value = auto, Flex(1) = fill)
+	Width      Dimension      // Deprecated: use Style.Width
+	Height     Dimension      // Deprecated: use Style.Height
 	Style      Style          // Optional styling (background color)
 	Spacing    int            // Space between children
 	MainAlign  MainAxisAlign  // Main axis (vertical) alignment
@@ -192,7 +198,15 @@ type Column struct {
 
 // GetContentDimensions returns the width and height dimension preferences.
 func (c Column) GetContentDimensions() (width, height Dimension) {
-	return c.Width, c.Height
+	dims := c.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = c.Width
+	}
+	if height.IsUnset() {
+		height = c.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the style of the column.
@@ -247,15 +261,16 @@ func (c Column) Build(ctx BuildContext) Widget {
 func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	children := make([]layout.LayoutNode, len(c.Children))
 	for i, child := range c.Children {
-		built := child.Build(ctx.PushChild(i))
+		childCtx := ctx.PushChild(i)
+		built := child.Build(childCtx)
 
 		// Build the child's layout node
 		var childNode layout.LayoutNode
 		if builder, ok := built.(LayoutNodeBuilder); ok {
-			childNode = builder.BuildLayoutNode(ctx.PushChild(i))
+			childNode = builder.BuildLayoutNode(childCtx)
 		} else {
 			// Fallback: create a BoxNode for widgets without LayoutNodeBuilder
-			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
+			childNode = buildFallbackLayoutNode(built, childCtx)
 		}
 
 		// Wrap in FlexNode or PercentNode if child has Flex/Percent height (Column's main axis is vertical)
@@ -264,33 +279,16 @@ func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		children[i] = wrapInFlexIfNeeded(childNode, mainAxisDim)
 	}
 
-	minWidth, maxWidth := dimensionToMinMax(c.Width)
-	minHeight, maxHeight := dimensionToMinMax(c.Height)
-
 	padding := toLayoutEdgeInsets(c.Style.Padding)
 	border := borderToEdgeInsets(c.Style.Border)
-
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
+	dims := GetWidgetDimensionSet(c)
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
 	// Explicit Auto means "fit content, don't stretch" - set preserve flags
-	preserveWidth := c.Width.IsAuto() && !c.Width.IsUnset()
-	preserveHeight := c.Height.IsAuto() && !c.Height.IsUnset()
+	preserveWidth := dims.Width.IsAuto() && !dims.Width.IsUnset()
+	preserveHeight := dims.Height.IsAuto() && !dims.Height.IsUnset()
 
-	return &layout.ColumnNode{
+	node := layout.LayoutNode(&layout.ColumnNode{
 		Spacing:        c.Spacing,
 		MainAlign:      toLayoutMainAlign(c.MainAlign),
 		CrossAlign:     toLayoutCrossAlign(c.CrossAlign),
@@ -302,11 +300,25 @@ func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		MaxWidth:       maxWidth,
 		MinHeight:      minHeight,
 		MaxHeight:      maxHeight,
-		ExpandWidth:    c.Width.IsFlex(),
-		ExpandHeight:   c.Height.IsFlex(),
+		ExpandWidth:    dims.Width.IsFlex(),
+		ExpandHeight:   dims.Height.IsFlex(),
 		PreserveWidth:  preserveWidth,
 		PreserveHeight: preserveHeight,
+	})
+
+	if hasPercentMinMax(dims) {
+		node = &percentConstraintWrapper{
+			child:     node,
+			minWidth:  dims.MinWidth,
+			maxWidth:  dims.MaxWidth,
+			minHeight: dims.MinHeight,
+			maxHeight: dims.MaxHeight,
+			padding:   padding,
+			border:    border,
+		}
 	}
+
+	return node
 }
 
 // Render is a no-op for Column when using the RenderTree-based rendering path.

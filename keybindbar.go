@@ -12,9 +12,9 @@ import "strings"
 // Consecutive keybinds with the same Name are grouped together, displaying
 // their keys joined with "/" (e.g., "enter/space Press").
 type KeybindBar struct {
-	Style  Style     // Optional styling (background, padding, etc.)
-	Width  Dimension // Width dimension (default: Flex(1) to fill available width)
-	Height Dimension // Height dimension (default: Cells(1) for single-line bar)
+	Style  Style // Optional styling (background, padding, etc.)
+	Width  Dimension // Deprecated: use Style.Width
+	Height Dimension // Deprecated: use Style.Height
 
 	// FormatKey transforms key strings for display. If nil, uses minimal
 	// normalization (e.g., " " → "space"). Use preset formatters like
@@ -27,14 +27,15 @@ type KeybindBar struct {
 // Width defaults to Flex(1) if not explicitly set, as KeybindBar typically fills width.
 // Height defaults to Cells(1) if not explicitly set, as KeybindBar is a single-line widget.
 func (f KeybindBar) GetContentDimensions() (width, height Dimension) {
-	w, h := f.Width, f.Height
-	if w.IsUnset() {
-		w = Flex(1)
+	dims := f.Style.GetDimensions()
+	if dims.Width.IsUnset() {
+		dims.Width = f.Width
 	}
-	if h.IsUnset() {
-		h = Cells(1)
+	if dims.Height.IsUnset() {
+		dims.Height = f.Height
 	}
-	return w, h
+	dims = dims.WithDefaults(Flex(1), Cells(1))
+	return dims.Width, dims.Height
 }
 
 // keybindGroup represents a group of keys that share the same action name.
@@ -47,10 +48,20 @@ type keybindGroup struct {
 func (f KeybindBar) Build(ctx BuildContext) Widget {
 	keybinds := ctx.ActiveKeybinds()
 	theme := ctx.Theme()
-	width, height := f.GetContentDimensions()
+	dims := f.Style.GetDimensions()
+	if dims.Width.IsUnset() {
+		dims.Width = f.Width
+	}
+	if dims.Height.IsUnset() {
+		dims.Height = f.Height
+	}
+	dims = dims.WithDefaults(Flex(1), Cells(1))
+	style := f.Style
+	style.Width = dims.Width
+	style.Height = dims.Height
 
 	if len(keybinds) == 0 {
-		return Text{Width: width, Height: height, Style: f.Style}
+		return Text{Style: style}
 	}
 
 	// Filter out hidden keybinds and deduplicate by key
@@ -94,10 +105,8 @@ func (f KeybindBar) Build(ctx BuildContext) Widget {
 	}
 
 	return Text{
-		Spans:  spans,
-		Style:  f.Style,
-		Width:  width,
-		Height: height,
+		Spans: spans,
+		Style: style,
 	}
 }
 

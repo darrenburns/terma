@@ -45,6 +45,7 @@ nav:
     - Tabs: widgets/tabs.md
     - Table: widgets/table.md
     - TextInput: widgets/textinput.md
+    - Tooltip: widgets/tooltip.md
     - Tree: widgets/tree.md
   - Layout:
     - Overview: layout/index.md

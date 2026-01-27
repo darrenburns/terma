@@ -12,10 +12,11 @@ type GradientDemo struct {
 
 func (d *GradientDemo) Build(ctx t.BuildContext) t.Widget {
 	return t.Scrollable{
-		ID:     "gradient-demo-scroll",
-		State:  d.scrollState,
-		Width:  t.Flex(1),
-		Height: t.Flex(1),
+		ID:        "gradient-demo-scroll",
+		State:     d.scrollState,
+		Focusable: true,
+		Width:     t.Flex(1),
+		Height:    t.Flex(1),
 		Style: t.Style{
 			BackgroundColor: t.NewGradient(
 				t.Hex("#1e1b4b"), // Indigo 950

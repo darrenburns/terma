@@ -100,11 +100,20 @@ Golden files are stored in `testdata/<TestName>.svg`. The test framework generat
 | `context.go` | `BuildContext` for focus/hover state |
 | `focus.go` | Focus management, `Focusable`, `KeyHandler` interfaces |
 | `list.go` | Generic `List[T]` with keyboard navigation |
+| `table.go` | Generic `Table[T]` for tabular data |
+| `tree.go` | Generic `Tree[T]` for hierarchical data |
 | `scroll.go` | `Scrollable` widget and `ScrollController` |
 | `style.go` | Styling: colors, padding, margins |
 | `keybind.go` | Declarative keybinding system |
 | `conditional.go` | Visibility wrappers: `ShowWhen`, `HideWhen`, etc. |
 | `switcher.go` | `Switcher` widget for content switching |
+| `text_input.go` | Single-line text entry widget |
+| `text_area.go` | Multi-line text editing widget |
+| `tab.go` | `TabBar` and `TabView` for tab navigation |
+| `progressbar.go` | Progress indicator widget |
+| `spinner.go` | Animated loading indicator |
+| `menu.go` | Dropdown/context menu widget |
+| `filter.go` | Text filtering/matching utilities |
 
 ### Widget Pattern
 
@@ -132,6 +141,7 @@ func main() {
 - `Widget`: Has `Build(ctx BuildContext) Widget`
 - `Focusable`: Receives keyboard events when focused
 - `KeybindProvider`: Returns declarative `[]Keybind` for queryable key mappings
+- `FocusTrapper`: Has `TrapsFocus() bool` — constrains Tab/Shift+Tab to subtree
 - `Clickable`/`Hoverable`: Mouse interaction handlers
 
 ### Dimensions
@@ -150,6 +160,7 @@ func main() {
 | `Row` | Arranges children horizontally | `Children`, `Spacing`, `MainAlign`, `CrossAlign` |
 | `Stack` | Overlays children in z-order | `Children`, `Alignment` |
 | `Dock` | Edge-docking layout (like WPF DockPanel) | `Top`, `Bottom`, `Left`, `Right`, `Body`, `DockOrder` |
+| `SplitPane` | Two-pane layout with draggable divider | `State` (required), `First`, `Second`, `Orientation`, `DividerSize` |
 | `Scrollable` | Scrolling container with scrollbar | `Child`, `State` (required), `DisableScroll` |
 | `Floating` | Overlay/modal positioning | `Visible`, `Config`, `Child` |
 | `Switcher` | Shows one keyed child at a time | `Active`, `Children` |
@@ -161,6 +172,32 @@ func main() {
 | `Text` | Display text (plain or rich with Spans) | `Content`, `Spans`, `Wrap`, `TextAlign` |
 | `Button` | Focusable button with press handler | `ID` (required), `Label`, `OnPress` |
 | `List[T]` | Generic navigable list | `State` (required), `OnSelect`, `RenderItem`, `MultiSelect` |
+| `Table[T]` | Generic navigable table | `State` (required), `Columns`, `RenderCell`, `SelectionMode` |
+| `Tree[T]` | Generic navigable tree | `State` (required), `RenderNode`, `OnExpand`, `MultiSelect` |
+
+### Input Widgets
+
+| Widget | Purpose | Key Fields |
+|--------|---------|------------|
+| `TextInput` | Single-line text entry | `ID` (required), `State` (required), `Placeholder`, `OnChange`, `OnSubmit` |
+| `TextArea` | Multi-line text editing | `ID` (required), `State` (required), `Placeholder`, `OnChange`, `OnSubmit` |
+
+### Navigation Widgets
+
+| Widget | Purpose | Key Fields |
+|--------|---------|------------|
+| `TabBar` | Horizontal row of tabs | `ID` (required), `State` (required), `OnTabChange`, `Closable` |
+| `TabView` | TabBar + content area | `State` (required), `OnTabChange`, `Closable` |
+| `Menu` | Dropdown/context menu | `ID` (required), `State` (required), `OnSelect`, `OnDismiss` |
+| `CommandPalette` | Filterable command palette with nesting | `ID`, `State` (required), `OnSelect`, `RenderItem` |
+| `Breadcrumbs` | Breadcrumb trail navigation | `Path`, `OnSelect`, `Separator` |
+
+### Feedback Widgets
+
+| Widget | Purpose | Key Fields |
+|--------|---------|------------|
+| `ProgressBar` | Horizontal progress indicator | `Progress` (0.0-1.0), `FilledColor`, `UnfilledColor` |
+| `Spinner` | Animated loading indicator | `State` (required), `Style` |
 
 ### Utility Widgets
 
@@ -168,6 +205,7 @@ func main() {
 |--------|---------|------------|
 | `KeybindBar` | Displays active keybinds from focused widget | `Style`, `FormatKey` |
 | `Spacer` | Flexible empty space for layout control | `Width`, `Height` (default Flex(1)) |
+| `FocusTrap` | Constrains Tab/Shift+Tab cycling to its subtree | `ID` (required), `Active`, `Child` |
 
 ### Spacing: Prefer `Spacing` Field Over `Spacer` Widget
 
@@ -245,6 +283,19 @@ Floating{
         OnDismiss: func() { showDialog.Set(false) },
     },
     Child: Dialog{...},
+}
+
+// FocusTrap - constrain Tab/Shift+Tab to a subtree
+// Modal floats automatically trap focus; use FocusTrap for non-modal scenarios.
+FocusTrap{
+    ID:     "dialog-trap",
+    Active: true,
+    Child: Column{
+        Children: []Widget{
+            TextInput{ID: "name", State: nameState},
+            Button{ID: "submit", Label: "OK", OnPress: submit},
+        },
+    },
 }
 
 // KeybindBar at bottom of app

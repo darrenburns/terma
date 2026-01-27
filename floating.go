@@ -114,10 +114,10 @@ func (c FloatConfig) shouldDismissOnClickOutside() bool {
 // Floating is a widget that renders its child as an overlay on top of other widgets.
 // The child is rendered after the main widget tree, ensuring it appears on top.
 //
-// For modal floats, the backdrop blocks clicks to underlying widgets and Escape
-// dismisses the modal. Note: Full focus trapping (Tab cycling only within modal)
-// is not yet implemented - Tab will cycle through all focusables including those
-// behind the modal.
+// For modal floats (Modal: true), the backdrop blocks clicks to underlying widgets,
+// Escape dismisses the modal, and focus is trapped within the modal's subtree via
+// FocusTrap — Tab/Shift+Tab will only cycle through focusable widgets inside the
+// modal. Use RequestFocus to move focus into the modal when opening it.
 //
 // Example - dropdown menu anchored to a button:
 //

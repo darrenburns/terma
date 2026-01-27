@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	uv "github.com/charmbracelet/ultraviolet"
@@ -21,12 +22,16 @@ var appRenderer *Renderer
 // Buffered with size 1 to avoid blocking signal setters.
 var renderTrigger chan struct{}
 
-const clickChainTimeout = 500 * time.Millisecond
+const (
+	clickChainTimeout = 500 * time.Millisecond
+	defaultFPS        = 60
+)
 
 type mouseClickTracker struct {
 	lastClickTime time.Time
 	lastTargetID  string
 	lastButton    uv.MouseButton
+	lastX, lastY  int
 	clickCount    int
 
 	lastDownTargetID string
@@ -34,14 +39,23 @@ type mouseClickTracker struct {
 	lastDownCount    int
 }
 
-func (t *mouseClickTracker) nextClick(targetID string, button uv.MouseButton, now time.Time) int {
-	if targetID == t.lastTargetID && button == t.lastButton && now.Sub(t.lastClickTime) <= clickChainTimeout {
+type mouseDragState struct {
+	isDragging    bool
+	dragWidgetID  string
+	pressedButton uv.MouseButton
+}
+
+func (t *mouseClickTracker) nextClick(targetID string, button uv.MouseButton, x, y int, now time.Time) int {
+	samePosition := targetID == t.lastTargetID && button == t.lastButton && x == t.lastX && y == t.lastY
+	if samePosition && now.Sub(t.lastClickTime) <= clickChainTimeout {
 		t.clickCount++
 	} else {
 		t.clickCount = 1
 	}
 	t.lastTargetID = targetID
 	t.lastButton = button
+	t.lastX = x
+	t.lastY = y
 	t.lastClickTime = now
 
 	t.lastDownTargetID = targetID
@@ -117,7 +131,7 @@ func Run(root Widget) error {
 	appCancel = cancel
 
 	// Create animation controller for this app
-	animController := NewAnimationController(60)
+	animController := NewAnimationController(defaultFPS)
 	currentController = animController
 
 	// Create render trigger channel for signal-driven re-renders
@@ -135,6 +149,7 @@ func Run(root Widget) error {
 	// Get initial terminal size
 	size := t.Size()
 	width, height := size.Width, size.Height
+	debugOverlayEnabled := os.Getenv("TERMA_DEBUG_OVERLAY") != ""
 
 	// Create focus manager and focused signal
 	focusManager := NewFocusManager()
@@ -158,6 +173,37 @@ func Run(root Widget) error {
 		focusedSignal.Set(focusManager.Focused())
 		return true
 	}
+
+	var (
+		coalescedRenderRequests int
+		overrunFrames           int
+		lastFrameDuration     time.Duration
+		lastOverlayWidth      int
+	)
+
+	drawDebugOverlay := func() {
+		if !debugOverlayEnabled || width <= 0 || height <= 0 {
+			return
+		}
+
+		frameMs := float64(lastFrameDuration.Microseconds()) / 1000.0
+		text := fmt.Sprintf("frame %.2fms coalesced %d overrun %d", frameMs, coalescedRenderRequests, overrunFrames)
+		textWidth := ansi.StringWidth(text)
+		if textWidth < lastOverlayWidth {
+			text += strings.Repeat(" ", lastOverlayWidth-textWidth)
+			textWidth = lastOverlayWidth
+		} else {
+			lastOverlayWidth = textWidth
+		}
+
+		ctx := NewRenderContext(t, width, height, nil, nil, BuildContext{}, nil)
+		ctx.DrawStyledText(0, 0, text, Style{
+			ForegroundColor: BrightWhite,
+			BackgroundColor: Black,
+		})
+	}
+
+	renderInterval := time.Second / time.Duration(defaultFPS)
 
 	// Render and update focusables
 	display := func() {
@@ -184,15 +230,6 @@ func Run(root Widget) error {
 			}
 		}
 
-		// Auto-focus into modal floats when they open
-		if modalTarget := renderer.ModalFocusTarget(); modalTarget != "" {
-			focusManager.FocusByID(modalTarget)
-			// Update the signal and re-render so the focused widget shows focus style
-			if updateFocusedSignal() {
-				renderer.Render(root)
-			}
-		}
-
 		// Position terminal cursor for IME support (emoji picker, input methods)
 		// Must be before Display() since MoveTo only takes effect on next Display call
 		if focusedID := focusManager.FocusedID(); focusedID != "" {
@@ -205,14 +242,20 @@ func Run(root Widget) error {
 			}
 		}
 
+		drawDebugOverlay()
 		_ = t.Display()
 
 		elapsed := time.Since(startTime)
+		lastFrameDuration = elapsed
+		if elapsed > renderInterval {
+			overrunFrames++
+		}
 
-	Log("Render complete in %.3fms, %d widgets registered", float64(elapsed.Microseconds())/1000.0, len(renderer.widgetRegistry.entries))
+		Log("Render complete in %.3fms, %d widgets registered", float64(elapsed.Microseconds())/1000.0, len(renderer.widgetRegistry.entries))
 	}
 
 	clickTracker := &mouseClickTracker{}
+	dragState := &mouseDragState{}
 	currentHoveredID := ""
 
 	resolveMouseTarget := func(x, y int, allowDismiss bool) (*WidgetEntry, bool) {
@@ -254,8 +297,62 @@ func Run(root Widget) error {
 	rootHandler, _ := root.(KeyHandler)
 	rootKeybindProvider, _ := root.(KeybindProvider)
 
+	var (
+		lastRender    time.Time
+		renderPending bool
+		renderTimer   *time.Timer
+		renderTimerCh <-chan time.Time
+	)
+
+	stopRenderTimer := func() {
+		if renderTimer == nil {
+			renderTimerCh = nil
+			return
+		}
+		if !renderTimer.Stop() {
+			select {
+			case <-renderTimer.C:
+			default:
+			}
+		}
+		renderTimerCh = nil
+	}
+
+	renderNow := func() {
+		stopRenderTimer()
+		renderPending = false
+		display()
+		lastRender = time.Now()
+	}
+
+	requestRender := func() {
+		now := time.Now()
+		if lastRender.IsZero() || now.Sub(lastRender) >= renderInterval {
+			renderNow()
+			return
+		}
+		if renderPending {
+			coalescedRenderRequests++
+			return
+		}
+		renderPending = true
+		wait := renderInterval - now.Sub(lastRender)
+		if renderTimer == nil {
+			renderTimer = time.NewTimer(wait)
+		} else {
+			if !renderTimer.Stop() {
+				select {
+				case <-renderTimer.C:
+				default:
+				}
+			}
+			renderTimer.Reset(wait)
+		}
+		renderTimerCh = renderTimer.C
+	}
+
 	// Initial render
-	display()
+	renderNow()
 
 	// Event loop
 	go func() {
@@ -265,10 +362,14 @@ func Run(root Widget) error {
 			case <-ctx.Done():
 				return
 			case <-renderTrigger:
-				display()
+				requestRender()
 			case <-animController.Tick():
 				animController.Update()
-				display()
+				requestRender()
+			case <-renderTimerCh:
+				if renderPending {
+					renderNow()
+				}
 			case ev, ok := <-termEvents:
 				if !ok {
 					return
@@ -277,8 +378,10 @@ func Run(root Widget) error {
 				case uv.WindowSizeEvent:
 					_ = t.Resize(ev.Width, ev.Height)
 					renderer.Resize(ev.Width, ev.Height)
+					width = ev.Width
+					height = ev.Height
 					t.Erase()
-					display()
+					requestRender()
 				case uv.KeyPressEvent:
 					// Check for app-level quit keys
 					if ev.MatchString("ctrl+c") {
@@ -320,7 +423,7 @@ func Run(root Widget) error {
 						_, _ = t.WriteString(ansi.SetModeMouseExtSgr)
 
 						// Redraw the screen
-						display()
+						requestRender()
 						continue
 					}
 
@@ -329,7 +432,7 @@ func Run(root Widget) error {
 						if topFloat := renderer.TopFloat(); topFloat != nil {
 							if topFloat.Config.shouldDismissOnEsc() && topFloat.Config.OnDismiss != nil {
 								topFloat.Config.OnDismiss()
-								display()
+								requestRender()
 								continue
 							}
 						}
@@ -351,7 +454,7 @@ func Run(root Widget) error {
 					}
 
 					// Re-render after key press (for signal updates and focus changes)
-					display()
+					requestRender()
 
 				case uv.MouseClickEvent:
 					Log("MouseClickEvent at X=%d Y=%d Button=%v", ev.X, ev.Y, ev.Button)
@@ -359,15 +462,20 @@ func Run(root Widget) error {
 					entry, handled := resolveMouseTarget(ev.X, ev.Y, true)
 					if handled {
 						Log("  Mouse click handled by float logic")
-						display()
+						requestRender()
 						continue
 					}
 
 					if entry != nil {
 						Log("  Found widget: ID=%q Type=%T", entry.ID, entry.EventWidget)
 						focusAt(ev.X, ev.Y)
-						clickCount := clickTracker.nextClick(entry.ID, ev.Button, time.Now())
+						clickCount := clickTracker.nextClick(entry.ID, ev.Button, ev.X, ev.Y, time.Now())
 						mouseEvent := buildMouseEvent(uv.Mouse(ev), entry, clickCount)
+
+						// Set drag state for mouse move tracking
+						dragState.isDragging = true
+						dragState.dragWidgetID = entry.ID
+						dragState.pressedButton = ev.Button
 
 						if downHandler, ok := entry.EventWidget.(MouseDownHandler); ok {
 							Log("  Widget has OnMouseDown")
@@ -386,15 +494,20 @@ func Run(root Widget) error {
 					}
 
 					// Re-render after click
-					display()
+					requestRender()
 
 				case uv.MouseReleaseEvent:
 					Log("MouseReleaseEvent at X=%d Y=%d Button=%v", ev.X, ev.Y, ev.Button)
 
+					// Clear drag state
+					dragState.isDragging = false
+					dragState.dragWidgetID = ""
+					dragState.pressedButton = uv.MouseNone
+
 					entry, handled := resolveMouseTarget(ev.X, ev.Y, false)
 					if handled {
 						Log("  Mouse release blocked by float logic")
-						display()
+						requestRender()
 						continue
 					}
 
@@ -412,10 +525,33 @@ func Run(root Widget) error {
 					}
 
 					// Re-render after mouse up
-					display()
+					requestRender()
 
 				case uv.MouseMotionEvent:
 					// Log("MouseMotionEvent at X=%d Y=%d", ev.X, ev.Y)
+
+					// Handle drag - dispatch to the widget that received the mouse down
+					if dragState.isDragging && dragState.dragWidgetID != "" {
+						if dragEntry := renderer.WidgetByID(dragState.dragWidgetID); dragEntry != nil {
+							if moveHandler, ok := dragEntry.EventWidget.(MouseMoveHandler); ok {
+								// Build mouse event with local coordinates relative to the drag widget
+								localX := ev.X - dragEntry.Bounds.X
+								localY := ev.Y - dragEntry.Bounds.Y
+								mouseEvent := MouseEvent{
+									X:          ev.X,
+									Y:          ev.Y,
+									LocalX:     localX,
+									LocalY:     localY,
+									Button:     dragState.pressedButton,
+									Mod:        ev.Mod,
+									ClickCount: 1,
+									WidgetID:   dragEntry.ID,
+								}
+								moveHandler.OnMouseMove(mouseEvent)
+								display()
+							}
+						}
+					}
 
 					// Find the widget under the cursor
 					entry := renderer.WidgetAt(ev.X, ev.Y)
@@ -452,7 +588,7 @@ func Run(root Widget) error {
 						}
 
 						// Re-render after hover change
-						display()
+						requestRender()
 					}
 
 				case uv.MouseWheelEvent:
@@ -470,7 +606,7 @@ func Run(root Widget) error {
 							break
 						}
 					}
-					display()
+					requestRender()
 
 				default:
 					// Log other event types for debugging

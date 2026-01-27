@@ -1,6 +1,10 @@
 package terma
 
-import "terma/layout"
+import (
+	"sync/atomic"
+
+	"terma/layout"
+)
 
 // Widget is the base interface for all UI elements.
 // Leaf widgets (like Text) return themselves from Build().
@@ -56,6 +60,25 @@ type LayoutNodeBuilder interface {
 	BuildLayoutNode(ctx BuildContext) layout.LayoutNode
 }
 
+// GetWidgetDimensionSet returns resolved dimensions for a widget.
+// Style dimensions override Dimensioned dimensions when explicitly set.
+func GetWidgetDimensionSet(widget Widget) DimensionSet {
+	var dims DimensionSet
+	if styled, ok := widget.(Styled); ok {
+		dims = styled.GetStyle().GetDimensions()
+	}
+	if dimensioned, ok := widget.(Dimensioned); ok {
+		width, height := dimensioned.GetContentDimensions()
+		if dims.Width.IsUnset() {
+			dims.Width = width
+		}
+		if dims.Height.IsUnset() {
+			dims.Height = height
+		}
+	}
+	return dims
+}
+
 // LayoutObserver is implemented by widgets that want access to computed layout data.
 // OnLayout is called after layout is computed for the widget, before child render trees are built.
 // Use this to read resolved child positions/sizes without re-measuring.
@@ -73,18 +96,32 @@ type ChildProvider interface {
 // It tracks the widget instance and dirty state for signal subscriptions.
 type widgetNode struct {
 	widget Widget
-	dirty  bool
+	dirty  atomic.Bool
 }
 
 // newWidgetNode creates a new widget node.
 func newWidgetNode(widget Widget) *widgetNode {
-	return &widgetNode{
+	node := &widgetNode{
 		widget: widget,
-		dirty:  true,
 	}
+	node.dirty.Store(true)
+	return node
 }
 
 // markDirty marks this node for rebuild.
+// Thread-safe: can be called from any goroutine.
 func (n *widgetNode) markDirty() {
-	n.dirty = true
+	n.dirty.Store(true)
+}
+
+// isDirty returns whether this node needs rebuild.
+// Thread-safe.
+func (n *widgetNode) isDirty() bool {
+	return n.dirty.Load()
+}
+
+// clearDirty marks this node as clean.
+// Thread-safe.
+func (n *widgetNode) clearDirty() {
+	n.dirty.Store(false)
 }

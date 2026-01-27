@@ -18,6 +18,11 @@ import "terma/layout"
 type Spacer struct {
 	Width  Dimension // Defaults to Flex(1) if unset
 	Height Dimension // Defaults to Flex(1) if unset
+
+	MinWidth  Dimension
+	MaxWidth  Dimension
+	MinHeight Dimension
+	MaxHeight Dimension
 }
 
 // Build returns itself as Spacer is a leaf widget.
@@ -26,14 +31,24 @@ func (s Spacer) Build(ctx BuildContext) Widget {
 }
 
 // GetContentDimensions returns the width and height dimension preferences.
-// Unset dimensions default to Flex(1).
+// If both dimensions are unset, both default to Flex(1) (bare Spacer{} expands in both directions).
+// If one dimension is explicitly set to Flex/Percent, the other defaults to Auto (size 0),
+// making Spacer{Width: Flex(1)} behave as a horizontal-only spacer.
 func (s Spacer) GetContentDimensions() (width, height Dimension) {
 	w, h := s.Width, s.Height
+
+	// Both unset: default both to Flex(1) for bare Spacer{}
+	if w.IsUnset() && h.IsUnset() {
+		return Flex(1), Flex(1)
+	}
+
+	// One dimension explicitly set: the unset one defaults to Auto (0 size)
+	// This makes Spacer{Width: Flex(1)} only expand horizontally
 	if w.IsUnset() {
-		w = Flex(1)
+		w = Auto
 	}
 	if h.IsUnset() {
-		h = Flex(1)
+		h = Auto
 	}
 	return w, h
 }
@@ -41,8 +56,18 @@ func (s Spacer) GetContentDimensions() (width, height Dimension) {
 // BuildLayoutNode builds a layout node for this Spacer widget.
 func (s Spacer) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	w, h := s.GetContentDimensions()
-	minWidth, maxWidth := dimensionToMinMax(w)
-	minHeight, maxHeight := dimensionToMinMax(h)
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(
+		DimensionSet{
+			Width:     w,
+			Height:    h,
+			MinWidth:  s.MinWidth,
+			MaxWidth:  s.MaxWidth,
+			MinHeight: s.MinHeight,
+			MaxHeight: s.MaxHeight,
+		},
+		layout.EdgeInsets{},
+		layout.EdgeInsets{},
+	)
 
 	return &layout.BoxNode{
 		MinWidth:     minWidth,

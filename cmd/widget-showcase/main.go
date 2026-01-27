@@ -143,7 +143,7 @@ func (w *WidgetShowcase) buildHeader(theme t.ThemeData, currentTheme string) t.W
 							Bold:            true,
 						},
 					},
-					t.Spacer{},
+					t.Spacer{Width: t.Flex(1)},
 					t.Text{
 						Content: "Theme: ",
 						Style:   t.Style{ForegroundColor: theme.TextMuted},

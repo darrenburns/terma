@@ -424,8 +424,8 @@ type Table[T any] struct {
 	RowSpacing          int                                                                                           // Space between rows
 	SelectionMode       TableSelectionMode                                                                            // Cursor/selection highlight mode (row/column/cursor)
 	MultiSelect         bool                                                                                          // Enable multi-select mode (shift+move to extend)
-	Width               Dimension                                                                                     // Optional width (zero value = auto)
-	Height              Dimension                                                                                     // Optional height (zero value = auto)
+	Width               Dimension                                                                                     // Deprecated: use Style.Width
+	Height              Dimension                                                                                     // Deprecated: use Style.Height
 	Style               Style                                                                                         // Optional styling
 	Click               func(MouseEvent)                                                                              // Optional callback invoked when clicked
 	MouseDown           func(MouseEvent)                                                                              // Optional callback invoked when mouse is pressed
@@ -514,7 +514,15 @@ func (t Table[T]) WidgetID() string {
 // GetContentDimensions returns the width and height dimension preferences.
 // Implements the Dimensioned interface.
 func (t Table[T]) GetContentDimensions() (width, height Dimension) {
-	return t.Width, t.Height
+	dims := t.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = t.Width
+	}
+	if height.IsUnset() {
+		height = t.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the style of the table widget.
@@ -786,231 +794,335 @@ func defaultTableMatchCell[T any](row T, rowIndex int, colIndex int, query strin
 	return MatchString(fmt.Sprintf("%v", row), query, options)
 }
 
-// OnKey handles navigation keys and selection, updating cursor position and scrolling into view.
+// OnKey handles keys not covered by declarative keybindings.
 // Implements the Focusable interface.
 func (t Table[T]) OnKey(event KeyEvent) bool {
+	return false
+}
+
+// Keybinds returns the declarative keybindings for this table.
+func (t Table[T]) Keybinds() []Keybind {
 	if t.State == nil {
-		return false
+		return nil
 	}
-
-	view := t.viewIndices()
-	if len(view) == 0 {
-		return false
-	}
-
-	cursorRow := t.State.CursorIndex.Peek()
-	cursorCol := t.State.CursorColumn.Peek()
-	sourceRowCount := t.State.RowCount()
-	columnCount := len(t.Columns)
 	mode := t.selectionMode()
 
-	if sourceRowCount > 0 {
-		clampedRow := clampInt(cursorRow, 0, sourceRowCount-1)
-		if clampedRow != cursorRow {
-			t.State.CursorIndex.Set(clampedRow)
-			cursorRow = clampedRow
-		}
-	}
-	if columnCount > 0 {
-		clampedCol := clampInt(cursorCol, 0, columnCount-1)
-		if clampedCol != cursorCol {
-			t.State.CursorColumn.Set(clampedCol)
-			cursorCol = clampedCol
-		}
-	}
-
-	cursorViewIdx, ok := t.viewIndexForSource(cursorRow)
-	if !ok {
-		cursorRow = view[0]
-		t.State.CursorIndex.Set(cursorRow)
-		cursorViewIdx = 0
+	binds := []Keybind{
+		{Key: "enter", Action: t.selectRow, Hidden: true},
+		{Key: "up", Action: t.keyCursorUp, Hidden: true},
+		{Key: "k", Action: t.keyCursorUp, Hidden: true},
+		{Key: "down", Action: t.keyCursorDown, Hidden: true},
+		{Key: "j", Action: t.keyCursorDown, Hidden: true},
+		{Key: "home", Action: t.keyCursorToFirst, Hidden: true},
+		{Key: "g", Action: t.keyCursorToFirst, Hidden: true},
+		{Key: "end", Action: t.keyCursorToLast, Hidden: true},
+		{Key: "G", Action: t.keyCursorToLast, Hidden: true},
+		{Key: "pgup", Action: t.pageUp, Hidden: true},
+		{Key: "ctrl+u", Action: t.pageUp, Hidden: true},
+		{Key: "pgdown", Action: t.pageDown, Hidden: true},
+		{Key: "ctrl+d", Action: t.pageDown, Hidden: true},
 	}
 
-	rowCount := len(view)
+	// Left/right only in Cursor mode (not Row, not Column)
+	if mode == TableSelectionCursor {
+		binds = append(binds,
+			Keybind{Key: "left", Action: t.keyCursorLeft, Hidden: true},
+			Keybind{Key: "h", Action: t.keyCursorLeft, Hidden: true},
+			Keybind{Key: "right", Action: t.keyCursorRight, Hidden: true},
+			Keybind{Key: "l", Action: t.keyCursorRight, Hidden: true},
+		)
+	}
 
-	// Handle multi-select specific keys (shift+movement to extend selection)
+	// Shift keybinds conditional on MultiSelect and mode
 	if t.MultiSelect {
 		switch mode {
 		case TableSelectionRow:
-			switch {
-			case event.MatchString("shift+up", "shift+k"):
-				t.handleShiftMoveRow(-1)
-				return true
-			case event.MatchString("shift+down", "shift+j"):
-				t.handleShiftMoveRow(1)
-				return true
-			case event.MatchString("shift+home"):
-				t.handleShiftMoveRowTo(0)
-				return true
-			case event.MatchString("shift+end"):
-				t.handleShiftMoveRowTo(rowCount - 1)
-				return true
-			}
+			binds = append(binds,
+				Keybind{Key: "shift+up", Action: t.shiftRowUp, Hidden: true},
+				Keybind{Key: "shift+k", Action: t.shiftRowUp, Hidden: true},
+				Keybind{Key: "shift+down", Action: t.shiftRowDown, Hidden: true},
+				Keybind{Key: "shift+j", Action: t.shiftRowDown, Hidden: true},
+				Keybind{Key: "shift+home", Action: t.shiftRowToFirst, Hidden: true},
+				Keybind{Key: "shift+end", Action: t.shiftRowToLast, Hidden: true},
+			)
 		case TableSelectionColumn:
-			switch {
-			case event.MatchString("shift+left", "shift+h"):
-				t.handleShiftMoveColumn(-1, columnCount)
-				return true
-			case event.MatchString("shift+right", "shift+l"):
-				t.handleShiftMoveColumn(1, columnCount)
-				return true
-			case event.MatchString("shift+home"):
-				t.handleShiftMoveColumnTo(0, columnCount)
-				return true
-			case event.MatchString("shift+end"):
-				t.handleShiftMoveColumnTo(columnCount-1, columnCount)
-				return true
-			}
+			binds = append(binds,
+				Keybind{Key: "shift+left", Action: t.shiftColumnLeft, Hidden: true},
+				Keybind{Key: "shift+h", Action: t.shiftColumnLeft, Hidden: true},
+				Keybind{Key: "shift+right", Action: t.shiftColumnRight, Hidden: true},
+				Keybind{Key: "shift+l", Action: t.shiftColumnRight, Hidden: true},
+				Keybind{Key: "shift+home", Action: t.shiftColumnToFirst, Hidden: true},
+				Keybind{Key: "shift+end", Action: t.shiftColumnToLast, Hidden: true},
+			)
 		case TableSelectionCursor:
-			switch {
-			case event.MatchString("shift+up", "shift+k"):
-				t.handleShiftMoveCell(-1, 0, columnCount)
-				return true
-			case event.MatchString("shift+down", "shift+j"):
-				t.handleShiftMoveCell(1, 0, columnCount)
-				return true
-			case event.MatchString("shift+left", "shift+h"):
-				t.handleShiftMoveCell(0, -1, columnCount)
-				return true
-			case event.MatchString("shift+right", "shift+l"):
-				t.handleShiftMoveCell(0, 1, columnCount)
-				return true
-			case event.MatchString("shift+home"):
-				t.handleShiftMoveCellTo(0, 0, columnCount)
-				return true
-			case event.MatchString("shift+end"):
-				t.handleShiftMoveCellTo(rowCount-1, columnCount-1, columnCount)
-				return true
-			}
+			binds = append(binds,
+				Keybind{Key: "shift+up", Action: t.shiftCellUp, Hidden: true},
+				Keybind{Key: "shift+k", Action: t.shiftCellUp, Hidden: true},
+				Keybind{Key: "shift+down", Action: t.shiftCellDown, Hidden: true},
+				Keybind{Key: "shift+j", Action: t.shiftCellDown, Hidden: true},
+				Keybind{Key: "shift+left", Action: t.shiftCellLeft, Hidden: true},
+				Keybind{Key: "shift+h", Action: t.shiftCellLeft, Hidden: true},
+				Keybind{Key: "shift+right", Action: t.shiftCellRight, Hidden: true},
+				Keybind{Key: "shift+l", Action: t.shiftCellRight, Hidden: true},
+				Keybind{Key: "shift+home", Action: t.shiftCellToFirst, Hidden: true},
+				Keybind{Key: "shift+end", Action: t.shiftCellToLast, Hidden: true},
+			)
 		}
 	}
 
+	return binds
+}
+
+func (t Table[T]) selectRow() {
+	if t.OnSelect != nil {
+		if row, ok := t.State.SelectedRow(); ok {
+			t.OnSelect(row)
+		}
+	}
+}
+
+func (t Table[T]) keyCursorUp() {
+	mode := t.selectionMode()
 	if mode == TableSelectionColumn {
-		switch {
-		case event.MatchString("up", "k"):
-			return t.scrollBy(-1)
-		case event.MatchString("down", "j"):
-			return t.scrollBy(1)
-		case event.MatchString("pgup", "ctrl+u"):
-			return t.scrollBy(-10)
-		case event.MatchString("pgdown", "ctrl+d"):
-			return t.scrollBy(10)
-		case event.MatchString("home", "g"):
-			if t.ScrollState == nil {
-				return false
-			}
+		t.scrollBy(-1)
+		return
+	}
+	view := t.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+	cursorRow := t.State.CursorIndex.Peek()
+	cursorViewIdx, ok := t.viewIndexForSource(cursorRow)
+	if !ok {
+		return
+	}
+	if cursorViewIdx == 0 {
+		return
+	}
+	if t.MultiSelect {
+		t.State.ClearSelection()
+		t.State.ClearAnchor()
+	}
+	t.setCursorToViewIndex(cursorViewIdx - 1)
+	t.scrollCursorIntoView()
+	t.notifyCursorChange()
+}
+
+func (t Table[T]) keyCursorDown() {
+	mode := t.selectionMode()
+	if mode == TableSelectionColumn {
+		t.scrollBy(1)
+		return
+	}
+	view := t.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+	cursorRow := t.State.CursorIndex.Peek()
+	cursorViewIdx, ok := t.viewIndexForSource(cursorRow)
+	if !ok {
+		return
+	}
+	if cursorViewIdx >= len(view)-1 {
+		return
+	}
+	if t.MultiSelect {
+		t.State.ClearSelection()
+		t.State.ClearAnchor()
+	}
+	t.setCursorToViewIndex(cursorViewIdx + 1)
+	t.scrollCursorIntoView()
+	t.notifyCursorChange()
+}
+
+func (t Table[T]) keyCursorToFirst() {
+	mode := t.selectionMode()
+	if mode == TableSelectionColumn {
+		if t.ScrollState != nil {
 			t.ScrollState.SetOffset(0)
-			return true
-		case event.MatchString("end", "G"):
-			if t.ScrollState == nil {
-				return false
-			}
+		}
+		return
+	}
+	if t.MultiSelect {
+		t.State.ClearSelection()
+		t.State.ClearAnchor()
+	}
+	t.setCursorToViewIndex(0)
+	t.scrollCursorIntoView()
+	t.notifyCursorChange()
+}
+
+func (t Table[T]) keyCursorToLast() {
+	mode := t.selectionMode()
+	if mode == TableSelectionColumn {
+		if t.ScrollState != nil {
 			t.ScrollState.SetOffset(maxTableInt())
-			return true
 		}
+		return
 	}
-
-	switch {
-	case event.MatchString("enter"):
-		if t.OnSelect != nil {
-			if row, ok := t.State.SelectedRow(); ok {
-				t.OnSelect(row)
-			}
-		}
-		return true
-
-	case event.MatchString("up", "k"):
-		if cursorViewIdx == 0 {
-			return false
-		}
-		if t.MultiSelect && mode != TableSelectionColumn {
-			t.State.ClearSelection()
-			t.State.ClearAnchor()
-		}
-		t.setCursorToViewIndex(cursorViewIdx - 1)
-		t.scrollCursorIntoView()
-		t.notifyCursorChange()
-		return true
-
-	case event.MatchString("down", "j"):
-		if cursorViewIdx >= rowCount-1 {
-			return false
-		}
-		if t.MultiSelect && mode != TableSelectionColumn {
-			t.State.ClearSelection()
-			t.State.ClearAnchor()
-		}
-		t.setCursorToViewIndex(cursorViewIdx + 1)
-		t.scrollCursorIntoView()
-		t.notifyCursorChange()
-		return true
-
-	case event.MatchString("home", "g"):
-		if t.MultiSelect && mode != TableSelectionColumn {
-			t.State.ClearSelection()
-			t.State.ClearAnchor()
-		}
-		t.setCursorToViewIndex(0)
-		t.scrollCursorIntoView()
-		t.notifyCursorChange()
-		return true
-
-	case event.MatchString("end", "G"):
-		if t.MultiSelect && mode != TableSelectionColumn {
-			t.State.ClearSelection()
-			t.State.ClearAnchor()
-		}
-		t.setCursorToViewIndex(rowCount - 1)
-		t.scrollCursorIntoView()
-		t.notifyCursorChange()
-		return true
-
-	case event.MatchString("pgup", "ctrl+u"):
-		if t.MultiSelect && mode != TableSelectionColumn {
-			t.State.ClearSelection()
-			t.State.ClearAnchor()
-		}
-		newCursor := cursorViewIdx - 10
-		t.setCursorToViewIndex(newCursor)
-		t.scrollCursorIntoView()
-		t.notifyCursorChange()
-		return true
-
-	case event.MatchString("pgdown", "ctrl+d"):
-		if t.MultiSelect && mode != TableSelectionColumn {
-			t.State.ClearSelection()
-			t.State.ClearAnchor()
-		}
-		newCursor := cursorViewIdx + 10
-		t.setCursorToViewIndex(newCursor)
-		t.scrollCursorIntoView()
-		t.notifyCursorChange()
-		return true
-
-	case event.MatchString("left", "h"):
-		if mode == TableSelectionRow || columnCount == 0 || cursorCol == 0 {
-			return false
-		}
-		if t.MultiSelect {
-			t.State.ClearSelection()
-			t.State.ClearAnchor()
-		}
-		t.State.CursorColumn.Set(cursorCol - 1)
-		return true
-
-	case event.MatchString("right", "l"):
-		if mode == TableSelectionRow || columnCount == 0 || cursorCol >= columnCount-1 {
-			return false
-		}
-		if t.MultiSelect {
-			t.State.ClearSelection()
-			t.State.ClearAnchor()
-		}
-		t.State.CursorColumn.Set(cursorCol + 1)
-		return true
+	view := t.viewIndices()
+	if len(view) == 0 {
+		return
 	}
+	if t.MultiSelect {
+		t.State.ClearSelection()
+		t.State.ClearAnchor()
+	}
+	t.setCursorToViewIndex(len(view) - 1)
+	t.scrollCursorIntoView()
+	t.notifyCursorChange()
+}
 
-	return false
+func (t Table[T]) pageUp() {
+	mode := t.selectionMode()
+	if mode == TableSelectionColumn {
+		t.scrollBy(-10)
+		return
+	}
+	view := t.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+	cursorRow := t.State.CursorIndex.Peek()
+	cursorViewIdx, ok := t.viewIndexForSource(cursorRow)
+	if !ok {
+		cursorViewIdx = 0
+	}
+	if t.MultiSelect {
+		t.State.ClearSelection()
+		t.State.ClearAnchor()
+	}
+	t.setCursorToViewIndex(cursorViewIdx - 10)
+	t.scrollCursorIntoView()
+	t.notifyCursorChange()
+}
+
+func (t Table[T]) pageDown() {
+	mode := t.selectionMode()
+	if mode == TableSelectionColumn {
+		t.scrollBy(10)
+		return
+	}
+	view := t.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+	cursorRow := t.State.CursorIndex.Peek()
+	cursorViewIdx, ok := t.viewIndexForSource(cursorRow)
+	if !ok {
+		cursorViewIdx = 0
+	}
+	if t.MultiSelect {
+		t.State.ClearSelection()
+		t.State.ClearAnchor()
+	}
+	t.setCursorToViewIndex(cursorViewIdx + 10)
+	t.scrollCursorIntoView()
+	t.notifyCursorChange()
+}
+
+func (t Table[T]) keyCursorLeft() {
+	columnCount := len(t.Columns)
+	if columnCount == 0 {
+		return
+	}
+	cursorCol := t.State.CursorColumn.Peek()
+	if cursorCol <= 0 {
+		return
+	}
+	if t.MultiSelect {
+		t.State.ClearSelection()
+		t.State.ClearAnchor()
+	}
+	t.State.CursorColumn.Set(cursorCol - 1)
+}
+
+func (t Table[T]) keyCursorRight() {
+	columnCount := len(t.Columns)
+	if columnCount == 0 {
+		return
+	}
+	cursorCol := t.State.CursorColumn.Peek()
+	if cursorCol >= columnCount-1 {
+		return
+	}
+	if t.MultiSelect {
+		t.State.ClearSelection()
+		t.State.ClearAnchor()
+	}
+	t.State.CursorColumn.Set(cursorCol + 1)
+}
+
+func (t Table[T]) shiftRowUp() {
+	t.handleShiftMoveRow(-1)
+}
+
+func (t Table[T]) shiftRowDown() {
+	t.handleShiftMoveRow(1)
+}
+
+func (t Table[T]) shiftRowToFirst() {
+	t.handleShiftMoveRowTo(0)
+}
+
+func (t Table[T]) shiftRowToLast() {
+	view := t.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+	t.handleShiftMoveRowTo(len(view) - 1)
+}
+
+func (t Table[T]) shiftColumnLeft() {
+	t.handleShiftMoveColumn(-1, len(t.Columns))
+}
+
+func (t Table[T]) shiftColumnRight() {
+	t.handleShiftMoveColumn(1, len(t.Columns))
+}
+
+func (t Table[T]) shiftColumnToFirst() {
+	t.handleShiftMoveColumnTo(0, len(t.Columns))
+}
+
+func (t Table[T]) shiftColumnToLast() {
+	columnCount := len(t.Columns)
+	if columnCount == 0 {
+		return
+	}
+	t.handleShiftMoveColumnTo(columnCount-1, columnCount)
+}
+
+func (t Table[T]) shiftCellUp() {
+	t.handleShiftMoveCell(-1, 0, len(t.Columns))
+}
+
+func (t Table[T]) shiftCellDown() {
+	t.handleShiftMoveCell(1, 0, len(t.Columns))
+}
+
+func (t Table[T]) shiftCellLeft() {
+	t.handleShiftMoveCell(0, -1, len(t.Columns))
+}
+
+func (t Table[T]) shiftCellRight() {
+	t.handleShiftMoveCell(0, 1, len(t.Columns))
+}
+
+func (t Table[T]) shiftCellToFirst() {
+	t.handleShiftMoveCellTo(0, 0, len(t.Columns))
+}
+
+func (t Table[T]) shiftCellToLast() {
+	view := t.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+	columnCount := len(t.Columns)
+	if columnCount == 0 {
+		return
+	}
+	t.handleShiftMoveCellTo(len(view)-1, columnCount-1, columnCount)
 }
 
 // handleShiftMoveRow extends row selection by moving cursor by delta.
@@ -1364,49 +1476,33 @@ func (t Table[T]) CursorRow() T {
 func (c tableContainer[T]) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	children := make([]layout.LayoutNode, len(c.children))
 	for i, child := range c.children {
-		built := child.Build(ctx.PushChild(i))
+		childCtx := ctx.PushChild(i)
+		built := child.Build(childCtx)
 
 		var childNode layout.LayoutNode
 		if builder, ok := built.(LayoutNodeBuilder); ok {
-			childNode = builder.BuildLayoutNode(ctx.PushChild(i))
+			childNode = builder.BuildLayoutNode(childCtx)
 		} else {
-			childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
+			childNode = buildFallbackLayoutNode(built, childCtx)
 		}
 
 		children[i] = childNode
 	}
 
-	minWidth, maxWidth := dimensionToMinMax(c.Width)
-	minHeight, maxHeight := dimensionToMinMax(c.Height)
-
 	padding := toLayoutEdgeInsets(c.Style.Padding)
 	border := borderToEdgeInsets(c.Style.Border)
+	dims := GetWidgetDimensionSet(c)
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
-
-	preserveWidth := c.Width.IsAuto() && !c.Width.IsUnset()
-	preserveHeight := c.Height.IsAuto() && !c.Height.IsUnset()
+	preserveWidth := dims.Width.IsAuto() && !dims.Width.IsUnset()
+	preserveHeight := dims.Height.IsAuto() && !dims.Height.IsUnset()
 
 	columnWidths := make([]Dimension, len(c.Columns))
 	for i, col := range c.Columns {
 		columnWidths[i] = col.Width
 	}
 
-	return &tableNode{
+	node := layout.LayoutNode(&tableNode{
 		Columns:        c.columnCount,
 		Rows:           c.rowCount + c.headerRows,
 		ColumnWidths:   columnWidths,
@@ -1420,11 +1516,25 @@ func (c tableContainer[T]) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		MaxWidth:       maxWidth,
 		MinHeight:      minHeight,
 		MaxHeight:      maxHeight,
-		ExpandWidth:    c.Width.IsFlex(),
-		ExpandHeight:   c.Height.IsFlex(),
+		ExpandWidth:    dims.Width.IsFlex(),
+		ExpandHeight:   dims.Height.IsFlex(),
 		PreserveWidth:  preserveWidth,
 		PreserveHeight: preserveHeight,
+	})
+
+	if hasPercentMinMax(dims) {
+		node = &percentConstraintWrapper{
+			child:     node,
+			minWidth:  dims.MinWidth,
+			maxWidth:  dims.MaxWidth,
+			minHeight: dims.MinHeight,
+			maxHeight: dims.MaxHeight,
+			padding:   padding,
+			border:    border,
+		}
 	}
+
+	return node
 }
 
 func tableHasColumnHeaders(cols []TableColumn) bool {

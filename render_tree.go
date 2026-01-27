@@ -40,6 +40,29 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 		return BuildRenderTree(dw.child, ctx, constraints, fc)
 	}
 
+	// Handle FocusTrap specially - recurse into child with trap scope pushed.
+	// This makes FocusTrap transparent to layout while correctly scoping focus.
+	if ft, ok := widget.(FocusTrap); ok {
+		if fc != nil && ft.TrapsFocus() {
+			trapID := ft.WidgetID()
+			if trapID == "" {
+				trapID = ctx.AutoID()
+			}
+			fc.PushTrap(trapID)
+			defer fc.PopTrap()
+		}
+		if ft.Child == nil {
+			return BuildRenderTree(EmptyWidget{}, ctx, constraints, fc)
+		}
+		return BuildRenderTree(ft.Child, ctx, constraints, fc)
+	}
+
+	// Handle inertWrapper specially - recurse into child with nil focus collector
+	// This prevents any focusable widgets in the subtree from receiving focus
+	if iw, ok := widget.(inertWrapper); ok {
+		return BuildRenderTree(iw.child, ctx, constraints, nil)
+	}
+
 	autoID := ctx.AutoID()
 
 	// Determine event ID (explicit ID or auto)
@@ -52,6 +75,10 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 
 	// Collect focusables during tree build (not during render)
 	if fc != nil {
+		if trapper, ok := widget.(FocusTrapper); ok && trapper.TrapsFocus() {
+			fc.PushTrap(eventID)
+			defer fc.PopTrap()
+		}
 		fc.Collect(widget, ctx.AutoID(), ctx)
 		if fc.ShouldTrackAncestor(widget) {
 			fc.PushAncestor(widget)
@@ -136,6 +163,11 @@ func extractChildren(widget Widget) []Widget {
 		return w.AllChildren()
 	case Stack:
 		return w.AllChildren()
+	case Switcher:
+		if child, ok := w.Children[w.Active]; ok {
+			return []Widget{child}
+		}
+		return nil
 	default:
 		return nil
 	}

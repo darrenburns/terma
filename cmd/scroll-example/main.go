@@ -87,9 +87,10 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 
 			// Body: scrollable container with all the panels
 			t.Scrollable{
-				ID:     "body",
-				State:  s.bodyState,
-				Height: t.Flex(1),
+				ID:        "body",
+				State:     s.bodyState,
+				Focusable: true,
+				Height:    t.Flex(1),
 				Child: t.Column{
 					Spacing: 1,
 					Children: []t.Widget{
@@ -99,10 +100,11 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 							Children: []t.Widget{
 								// Scrollable list with fixed height
 								t.Scrollable{
-									ID:     "scroll-list",
-									State:  s.scrollListState,
-									Height: t.Cells(15),
-									Width:  t.Flex(2),
+									ID:        "scroll-list",
+									State:     s.scrollListState,
+									Focusable: true,
+									Height:    t.Cells(15),
+									Width:     t.Flex(2),
 									Style: t.Style{
 										Border:  t.RoundedBorder(theme.Info, t.BorderTitle("Scrollable List")),
 										Padding: t.EdgeInsetsAll(1),
@@ -114,10 +116,11 @@ func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 
 								// Second scrollable panel with different content
 								t.Scrollable{
-									ID:     "scroll-text",
-									State:  s.scrollTextState,
-									Height: t.Cells(15),
-									Width:  t.Flex(1),
+									ID:        "scroll-text",
+									State:     s.scrollTextState,
+									Focusable: true,
+									Height:    t.Cells(15),
+									Width:     t.Flex(1),
 									Style: t.Style{
 										Border:  t.RoundedBorder(theme.Secondary, t.BorderTitle("Long Text")),
 										Padding: t.EdgeInsetsAll(1),

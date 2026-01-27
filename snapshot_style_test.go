@@ -405,6 +405,28 @@ func TestSnapshot_Style_CombinedTextStyles(t *testing.T) {
 		"White 'Combined' text in both bold and italic at top-left on black background.")
 }
 
+func TestSnapshot_Style_Reverse(t *testing.T) {
+	widget := Text{
+		Content: "Reversed Text",
+		Style:   Style{Reverse: true},
+	}
+	AssertSnapshot(t, widget, 20, 3,
+		"'Reversed Text' with reversed colors - theme text color becomes background, black text. Background should be continuous across the space.")
+}
+
+func TestSnapshot_Style_ReverseWithColors(t *testing.T) {
+	widget := Text{
+		Content: "Reversed",
+		Style: Style{
+			ForegroundColor: RGB(255, 100, 100),
+			BackgroundColor: RGB(50, 50, 150),
+			Reverse:         true,
+		},
+	}
+	AssertSnapshot(t, widget, 20, 3,
+		"'Reversed' text with colors swapped - light red background (#FF6464), dark blue text (#323296).")
+}
+
 // =============================================================================
 // Border + Padding Combined Tests
 // =============================================================================

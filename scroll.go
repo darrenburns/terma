@@ -197,9 +197,9 @@ type Scrollable struct {
 	Child         Widget       // The child widget to scroll
 	State         *ScrollState // Required - holds scroll position
 	DisableScroll bool         // If true, scrolling is disabled and scrollbar hidden (default: false)
-	DisableFocus  bool         // If true, widget cannot receive focus (default: false = focusable)
-	Width         Dimension    // Optional width (zero value = auto)
-	Height        Dimension    // Optional height (zero value = auto)
+	Focusable     bool         // If true, widget can receive keyboard focus for scroll navigation
+	Width         Dimension    // Deprecated: use Style.Width
+	Height        Dimension    // Deprecated: use Style.Height
 	Style         Style        // Optional styling
 	Click         func(MouseEvent) // Optional callback invoked when clicked
 	MouseDown     func(MouseEvent) // Optional callback invoked when mouse is pressed
@@ -219,7 +219,15 @@ func (s Scrollable) WidgetID() string {
 
 // GetContentDimensions returns the width and height dimension preferences.
 func (s Scrollable) GetContentDimensions() (width, height Dimension) {
-	return s.Width, s.Height
+	dims := s.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = s.Width
+	}
+	if height.IsUnset() {
+		height = s.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the style of the scrollable widget.
@@ -273,15 +281,18 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		return &layout.BoxNode{}
 	}
 
+	// Create child context once and reuse
+	childCtx := ctx.PushChild(0)
+
 	// Build the child widget
-	built := s.Child.Build(ctx.PushChild(0))
+	built := s.Child.Build(childCtx)
 
 	// Get child's layout node
 	var childNode layout.LayoutNode
 	if builder, ok := built.(LayoutNodeBuilder); ok {
-		childNode = builder.BuildLayoutNode(ctx.PushChild(0))
+		childNode = builder.BuildLayoutNode(childCtx)
 	} else {
-		childNode = buildFallbackLayoutNode(built, ctx.PushChild(0))
+		childNode = buildFallbackLayoutNode(built, childCtx)
 	}
 
 	// Get scroll offset from state
@@ -297,30 +308,12 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		scrollbarWidth = 1
 	}
 
-	// Get content-box constraints from dimensions
-	minWidth, maxWidth := dimensionToMinMax(s.Width)
-	minHeight, maxHeight := dimensionToMinMax(s.Height)
-
 	padding := toLayoutEdgeInsets(s.Style.Padding)
 	border := borderToEdgeInsets(s.Style.Border)
+	dims := GetWidgetDimensionSet(s)
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
-
-	return &layout.ScrollableNode{
+	node := layout.LayoutNode(&layout.ScrollableNode{
 		Child:           childNode,
 		ScrollOffsetY:   scrollOffsetY,
 		ScrollbarWidth:  scrollbarWidth,
@@ -332,7 +325,21 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		MaxWidth:        maxWidth,
 		MinHeight:       minHeight,
 		MaxHeight:       maxHeight,
+	})
+
+	if hasPercentMinMax(dims) {
+		node = &percentConstraintWrapper{
+			child:     node,
+			minWidth:  dims.MinWidth,
+			maxWidth:  dims.MaxWidth,
+			minHeight: dims.MinHeight,
+			maxHeight: dims.MaxHeight,
+			padding:   padding,
+			border:    border,
+		}
 	}
+
+	return node
 }
 
 // getScrollOffset returns the current scroll offset.
@@ -536,11 +543,10 @@ func (s Scrollable) renderScrollbar(ctx *RenderContext, scrollOffset int, focuse
 }
 
 // IsFocusable returns true if this widget can receive focus.
-// Returns true if scrolling is enabled, focus is not disabled, and the widget has an ID.
-// Set DisableFocus=true to prevent focus while still showing the scrollbar.
+// Returns true if Focusable is set and scrolling is enabled.
 // Note: We can't check canScroll() here because Layout hasn't run yet during focus collection.
 func (s Scrollable) IsFocusable() bool {
-	return !s.DisableScroll && !s.DisableFocus && s.ID != ""
+	return s.Focusable && !s.DisableScroll
 }
 
 // OnKey handles key events when the widget is focused.

@@ -52,8 +52,8 @@ type Stack struct {
 	ID        string    // Optional unique identifier for the widget
 	Children  []Widget  // Children to overlay (first at bottom, last on top)
 	Alignment Alignment // Default alignment for non-positioned children (default: top-start)
-	Width     Dimension // Optional width (zero value = auto, Flex(1) = fill)
-	Height    Dimension // Optional height (zero value = auto, Flex(1) = fill)
+	Width     Dimension // Deprecated: use Style.Width
+	Height    Dimension // Deprecated: use Style.Height
 	Style     Style     // Optional styling
 	Click     func(MouseEvent) // Optional callback invoked when clicked
 	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
@@ -63,7 +63,15 @@ type Stack struct {
 
 // GetContentDimensions returns the width and height dimension preferences.
 func (s Stack) GetContentDimensions() (width, height Dimension) {
-	return s.Width, s.Height
+	dims := s.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = s.Width
+	}
+	if height.IsUnset() {
+		height = s.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the style of the stack.
@@ -116,18 +124,19 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	children := make([]layout.StackChild, len(s.Children))
 
 	for i, child := range s.Children {
-		built := child.Build(ctx.PushChild(i))
+		childCtx := ctx.PushChild(i)
+		built := child.Build(childCtx)
 
 		// Check if this is a Positioned wrapper
 		var stackChild layout.StackChild
 		if positioned, ok := built.(Positioned); ok {
 			// Build the inner child's layout node
-			innerBuilt := positioned.Child.Build(ctx.PushChild(i))
+			innerBuilt := positioned.Child.Build(childCtx)
 			var childNode layout.LayoutNode
 			if builder, ok := innerBuilt.(LayoutNodeBuilder); ok {
-				childNode = builder.BuildLayoutNode(ctx.PushChild(i))
+				childNode = builder.BuildLayoutNode(childCtx)
 			} else {
-				childNode = buildFallbackLayoutNode(innerBuilt, ctx.PushChild(i))
+				childNode = buildFallbackLayoutNode(innerBuilt, childCtx)
 			}
 
 			// Wrap in PercentNode for width/height if the inner child has percent dimensions
@@ -145,9 +154,9 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			// Regular child - will use Stack's alignment
 			var childNode layout.LayoutNode
 			if builder, ok := built.(LayoutNodeBuilder); ok {
-				childNode = builder.BuildLayoutNode(ctx.PushChild(i))
+				childNode = builder.BuildLayoutNode(childCtx)
 			} else {
-				childNode = buildFallbackLayoutNode(built, ctx.PushChild(i))
+				childNode = buildFallbackLayoutNode(built, childCtx)
 			}
 
 			// Wrap in PercentNode for width/height if child has percent dimensions
@@ -162,29 +171,12 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		children[i] = stackChild
 	}
 
-	minWidth, maxWidth := dimensionToMinMax(s.Width)
-	minHeight, maxHeight := dimensionToMinMax(s.Height)
-
 	padding := toLayoutEdgeInsets(s.Style.Padding)
 	border := borderToEdgeInsets(s.Style.Border)
+	dims := GetWidgetDimensionSet(s)
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
-
-	return &layout.StackNode{
+	node := layout.LayoutNode(&layout.StackNode{
 		Children:      children,
 		DefaultHAlign: toLayoutHAlign(s.Alignment.Horizontal),
 		DefaultVAlign: toLayoutVAlign(s.Alignment.Vertical),
@@ -195,9 +187,23 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		MaxWidth:      maxWidth,
 		MinHeight:     minHeight,
 		MaxHeight:     maxHeight,
-		ExpandWidth:   s.Width.IsFlex(),
-		ExpandHeight:  s.Height.IsFlex(),
+		ExpandWidth:   dims.Width.IsFlex(),
+		ExpandHeight:  dims.Height.IsFlex(),
+	})
+
+	if hasPercentMinMax(dims) {
+		node = &percentConstraintWrapper{
+			child:     node,
+			minWidth:  dims.MinWidth,
+			maxWidth:  dims.MaxWidth,
+			minHeight: dims.MinHeight,
+			maxHeight: dims.MaxHeight,
+			padding:   padding,
+			border:    border,
+		}
 	}
+
+	return node
 }
 
 // Render is a no-op for Stack when using the RenderTree-based rendering path.

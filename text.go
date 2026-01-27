@@ -38,8 +38,8 @@ type Text struct {
 	Spans     []Span             // Rich text segments (takes precedence if non-empty)
 	Wrap      WrapMode           // Wrapping mode (default = WrapNone)
 	TextAlign TextAlign          // Horizontal alignment (default = TextAlignLeft)
-	Width     Dimension          // Optional width (zero value = auto)
-	Height    Dimension          // Optional height (zero value = auto)
+	Width     Dimension          // Deprecated: use Style.Width
+	Height    Dimension          // Deprecated: use Style.Height
 	Style     Style              // Optional styling (colors, inherited by spans)
 	Click     func(MouseEvent)   // Optional callback invoked when clicked
 	MouseDown func(MouseEvent)   // Optional callback invoked when mouse is pressed
@@ -92,7 +92,15 @@ func (t Text) OnHover(hovered bool) {
 
 // GetContentDimensions returns the width and height dimension preferences.
 func (t Text) GetContentDimensions() (width, height Dimension) {
-	return t.Width, t.Height
+	dims := t.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = t.Width
+	}
+	if height.IsUnset() {
+		height = t.Height
+	}
+	return width, height
 }
 
 // GetStyle returns the style of the text widget.
@@ -106,29 +114,12 @@ func (t Text) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	// Get the text content (spans concatenated or plain content)
 	content := t.textContent()
 
-	minWidth, maxWidth := dimensionToMinMax(t.Width)
-	minHeight, maxHeight := dimensionToMinMax(t.Height)
-
 	padding := toLayoutEdgeInsets(t.Style.Padding)
 	border := borderToEdgeInsets(t.Style.Border)
+	dims := GetWidgetDimensionSet(t)
+	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
-	// Add padding and border to convert content-box to border-box constraints
-	hInset := padding.Horizontal() + border.Horizontal()
-	vInset := padding.Vertical() + border.Vertical()
-	if minWidth > 0 {
-		minWidth += hInset
-	}
-	if maxWidth > 0 {
-		maxWidth += hInset
-	}
-	if minHeight > 0 {
-		minHeight += vInset
-	}
-	if maxHeight > 0 {
-		maxHeight += vInset
-	}
-
-	return &layout.TextNode{
+	node := layout.LayoutNode(&layout.TextNode{
 		Content:   content,
 		Wrap:      toLayoutWrapMode(t.Wrap),
 		Padding:   padding,
@@ -138,7 +129,21 @@ func (t Text) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		MaxWidth:  maxWidth,
 		MinHeight: minHeight,
 		MaxHeight: maxHeight,
+	})
+
+	if hasPercentMinMax(dims) {
+		node = &percentConstraintWrapper{
+			child:     node,
+			minWidth:  dims.MinWidth,
+			maxWidth:  dims.MaxWidth,
+			minHeight: dims.MinHeight,
+			maxHeight: dims.MaxHeight,
+			padding:   padding,
+			border:    border,
+		}
 	}
+
+	return node
 }
 
 // textContent returns the effective text content.

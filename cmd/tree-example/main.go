@@ -86,12 +86,6 @@ func (a *TreeExampleApp) Build(ctx t.BuildContext) t.Widget {
 					Spacing:    1,
 					CrossAlign: t.CrossAxisCenter,
 					Children: []t.Widget{
-						t.Text{
-							Content: "Filter:",
-							Style: t.Style{
-								ForegroundColor: theme.TextMuted,
-							},
-						},
 						t.TextInput{
 							ID:          "tree-filter",
 							State:       a.filterInput,
@@ -114,16 +108,16 @@ func (a *TreeExampleApp) Build(ctx t.BuildContext) t.Widget {
 					},
 				},
 				t.Scrollable{
-					ID:                  "tree-scroll",
-					State:               a.scrollState,
-					Height:              t.Flex(1),
-					DisableFocus:        true,
+					ID:    "tree-scroll",
+					State: a.scrollState,
 					ScrollbarThumbColor: theme.ScrollbarThumb,
 					ScrollbarTrackColor: theme.ScrollbarTrack,
 					Style: t.Style{
-						BackgroundColor: theme.Surface,
-						Border:          t.RoundedBorder(theme.Border, t.BorderTitle("Project Files")),
-						Padding:         t.EdgeInsetsAll(1),
+						Height:   t.Flex(1),
+						Width:    t.Auto,
+						MinWidth: t.Cells(14),
+						Border:   t.SquareBorder(t.NewGradient(theme.Primary, theme.Background), t.BorderTitle("Project Files")),
+						Padding:  t.EdgeInsetsAll(1),
 					},
 					Child: func() t.Widget {
 						treeWidget := t.Tree[FileInfo]{

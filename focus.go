@@ -36,8 +36,10 @@ type MouseEvent struct {
 	WidgetID   string
 }
 
-// Identifiable is implemented by widgets that provide a stable identity.
-// The ID must be unique among siblings and persist across rebuilds.
+// Identifiable is implemented by widgets that provide an identity.
+// If WidgetID() returns a non-empty string, that ID takes precedence
+// over the position-based AutoID for focus management and hit testing.
+// The ID should be unique among siblings and persist across rebuilds.
 type Identifiable interface {
 	WidgetID() string
 }
@@ -75,6 +77,11 @@ type MouseUpHandler interface {
 	OnMouseUp(event MouseEvent)
 }
 
+// MouseMoveHandler is implemented by widgets that respond to mouse movement during drag.
+type MouseMoveHandler interface {
+	OnMouseMove(event MouseEvent)
+}
+
 // Hoverable is implemented by widgets that respond to mouse hover.
 type Hoverable interface {
 	OnHover(hovered bool)
@@ -101,6 +108,12 @@ type Blurrable interface {
 	OnBlur()
 }
 
+// FocusTrapper is implemented by widgets that trap focus within their subtree.
+// Tab/Shift+Tab cycling is constrained to focusables within the innermost active trap.
+type FocusTrapper interface {
+	TrapsFocus() bool
+}
+
 // FocusableEntry pairs a focusable widget with its identity and ancestor chain.
 type FocusableEntry struct {
 	ID        string
@@ -109,6 +122,9 @@ type FocusableEntry struct {
 	// that implement KeyHandler or KeybindProvider.
 	// Used for bubbling key events up the tree.
 	Ancestors []Widget
+	// TrapID is the ID of the innermost FocusTrapper ancestor, or "" if none.
+	// Used to constrain Tab/Shift+Tab cycling within a trap scope.
+	TrapID string
 }
 
 // FocusManager tracks the currently focused widget and handles navigation.
@@ -283,7 +299,34 @@ func (fm *FocusManager) FocusByID(id string) {
 	}
 }
 
+// activeTrapID returns the TrapID of the currently focused widget.
+// Returns "" if no widget is focused or the focused widget is not in a trap.
+func (fm *FocusManager) activeTrapID() string {
+	for _, entry := range fm.focusables {
+		if entry.ID == fm.focusedID {
+			return entry.TrapID
+		}
+	}
+	return ""
+}
+
+// focusablesInScope returns the focusable entries that are in the given trap scope.
+// If trapID is "", returns all focusables (no trap active).
+func (fm *FocusManager) focusablesInScope(trapID string) []FocusableEntry {
+	if trapID == "" {
+		return fm.focusables
+	}
+	var scoped []FocusableEntry
+	for _, entry := range fm.focusables {
+		if entry.TrapID == trapID {
+			scoped = append(scoped, entry)
+		}
+	}
+	return scoped
+}
+
 // FocusNext moves focus to the next focusable widget (Tab).
+// If the focused widget is within a focus trap, cycling is constrained to that trap.
 func (fm *FocusManager) FocusNext() {
 	if len(fm.focusables) == 0 {
 		Log("FocusNext: no focusables available")
@@ -291,28 +334,40 @@ func (fm *FocusManager) FocusNext() {
 	}
 
 	oldID := fm.focusedID
-	startIndex := fm.focusedIndex()
-	if startIndex < 0 {
-		startIndex = -1
+	trapID := fm.activeTrapID()
+	candidates := fm.focusablesInScope(trapID)
+	if len(candidates) == 0 {
+		Log("FocusNext: no focusables in scope (trapID=%q)", trapID)
+		return
 	}
 
-	// Find next focusable widget
-	for i := 0; i < len(fm.focusables); i++ {
-		nextIndex := (startIndex + 1 + i) % len(fm.focusables)
-		if fm.focusables[nextIndex].Focusable.IsFocusable() {
-			newID := fm.focusables[nextIndex].ID
+	// Find the current position within the scoped candidates
+	startIndex := -1
+	for i, entry := range candidates {
+		if entry.ID == fm.focusedID {
+			startIndex = i
+			break
+		}
+	}
+
+	// Find next focusable widget within candidates
+	for i := 0; i < len(candidates); i++ {
+		nextIndex := (startIndex + 1 + i) % len(candidates)
+		if candidates[nextIndex].Focusable.IsFocusable() {
+			newID := candidates[nextIndex].ID
 			if newID != oldID {
 				fm.notifyBlur()
 			}
 			fm.focusedID = newID
-			Log("FocusNext: %q -> %q", oldID, fm.focusedID)
+			Log("FocusNext: %q -> %q (trapID=%q)", oldID, fm.focusedID, trapID)
 			return
 		}
 	}
-	Log("FocusNext: no focusable widget found")
+	Log("FocusNext: no focusable widget found in scope (trapID=%q)", trapID)
 }
 
 // FocusPrevious moves focus to the previous focusable widget (Shift+Tab).
+// If the focused widget is within a focus trap, cycling is constrained to that trap.
 func (fm *FocusManager) FocusPrevious() {
 	if len(fm.focusables) == 0 {
 		Log("FocusPrevious: no focusables available")
@@ -320,25 +375,36 @@ func (fm *FocusManager) FocusPrevious() {
 	}
 
 	oldID := fm.focusedID
-	startIndex := fm.focusedIndex()
-	if startIndex < 0 {
-		startIndex = 0
+	trapID := fm.activeTrapID()
+	candidates := fm.focusablesInScope(trapID)
+	if len(candidates) == 0 {
+		Log("FocusPrevious: no focusables in scope (trapID=%q)", trapID)
+		return
 	}
 
-	// Find previous focusable widget
-	for i := 0; i < len(fm.focusables); i++ {
-		prevIndex := (startIndex - 1 - i + len(fm.focusables)) % len(fm.focusables)
-		if fm.focusables[prevIndex].Focusable.IsFocusable() {
-			newID := fm.focusables[prevIndex].ID
+	// Find the current position within the scoped candidates
+	startIndex := 0
+	for i, entry := range candidates {
+		if entry.ID == fm.focusedID {
+			startIndex = i
+			break
+		}
+	}
+
+	// Find previous focusable widget within candidates
+	for i := 0; i < len(candidates); i++ {
+		prevIndex := (startIndex - 1 - i + len(candidates)) % len(candidates)
+		if candidates[prevIndex].Focusable.IsFocusable() {
+			newID := candidates[prevIndex].ID
 			if newID != oldID {
 				fm.notifyBlur()
 			}
 			fm.focusedID = newID
-			Log("FocusPrevious: %q -> %q", oldID, fm.focusedID)
+			Log("FocusPrevious: %q -> %q (trapID=%q)", oldID, fm.focusedID, trapID)
 			return
 		}
 	}
-	Log("FocusPrevious: no focusable widget found")
+	Log("FocusPrevious: no focusable widget found in scope (trapID=%q)", trapID)
 }
 
 // HandleKey routes a key event to the focused widget, bubbling up if not handled.
@@ -431,11 +497,35 @@ type FocusCollector struct {
 	// ancestorStack tracks widgets that implement KeyHandler or KeybindProvider
 	// from root to current position
 	ancestorStack []Widget
+	// trapStack tracks the IDs of enclosing FocusTrapper widgets.
+	// The last element is the innermost active trap.
+	trapStack []string
 }
 
 // NewFocusCollector creates a new focus collector.
 func NewFocusCollector() *FocusCollector {
 	return &FocusCollector{}
+}
+
+// PushTrap pushes a focus trap scope onto the stack.
+// Called when entering a widget that implements FocusTrapper with TrapsFocus() == true.
+func (fc *FocusCollector) PushTrap(id string) {
+	fc.trapStack = append(fc.trapStack, id)
+}
+
+// PopTrap removes the innermost focus trap scope from the stack.
+func (fc *FocusCollector) PopTrap() {
+	if len(fc.trapStack) > 0 {
+		fc.trapStack = fc.trapStack[:len(fc.trapStack)-1]
+	}
+}
+
+// CurrentTrapID returns the ID of the innermost active focus trap, or "" if none.
+func (fc *FocusCollector) CurrentTrapID() string {
+	if len(fc.trapStack) > 0 {
+		return fc.trapStack[len(fc.trapStack)-1]
+	}
+	return ""
 }
 
 // PushAncestor adds a widget to the ancestor chain.
@@ -492,6 +582,7 @@ func (fc *FocusCollector) Collect(widget Widget, autoID string, ctx BuildContext
 		ID:        id,
 		Focusable: focusable,
 		Ancestors: ancestors,
+		TrapID:    fc.CurrentTrapID(),
 	})
 }
 
@@ -504,6 +595,7 @@ func (fc *FocusCollector) Focusables() []FocusableEntry {
 func (fc *FocusCollector) Reset() {
 	fc.focusables = fc.focusables[:0]
 	fc.ancestorStack = fc.ancestorStack[:0]
+	fc.trapStack = fc.trapStack[:0]
 }
 
 // Len returns the number of focusables collected so far.
@@ -511,12 +603,3 @@ func (fc *FocusCollector) Len() int {
 	return len(fc.focusables)
 }
 
-// FirstIDAfter returns the ID of the first focusable collected after the given index.
-// Returns empty string if no focusables were collected after that index.
-// This is useful for finding the first focusable in a subtree that was just built.
-func (fc *FocusCollector) FirstIDAfter(index int) string {
-	if index < len(fc.focusables) {
-		return fc.focusables[index].ID
-	}
-	return ""
-}

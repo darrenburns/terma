@@ -1,201 +1,281 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	t "terma"
 )
 
-// FloatingDemo demonstrates the Floating widget for popups and modals.
-type FloatingDemo struct {
-	showDropdown t.Signal[bool]
-	showModal    t.Signal[bool]
-	statusMsg    t.Signal[string]
+type App struct {
+	showConfirm t.Signal[bool]
+	showForm    t.Signal[bool]
+	showInfo    t.Signal[bool]
+	statusMsg   t.Signal[string]
+	nameInput   *t.TextInputState
+	emailInput  *t.TextInputState
 }
 
-func NewFloatingDemo() *FloatingDemo {
-	return &FloatingDemo{
-		showDropdown: t.NewSignal(false),
-		showModal:    t.NewSignal(false),
-		statusMsg:    t.NewSignal("Click a button to see floating widgets"),
+func (a *App) Keybinds() []t.Keybind {
+	return []t.Keybind{
+		{Key: "q", Name: "Quit", Action: t.Quit},
 	}
 }
 
-func (d *FloatingDemo) Build(ctx t.BuildContext) t.Widget {
+func (a *App) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
 
-	return t.Column{
-		ID:      "floating-demo-root",
-		Spacing: 1,
-		Width:   t.Flex(1),
-		Height:  t.Flex(1),
-		Style: t.Style{
-			Padding:         t.EdgeInsetsXY(2, 1),
-			BackgroundColor: theme.Background,
-		},
-		Children: []t.Widget{
-			// Header
-			t.Text{
-				Content: "Floating Widgets Demo",
-				Style: t.Style{
-					ForegroundColor: t.Black,
-					BackgroundColor: t.Cyan,
-					Padding:         t.EdgeInsetsXY(1, 0),
-				},
+	return t.Dock{
+		Bottom: []t.Widget{t.KeybindBar{}},
+		Body: t.Column{
+			Width:  t.Flex(1),
+			Height: t.Flex(1),
+			Style: t.Style{
+				Padding:         t.EdgeInsetsXY(3, 1),
+				BackgroundColor: theme.Background,
 			},
-
-			// Instructions
-			t.Text{
-				Spans: t.ParseMarkup("Press [b #00ffff]Escape[/] to dismiss floats • Click outside dropdown to close", t.ThemeData{}),
-			},
-
-			// Row with buttons
-			t.Row{
-				Spacing: 2,
-				Children: []t.Widget{
-					// Dropdown trigger button
-					&t.Button{
-						ID:    "dropdown-btn",
-						Label: "Open Dropdown",
-						OnPress: func() {
-							d.showDropdown.Set(true)
-						},
-					},
-
-					// Modal trigger button
-					&t.Button{
-						ID:    "modal-btn",
-						Label: "Open Modal",
-						OnPress: func() {
-							d.showModal.Set(true)
-						},
+			Spacing: 1,
+			Children: []t.Widget{
+				// Header
+				t.Text{
+					Spans: []t.Span{
+						{Text: "Modal Dialogs", Style: t.SpanStyle{Bold: true}},
 					},
 				},
-			},
-
-			// Dropdown menu (anchored to button)
-			t.Floating{
-				Visible: d.showDropdown.Get(),
-				Config: t.FloatConfig{
-					AnchorID:  "dropdown-btn",
-					Anchor:    t.AnchorBottomLeft,
-					OnDismiss: func() { d.showDropdown.Set(false) },
+				t.Text{
+					Content: "Open a modal to see focus trapping in action. Tab/Shift+Tab stays inside the dialog.",
+					Style:   t.Style{ForegroundColor: theme.TextMuted},
 				},
-				Child: d.buildDropdownMenu(),
-			},
+				t.Spacer{Height: t.Cells(1)},
 
-			// Modal dialog (centered)
-			t.Floating{
-				Visible: d.showModal.Get(),
-				Config: t.FloatConfig{
-					Position:      t.FloatPositionCenter,
-					Modal:         true,
-					BackdropColor: theme.Background.WithAlpha(0.2),
-					OnDismiss:     func() { d.showModal.Set(false) },
+				// Trigger buttons
+				t.Row{
+					Spacing: 2,
+					Children: []t.Widget{
+						&t.Button{
+							ID:    "confirm-trigger",
+							Label: "Confirmation",
+							OnPress: func() {
+								a.showConfirm.Set(true)
+								t.RequestFocus("confirm-yes")
+							},
+						},
+						&t.Button{
+							ID:    "form-trigger",
+							Label: "Form",
+							OnPress: func() {
+								a.nameInput.SetText("")
+								a.emailInput.SetText("")
+								a.showForm.Set(true)
+								t.RequestFocus("form-name")
+							},
+						},
+						&t.Button{
+							ID:    "info-trigger",
+							Label: "Info",
+							OnPress: func() {
+								a.showInfo.Set(true)
+								t.RequestFocus("info-ok")
+							},
+						},
+					},
 				},
-				Child: d.buildModalDialog(),
-			},
 
-			// Status message
-			t.Text{
-				Content: d.statusMsg.Get(),
-				Style: t.Style{
-					ForegroundColor: t.BrightYellow,
-				},
-			},
+				// Status
+				t.ShowWhen(a.statusMsg.Get() != "", t.Text{
+					Spans: []t.Span{
+						{Text: a.statusMsg.Get(), Style: t.SpanStyle{Foreground: theme.Success}},
+					},
+				}),
 
-			// Quit instructions
-			t.Text{
-				Spans: t.ParseMarkup("Press [b #ff5555]Ctrl+C[/] to quit", t.ThemeData{}),
+				// Modals
+				a.confirmDialog(ctx),
+				a.formDialog(ctx),
+				a.infoDialog(ctx),
 			},
 		},
 	}
 }
 
-// buildDropdownMenu creates the dropdown menu content.
-func (d *FloatingDemo) buildDropdownMenu() t.Widget {
-	return t.Column{
-		Style: t.Style{
-			BackgroundColor: t.RGB(40, 40, 40),
-			Border:          t.Border{Style: t.BorderSquare, Color: t.BrightBlue},
-			Padding:         t.EdgeInsetsAll(1),
-		},
-		Children: []t.Widget{
-			d.menuItem("New File", func(t.MouseEvent) {
-				d.statusMsg.Set("Selected: New File")
-				d.showDropdown.Set(false)
-			}),
-			d.menuItem("Open File", func(t.MouseEvent) {
-				d.statusMsg.Set("Selected: Open File")
-				d.showDropdown.Set(false)
-			}),
-			d.menuItem("Save", func(t.MouseEvent) {
-				d.statusMsg.Set("Selected: Save")
-				d.showDropdown.Set(false)
-			}),
-			d.menuItem("Exit", func(t.MouseEvent) {
-				d.statusMsg.Set("Selected: Exit")
-				d.showDropdown.Set(false)
-			}),
-		},
-	}
-}
+// confirmDialog is a simple yes/no confirmation modal.
+func (a *App) confirmDialog(ctx t.BuildContext) t.Widget {
+	theme := ctx.Theme()
 
-// menuItem creates a clickable menu item.
-func (d *FloatingDemo) menuItem(label string, onClick func(t.MouseEvent)) t.Widget {
-	return t.Text{
-		Content: " " + label + " ",
-		Click:   onClick,
-		Style: t.Style{
-			ForegroundColor: t.White,
+	return t.Floating{
+		Visible: a.showConfirm.Get(),
+		Config: t.FloatConfig{
+			Position:  t.FloatPositionCenter,
+			Modal:     true,
+			OnDismiss: func() { a.showConfirm.Set(false) },
 		},
-	}
-}
-
-// buildModalDialog creates the modal dialog content.
-func (d *FloatingDemo) buildModalDialog() t.Widget {
-	return t.Column{
-		Style: t.Style{
-			BackgroundColor: t.RGB(50, 50, 60),
-			Border: t.Border{
-				Style:       t.BorderRounded,
-				Color:       t.BrightMagenta,
-				Decorations: []t.BorderDecoration{t.BorderTitleCenter(" Confirm Action ")},
-			},
-			Padding: t.EdgeInsetsAll(2),
-		},
-		Spacing: 1,
-		Children: []t.Widget{
-			t.Text{
-				Content: "Are you sure you want to proceed?",
-				Style: t.Style{
-					ForegroundColor: t.White,
+		Child: t.Column{
+			Style: t.Style{
+				BackgroundColor: theme.Surface,
+				Border: t.Border{
+					Style: t.BorderRounded,
+					Color: theme.Border,
+					Decorations: []t.BorderDecoration{
+						t.BorderTitleMarkup("[b $Primary] Confirm [/]"),
+					},
 				},
+				Padding: t.EdgeInsets{Left: 3, Right: 3, Top: 1, Bottom: 1},
 			},
-			t.Text{
-				Content: "This action cannot be undone.",
-				Style: t.Style{
-					ForegroundColor: t.BrightBlack,
+			Spacing: 1,
+			Children: []t.Widget{
+				t.Text{Content: "Delete all items?"},
+				t.Text{
+					Content: "This action cannot be undone.",
+					Style:   t.Style{ForegroundColor: theme.TextMuted},
 				},
-			},
-			t.Row{
-				Spacing: 2,
-				Children: []t.Widget{
-					&t.Button{
-						ID:    "cancel-btn",
-						Label: "Cancel",
-						OnPress: func() {
-							d.statusMsg.Set("Action cancelled")
-							d.showModal.Set(false)
+				t.Row{
+					Spacing: 1,
+					Children: []t.Widget{
+						&t.Button{
+							ID:    "confirm-yes",
+							Label: "Delete",
+							Style: t.Style{BackgroundColor: theme.Error, ForegroundColor: theme.TextOnPrimary},
+							OnPress: func() {
+								a.statusMsg.Set("Deleted.")
+								a.showConfirm.Set(false)
+							},
+						},
+						&t.Button{
+							ID:    "confirm-no",
+							Label: "Cancel",
+							OnPress: func() {
+								a.statusMsg.Set("Cancelled.")
+								a.showConfirm.Set(false)
+							},
 						},
 					},
-					&t.Button{
-						ID:    "confirm-btn",
-						Label: "Confirm",
-						OnPress: func() {
-							d.statusMsg.Set("Action confirmed!")
-							d.showModal.Set(false)
+				},
+			},
+		},
+	}
+}
+
+// formDialog is a modal with text inputs demonstrating focus trapping.
+func (a *App) formDialog(ctx t.BuildContext) t.Widget {
+	theme := ctx.Theme()
+
+	return t.Floating{
+		Visible: a.showForm.Get(),
+		Config: t.FloatConfig{
+			Position:  t.FloatPositionCenter,
+			Modal:     true,
+			OnDismiss: func() { a.showForm.Set(false) },
+		},
+		Child: t.Column{
+			Style: t.Style{
+				BackgroundColor: theme.Surface,
+				Border: t.Border{
+					Style: t.BorderRounded,
+					Color: theme.Border,
+					Decorations: []t.BorderDecoration{
+						t.BorderTitleMarkup("[b $Primary] New User [/]"),
+					},
+				},
+				Padding: t.EdgeInsets{Left: 3, Right: 3, Top: 1, Bottom: 1},
+			},
+			Spacing: 1,
+			Children: []t.Widget{
+				// Name field
+				t.Text{Content: "Name"},
+				t.TextInput{
+					ID:          "form-name",
+					State:       a.nameInput,
+					Placeholder: "Jane Doe",
+					Style:       t.Style{Width: t.Cells(30)},
+				},
+
+				// Email field
+				t.Text{Content: "Email"},
+				t.TextInput{
+					ID:          "form-email",
+					State:       a.emailInput,
+					Placeholder: "jane@example.com",
+					Style:       t.Style{Width: t.Cells(30)},
+				},
+
+				// Actions
+				t.Row{
+					Spacing: 1,
+					Children: []t.Widget{
+						&t.Button{
+							ID:    "form-submit",
+							Label: "Create",
+							OnPress: func() {
+								name := a.nameInput.GetText()
+								email := a.emailInput.GetText()
+								if name == "" {
+									name = "(empty)"
+								}
+								a.statusMsg.Set(fmt.Sprintf("Created user %s <%s>", name, email))
+								a.showForm.Set(false)
+							},
 						},
+						&t.Button{
+							ID:    "form-cancel",
+							Label: "Cancel",
+							OnPress: func() {
+								a.showForm.Set(false)
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// infoDialog is a simple informational modal with a single dismiss button.
+func (a *App) infoDialog(ctx t.BuildContext) t.Widget {
+	theme := ctx.Theme()
+
+	return t.Floating{
+		Visible: a.showInfo.Get(),
+		Config: t.FloatConfig{
+			Position:  t.FloatPositionCenter,
+			Modal:     true,
+			OnDismiss: func() { a.showInfo.Set(false) },
+		},
+		Child: t.Column{
+			Style: t.Style{
+				BackgroundColor: theme.Surface,
+				Border: t.Border{
+					Style: t.BorderRounded,
+					Color: theme.Border,
+					Decorations: []t.BorderDecoration{
+						t.BorderTitleMarkup("[b $Info] About [/]"),
+					},
+				},
+				Padding: t.EdgeInsets{Left: 3, Right: 3, Top: 1, Bottom: 1},
+			},
+			Spacing: 1,
+			Children: []t.Widget{
+				t.Text{
+					Spans: []t.Span{
+						{Text: "Terma", Style: t.SpanStyle{Bold: true}},
+						{Text: " is a declarative terminal UI framework for Go."},
+					},
+				},
+				t.Text{
+					Content: "Modal floats automatically trap focus — Tab and",
+					Style:   t.Style{ForegroundColor: theme.TextMuted},
+				},
+				t.Text{
+					Content: "Shift+Tab only cycle within the dialog. Press",
+					Style:   t.Style{ForegroundColor: theme.TextMuted},
+				},
+				t.Text{
+					Content: "Escape or click the button below to close.",
+					Style:   t.Style{ForegroundColor: theme.TextMuted},
+				},
+				&t.Button{
+					ID:    "info-ok",
+					Label: "OK",
+					OnPress: func() {
+						a.showInfo.Set(false)
 					},
 				},
 			},
@@ -204,8 +284,14 @@ func (d *FloatingDemo) buildModalDialog() t.Widget {
 }
 
 func main() {
-	_ = t.InitLogger()
-	app := NewFloatingDemo()
+	app := &App{
+		showConfirm: t.NewSignal(false),
+		showForm:    t.NewSignal(false),
+		showInfo:    t.NewSignal(false),
+		statusMsg:   t.NewSignal(""),
+		nameInput:   t.NewTextInputState(""),
+		emailInput:  t.NewTextInputState(""),
+	}
 	if err := t.Run(app); err != nil {
 		log.Fatal(err)
 	}

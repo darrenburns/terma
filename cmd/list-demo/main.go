@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"runtime/pprof"
 	"strings"
 
 	t "terma"
@@ -217,10 +219,9 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 
 			// The list with scrolling
 			t.Scrollable{
-				ID:           "list-scroll",
-				State:        d.scrollState,
-				Height:       t.Cells(10),
-				DisableFocus: true,
+				ID:     "list-scroll",
+				State:  d.scrollState,
+				Height: t.Cells(10),
 				Style: t.Style{
 					Border:  t.RoundedBorder(theme.Primary, t.BorderTitle("Items")),
 					Padding: t.EdgeInsetsXY(1, 0),
@@ -246,6 +247,14 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 }
 
 func main() {
+	f, err := os.Create("cpu.prof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
 	t.SetTheme(themeNames[0])
 	app := NewListDemo()
 	//t.InitDebug()

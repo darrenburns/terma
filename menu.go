@@ -129,7 +129,7 @@ func (s *MenuState) firstSelectableIndex() int {
 // Menu is a convenience widget for dropdown/context menus.
 // It composes Floating + list rendering internally.
 type Menu struct {
-	ID    string     // Required for focus
+	ID    string     // Optional unique identifier
 	State *MenuState // Required
 
 	// Positioning (choose one approach)
@@ -143,7 +143,7 @@ type Menu struct {
 	OnDismiss func()              // Called when menu should close
 
 	// Styling
-	Width Dimension
+	Width Dimension // Deprecated: use Style.Width
 	Style Style // Container style
 }
 
@@ -230,8 +230,13 @@ func (m Menu) buildMenuContent(ctx BuildContext) Widget {
 	items := m.State.Items()
 	cursorIdx := m.State.cursorIndex.Get()
 	openSubmenuIdx := m.State.openSubmenu.Get()
-	layout := computeMenuItemLayout(items, m.Width)
-	itemWidth := layout.widthDimension(m.Width)
+	baseStyle := m.Style
+	if baseStyle.Width.IsUnset() {
+		baseStyle.Width = m.Width
+	}
+	width := baseStyle.Width
+	layout := computeMenuItemLayout(items, width)
+	itemWidth := layout.widthDimension(width)
 
 	children := make([]Widget, 0, len(items))
 	for i, item := range items {
@@ -245,17 +250,17 @@ func (m Menu) buildMenuContent(ctx BuildContext) Widget {
 				Anchor:    AnchorRightTop,
 				OnSelect:  m.submenuSelectCallback(),
 				OnDismiss: m.submenuDismissCallback(),
-				Width:     m.Width,
-				Style:     m.Style,
+				Style:     baseStyle,
 			})
 		}
 	}
 
+	menuStyle := m.menuStyle(ctx)
+	menuStyle.Width = itemWidth
 	return Column{
 		ID:         m.ID + "-content",
-		Width:      itemWidth,
 		CrossAlign: CrossAxisStretch,
-		Style:      m.menuStyle(ctx),
+		Style:      menuStyle,
 		Children:   children,
 	}
 }
@@ -309,11 +314,12 @@ func (m Menu) renderItem(ctx BuildContext, item MenuItem, index int, active bool
 	if item.IsDivider() {
 		prefix, line := layout.dividerParts(item.Divider)
 		lineColor := theme.TextMuted.Blend(theme.Surface, 0.7)
+		rowStyle := Style{
+			Padding: EdgeInsetsXY(layout.paddingX, 0),
+			Width:   itemWidth,
+		}
 		return Row{
-			Width: itemWidth,
-			Style: Style{
-				Padding: EdgeInsetsXY(layout.paddingX, 0),
-			},
+			Style: rowStyle,
 			Children: []Widget{
 				Text{
 					Content: prefix,
@@ -329,6 +335,7 @@ func (m Menu) renderItem(ctx BuildContext, item MenuItem, index int, active bool
 
 	itemStyle := Style{
 		Padding: EdgeInsetsXY(layout.paddingX, 0),
+		Width:   itemWidth,
 	}
 	labelStyle := Style{ForegroundColor: theme.Text}
 	suffixStyle := Style{ForegroundColor: theme.TextMuted}
@@ -343,7 +350,6 @@ func (m Menu) renderItem(ctx BuildContext, item MenuItem, index int, active bool
 
 	return Row{
 		ID:         fmt.Sprintf("%s-item-%d", m.ID, index),
-		Width:      itemWidth,
 		Spacing:    layout.spacing,
 		Style:      itemStyle,
 		CrossAlign: CrossAxisCenter,

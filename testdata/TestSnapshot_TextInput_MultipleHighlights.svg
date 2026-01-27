@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="268" height="36" viewBox="0 0 268 36">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    .bold { font-weight: bold; }
+    .italic { font-style: italic; }
+    .underline { text-decoration: underline; }
+    .strikethrough { text-decoration: line-through; }
+  </style>
+  <rect width="100%" height="100%" fill="#000000"/>
+  <rect x="16.4" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="117.2" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="134.0" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="159.2" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="167.6" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="176.0" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="184.4" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="192.8" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="201.2" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="209.6" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="218.0" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="226.4" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="234.8" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="243.2" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="251.6" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="8.0" y="8.0" width="8.4" height="19.6" fill="#E0DEF4"/>
+  <text x="8.0" y="8.0" fill="#1F1D2E">c</text>
+  <text x="16.4" y="8.0" fill="#E0DEF4">heck</text>
+  <text x="58.4" y="8.0" class="italic" fill="#FF6400">#tag1</text>
+  <text x="108.8" y="8.0" fill="#E0DEF4">and</text>
+  <text x="142.4" y="8.0" class="italic" fill="#FF6400">#tag2</text>
+  <text x="192.8" y="8.0" fill="#E0DEF4">now</text>
+</svg>

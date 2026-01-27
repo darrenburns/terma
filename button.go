@@ -3,11 +3,11 @@ package terma
 // Button is a focusable widget that renders as styled text.
 // It can be pressed with Enter or Space when focused.
 type Button struct {
-	ID      string     // Unique identifier for the button (required for focus management)
+	ID      string     // Optional unique identifier for the button
 	Label   string     // Display text for the button
 	OnPress func()     // Callback invoked when button is pressed
-	Width   Dimension  // Optional width (zero value = auto)
-	Height  Dimension  // Optional height (zero value = auto)
+	Width   Dimension  // Deprecated: use Style.Width
+	Height  Dimension  // Deprecated: use Style.Height
 	Style   Style      // Optional styling (colors) applied when not focused
 	Click   func(MouseEvent) // Optional callback invoked when clicked
 	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
@@ -59,6 +59,12 @@ func (b *Button) OnKey(event KeyEvent) bool {
 func (b *Button) Build(ctx BuildContext) Widget {
 	theme := ctx.Theme()
 	style := b.Style
+	if style.Width.IsUnset() {
+		style.Width = b.Width
+	}
+	if style.Height.IsUnset() {
+		style.Height = b.Height
+	}
 
 	// Apply theme defaults if no explicit colors set
 	if style.ForegroundColor == nil || !style.ForegroundColor.IsSet() {
@@ -85,8 +91,6 @@ func (b *Button) Build(ctx BuildContext) Widget {
 				PlainSpan(b.Label),
 				ColorSpan("]", bracketColor),
 			},
-			Width:  b.Width,
-			Height: b.Height,
 			Style:  style,
 		}
 	}
@@ -108,8 +112,6 @@ func (b *Button) Build(ctx BuildContext) Widget {
 			PlainSpan(b.Label),
 			ColorSpan("]", bracketColor),
 		},
-		Width:  b.Width,
-		Height: b.Height,
 		Style:  style,
 	}
 }
@@ -117,7 +119,15 @@ func (b *Button) Build(ctx BuildContext) Widget {
 // GetContentDimensions returns the width and height dimension preferences.
 // Implements the Dimensioned interface.
 func (b *Button) GetContentDimensions() (width, height Dimension) {
-	return b.Width, b.Height
+	dims := b.Style.GetDimensions()
+	width, height = dims.Width, dims.Height
+	if width.IsUnset() {
+		width = b.Width
+	}
+	if height.IsUnset() {
+		height = b.Height
+	}
+	return width, height
 }
 
 // OnClick is called when the widget is clicked.
