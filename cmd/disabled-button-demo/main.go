@@ -49,7 +49,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 				Spacing: 1,
 				Children: []terma.Widget{
 					terma.Text{Content: "Toggle form validity:"},
-					&terma.Button{
+					terma.Button{
 						ID:    "toggle",
 						Label: "Toggle Valid",
 						OnPress: func() {
@@ -70,7 +70,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 			terma.Row{
 				Spacing: 2,
 				Children: []terma.Widget{
-					terma.DisabledWhen(!valid, &terma.Button{
+					terma.DisabledWhen(!valid, terma.Button{
 						ID:    "submit",
 						Label: "Submit",
 						OnPress: func() {
@@ -78,7 +78,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 							a.lastClicked.Set("Submit")
 						},
 					}),
-					terma.DisabledWhen(!valid, &terma.Button{
+					terma.DisabledWhen(!valid, terma.Button{
 						ID:    "save",
 						Label: "Save Draft",
 						OnPress: func() {
@@ -100,7 +100,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 			terma.Row{
 				Spacing: 2,
 				Children: []terma.Widget{
-					terma.EnabledWhen(valid, &terma.Button{
+					terma.EnabledWhen(valid, terma.Button{
 						ID:    "publish",
 						Label: "Publish",
 						OnPress: func() {
@@ -122,7 +122,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 			terma.Row{
 				Spacing: 2,
 				Children: []terma.Widget{
-					&terma.Button{
+					terma.Button{
 						ID:    "cancel",
 						Label: "Cancel",
 						OnPress: func() {
@@ -130,7 +130,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 							a.lastClicked.Set("Cancel")
 						},
 					},
-					&terma.Button{
+					terma.Button{
 						ID:    "reset",
 						Label: "Reset",
 						OnPress: func() {
@@ -152,7 +152,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 			terma.DisabledWhen(!valid, terma.Row{
 				Spacing: 2,
 				Children: []terma.Widget{
-					&terma.Button{
+					terma.Button{
 						ID:    "action1",
 						Label: "Action 1",
 						OnPress: func() {
@@ -160,7 +160,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 							a.lastClicked.Set("Action 1")
 						},
 					},
-					&terma.Button{
+					terma.Button{
 						ID:    "action2",
 						Label: "Action 2",
 						OnPress: func() {
@@ -168,7 +168,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 							a.lastClicked.Set("Action 2")
 						},
 					},
-					&terma.Button{
+					terma.Button{
 						ID:    "action3",
 						Label: "Action 3",
 						OnPress: func() {

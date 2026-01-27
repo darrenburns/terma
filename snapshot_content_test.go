@@ -202,7 +202,7 @@ func TestSnapshot_Text_AlignRight_Spans(t *testing.T) {
 // =============================================================================
 
 func TestSnapshot_Button_DefaultState(t *testing.T) {
-	widget := &Button{
+	widget := Button{
 		ID:    "btn1",
 		Label: "Click Me",
 	}
@@ -211,7 +211,7 @@ func TestSnapshot_Button_DefaultState(t *testing.T) {
 }
 
 func TestSnapshot_Button_CustomStyle(t *testing.T) {
-	widget := &Button{
+	widget := Button{
 		ID:    "btn2",
 		Label: "Styled",
 		Style: Style{
@@ -224,7 +224,7 @@ func TestSnapshot_Button_CustomStyle(t *testing.T) {
 }
 
 func TestSnapshot_Button_WithWidth(t *testing.T) {
-	widget := &Button{
+	widget := Button{
 		ID:    "btn3",
 		Label: "Wide",
 		Width: Cells(15),

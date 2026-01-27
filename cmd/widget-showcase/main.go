@@ -208,11 +208,11 @@ func (w *WidgetShowcase) buildButtonSection(theme t.ThemeData) t.Widget {
 	return t.Row{
 		Spacing: 2,
 		Children: []t.Widget{
-			&t.Button{
+			t.Button{
 				ID:    "btn-primary",
 				Label: " Primary Button ",
 			},
-			&t.Button{
+			t.Button{
 				ID:    "btn-secondary",
 				Label: " Secondary ",
 				Style: t.Style{
@@ -220,7 +220,7 @@ func (w *WidgetShowcase) buildButtonSection(theme t.ThemeData) t.Widget {
 					ForegroundColor: theme.TextOnSecondary,
 				},
 			},
-			&t.Button{
+			t.Button{
 				ID:    "btn-accent",
 				Label: " Accent ",
 				Style: t.Style{

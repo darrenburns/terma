@@ -872,9 +872,11 @@ type Renderer struct {
 	hoveredSignal  AnySignal[Widget]
 	widgetRegistry *WidgetRegistry
 	floatCollector *FloatCollector
-	// modalFocusTarget is the ID of the first focusable in a modal float.
+	// modalFocusTarget is the ID of the first focusable in the topmost modal float.
 	// Used to auto-focus into modals when they open.
 	modalFocusTarget string
+	// modalIDs tracks modal float IDs in render order (bottom to top).
+	modalIDs []string
 }
 
 // NewRenderer creates a new renderer for the given terminal.
@@ -953,6 +955,7 @@ func (r *Renderer) renderInternal(root Widget) (focusables []FocusableEntry, lay
 	r.widgetRegistry.Reset()
 	r.floatCollector.Reset()
 	r.modalFocusTarget = ""
+	r.modalIDs = r.modalIDs[:0]
 
 	// Create build context
 	buildCtx := NewBuildContext(r.focusManager, r.focusedSignal, r.hoveredSignal, r.floatCollector)
@@ -1238,6 +1241,7 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 
 	for i := 0; i < len(r.floatCollector.entries); i++ {
 		entry := r.floatCollector.entries[i]
+		modalID := fmt.Sprintf("__modal_float_%d", i)
 
 		// Record focusable count before building so we can find the first focusable
 		// in this float's subtree without calling Build() again
@@ -1246,7 +1250,8 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 		// Push a focus trap scope for modal floats so Tab/Shift+Tab
 		// cycling is constrained to focusables within the modal.
 		if entry.Config.Modal {
-			r.focusCollector.PushTrap(fmt.Sprintf("__modal_float_%d", i))
+			r.focusCollector.PushModal(modalID)
+			r.focusCollector.PushTrap(modalID)
 		}
 
 		// Build the float's widget tree to determine its size
@@ -1256,6 +1261,7 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 
 		if entry.Config.Modal {
 			r.focusCollector.PopTrap()
+			r.focusCollector.PopModal()
 		}
 
 		floatWidth := floatTree.Layout.Box.MarginBoxWidth()
@@ -1284,13 +1290,12 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 
 		// Render modal backdrop if needed
 		if entry.Config.Modal {
+			r.modalIDs = append(r.modalIDs, modalID)
 			r.renderModalBackdrop(ctx, entry.Config.BackdropColor)
 
 			// Track the first focusable in this modal for auto-focus
 			// Uses focusables already collected during BuildRenderTree above
-			if r.modalFocusTarget == "" {
-				r.modalFocusTarget = r.focusCollector.FirstIDAfter(focusableCountBefore)
-			}
+			r.modalFocusTarget = r.focusCollector.FirstIDAfter(focusableCountBefore)
 		}
 
 		// Render the float at its computed position
@@ -1382,9 +1387,27 @@ func (r *Renderer) HasModalFloat() bool {
 	return r.floatCollector.HasModal()
 }
 
-// ModalFocusTarget returns the ID of the first focusable widget in a modal float.
+// ModalFocusTarget returns the ID of the first focusable widget in the topmost modal float.
 // Returns empty string if there's no modal or no focusables in the modal.
 // Used to auto-focus into modals when they open.
 func (r *Renderer) ModalFocusTarget() string {
 	return r.modalFocusTarget
+}
+
+// ModalIDs returns the modal float IDs in render order (bottom to top).
+func (r *Renderer) ModalIDs() []string {
+	return r.modalIDs
+}
+
+// ModalCount returns the number of modal floats currently rendered.
+func (r *Renderer) ModalCount() int {
+	return len(r.modalIDs)
+}
+
+// TopModalID returns the ID of the topmost modal float, or "" if none.
+func (r *Renderer) TopModalID() string {
+	if len(r.modalIDs) == 0 {
+		return ""
+	}
+	return r.modalIDs[len(r.modalIDs)-1]
 }

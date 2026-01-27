@@ -125,6 +125,9 @@ type FocusableEntry struct {
 	// TrapID is the ID of the innermost FocusTrapper ancestor, or "" if none.
 	// Used to constrain Tab/Shift+Tab cycling within a trap scope.
 	TrapID string
+	// ModalID is the ID of the enclosing modal float, or "" if none.
+	// Used to keep focus within the topmost modal when modals are open.
+	ModalID string
 }
 
 // FocusManager tracks the currently focused widget and handles navigation.
@@ -134,6 +137,12 @@ type FocusManager struct {
 
 	// focusedID is the ID of the currently focused widget ("" if none)
 	focusedID string
+
+	// savedFocusStack stores focused widget IDs saved before entering modals.
+	// Push when a modal opens, pop when it closes, to restore prior focus.
+	savedFocusStack []string
+	// activeModalID tracks the topmost modal ID, if any.
+	activeModalID string
 
 	// rootWidget is the root widget of the application, used to include
 	// root-level keybinds in ActiveKeybinds() when nothing is focused
@@ -148,6 +157,12 @@ func NewFocusManager() *FocusManager {
 // SetRootWidget sets the root widget for including root-level keybinds.
 func (fm *FocusManager) SetRootWidget(root Widget) {
 	fm.rootWidget = root
+}
+
+// SetActiveModalID updates the topmost modal ID for focus scoping.
+// Pass "" when no modal is active.
+func (fm *FocusManager) SetActiveModalID(id string) {
+	fm.activeModalID = id
 }
 
 // SetFocusables updates the list of focusable widgets.
@@ -299,6 +314,34 @@ func (fm *FocusManager) FocusByID(id string) {
 	}
 }
 
+// IsInModalTrap returns true if the currently focused widget is inside a modal.
+// Used to avoid re-saving focus on every render when a modal is already open.
+func (fm *FocusManager) IsInModalTrap() bool {
+	return fm.FocusedModalID() != ""
+}
+
+// SaveFocus pushes the current focused ID onto the saved focus stack.
+// Call this before moving focus into a modal so the prior focus can be
+// restored when the modal closes via RestoreFocus.
+func (fm *FocusManager) SaveFocus() {
+	fm.savedFocusStack = append(fm.savedFocusStack, fm.focusedID)
+}
+
+// RestoreFocus pops the most recently saved focus ID from the stack
+// and moves focus back to it. Returns the restored ID, or "" if the
+// stack was empty.
+func (fm *FocusManager) RestoreFocus() string {
+	if len(fm.savedFocusStack) == 0 {
+		return ""
+	}
+	id := fm.savedFocusStack[len(fm.savedFocusStack)-1]
+	fm.savedFocusStack = fm.savedFocusStack[:len(fm.savedFocusStack)-1]
+	if id != "" {
+		fm.FocusByID(id)
+	}
+	return id
+}
+
 // activeTrapID returns the TrapID of the currently focused widget.
 // Returns "" if no widget is focused or the focused widget is not in a trap.
 func (fm *FocusManager) activeTrapID() string {
@@ -310,11 +353,31 @@ func (fm *FocusManager) activeTrapID() string {
 	return ""
 }
 
+// FocusedModalID returns the modal ID for the currently focused widget.
+// Returns "" if no widget is focused or the focused widget is not in a modal.
+func (fm *FocusManager) FocusedModalID() string {
+	for _, entry := range fm.focusables {
+		if entry.ID == fm.focusedID {
+			return entry.ModalID
+		}
+	}
+	return ""
+}
+
 // focusablesInScope returns the focusable entries that are in the given trap scope.
 // If trapID is "", returns all focusables (no trap active).
 func (fm *FocusManager) focusablesInScope(trapID string) []FocusableEntry {
 	if trapID == "" {
-		return fm.focusables
+		if fm.activeModalID == "" {
+			return fm.focusables
+		}
+		var modalScoped []FocusableEntry
+		for _, entry := range fm.focusables {
+			if entry.ModalID == fm.activeModalID {
+				modalScoped = append(modalScoped, entry)
+			}
+		}
+		return modalScoped
 	}
 	var scoped []FocusableEntry
 	for _, entry := range fm.focusables {
@@ -500,6 +563,9 @@ type FocusCollector struct {
 	// trapStack tracks the IDs of enclosing FocusTrapper widgets.
 	// The last element is the innermost active trap.
 	trapStack []string
+	// modalStack tracks the IDs of enclosing modal floats.
+	// The last element is the topmost modal scope.
+	modalStack []string
 }
 
 // NewFocusCollector creates a new focus collector.
@@ -518,6 +584,26 @@ func (fc *FocusCollector) PopTrap() {
 	if len(fc.trapStack) > 0 {
 		fc.trapStack = fc.trapStack[:len(fc.trapStack)-1]
 	}
+}
+
+// PushModal pushes a modal scope onto the stack.
+func (fc *FocusCollector) PushModal(id string) {
+	fc.modalStack = append(fc.modalStack, id)
+}
+
+// PopModal removes the topmost modal scope from the stack.
+func (fc *FocusCollector) PopModal() {
+	if len(fc.modalStack) > 0 {
+		fc.modalStack = fc.modalStack[:len(fc.modalStack)-1]
+	}
+}
+
+// CurrentModalID returns the ID of the topmost modal scope, or "" if none.
+func (fc *FocusCollector) CurrentModalID() string {
+	if len(fc.modalStack) > 0 {
+		return fc.modalStack[len(fc.modalStack)-1]
+	}
+	return ""
 }
 
 // CurrentTrapID returns the ID of the innermost active focus trap, or "" if none.
@@ -583,6 +669,7 @@ func (fc *FocusCollector) Collect(widget Widget, autoID string, ctx BuildContext
 		Focusable: focusable,
 		Ancestors: ancestors,
 		TrapID:    fc.CurrentTrapID(),
+		ModalID:   fc.CurrentModalID(),
 	})
 }
 
@@ -596,6 +683,7 @@ func (fc *FocusCollector) Reset() {
 	fc.focusables = fc.focusables[:0]
 	fc.ancestorStack = fc.ancestorStack[:0]
 	fc.trapStack = fc.trapStack[:0]
+	fc.modalStack = fc.modalStack[:0]
 }
 
 // Len returns the number of focusables collected so far.

@@ -78,7 +78,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 			terma.Row{
 				Spacing: 1,
 				Children: []terma.Widget{
-					terma.DisabledWhen(!formComplete, &terma.Button{
+					terma.DisabledWhen(!formComplete, terma.Button{
 						ID:    "submit",
 						Label: "Submit Registration",
 						OnPress: func() {

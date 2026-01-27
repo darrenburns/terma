@@ -77,7 +77,7 @@ func (d *TextInputDemo) Build(ctx t.BuildContext) t.Widget {
 				t.Column{
 					Spacing: 1,
 					Children: []t.Widget{
-						&t.Button{
+						t.Button{
 							ID:    "submit-btn",
 							Label: " Submit Form ",
 							Width: t.Auto,

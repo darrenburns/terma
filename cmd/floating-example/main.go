@@ -54,7 +54,7 @@ func (d *FloatingDemo) Build(ctx t.BuildContext) t.Widget {
 				Spacing: 2,
 				Children: []t.Widget{
 					// Dropdown trigger button
-					&t.Button{
+					t.Button{
 						ID:    "dropdown-btn",
 						Label: "Open Dropdown",
 						OnPress: func() {
@@ -63,7 +63,7 @@ func (d *FloatingDemo) Build(ctx t.BuildContext) t.Widget {
 					},
 
 					// Modal trigger button
-					&t.Button{
+					t.Button{
 						ID:    "modal-btn",
 						Label: "Open Modal",
 						OnPress: func() {
@@ -181,7 +181,7 @@ func (d *FloatingDemo) buildModalDialog() t.Widget {
 			t.Row{
 				Spacing: 2,
 				Children: []t.Widget{
-					&t.Button{
+					t.Button{
 						ID:    "cancel-btn",
 						Label: "Cancel",
 						OnPress: func() {
@@ -189,7 +189,7 @@ func (d *FloatingDemo) buildModalDialog() t.Widget {
 							d.showModal.Set(false)
 						},
 					},
-					&t.Button{
+					t.Button{
 						ID:    "confirm-btn",
 						Label: "Confirm",
 						OnPress: func() {

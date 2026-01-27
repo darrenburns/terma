@@ -204,6 +204,7 @@ func Run(root Widget) error {
 	}
 
 	renderInterval := time.Second / time.Duration(defaultFPS)
+	lastModalCount := 0
 
 	// Render and update focusables
 	display := func() {
@@ -214,10 +215,26 @@ func Run(root Widget) error {
 
 		focusables := renderer.Render(root)
 		focusManager.SetFocusables(focusables)
+		focusManager.SetActiveModalID(renderer.TopModalID())
 
 		// If focus changed after render (auto-focus or focus removal), re-render
 		if updateFocusedSignal() {
 			renderer.Render(root)
+		}
+
+		// Manage modal focus transitions (open/close) and keep focus inside topmost modal.
+		modalCount := renderer.ModalCount()
+		openedModals := 0
+		closedModals := 0
+		if modalCount != lastModalCount {
+			if modalCount > lastModalCount {
+				openedModals = modalCount - lastModalCount
+			} else {
+				closedModals = lastModalCount - modalCount
+			}
+		}
+		for i := 0; i < openedModals; i++ {
+			focusManager.SaveFocus()
 		}
 
 		// Apply pending focus request from ctx.RequestFocus()
@@ -230,13 +247,22 @@ func Run(root Widget) error {
 			}
 		}
 
-		// Auto-focus into modal floats when they open
-		if modalTarget := renderer.ModalFocusTarget(); modalTarget != "" {
-			focusManager.FocusByID(modalTarget)
-			// Update the signal and re-render so the focused widget shows focus style
-			if updateFocusedSignal() {
-				renderer.Render(root)
+		for i := 0; i < closedModals; i++ {
+			focusManager.RestoreFocus()
+		}
+
+		if modalCount > 0 {
+			topModalID := renderer.TopModalID()
+			if focusManager.FocusedModalID() != topModalID {
+				if modalTarget := renderer.ModalFocusTarget(); modalTarget != "" {
+					focusManager.FocusByID(modalTarget)
+				}
 			}
+		}
+		lastModalCount = modalCount
+		// Update the signal and re-render so the focused widget shows focus style
+		if updateFocusedSignal() {
+			renderer.Render(root)
 		}
 
 		// Position terminal cursor for IME support (emoji picker, input methods)

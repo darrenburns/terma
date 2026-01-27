@@ -68,7 +68,7 @@ func (a *MouseDemo) Build(ctx t.BuildContext) t.Widget {
 			t.Row{
 				Spacing: 1,
 				Children: []t.Widget{
-					&t.Button{
+					t.Button{
 						ID:        "btn-primary",
 						Label:     "Button A",
 						OnPress:   func() {},
@@ -76,7 +76,7 @@ func (a *MouseDemo) Build(ctx t.BuildContext) t.Widget {
 						MouseDown: a.onMouseDown,
 						MouseUp:   a.onMouseUp,
 					},
-					&t.Button{
+					t.Button{
 						ID:        "btn-secondary",
 						Label:     "Button B",
 						OnPress:   func() {},

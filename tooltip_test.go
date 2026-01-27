@@ -111,7 +111,7 @@ func TestTooltip_ChildRendersWithoutFocus(t *testing.T) {
 	// When child is not focused, only the child should render
 	widget := Tooltip{
 		Content: "Help text",
-		Child:   &Button{ID: "btn", Label: "Click me"},
+		Child:   Button{ID: "btn", Label: "Click me"},
 	}
 	// Use custom render to avoid auto-focus (AssertSnapshot auto-focuses first widget)
 	svg := snapshotWithFocus(widget, 20, 5, "") // empty string = no focus
@@ -127,7 +127,7 @@ func TestTooltip_Position_Top_Visible(t *testing.T) {
 			Tooltip{
 				Content:  "Help text",
 				Position: TooltipTop,
-				Child:    &Button{ID: "top-btn", Label: "Target"},
+				Child:    Button{ID: "top-btn", Label: "Target"},
 			},
 		},
 	}
@@ -140,7 +140,7 @@ func TestTooltip_Position_Bottom_Visible(t *testing.T) {
 	widget := Tooltip{
 		Content:  "Help text",
 		Position: TooltipBottom,
-		Child:    &Button{ID: "bottom-btn", Label: "Target"},
+		Child:    Button{ID: "bottom-btn", Label: "Target"},
 	}
 	svg := snapshotWithFocus(widget, 25, 4, "bottom-btn")
 	assertSnapshotFromSVG(t, svg, "Button '[Target]' at row 0. Tooltip ' Help text ' on surface background positioned directly BELOW button (no gap). Tooltip horizontally centered under button.")
@@ -154,7 +154,7 @@ func TestTooltip_Position_Left_Visible(t *testing.T) {
 			Tooltip{
 				Content:  "Help",
 				Position: TooltipLeft,
-				Child:    &Button{ID: "left-btn", Label: "Target"},
+				Child:    Button{ID: "left-btn", Label: "Target"},
 			},
 		},
 	}
@@ -166,7 +166,7 @@ func TestTooltip_Position_Right_Visible(t *testing.T) {
 	widget := Tooltip{
 		Content:  "Help",
 		Position: TooltipRight,
-		Child:    &Button{ID: "right-btn", Label: "Target"},
+		Child:    Button{ID: "right-btn", Label: "Target"},
 	}
 	svg := snapshotWithFocus(widget, 20, 1, "right-btn")
 	assertSnapshotFromSVG(t, svg, "Button '[Target]' on left, then tooltip ' Help ' on right (no gap between them).")
@@ -180,7 +180,7 @@ func TestTooltip_RichText_Visible(t *testing.T) {
 			PlainSpan(" to save"),
 		},
 		Position: TooltipBottom,
-		Child:    &Button{ID: "rich-btn", Label: "Save"},
+		Child:    Button{ID: "rich-btn", Label: "Save"},
 	}
 	svg := snapshotWithFocus(widget, 20, 3, "rich-btn")
 	assertSnapshotFromSVG(t, svg, "Button '[Save]' at top. Tooltip below with ' Ctrl+S to save ' where 'Ctrl+S' is BOLD. Surface background, 1-cell horizontal padding.")
@@ -197,7 +197,7 @@ func TestTooltip_CustomStyle_Visible(t *testing.T) {
 			Border:          Border{Style: BorderDouble, Color: RGB(100, 100, 200)},
 			Padding:         EdgeInsetsAll(1),
 		},
-		Child: &Button{ID: "styled-btn", Label: "Target"},
+		Child: Button{ID: "styled-btn", Label: "Target"},
 	}
 	svg := snapshotWithFocus(widget, 16, 6, "styled-btn")
 	assertSnapshotFromSVG(t, svg, "Button '[Target]' at top. Tooltip below with DOUBLE-LINE border, dark blue background (#323264), white text 'Styled', 1 cell padding on all sides.")
@@ -209,7 +209,7 @@ func TestTooltip_CustomOffset_Visible(t *testing.T) {
 		Content:  "Help",
 		Position: TooltipBottom,
 		Offset:   2, // 2 cell gap
-		Child:    &Button{ID: "offset-btn", Label: "Target"},
+		Child:    Button{ID: "offset-btn", Label: "Target"},
 	}
 	svg := snapshotWithFocus(widget, 16, 5, "offset-btn")
 	assertSnapshotFromSVG(t, svg, "Button '[Target]' at top. Tooltip ' Help ' below with 2 empty rows between button and tooltip.")
@@ -222,7 +222,7 @@ func TestTooltip_InColumn_Layout(t *testing.T) {
 			Text{Content: "Header"},
 			Tooltip{
 				Content: "This is a tooltip",
-				Child:   &Button{ID: "btn", Label: "Click me"},
+				Child:   Button{ID: "btn", Label: "Click me"},
 			},
 			Text{Content: "Footer"},
 		},
@@ -240,7 +240,7 @@ func TestTooltip_InRow_Layout(t *testing.T) {
 			Text{Content: "Left"},
 			Tooltip{
 				Content: "Tooltip help",
-				Child:   &Button{ID: "center-btn", Label: "Center"},
+				Child:   Button{ID: "center-btn", Label: "Center"},
 			},
 			Text{Content: "Right"},
 		},
@@ -252,7 +252,7 @@ func TestTooltip_InRow_Layout(t *testing.T) {
 
 // TestTooltip_VisibleOnFocus tests that the tooltip appears when child is focused.
 func TestTooltip_VisibleOnFocus(t *testing.T) {
-	button := &Button{ID: "focus-btn", Label: "Focus me"}
+	button := Button{ID: "focus-btn", Label: "Focus me"}
 
 	widget := Tooltip{
 		Content: "Focus tooltip!",
@@ -284,7 +284,7 @@ func TestTooltip_VisibleOnFocus(t *testing.T) {
 func TestTooltip_NotVisibleWhenNotFocused(t *testing.T) {
 	widget := Tooltip{
 		Content: "Should not appear",
-		Child:   &Button{ID: "btn", Label: "Target"},
+		Child:   Button{ID: "btn", Label: "Target"},
 	}
 
 	// Render WITHOUT focus

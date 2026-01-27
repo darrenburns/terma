@@ -115,9 +115,9 @@ func buildColumn(ctx t.BuildContext, prefix, title string, trapActive bool, hasF
 			},
 			Spacing: 1,
 			Children: []t.Widget{
-				&t.Button{ID: prefix + "-btn1", Label: "Button A", OnPress: func() {}},
-				&t.Button{ID: prefix + "-btn2", Label: "Button B", OnPress: func() {}},
-				&t.Button{ID: prefix + "-btn3", Label: "Button C", OnPress: func() {}},
+				t.Button{ID: prefix + "-btn1", Label: "Button A", OnPress: func() {}},
+				t.Button{ID: prefix + "-btn2", Label: "Button B", OnPress: func() {}},
+				t.Button{ID: prefix + "-btn3", Label: "Button C", OnPress: func() {}},
 			},
 		},
 	}

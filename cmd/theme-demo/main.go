@@ -65,7 +65,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 				Content: "Button (auto-themed):",
 				Style:   t.Style{ForegroundColor: theme.TextMuted},
 			},
-			&t.Button{
+			t.Button{
 				ID:    "sample-button",
 				Label: " Click Me ",
 			},

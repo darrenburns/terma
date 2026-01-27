@@ -34,7 +34,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 					terma.Tooltip{
 						Content:  "I appear above!",
 						Position: terma.TooltipTop,
-						Child: &terma.Button{
+						Child: terma.Button{
 							ID:    "top-btn",
 							Label: "Top",
 						},
@@ -42,7 +42,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 					terma.Tooltip{
 						Content:  "I appear below!",
 						Position: terma.TooltipBottom,
-						Child: &terma.Button{
+						Child: terma.Button{
 							ID:    "bottom-btn",
 							Label: "Bottom",
 						},
@@ -50,7 +50,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 					terma.Tooltip{
 						Content:  "Left!",
 						Position: terma.TooltipLeft,
-						Child: &terma.Button{
+						Child: terma.Button{
 							ID:    "left-btn",
 							Label: "Left",
 						},
@@ -58,7 +58,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 					terma.Tooltip{
 						Content:  "Right!",
 						Position: terma.TooltipRight,
-						Child: &terma.Button{
+						Child: terma.Button{
 							ID:    "right-btn",
 							Label: "Right",
 						},
@@ -78,7 +78,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 					terma.BoldSpan("Ctrl+Q"),
 					terma.PlainSpan(" to quit"),
 				},
-				Child: &terma.Button{
+				Child: terma.Button{
 					ID:    "shortcuts-btn",
 					Label: "Keyboard shortcuts",
 				},
@@ -99,7 +99,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 							ForegroundColor: terma.RGB(0, 0, 0),
 							Padding:         terma.EdgeInsetsXY(2, 0),
 						},
-						Child: &terma.Button{
+						Child: terma.Button{
 							ID:    "warning-btn",
 							Label: "Warning style",
 						},
@@ -111,7 +111,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 							ForegroundColor: terma.RGB(255, 255, 255),
 							Padding:         terma.EdgeInsetsXY(2, 0),
 						},
-						Child: &terma.Button{
+						Child: terma.Button{
 							ID:    "error-btn",
 							Label: "Error style",
 						},
@@ -123,7 +123,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 							ForegroundColor: terma.RGB(0, 0, 0),
 							Padding:         terma.EdgeInsetsXY(2, 0),
 						},
-						Child: &terma.Button{
+						Child: terma.Button{
 							ID:    "success-btn",
 							Label: "Success style",
 						},
@@ -139,7 +139,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 			terma.Tooltip{
 				Content: "Tooltip with gap",
 				Offset:  2,
-				Child: &terma.Button{
+				Child: terma.Button{
 					ID:    "offset-btn",
 					Label: "With gap",
 				},

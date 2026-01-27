@@ -7,7 +7,7 @@ func TestSnapshot_Checkbox_Unchecked_Unfocused(t *testing.T) {
 	// Put a Button first so it takes focus, leaving the checkbox unfocused
 	widget := Column{
 		Children: []Widget{
-			&Button{ID: "focus-stealer", Label: ""},
+			Button{ID: "focus-stealer", Label: ""},
 			&Checkbox{
 				ID:    "checkbox-unfocused",
 				State: state,
@@ -23,7 +23,7 @@ func TestSnapshot_Checkbox_Checked_Unfocused(t *testing.T) {
 	// Put a Button first so it takes focus, leaving the checkbox unfocused
 	widget := Column{
 		Children: []Widget{
-			&Button{ID: "focus-stealer", Label: ""},
+			Button{ID: "focus-stealer", Label: ""},
 			&Checkbox{
 				ID:    "checkbox-checked-unfocused",
 				State: state,

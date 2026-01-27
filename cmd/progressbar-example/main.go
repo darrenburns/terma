@@ -86,7 +86,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 			t.Row{
 				Spacing: 1,
 				Children: []t.Widget{
-					&t.Button{
+					t.Button{
 						ID:    "decrement",
 						Label: "-10%",
 						OnPress: func() {
@@ -94,7 +94,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 							a.progress.Set(max(0, current-0.1))
 						},
 					},
-					&t.Button{
+					t.Button{
 						ID:    "increment",
 						Label: "+10%",
 						OnPress: func() {
@@ -102,14 +102,14 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 							a.progress.Set(min(1, current+0.1))
 						},
 					},
-					&t.Button{
+					t.Button{
 						ID:    "reset",
 						Label: "Reset",
 						OnPress: func() {
 							a.progress.Set(0)
 						},
 					},
-					&t.Button{
+					t.Button{
 						ID:    "fill",
 						Label: "Fill",
 						OnPress: func() {
