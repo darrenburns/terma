@@ -136,6 +136,11 @@ func extractChildren(widget Widget) []Widget {
 		return w.AllChildren()
 	case Stack:
 		return w.AllChildren()
+	case Switcher:
+		if child, ok := w.Children[w.Active]; ok {
+			return []Widget{child}
+		}
+		return nil
 	default:
 		return nil
 	}
