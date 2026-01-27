@@ -57,7 +57,6 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 							Label: "Confirmation",
 							OnPress: func() {
 								a.showConfirm.Set(true)
-								t.RequestFocus("confirm-yes")
 							},
 						},
 						&t.Button{
@@ -67,7 +66,6 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 								a.nameInput.SetText("")
 								a.emailInput.SetText("")
 								a.showForm.Set(true)
-								t.RequestFocus("form-name")
 							},
 						},
 						&t.Button{
@@ -75,7 +73,6 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 							Label: "Info",
 							OnPress: func() {
 								a.showInfo.Set(true)
-								t.RequestFocus("info-ok")
 							},
 						},
 					},
@@ -115,8 +112,7 @@ func (a *App) confirmDialog(ctx t.BuildContext) t.Widget {
 					Style: t.BorderRounded,
 					Color: theme.Border,
 					Decorations: []t.BorderDecoration{
-						t.BorderTitleMarkup("[b $Primary] Confirm [/]"),
-					},
+						t.BorderTitleMarkup("[b $Primary] Confirm [/]")},
 				},
 				Padding: t.EdgeInsets{Left: 3, Right: 3, Top: 1, Bottom: 1},
 			},
@@ -172,8 +168,7 @@ func (a *App) formDialog(ctx t.BuildContext) t.Widget {
 					Style: t.BorderRounded,
 					Color: theme.Border,
 					Decorations: []t.BorderDecoration{
-						t.BorderTitleMarkup("[b $Primary] New User [/]"),
-					},
+						t.BorderTitleMarkup("[b $Primary] New User [/]")},
 				},
 				Padding: t.EdgeInsets{Left: 3, Right: 3, Top: 1, Bottom: 1},
 			},
@@ -246,8 +241,7 @@ func (a *App) infoDialog(ctx t.BuildContext) t.Widget {
 					Style: t.BorderRounded,
 					Color: theme.Border,
 					Decorations: []t.BorderDecoration{
-						t.BorderTitleMarkup("[b $Info] About [/]"),
-					},
+						t.BorderTitleMarkup("[b $Info] About [/]")},
 				},
 				Padding: t.EdgeInsets{Left: 3, Right: 3, Top: 1, Bottom: 1},
 			},
@@ -260,7 +254,7 @@ func (a *App) infoDialog(ctx t.BuildContext) t.Widget {
 					},
 				},
 				t.Text{
-					Content: "Modal floats automatically trap focus — Tab and",
+					Content: "Modal floats automatically trap focus - Tab and",
 					Style:   t.Style{ForegroundColor: theme.TextMuted},
 				},
 				t.Text{
@@ -271,7 +265,7 @@ func (a *App) infoDialog(ctx t.BuildContext) t.Widget {
 					Content: "Escape or click the button below to close.",
 					Style:   t.Style{ForegroundColor: theme.TextMuted},
 				},
-				&t.Button{
+				t.Button{
 					ID:    "info-ok",
 					Label: "OK",
 					OnPress: func() {

@@ -113,6 +113,7 @@ Golden files are stored in `testdata/<TestName>.svg`. The test framework generat
 | `progressbar.go` | Progress indicator widget |
 | `spinner.go` | Animated loading indicator |
 | `menu.go` | Dropdown/context menu widget |
+| `dialog.go` | Modal `Dialog` widget (wraps `Floating`) |
 | `filter.go` | Text filtering/matching utilities |
 
 ### Widget Pattern
@@ -163,6 +164,7 @@ func main() {
 | `SplitPane` | Two-pane layout with draggable divider | `State` (required), `First`, `Second`, `Orientation`, `DividerSize` |
 | `Scrollable` | Scrolling container with scrollbar | `Child`, `State` (required), `DisableScroll` |
 | `Floating` | Overlay/modal positioning | `Visible`, `Config`, `Child` |
+| `Dialog` | Modal dialog with title, content, buttons | `ID` (required), `Visible`, `Title`, `Content`, `Buttons`, `OnDismiss` |
 | `Switcher` | Shows one keyed child at a time | `Active`, `Children` |
 
 ### Content Widgets
@@ -170,7 +172,7 @@ func main() {
 | Widget | Purpose | Key Fields |
 |--------|---------|------------|
 | `Text` | Display text (plain or rich with Spans) | `Content`, `Spans`, `Wrap`, `TextAlign` |
-| `Button` | Focusable button with press handler | `ID` (required), `Label`, `OnPress` |
+| `Button` | Focusable button with press handler | `ID` (required), `Label`, `Variant`, `OnPress` |
 | `List[T]` | Generic navigable list | `State` (required), `OnSelect`, `RenderItem`, `MultiSelect` |
 | `Table[T]` | Generic navigable table | `State` (required), `Columns`, `RenderCell`, `SelectionMode` |
 | `Tree[T]` | Generic navigable tree | `State` (required), `RenderNode`, `OnExpand`, `MultiSelect` |
@@ -274,15 +276,28 @@ Scrollable{
     },
 }
 
-// Floating modal dialog
-Floating{
+// Dialog - modal dialog with title, content, and buttons
+Dialog{
+    ID:      "confirm-dialog",
     Visible: showDialog.Get(),
-    Config: FloatConfig{
-        Position:  FloatPositionCenter,
-        Modal:     true,
-        OnDismiss: func() { showDialog.Set(false) },
+    Title:   "Confirm Delete",
+    Content: Text{Content: "Are you sure?"},
+    Buttons: []Button{
+        {Label: "Cancel", OnPress: func() { showDialog.Set(false) }},
+        {Label: "Delete", Variant: ButtonError, OnPress: deleteItem},
     },
-    Child: Dialog{...},
+    OnDismiss: func() { showDialog.Set(false) },
+}
+
+// Floating overlay (low-level; prefer Dialog for modal dialogs)
+Floating{
+    Visible: showMenu.Get(),
+    Config: FloatConfig{
+        AnchorID:  "file-btn",
+        Anchor:    AnchorBottomLeft,
+        OnDismiss: func() { showMenu.Set(false) },
+    },
+    Child: Menu{...},
 }
 
 // FocusTrap - constrain Tab/Shift+Tab to a subtree

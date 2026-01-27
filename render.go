@@ -872,6 +872,8 @@ type Renderer struct {
 	hoveredSignal  AnySignal[Widget]
 	widgetRegistry *WidgetRegistry
 	floatCollector *FloatCollector
+	// modalCount tracks the number of modal floats rendered in the last pass.
+	modalCount int
 }
 
 // NewRenderer creates a new renderer for the given terminal.
@@ -949,6 +951,7 @@ func (r *Renderer) renderInternal(root Widget) (focusables []FocusableEntry, lay
 	r.focusCollector.Reset()
 	r.widgetRegistry.Reset()
 	r.floatCollector.Reset()
+	r.modalCount = 0
 
 	// Create build context
 	buildCtx := NewBuildContext(r.focusManager, r.focusedSignal, r.hoveredSignal, r.floatCollector)
@@ -1235,12 +1238,17 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 	for i := 0; i < len(r.floatCollector.entries); i++ {
 		entry := r.floatCollector.entries[i]
 
+		// Record focusable count before building so we can find focusables
+		// belonging to this float's subtree.
+		focusableCountBefore := r.focusCollector.Len()
+
 		// Wrap modal children in a FocusTrap so Tab/Shift+Tab cycling
 		// is constrained to focusables within the modal.
 		child := entry.Child
 		if entry.Config.Modal {
+			modalID := fmt.Sprintf("__modal_float_%d", i)
 			child = FocusTrap{
-				ID:     fmt.Sprintf("__modal_float_%d", i),
+				ID:     modalID,
 				Active: true,
 				Child:  child,
 			}
@@ -1277,7 +1285,25 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 
 		// Render modal backdrop if needed
 		if entry.Config.Modal {
+			r.modalCount++
 			r.renderModalBackdrop(ctx, entry.Config.BackdropColor)
+
+			// Auto-focus the first focusable inside the modal if focus
+			// is not already within it. This ensures modals receive focus
+			// when they open without requiring an explicit RequestFocus call.
+			focusedID := r.focusManager.FocusedID()
+			alreadyInside := false
+			for _, fe := range r.focusCollector.Focusables()[focusableCountBefore:] {
+				if fe.ID == focusedID {
+					alreadyInside = true
+					break
+				}
+			}
+			if !alreadyInside {
+				if firstID := r.focusCollector.FirstFocusableIDAfter(focusableCountBefore); firstID != "" {
+					pendingFocusID = firstID
+				}
+			}
 		}
 
 		// Render the float at its computed position
@@ -1369,3 +1395,7 @@ func (r *Renderer) HasModalFloat() bool {
 	return r.floatCollector.HasModal()
 }
 
+// ModalCount returns the number of modal floats currently rendered.
+func (r *Renderer) ModalCount() int {
+	return r.modalCount
+}

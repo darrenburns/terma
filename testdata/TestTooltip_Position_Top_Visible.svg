@@ -21,15 +21,15 @@
   <rect x="92.0" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
   <text x="16.4" y="47.2" fill="#E0DEF4">Help</text>
   <text x="58.4" y="47.2" fill="#E0DEF4">text</text>
-  <rect x="8.0" y="66.8" width="8.4" height="19.6" fill="#C4A7E7"/>
-  <rect x="16.4" y="66.8" width="8.4" height="19.6" fill="#C4A7E7"/>
-  <rect x="24.8" y="66.8" width="8.4" height="19.6" fill="#C4A7E7"/>
-  <rect x="33.2" y="66.8" width="8.4" height="19.6" fill="#C4A7E7"/>
-  <rect x="41.6" y="66.8" width="8.4" height="19.6" fill="#C4A7E7"/>
-  <rect x="50.0" y="66.8" width="8.4" height="19.6" fill="#C4A7E7"/>
-  <rect x="58.4" y="66.8" width="8.4" height="19.6" fill="#C4A7E7"/>
-  <rect x="66.8" y="66.8" width="8.4" height="19.6" fill="#C4A7E7"/>
-  <text x="8.0" y="66.8" fill="#77668F">[</text>
-  <text x="16.4" y="66.8" fill="#191724">Target</text>
-  <text x="66.8" y="66.8" fill="#77668F">]</text>
+  <rect x="8.0" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="16.4" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="24.8" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="33.2" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="41.6" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="50.0" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="58.4" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="66.8" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <text x="8.0" y="66.8" fill="#757387">[</text>
+  <text x="16.4" y="66.8" fill="#E0DEF4">Target</text>
+  <text x="66.8" y="66.8" fill="#757387">]</text>
 </svg>

@@ -155,10 +155,10 @@ func (a *App) buildBadgeExample(ctx t.BuildContext) t.Widget {
 					t.Column{
 						Spacing: 1,
 						Children: []t.Widget{
-							&t.Button{ID: "add", Label: "+", OnPress: func() {
+							t.Button{ID: "add", Label: "+", OnPress: func() {
 								a.badgeCount.Set(a.badgeCount.Get() + 1)
 							}},
-							&t.Button{ID: "sub", Label: "-", OnPress: func() {
+							t.Button{ID: "sub", Label: "-", OnPress: func() {
 								if a.badgeCount.Get() > 0 {
 									a.badgeCount.Set(a.badgeCount.Get() - 1)
 								}
@@ -232,7 +232,7 @@ func (a *App) buildLoadingOverlay(ctx t.BuildContext) t.Widget {
 						},
 						Children: children,
 					},
-					&t.Button{
+					t.Button{
 						ID:    "toggle",
 						Label: toggleLabel(showOverlay),
 						OnPress: func() {

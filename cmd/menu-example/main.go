@@ -81,7 +81,7 @@ func (d *MenuDemo) Build(ctx t.BuildContext) t.Widget {
 			t.Row{
 				Spacing: 2,
 				Children: []t.Widget{
-					&t.Button{
+					t.Button{
 						ID:    "file-btn",
 						Label: "File",
 						OnPress: func() {

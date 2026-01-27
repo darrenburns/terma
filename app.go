@@ -177,8 +177,8 @@ func Run(root Widget) error {
 	var (
 		coalescedRenderRequests int
 		overrunFrames           int
-		lastFrameDuration     time.Duration
-		lastOverlayWidth      int
+		lastFrameDuration       time.Duration
+		lastOverlayWidth        int
 	)
 
 	drawDebugOverlay := func() {
@@ -204,6 +204,7 @@ func Run(root Widget) error {
 	}
 
 	renderInterval := time.Second / time.Duration(defaultFPS)
+	lastModalCount := 0
 
 	// Render and update focusables
 	display := func() {
@@ -220,6 +221,21 @@ func Run(root Widget) error {
 			renderer.Render(root)
 		}
 
+		// Manage modal focus transitions (open/close) and keep focus inside topmost modal.
+		modalCount := renderer.ModalCount()
+		openedModals := 0
+		closedModals := 0
+		if modalCount != lastModalCount {
+			if modalCount > lastModalCount {
+				openedModals = modalCount - lastModalCount
+			} else {
+				closedModals = lastModalCount - modalCount
+			}
+		}
+		for i := 0; i < openedModals; i++ {
+			focusManager.SaveFocus()
+		}
+
 		// Apply pending focus request from ctx.RequestFocus()
 		if pendingFocusID != "" {
 			focusManager.FocusByID(pendingFocusID)
@@ -230,6 +246,15 @@ func Run(root Widget) error {
 			}
 		}
 
+		for i := 0; i < closedModals; i++ {
+			focusManager.RestoreFocus()
+		}
+
+		lastModalCount = modalCount
+		// Update the signal and re-render so the focused widget shows focus style
+		if updateFocusedSignal() {
+			renderer.Render(root)
+		}
 		// Position terminal cursor for IME support (emoji picker, input methods)
 		// Must be before Display() since MoveTo only takes effect on next Display call
 		if focusedID := focusManager.FocusedID(); focusedID != "" {

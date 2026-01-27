@@ -565,7 +565,7 @@ func TestSnapshot_TextInput_PlaceholderUnfocused(t *testing.T) {
 	// Put a Button first so it takes focus, leaving the TextInput unfocused
 	widget := Column{
 		Children: []Widget{
-			&Button{ID: "focus-stealer", Label: ""},
+			Button{ID: "focus-stealer", Label: ""},
 			TextInput{
 				ID:          "textinput-placeholder-unfocused",
 				State:       state,

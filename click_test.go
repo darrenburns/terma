@@ -386,7 +386,7 @@ func TestClick_AllHandlersCalledInOrder(t *testing.T) {
 func TestClick_ButtonReceivesClickEvent(t *testing.T) {
 	var received *MouseEvent
 
-	widget := &Button{
+	widget := Button{
 		ID:    "btn",
 		Label: "Test",
 		Click: func(e MouseEvent) {

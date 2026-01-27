@@ -57,7 +57,7 @@ func (p *EditorPanel) Build(ctx t.BuildContext) t.Widget {
 			t.Text{Content: "Editor Panel (has ctrl+s, ctrl+z, d keybinds):"},
 			t.Text{Content: ""},
 			// Regular button - inherits panel keybinds
-			&t.Button{ID: "btn-new-file", Label: "New File", OnPress: func() {
+			t.Button{ID: "btn-new-file", Label: "New File", OnPress: func() {
 				p.message.Set("New File button pressed!")
 			}},
 			// Button with conflicting "d" keybind - overrides panel's "d"
@@ -139,7 +139,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 				t.Text{Content: "Use Tab/Shift+Tab to navigate. Watch footer change!"},
 				t.Text{Content: ""},
 				// Standalone button - only has app-level keybinds (?, r)
-				&t.Button{ID: "btn-standalone", Label: "Standalone Button", OnPress: func() {
+				t.Button{ID: "btn-standalone", Label: "Standalone Button", OnPress: func() {
 					a.message.Set("Standalone button pressed!")
 				}},
 				t.Text{Content: ""},

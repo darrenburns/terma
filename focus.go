@@ -27,9 +27,9 @@ func (k KeyEvent) Text() string {
 
 // MouseEvent wraps a mouse interaction with click-chain metadata.
 type MouseEvent struct {
-	X, Y       int            // Absolute screen coordinates
-	LocalX     int            // X offset within the widget (0 = left edge)
-	LocalY     int            // Y offset within the widget (0 = top edge)
+	X, Y       int // Absolute screen coordinates
+	LocalX     int // X offset within the widget (0 = left edge)
+	LocalY     int // Y offset within the widget (0 = top edge)
 	Button     uv.MouseButton
 	Mod        uv.KeyMod
 	ClickCount int // 1=single, 2=double, 3=triple, etc
@@ -134,6 +134,10 @@ type FocusManager struct {
 
 	// focusedID is the ID of the currently focused widget ("" if none)
 	focusedID string
+
+	// savedFocusStack stores focused widget IDs saved before entering modals.
+	// Push when a modal opens, pop when it closes, to restore prior focus.
+	savedFocusStack []string
 
 	// rootWidget is the root widget of the application, used to include
 	// root-level keybinds in ActiveKeybinds() when nothing is focused
@@ -297,6 +301,34 @@ func (fm *FocusManager) FocusByID(id string) {
 			return
 		}
 	}
+}
+
+// IsInModalTrap returns true if the currently focused widget is inside a focus trap.
+// Used to avoid re-saving focus on every render when a modal is already open.
+func (fm *FocusManager) IsInModalTrap() bool {
+	return fm.activeTrapID() != ""
+}
+
+// SaveFocus pushes the current focused ID onto the saved focus stack.
+// Call this before moving focus into a modal so the prior focus can be
+// restored when the modal closes via RestoreFocus.
+func (fm *FocusManager) SaveFocus() {
+	fm.savedFocusStack = append(fm.savedFocusStack, fm.focusedID)
+}
+
+// RestoreFocus pops the most recently saved focus ID from the stack
+// and moves focus back to it. Returns the restored ID, or "" if the
+// stack was empty.
+func (fm *FocusManager) RestoreFocus() string {
+	if len(fm.savedFocusStack) == 0 {
+		return ""
+	}
+	id := fm.savedFocusStack[len(fm.savedFocusStack)-1]
+	fm.savedFocusStack = fm.savedFocusStack[:len(fm.savedFocusStack)-1]
+	if id != "" {
+		fm.FocusByID(id)
+	}
+	return id
 }
 
 // activeTrapID returns the TrapID of the currently focused widget.
@@ -603,3 +635,14 @@ func (fc *FocusCollector) Len() int {
 	return len(fc.focusables)
 }
 
+// FirstFocusableIDAfter returns the ID of the first focusable widget collected
+// after the given index that reports IsFocusable() == true.
+// Returns empty string if no such focusable exists.
+func (fc *FocusCollector) FirstFocusableIDAfter(index int) string {
+	for i := index; i < len(fc.focusables); i++ {
+		if fc.focusables[i].Focusable.IsFocusable() {
+			return fc.focusables[i].ID
+		}
+	}
+	return ""
+}
