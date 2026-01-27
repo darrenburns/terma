@@ -31,7 +31,7 @@ func (s *CheckboxState) IsChecked() bool {
 // Checkbox is a focusable widget that displays a checkable box with an optional label.
 // It can be toggled with Enter or Space when focused.
 type Checkbox struct {
-	ID        string          // Unique identifier for the checkbox (required for focus management)
+	ID        string          // Optional unique identifier for the checkbox
 	State     *CheckboxState  // Required - holds checked state
 	Label     string          // Optional text displayed after the indicator
 	Width     Dimension       // Deprecated: use Style.Width

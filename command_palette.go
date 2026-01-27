@@ -489,9 +489,8 @@ func (p CommandPalette) buildList(ctx BuildContext, level *CommandPaletteLevel, 
 	}
 
 	return Scrollable{
-		ID:           p.scrollID(),
-		State:        level.ScrollState,
-		DisableFocus: true,
+		ID:    p.scrollID(),
+		State: level.ScrollState,
 		Style: Style{
 			BackgroundColor: theme.Surface,
 		},

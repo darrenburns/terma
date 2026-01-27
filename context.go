@@ -101,7 +101,8 @@ func (ctx BuildContext) WithDisabled() BuildContext {
 }
 
 // IsFocused returns true if the given widget currently has focus.
-// The widget should implement Identifiable for reliable focus tracking across rebuilds.
+// Widgets with an explicit ID are matched by that ID; otherwise the
+// position-based AutoID is used as a fallback.
 func (ctx BuildContext) IsFocused(widget Widget) bool {
 	if ctx.focusManager == nil {
 		return false
@@ -113,11 +114,12 @@ func (ctx BuildContext) IsFocused(widget Widget) bool {
 	}
 
 	// Check if widget has an explicit ID
-	if identifiable, ok := widget.(Identifiable); ok {
+	if identifiable, ok := widget.(Identifiable); ok && identifiable.WidgetID() != "" {
 		return identifiable.WidgetID() == focusedID
 	}
 
-	return false
+	// Fall back to auto-ID based on tree position
+	return ctx.AutoID() == focusedID
 }
 
 // Focused returns the currently focused widget, or nil if none.

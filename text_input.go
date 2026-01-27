@@ -430,7 +430,7 @@ func (s *TextInputState) SetCursorFromLocalPosition(localX int) {
 // Content height is always 1 cell (single line). Use Style.Padding to add
 // visual space around the text - the framework automatically accounts for padding.
 type TextInput struct {
-	ID            string            // Required for focus management
+	ID            string            // Optional unique identifier
 	State         *TextInputState   // Required - holds text and cursor position
 	Placeholder   string            // Text shown when empty and unfocused
 	Highlighter   Highlighter       // Optional: dynamic text highlighting

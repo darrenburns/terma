@@ -129,7 +129,7 @@ func (s *MenuState) firstSelectableIndex() int {
 // Menu is a convenience widget for dropdown/context menus.
 // It composes Floating + list rendering internally.
 type Menu struct {
-	ID    string     // Required for focus
+	ID    string     // Optional unique identifier
 	State *MenuState // Required
 
 	// Positioning (choose one approach)

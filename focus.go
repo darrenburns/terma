@@ -36,8 +36,10 @@ type MouseEvent struct {
 	WidgetID   string
 }
 
-// Identifiable is implemented by widgets that provide a stable identity.
-// The ID must be unique among siblings and persist across rebuilds.
+// Identifiable is implemented by widgets that provide an identity.
+// If WidgetID() returns a non-empty string, that ID takes precedence
+// over the position-based AutoID for focus management and hit testing.
+// The ID should be unique among siblings and persist across rebuilds.
 type Identifiable interface {
 	WidgetID() string
 }

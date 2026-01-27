@@ -96,6 +96,31 @@ func InvisibleWhen(condition bool, child Widget) Widget {
 	return VisibleWhen(!condition, child)
 }
 
+// inertWrapper prevents focus collection for a subtree without applying disabled styling.
+// Unlike disabledWrapper, inert widgets render normally but cannot receive keyboard focus.
+// The wrapper is detected by BuildRenderTree, which passes nil for the focus collector
+// so no focusable widgets in the subtree are registered.
+type inertWrapper struct {
+	child Widget
+}
+
+// Build returns the child widget directly.
+func (w inertWrapper) Build(ctx BuildContext) Widget {
+	return w.child.Build(ctx)
+}
+
+// Inert prevents all focusable widgets in the subtree from receiving keyboard focus.
+// Unlike DisabledWhen, the child renders normally with no visual changes.
+// Use this for display-only instances of interactive widgets (e.g., a Table used
+// for layout inside another Table's cell).
+//
+// Example:
+//
+//	Inert(Table[T]{State: previewState, ...})
+func Inert(child Widget) Widget {
+	return inertWrapper{child: child}
+}
+
 // disabledWrapper marks a subtree as disabled, preventing focus and showing disabled styling.
 // The child is still built and laid out normally, but focusable widgets within the subtree
 // cannot receive focus and should render in a disabled state.

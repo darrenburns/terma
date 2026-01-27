@@ -10,16 +10,16 @@
   <rect width="100%" height="100%" fill="#000000"/>
   <text x="8.0" y="8.0" fill="#E0DEF4">Left</text>
   <text x="50.0" y="8.0" fill="#E0DEF4">pane</text>
-  <text x="167.6" y="8.0" fill="#403D52">│</text>
+  <text x="167.6" y="8.0" fill="#C4A7E7">│</text>
   <text x="176.0" y="8.0" fill="#E0DEF4">Right</text>
   <text x="226.4" y="8.0" fill="#E0DEF4">pane</text>
-  <text x="167.6" y="27.6" fill="#403D52">│</text>
-  <text x="167.6" y="47.2" fill="#403D52">│</text>
-  <text x="167.6" y="66.8" fill="#403D52">│</text>
-  <text x="167.6" y="86.4" fill="#403D52">│</text>
-  <text x="167.6" y="106.0" fill="#403D52">│</text>
-  <text x="167.6" y="125.6" fill="#403D52">│</text>
-  <text x="167.6" y="145.2" fill="#403D52">│</text>
-  <text x="167.6" y="164.8" fill="#403D52">│</text>
-  <text x="167.6" y="184.4" fill="#403D52">│</text>
+  <text x="167.6" y="27.6" fill="#C4A7E7">│</text>
+  <text x="167.6" y="47.2" fill="#C4A7E7">│</text>
+  <text x="167.6" y="66.8" fill="#C4A7E7">│</text>
+  <text x="167.6" y="86.4" fill="#C4A7E7">│</text>
+  <text x="167.6" y="106.0" fill="#C4A7E7">│</text>
+  <text x="167.6" y="125.6" fill="#C4A7E7">│</text>
+  <text x="167.6" y="145.2" fill="#C4A7E7">│</text>
+  <text x="167.6" y="164.8" fill="#C4A7E7">│</text>
+  <text x="167.6" y="184.4" fill="#C4A7E7">│</text>
 </svg>

@@ -91,11 +91,10 @@ func (d *EditorSettingsMenu) Build(ctx t.BuildContext) t.Widget {
 				Children: []t.Widget{
 					// The List widget inside a Scrollable (left side)
 					t.Scrollable{
-						ID:           "list-scroll",
-						State:        d.scrollState,
-						Height:       t.Cells(12),
-						Width:        t.Flex(2),
-						DisableFocus: true, // Let List handle focus
+						ID:     "list-scroll",
+						State:  d.scrollState,
+						Height: t.Cells(12),
+						Width:  t.Flex(2),
 						Style: t.Style{
 							Border: t.RoundedBorder(t.Cyan, t.BorderTitle("Editor Settings"),
 								t.BorderDecoration{Text: fmt.Sprintf("%d", d.scrollState.GetOffset()), Position: t.DecorationBottomRight}),

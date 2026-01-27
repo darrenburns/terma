@@ -158,7 +158,7 @@ func (s SplitPane) ChildWidgets() []Widget {
 
 // IsFocusable returns true if this widget can receive focus.
 func (s SplitPane) IsFocusable() bool {
-	return s.ID != "" && !s.DisableFocus
+	return !s.DisableFocus
 }
 
 // OnKey handles keys not covered by declarative keybindings.

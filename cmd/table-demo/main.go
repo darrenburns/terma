@@ -364,10 +364,9 @@ func (d *TableDemo) Build(ctx t.BuildContext) t.Widget {
 				},
 			},
 			t.Scrollable{
-				ID:           "table-scroll",
-				State:        d.scrollState,
-				Height:       t.Cells(12),
-				DisableFocus: true,
+				ID:     "table-scroll",
+				State:  d.scrollState,
+				Height: t.Cells(12),
 				Style: t.Style{
 					Border:  t.RoundedBorder(theme.Primary, t.BorderTitle("Services")),
 					Padding: t.EdgeInsetsXY(1, 0),

@@ -40,6 +40,12 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 		return BuildRenderTree(dw.child, ctx, constraints, fc)
 	}
 
+	// Handle inertWrapper specially - recurse into child with nil focus collector
+	// This prevents any focusable widgets in the subtree from receiving focus
+	if iw, ok := widget.(inertWrapper); ok {
+		return BuildRenderTree(iw.child, ctx, constraints, nil)
+	}
+
 	autoID := ctx.AutoID()
 
 	// Determine event ID (explicit ID or auto)
