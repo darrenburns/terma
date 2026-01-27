@@ -670,130 +670,177 @@ func defaultListMatchItem[T any](item T, query string, options FilterOptions) Ma
 	return MatchString(fmt.Sprintf("%v", item), query, options)
 }
 
-// OnKey handles navigation keys and selection, updating cursor position and scrolling into view.
+// OnKey handles keys not covered by declarative keybindings.
 // Implements the Focusable interface.
 func (l List[T]) OnKey(event KeyEvent) bool {
-	if l.State == nil {
-		return false
-	}
+	return false
+}
 
+// Keybinds returns the declarative keybindings for this list.
+func (l List[T]) Keybinds() []Keybind {
+	if l.State == nil {
+		return nil
+	}
+	binds := []Keybind{
+		{Key: "enter", Action: l.selectItem, Hidden: true},
+		{Key: "up", Action: l.keyCursorUp, Hidden: true},
+		{Key: "k", Action: l.keyCursorUp, Hidden: true},
+		{Key: "down", Action: l.keyCursorDown, Hidden: true},
+		{Key: "j", Action: l.keyCursorDown, Hidden: true},
+		{Key: "home", Action: l.keyCursorToFirst, Hidden: true},
+		{Key: "g", Action: l.keyCursorToFirst, Hidden: true},
+		{Key: "end", Action: l.keyCursorToLast, Hidden: true},
+		{Key: "G", Action: l.keyCursorToLast, Hidden: true},
+		{Key: "pgup", Action: l.pageUp, Hidden: true},
+		{Key: "ctrl+u", Action: l.pageUp, Hidden: true},
+		{Key: "pgdown", Action: l.pageDown, Hidden: true},
+		{Key: "ctrl+d", Action: l.pageDown, Hidden: true},
+	}
+	if l.MultiSelect {
+		binds = append(binds,
+			Keybind{Key: "shift+up", Action: l.shiftCursorUp, Hidden: true},
+			Keybind{Key: "shift+k", Action: l.shiftCursorUp, Hidden: true},
+			Keybind{Key: "shift+down", Action: l.shiftCursorDown, Hidden: true},
+			Keybind{Key: "shift+j", Action: l.shiftCursorDown, Hidden: true},
+			Keybind{Key: "shift+home", Action: l.shiftCursorToFirst, Hidden: true},
+			Keybind{Key: "shift+end", Action: l.shiftCursorToLast, Hidden: true},
+		)
+	}
+	return binds
+}
+
+func (l List[T]) selectItem() {
+	if l.OnSelect != nil {
+		if item, ok := l.State.SelectedItem(); ok {
+			l.OnSelect(item)
+		}
+	}
+}
+
+func (l List[T]) keyCursorUp() {
 	view := l.viewIndices()
 	if len(view) == 0 {
-		return false
+		return
 	}
-
 	cursorIdx := l.State.CursorIndex.Peek()
 	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
 	if !ok {
-		cursorIdx = view[0]
-		l.State.CursorIndex.Set(cursorIdx)
+		return
+	}
+	if cursorViewIdx == 0 {
+		return
+	}
+	if l.MultiSelect {
+		l.State.ClearSelection()
+		l.State.ClearAnchor()
+	}
+	l.setCursorToViewIndex(cursorViewIdx - 1)
+	l.scrollCursorIntoView()
+	l.notifyCursorChange()
+}
+
+func (l List[T]) keyCursorDown() {
+	view := l.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+	cursorIdx := l.State.CursorIndex.Peek()
+	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
+	if !ok {
+		return
+	}
+	if cursorViewIdx >= len(view)-1 {
+		return
+	}
+	if l.MultiSelect {
+		l.State.ClearSelection()
+		l.State.ClearAnchor()
+	}
+	l.setCursorToViewIndex(cursorViewIdx + 1)
+	l.scrollCursorIntoView()
+	l.notifyCursorChange()
+}
+
+func (l List[T]) keyCursorToFirst() {
+	if l.MultiSelect {
+		l.State.ClearSelection()
+		l.State.ClearAnchor()
+	}
+	l.setCursorToViewIndex(0)
+	l.scrollCursorIntoView()
+	l.notifyCursorChange()
+}
+
+func (l List[T]) keyCursorToLast() {
+	view := l.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+	if l.MultiSelect {
+		l.State.ClearSelection()
+		l.State.ClearAnchor()
+	}
+	l.setCursorToViewIndex(len(view) - 1)
+	l.scrollCursorIntoView()
+	l.notifyCursorChange()
+}
+
+func (l List[T]) pageUp() {
+	view := l.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+	cursorIdx := l.State.CursorIndex.Peek()
+	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
+	if !ok {
 		cursorViewIdx = 0
 	}
-	itemCount := len(view)
-
-	// Handle multi-select specific keys (shift+movement to extend selection)
 	if l.MultiSelect {
-		switch {
-		case event.MatchString("shift+up", "shift+k"):
-			l.handleShiftMove(-1)
-			return true
-
-		case event.MatchString("shift+down", "shift+j"):
-			l.handleShiftMove(1)
-			return true
-
-		case event.MatchString("shift+home"):
-			l.handleShiftMoveTo(0)
-			return true
-
-		case event.MatchString("shift+end"):
-			l.handleShiftMoveTo(itemCount - 1)
-			return true
-		}
+		l.State.ClearSelection()
+		l.State.ClearAnchor()
 	}
+	l.setCursorToViewIndex(cursorViewIdx - 10)
+	l.scrollCursorIntoView()
+	l.notifyCursorChange()
+}
 
-	switch {
-	case event.MatchString("enter"):
-		// Handle selection (Enter key press)
-		if l.OnSelect != nil {
-			if item, ok := l.State.SelectedItem(); ok {
-				l.OnSelect(item)
-			}
-		}
-		return true
-
-	case event.MatchString("up", "k"):
-		// If at top, don't handle - let it bubble for cross-widget navigation
-		if cursorViewIdx == 0 {
-			return false
-		}
-		if l.MultiSelect {
-			l.State.ClearSelection()
-			l.State.ClearAnchor()
-		}
-		l.setCursorToViewIndex(cursorViewIdx - 1)
-		l.scrollCursorIntoView()
-		l.notifyCursorChange()
-		return true
-
-	case event.MatchString("down", "j"):
-		// If at bottom, don't handle - let it bubble for cross-widget navigation
-		if cursorViewIdx >= itemCount-1 {
-			return false
-		}
-		if l.MultiSelect {
-			l.State.ClearSelection()
-			l.State.ClearAnchor()
-		}
-		l.setCursorToViewIndex(cursorViewIdx + 1)
-		l.scrollCursorIntoView()
-		l.notifyCursorChange()
-		return true
-
-	case event.MatchString("home", "g"):
-		if l.MultiSelect {
-			l.State.ClearSelection()
-			l.State.ClearAnchor()
-		}
-		l.setCursorToViewIndex(0)
-		l.scrollCursorIntoView()
-		l.notifyCursorChange()
-		return true
-
-	case event.MatchString("end", "G"):
-		if l.MultiSelect {
-			l.State.ClearSelection()
-			l.State.ClearAnchor()
-		}
-		l.setCursorToViewIndex(itemCount - 1)
-		l.scrollCursorIntoView()
-		l.notifyCursorChange()
-		return true
-
-	case event.MatchString("pgup", "ctrl+u"):
-		if l.MultiSelect {
-			l.State.ClearSelection()
-			l.State.ClearAnchor()
-		}
-		newCursor := cursorViewIdx - 10
-		l.setCursorToViewIndex(newCursor)
-		l.scrollCursorIntoView()
-		l.notifyCursorChange()
-		return true
-
-	case event.MatchString("pgdown", "ctrl+d"):
-		if l.MultiSelect {
-			l.State.ClearSelection()
-			l.State.ClearAnchor()
-		}
-		newCursor := cursorViewIdx + 10
-		l.setCursorToViewIndex(newCursor)
-		l.scrollCursorIntoView()
-		l.notifyCursorChange()
-		return true
+func (l List[T]) pageDown() {
+	view := l.viewIndices()
+	if len(view) == 0 {
+		return
 	}
+	cursorIdx := l.State.CursorIndex.Peek()
+	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
+	if !ok {
+		cursorViewIdx = 0
+	}
+	if l.MultiSelect {
+		l.State.ClearSelection()
+		l.State.ClearAnchor()
+	}
+	l.setCursorToViewIndex(cursorViewIdx + 10)
+	l.scrollCursorIntoView()
+	l.notifyCursorChange()
+}
 
-	return false
+func (l List[T]) shiftCursorUp() {
+	l.handleShiftMove(-1)
+}
+
+func (l List[T]) shiftCursorDown() {
+	l.handleShiftMove(1)
+}
+
+func (l List[T]) shiftCursorToFirst() {
+	l.handleShiftMoveTo(0)
+}
+
+func (l List[T]) shiftCursorToLast() {
+	view := l.viewIndices()
+	if len(view) == 0 {
+		return
+	}
+	l.handleShiftMoveTo(len(view) - 1)
 }
 
 // handleShiftMove extends selection by moving cursor by delta and selecting the range.

@@ -711,145 +711,196 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 	}
 }
 
-// OnKey handles navigation keys and selection.
+// OnKey handles keys not covered by declarative keybindings.
 func (t Tree[T]) OnKey(event KeyEvent) bool {
-	if t.State == nil {
-		return false
-	}
+	return false
+}
 
+// Keybinds returns the declarative keybindings for this tree.
+func (t Tree[T]) Keybinds() []Keybind {
+	if t.State == nil {
+		return nil
+	}
+	binds := []Keybind{
+		{Key: "enter", Action: t.selectNode, Hidden: true},
+		{Key: "up", Action: t.keyCursorUp, Hidden: true},
+		{Key: "k", Action: t.keyCursorUp, Hidden: true},
+		{Key: "down", Action: t.keyCursorDown, Hidden: true},
+		{Key: "j", Action: t.keyCursorDown, Hidden: true},
+		{Key: "home", Action: t.keyCursorToFirst, Hidden: true},
+		{Key: "g", Action: t.keyCursorToFirst, Hidden: true},
+		{Key: "end", Action: t.keyCursorToLast, Hidden: true},
+		{Key: "G", Action: t.keyCursorToLast, Hidden: true},
+		{Key: "left", Action: t.collapseOrMoveToParent, Hidden: true},
+		{Key: "h", Action: t.collapseOrMoveToParent, Hidden: true},
+		{Key: "right", Action: t.expandOrMoveToChild, Hidden: true},
+		{Key: "l", Action: t.expandOrMoveToChild, Hidden: true},
+		{Key: "space", Action: t.toggleExpansion, Hidden: true},
+		{Key: " ", Action: t.toggleExpansion, Hidden: true},
+	}
+	if t.MultiSelect {
+		binds = append(binds,
+			Keybind{Key: "shift+up", Action: t.shiftCursorUp, Hidden: true},
+			Keybind{Key: "shift+k", Action: t.shiftCursorUp, Hidden: true},
+			Keybind{Key: "shift+down", Action: t.shiftCursorDown, Hidden: true},
+			Keybind{Key: "shift+j", Action: t.shiftCursorDown, Hidden: true},
+			Keybind{Key: "shift+home", Action: t.shiftCursorToFirst, Hidden: true},
+			Keybind{Key: "shift+end", Action: t.shiftCursorToLast, Hidden: true},
+		)
+	}
+	return binds
+}
+
+func (t Tree[T]) selectNode() {
+	if t.OnSelect != nil {
+		if node, ok := t.State.CursorNode(); ok {
+			selected := t.getSelectedNodes()
+			t.OnSelect(node, selected)
+		}
+	}
+}
+
+func (t Tree[T]) keyCursorUp() {
 	view := t.viewPaths()
 	if len(view) == 0 {
-		return false
+		return
 	}
-
 	cursor := t.ensureCursor(view, t.State.CursorPath.Peek())
 	cursorViewIdx, _ := t.viewIndexForPath(cursor)
-	lastIdx := len(view) - 1
-
-	if t.MultiSelect {
-		switch {
-		case event.MatchString("shift+up", "shift+k"):
-			t.handleShiftMove(-1)
-			return true
-		case event.MatchString("shift+down", "shift+j"):
-			t.handleShiftMove(1)
-			return true
-		case event.MatchString("shift+home"):
-			t.handleShiftMoveTo(0)
-			return true
-		case event.MatchString("shift+end"):
-			t.handleShiftMoveTo(lastIdx)
-			return true
-		}
+	if cursorViewIdx == 0 {
+		return
 	}
+	if t.MultiSelect {
+		t.State.ClearSelection()
+		t.State.clearAnchor()
+	}
+	t.setCursorToViewIndex(cursorViewIdx - 1)
+	t.scrollCursorIntoView()
+	t.notifyCursorChange()
+}
 
-	switch {
-	case event.MatchString("enter"):
-		if t.OnSelect != nil {
-			if node, ok := t.State.CursorNode(); ok {
-				selected := t.getSelectedNodes()
-				t.OnSelect(node, selected)
-			}
-		}
-		return true
+func (t Tree[T]) keyCursorDown() {
+	view := t.viewPaths()
+	if len(view) == 0 {
+		return
+	}
+	cursor := t.ensureCursor(view, t.State.CursorPath.Peek())
+	cursorViewIdx, _ := t.viewIndexForPath(cursor)
+	if cursorViewIdx >= len(view)-1 {
+		return
+	}
+	if t.MultiSelect {
+		t.State.ClearSelection()
+		t.State.clearAnchor()
+	}
+	t.setCursorToViewIndex(cursorViewIdx + 1)
+	t.scrollCursorIntoView()
+	t.notifyCursorChange()
+}
 
-	case event.MatchString("up", "k"):
-		if cursorViewIdx == 0 {
-			return false
-		}
-		if t.MultiSelect {
-			t.State.ClearSelection()
-			t.State.clearAnchor()
-		}
-		t.setCursorToViewIndex(cursorViewIdx - 1)
+func (t Tree[T]) keyCursorToFirst() {
+	if t.MultiSelect {
+		t.State.ClearSelection()
+		t.State.clearAnchor()
+	}
+	t.setCursorToViewIndex(0)
+	t.scrollCursorIntoView()
+	t.notifyCursorChange()
+}
+
+func (t Tree[T]) keyCursorToLast() {
+	view := t.viewPaths()
+	if len(view) == 0 {
+		return
+	}
+	if t.MultiSelect {
+		t.State.ClearSelection()
+		t.State.clearAnchor()
+	}
+	t.setCursorToViewIndex(len(view) - 1)
+	t.scrollCursorIntoView()
+	t.notifyCursorChange()
+}
+
+func (t Tree[T]) collapseOrMoveToParent() {
+	view := t.viewPaths()
+	if len(view) == 0 {
+		return
+	}
+	cursor := t.ensureCursor(view, t.State.CursorPath.Peek())
+	node, ok := t.State.NodeAtPath(cursor)
+	if !ok {
+		return
+	}
+	if t.nodeExpanded(node, cursor) {
+		t.State.Collapse(cursor)
+		return
+	}
+	if len(cursor) > 1 {
+		t.State.CursorPath.Set(clonePath(cursor[:len(cursor)-1]))
 		t.scrollCursorIntoView()
 		t.notifyCursorChange()
-		return true
+	}
+}
 
-	case event.MatchString("down", "j"):
-		if cursorViewIdx >= lastIdx {
-			return false
-		}
-		if t.MultiSelect {
-			t.State.ClearSelection()
-			t.State.clearAnchor()
-		}
-		t.setCursorToViewIndex(cursorViewIdx + 1)
+func (t Tree[T]) expandOrMoveToChild() {
+	view := t.viewPaths()
+	if len(view) == 0 {
+		return
+	}
+	cursor := t.ensureCursor(view, t.State.CursorPath.Peek())
+	node, ok := t.State.NodeAtPath(cursor)
+	if !ok {
+		return
+	}
+	if t.nodeExpandable(node) && !t.nodeExpanded(node, cursor) {
+		t.expandNode(node, cursor)
+		return
+	}
+	if child, ok := t.firstChildPath(cursor, view); ok {
+		t.State.CursorPath.Set(clonePath(child))
 		t.scrollCursorIntoView()
 		t.notifyCursorChange()
-		return true
+	}
+}
 
-	case event.MatchString("home", "g"):
-		if t.MultiSelect {
-			t.State.ClearSelection()
-			t.State.clearAnchor()
-		}
-		t.setCursorToViewIndex(0)
-		t.scrollCursorIntoView()
-		t.notifyCursorChange()
-		return true
-
-	case event.MatchString("end", "G"):
-		if t.MultiSelect {
-			t.State.ClearSelection()
-			t.State.clearAnchor()
-		}
-		t.setCursorToViewIndex(lastIdx)
-		t.scrollCursorIntoView()
-		t.notifyCursorChange()
-		return true
-
-	case event.MatchString("left", "h"):
-		node, ok := t.State.NodeAtPath(cursor)
-		if !ok {
-			return false
-		}
+func (t Tree[T]) toggleExpansion() {
+	view := t.viewPaths()
+	if len(view) == 0 {
+		return
+	}
+	cursor := t.ensureCursor(view, t.State.CursorPath.Peek())
+	node, ok := t.State.NodeAtPath(cursor)
+	if !ok {
+		return
+	}
+	if t.nodeExpandable(node) {
 		if t.nodeExpanded(node, cursor) {
 			t.State.Collapse(cursor)
-			return true
-		}
-		if len(cursor) > 1 {
-			t.State.CursorPath.Set(clonePath(cursor[:len(cursor)-1]))
-			t.scrollCursorIntoView()
-			t.notifyCursorChange()
-			return true
-		}
-		return false
-
-	case event.MatchString("right", "l"):
-		node, ok := t.State.NodeAtPath(cursor)
-		if !ok {
-			return false
-		}
-		if t.nodeExpandable(node) && !t.nodeExpanded(node, cursor) {
+		} else {
 			t.expandNode(node, cursor)
-			return true
 		}
-		if child, ok := t.firstChildPath(cursor, view); ok {
-			t.State.CursorPath.Set(clonePath(child))
-			t.scrollCursorIntoView()
-			t.notifyCursorChange()
-			return true
-		}
-		return false
-
-	case event.MatchString("space", " "):
-		node, ok := t.State.NodeAtPath(cursor)
-		if !ok {
-			return false
-		}
-		if t.nodeExpandable(node) {
-			if t.nodeExpanded(node, cursor) {
-				t.State.Collapse(cursor)
-			} else {
-				t.expandNode(node, cursor)
-			}
-			return true
-		}
-		return false
 	}
+}
 
-	return false
+func (t Tree[T]) shiftCursorUp() {
+	t.handleShiftMove(-1)
+}
+
+func (t Tree[T]) shiftCursorDown() {
+	t.handleShiftMove(1)
+}
+
+func (t Tree[T]) shiftCursorToFirst() {
+	t.handleShiftMoveTo(0)
+}
+
+func (t Tree[T]) shiftCursorToLast() {
+	view := t.viewPaths()
+	if len(view) == 0 {
+		return
+	}
+	t.handleShiftMoveTo(len(view) - 1)
 }
 
 func (t Tree[T]) themedDefaultRenderNode(ctx BuildContext) func(node T, nodeCtx TreeNodeContext, match MatchResult) Widget {
