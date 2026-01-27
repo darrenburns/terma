@@ -61,11 +61,29 @@ func (b *BoxNode) ComputeLayout(constraints Constraints) ComputedLayout {
 		// Fixed sizing - Width/Height are already border-box
 		width, height = b.Width, b.Height
 
-		// If expand flags are set and size is 0, fill available space
+		// If expand flags are set and size is 0, fill available space.
+		// Expanding into unbounded space is a developer error (e.g. Flex
+		// height inside a table cell with Auto height).
 		if b.ExpandWidth && width == 0 {
+			if isUnbounded(effective.MaxWidth) {
+				panic(
+					"terma: Flex/Percent width in unbounded context. " +
+						"A widget has an expand-width dimension (Flex or Percent), but the available width is unbounded. " +
+						"Flex distributes remaining space proportionally, so it requires a bounded parent. " +
+						"Use Cells(n) for a fixed size, or ensure the parent has a bounded width.",
+				)
+			}
 			width = effective.MaxWidth
 		}
 		if b.ExpandHeight && height == 0 {
+			if isUnbounded(effective.MaxHeight) {
+				panic(
+					"terma: Flex/Percent height in unbounded context. " +
+						"A widget has an expand-height dimension (Flex or Percent), but the available height is unbounded. " +
+						"Flex distributes remaining space proportionally, so it requires a bounded parent. " +
+						"Use Cells(n) for a fixed size, or ensure the parent has a bounded height.",
+				)
+			}
 			height = effective.MaxHeight
 		}
 	}

@@ -126,9 +126,9 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 	spinnerFrame := a.spinnerState.Frame()
 
 	return t.Column{
-		Width:  t.Flex(1),
-		Height: t.Flex(1),
 		Style: t.Style{
+			Width:           t.Flex(1),
+			Height:          t.Flex(1),
 			Padding:         t.EdgeInsetsAll(1),
 			BackgroundColor: theme.Background,
 		},
@@ -216,9 +216,8 @@ func (a *App) renderCell(ctx t.BuildContext, spinnerFrame string) func(row Task,
 				FilledColor:   filledColor,
 				UnfilledColor: theme.Surface,
 				Style: t.Style{
-					Width:  t.Flex(1),
-					Height: t.Flex(1),
-					//BackgroundColor: bg,
+					BackgroundColor: bg,
+					Height:          t.Flex(1),
 				},
 			}
 

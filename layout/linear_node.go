@@ -187,7 +187,7 @@ func (l *LinearNode) measureNonFlexChildren(contentConstraints Constraints) ([]C
 			// with Auto height), there is no finite space to divide, so flex
 			// is meaningless and would cause integer overflow or OOM.
 			_, mainMax := l.mainConstraint(contentConstraints)
-			if mainMax >= maxInt {
+			if isUnbounded(mainMax) {
 				axis := "height"
 				container := "Column"
 				if l.Axis == Horizontal {

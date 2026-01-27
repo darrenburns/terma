@@ -1432,6 +1432,22 @@ func TestLinearNode_FlexInUnboundedContext_Panics(t *testing.T) {
 		)
 	})
 
+	t.Run("Column with unbounded height after inset subtraction", func(t *testing.T) {
+		// When a parent subtracts padding/border from maxInt, the result is
+		// maxInt-N which is still effectively unbounded.
+		col := &ColumnNode{
+			Children: []LayoutNode{
+				&FlexNode{Flex: 1, Child: box(10, 5)},
+			},
+		}
+		assert.Panics(t, func() {
+			col.ComputeLayout(Constraints{
+				MinWidth: 0, MaxWidth: 100,
+				MinHeight: 0, MaxHeight: maxInt - 20, // Simulates padding/border subtracted
+			})
+		})
+	})
+
 	t.Run("Column with bounded height does not panic", func(t *testing.T) {
 		col := &ColumnNode{
 			Children: []LayoutNode{
