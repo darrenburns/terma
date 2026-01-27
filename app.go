@@ -177,8 +177,8 @@ func Run(root Widget) error {
 	var (
 		coalescedRenderRequests int
 		overrunFrames           int
-		lastFrameDuration     time.Duration
-		lastOverlayWidth      int
+		lastFrameDuration       time.Duration
+		lastOverlayWidth        int
 	)
 
 	drawDebugOverlay := func() {
@@ -215,7 +215,6 @@ func Run(root Widget) error {
 
 		focusables := renderer.Render(root)
 		focusManager.SetFocusables(focusables)
-		focusManager.SetActiveModalID(renderer.TopModalID())
 
 		// If focus changed after render (auto-focus or focus removal), re-render
 		if updateFocusedSignal() {
@@ -251,20 +250,11 @@ func Run(root Widget) error {
 			focusManager.RestoreFocus()
 		}
 
-		if modalCount > 0 {
-			topModalID := renderer.TopModalID()
-			if focusManager.FocusedModalID() != topModalID {
-				if modalTarget := renderer.ModalFocusTarget(); modalTarget != "" {
-					focusManager.FocusByID(modalTarget)
-				}
-			}
-		}
 		lastModalCount = modalCount
 		// Update the signal and re-render so the focused widget shows focus style
 		if updateFocusedSignal() {
 			renderer.Render(root)
 		}
-
 		// Position terminal cursor for IME support (emoji picker, input methods)
 		// Must be before Display() since MoveTo only takes effect on next Display call
 		if focusedID := focusManager.FocusedID(); focusedID != "" {

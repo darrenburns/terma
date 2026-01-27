@@ -115,8 +115,9 @@ func (c FloatConfig) shouldDismissOnClickOutside() bool {
 // The child is rendered after the main widget tree, ensuring it appears on top.
 //
 // For modal floats (Modal: true), the backdrop blocks clicks to underlying widgets,
-// Escape dismisses the modal, and focus is automatically trapped within the modal's
-// subtree — Tab/Shift+Tab will only cycle through focusable widgets inside the modal.
+// Escape dismisses the modal, and focus is trapped within the modal's subtree via
+// FocusTrap — Tab/Shift+Tab will only cycle through focusable widgets inside the
+// modal. Use RequestFocus to move focus into the modal when opening it.
 //
 // Example - dropdown menu anchored to a button:
 //
