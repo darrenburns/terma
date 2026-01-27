@@ -1,6 +1,7 @@
 package terma
 
 import (
+	"fmt"
 	"strings"
 
 	"terma/layout"
@@ -1242,10 +1243,20 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 		// in this float's subtree without calling Build() again
 		focusableCountBefore := r.focusCollector.Len()
 
+		// Push a focus trap scope for modal floats so Tab/Shift+Tab
+		// cycling is constrained to focusables within the modal.
+		if entry.Config.Modal {
+			r.focusCollector.PushTrap(fmt.Sprintf("__modal_float_%d", i))
+		}
+
 		// Build the float's widget tree to determine its size
 		// Use loose constraints - floats size to their content
 		constraints := layout.Loose(r.width, r.height)
 		floatTree := BuildRenderTree(entry.Child, buildCtx, constraints, r.focusCollector)
+
+		if entry.Config.Modal {
+			r.focusCollector.PopTrap()
+		}
 
 		floatWidth := floatTree.Layout.Box.MarginBoxWidth()
 		floatHeight := floatTree.Layout.Box.MarginBoxHeight()

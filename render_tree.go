@@ -46,6 +46,23 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 		return BuildRenderTree(iw.child, ctx, constraints, nil)
 	}
 
+	// Handle FocusTrap specially - recurse into child with trap scope pushed.
+	// This makes FocusTrap transparent to layout while correctly scoping focus.
+	if ft, ok := widget.(FocusTrap); ok {
+		if fc != nil && ft.TrapsFocus() {
+			trapID := ft.WidgetID()
+			if trapID == "" {
+				trapID = ctx.AutoID()
+			}
+			fc.PushTrap(trapID)
+			defer fc.PopTrap()
+		}
+		if ft.Child == nil {
+			return BuildRenderTree(EmptyWidget{}, ctx, constraints, fc)
+		}
+		return BuildRenderTree(ft.Child, ctx, constraints, fc)
+	}
+
 	autoID := ctx.AutoID()
 
 	// Determine event ID (explicit ID or auto)
@@ -58,6 +75,10 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 
 	// Collect focusables during tree build (not during render)
 	if fc != nil {
+		if trapper, ok := widget.(FocusTrapper); ok && trapper.TrapsFocus() {
+			fc.PushTrap(eventID)
+			defer fc.PopTrap()
+		}
 		fc.Collect(widget, ctx.AutoID(), ctx)
 		if fc.ShouldTrackAncestor(widget) {
 			fc.PushAncestor(widget)

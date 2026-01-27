@@ -141,6 +141,7 @@ func main() {
 - `Widget`: Has `Build(ctx BuildContext) Widget`
 - `Focusable`: Receives keyboard events when focused
 - `KeybindProvider`: Returns declarative `[]Keybind` for queryable key mappings
+- `FocusTrapper`: Has `TrapsFocus() bool` — constrains Tab/Shift+Tab to subtree
 - `Clickable`/`Hoverable`: Mouse interaction handlers
 
 ### Dimensions
@@ -204,6 +205,7 @@ func main() {
 |--------|---------|------------|
 | `KeybindBar` | Displays active keybinds from focused widget | `Style`, `FormatKey` |
 | `Spacer` | Flexible empty space for layout control | `Width`, `Height` (default Flex(1)) |
+| `FocusTrap` | Constrains Tab/Shift+Tab cycling to its subtree | `ID` (required), `Active`, `Child` |
 
 ### Spacing: Prefer `Spacing` Field Over `Spacer` Widget
 
@@ -281,6 +283,19 @@ Floating{
         OnDismiss: func() { showDialog.Set(false) },
     },
     Child: Dialog{...},
+}
+
+// FocusTrap - constrain Tab/Shift+Tab to a subtree
+// Modal floats automatically trap focus; use FocusTrap for non-modal scenarios.
+FocusTrap{
+    ID:     "dialog-trap",
+    Active: true,
+    Child: Column{
+        Children: []Widget{
+            TextInput{ID: "name", State: nameState},
+            Button{ID: "submit", Label: "OK", OnPress: submit},
+        },
+    },
 }
 
 // KeybindBar at bottom of app
