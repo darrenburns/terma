@@ -383,6 +383,13 @@ func (s *TextInputState) DeleteSelection() bool {
 		return false
 	}
 	s.Content.Update(func(graphemes []string) []string {
+		// Clamp bounds to prevent panic
+		if start > len(graphemes) {
+			start = len(graphemes)
+		}
+		if end > len(graphemes) {
+			end = len(graphemes)
+		}
 		return append(graphemes[:start], graphemes[end:]...)
 	})
 	s.CursorIndex.Set(start)
