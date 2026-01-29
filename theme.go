@@ -1154,3 +1154,297 @@ func GetTheme(name string) (ThemeData, bool) {
 func getTheme() ThemeData {
 	return activeTheme.Get()
 }
+
+// ============================================================================
+// Theme Inheritance API
+// ============================================================================
+
+// ThemeOption is a functional option for modifying theme data.
+type ThemeOption func(*ThemeData)
+
+// ExtendTheme creates a new theme based on an existing one with modifications.
+// Returns zero ThemeData if base theme not found.
+func ExtendTheme(baseName string, opts ...ThemeOption) ThemeData {
+	base, ok := GetTheme(baseName)
+	if !ok {
+		Log("ExtendTheme: base theme not found: %s", baseName)
+		return ThemeData{}
+	}
+
+	// Apply all options to the copy
+	for _, opt := range opts {
+		opt(&base)
+	}
+
+	// Recompute derived colors
+	computeLabelColors(&base)
+
+	return base
+}
+
+// ExtendAndRegisterTheme extends a theme and registers it in one call.
+// Returns false if base theme not found.
+func ExtendAndRegisterTheme(newName, baseName string, opts ...ThemeOption) bool {
+	extended := ExtendTheme(baseName, opts...)
+	if extended.Name == "" && extended.Primary == (Color{}) {
+		return false
+	}
+	RegisterTheme(newName, extended)
+	return true
+}
+
+// Core branding options
+
+// WithPrimary sets the Primary color.
+func WithPrimary(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Primary = c
+	}
+}
+
+// WithSecondary sets the Secondary color.
+func WithSecondary(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Secondary = c
+	}
+}
+
+// WithAccent sets the Accent color.
+func WithAccent(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Accent = c
+	}
+}
+
+// Surface options
+
+// WithBackground sets the Background color.
+func WithBackground(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Background = c
+	}
+}
+
+// WithSurface sets the Surface color.
+func WithSurface(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Surface = c
+	}
+}
+
+// WithSurfaceHover sets the SurfaceHover color.
+func WithSurfaceHover(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.SurfaceHover = c
+	}
+}
+
+// WithSurface2 sets the Surface2 color.
+func WithSurface2(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Surface2 = c
+	}
+}
+
+// WithSurface3 sets the Surface3 color.
+func WithSurface3(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Surface3 = c
+	}
+}
+
+// Text options
+
+// WithText sets the Text color.
+func WithText(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Text = c
+	}
+}
+
+// WithTextMuted sets the TextMuted color.
+func WithTextMuted(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.TextMuted = c
+	}
+}
+
+// WithTextOnPrimary sets the TextOnPrimary color.
+func WithTextOnPrimary(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.TextOnPrimary = c
+	}
+}
+
+// WithTextOnSecondary sets the TextOnSecondary color.
+func WithTextOnSecondary(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.TextOnSecondary = c
+	}
+}
+
+// WithTextOnAccent sets the TextOnAccent color.
+func WithTextOnAccent(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.TextOnAccent = c
+	}
+}
+
+// WithTextDisabled sets the TextDisabled color.
+func WithTextDisabled(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.TextDisabled = c
+	}
+}
+
+// Border options
+
+// WithBorder sets the Border color.
+func WithBorder(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Border = c
+	}
+}
+
+// WithFocusRing sets the FocusRing color.
+func WithFocusRing(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.FocusRing = c
+	}
+}
+
+// Feedback options
+
+// WithError sets the Error color.
+func WithError(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Error = c
+	}
+}
+
+// WithWarning sets the Warning color.
+func WithWarning(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Warning = c
+	}
+}
+
+// WithSuccess sets the Success color.
+func WithSuccess(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Success = c
+	}
+}
+
+// WithInfo sets the Info color.
+func WithInfo(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Info = c
+	}
+}
+
+// WithTextOnError sets the TextOnError color.
+func WithTextOnError(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.TextOnError = c
+	}
+}
+
+// WithTextOnWarning sets the TextOnWarning color.
+func WithTextOnWarning(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.TextOnWarning = c
+	}
+}
+
+// WithTextOnSuccess sets the TextOnSuccess color.
+func WithTextOnSuccess(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.TextOnSuccess = c
+	}
+}
+
+// WithTextOnInfo sets the TextOnInfo color.
+func WithTextOnInfo(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.TextOnInfo = c
+	}
+}
+
+// Selection options
+
+// WithActiveCursor sets the ActiveCursor color.
+func WithActiveCursor(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.ActiveCursor = c
+	}
+}
+
+// WithSelection sets the Selection color.
+func WithSelection(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Selection = c
+	}
+}
+
+// WithSelectionText sets the SelectionText color.
+func WithSelectionText(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.SelectionText = c
+	}
+}
+
+// Scrollbar options
+
+// WithScrollbarTrack sets the ScrollbarTrack color.
+func WithScrollbarTrack(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.ScrollbarTrack = c
+	}
+}
+
+// WithScrollbarThumb sets the ScrollbarThumb color.
+func WithScrollbarThumb(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.ScrollbarThumb = c
+	}
+}
+
+// Other options
+
+// WithOverlay sets the Overlay color.
+func WithOverlay(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Overlay = c
+	}
+}
+
+// WithPlaceholder sets the Placeholder color.
+func WithPlaceholder(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Placeholder = c
+	}
+}
+
+// WithCursor sets the Cursor color.
+func WithCursor(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Cursor = c
+	}
+}
+
+// WithLink sets the Link color.
+func WithLink(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Link = c
+	}
+}
+
+// Metadata options
+
+// WithIsLight sets the IsLight flag.
+func WithIsLight(isLight bool) ThemeOption {
+	return func(t *ThemeData) {
+		t.IsLight = isLight
+	}
+}
