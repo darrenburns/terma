@@ -119,14 +119,22 @@ func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 		// Measure with unbounded width to detect horizontal overflow.
 		// This reveals if the child has minimum width requirements that exceed
 		// the reduced viewport (e.g., fixed-width elements, long words).
+		// Flex-based layouts will return 0 width in unbounded contexts (no natural size),
+		// so we fall back to the bounded measurement for them.
 		unboundedWidthConstraints := Constraints{
 			MinWidth:  0,
-			MaxWidth:  math.MaxInt32, // Unbounded width
+			MaxWidth:  math.MaxInt32,
 			MinHeight: 0,
 			MaxHeight: math.MaxInt32,
 		}
-		naturalLayout := s.Child.ComputeLayout(unboundedWidthConstraints)
-		virtualWidth = naturalLayout.Box.MarginBoxWidth()
+		naturalWidthLayout := s.Child.ComputeLayout(unboundedWidthConstraints)
+		naturalWidth := naturalWidthLayout.Box.MarginBoxWidth()
+		if naturalWidth > 0 {
+			virtualWidth = naturalWidth
+		} else {
+			// Flex-based content returns 0 in unbounded context - use bounded measurement
+			virtualWidth = childLayout.Box.MarginBoxWidth()
+		}
 
 		// Re-evaluate horizontal scroll: does natural width exceed reduced viewport?
 		needsHorizontalScroll = virtualWidth > measureWidth
@@ -205,3 +213,4 @@ func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 		}},
 	}
 }
+

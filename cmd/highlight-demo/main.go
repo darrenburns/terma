@@ -222,7 +222,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 
 func main() {
 	app := &App{
-		inputState: terma.NewTextInputState("Hello #world! Check out @claude for #AI updates."),
+		inputState: terma.NewTextInputState("Hello #world! Check out @darrenburns for #Terma updates."),
 		areaState: terma.NewTextAreaState(
 			"Welcome to #terma!\n\n" +
 				"This demo shows @mentions and #hashtags.\n" +

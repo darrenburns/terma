@@ -1391,82 +1391,103 @@ func TestLinearNode_ExpandFlags(t *testing.T) {
 	})
 }
 
-func TestLinearNode_FlexInUnboundedContext_Panics(t *testing.T) {
-	t.Run("Column with unbounded height", func(t *testing.T) {
+func TestLinearNode_FlexInUnboundedContext_ReturnsZero(t *testing.T) {
+	// Following Flutter/CSS behavior: Flex dimensions in unbounded contexts
+	// return a default size (0) instead of panicking. Flex has no meaningful
+	// natural size in infinite space.
+
+	t.Run("Column with unbounded height - flex child gets zero height", func(t *testing.T) {
 		col := &ColumnNode{
 			Children: []LayoutNode{
-				&FlexNode{Flex: 1, Child: box(10, 5)},
+				box(10, 20),                          // Fixed child
+				&FlexNode{Flex: 1, Child: box(10, 5)}, // Flex child
 			},
 		}
-		assert.PanicsWithValue(t,
-			"terma: Flex dimension in unbounded height context. "+
-				"A child of this Column has a Flex height, but the Column's max height is unbounded. "+
-				"Flex distributes remaining space proportionally, so it requires a bounded parent. "+
-				"Use Cells(n) for a fixed size, or ensure the parent has a bounded height.",
-			func() {
-				col.ComputeLayout(Constraints{
-					MinWidth: 0, MaxWidth: 100,
-					MinHeight: 0, MaxHeight: maxInt,
-				})
-			},
-		)
+		result := col.ComputeLayout(Constraints{
+			MinWidth: 0, MaxWidth: 100,
+			MinHeight: 0, MaxHeight: maxInt,
+		})
+		// Container shrink-wraps to fixed content only
+		assert.Equal(t, 10, result.Box.Width)
+		assert.Equal(t, 20, result.Box.Height, "Column should shrink-wrap to fixed content")
+		// Flex child gets zero allocation
+		assert.Equal(t, 0, result.Children[1].Layout.Box.Height, "Flex child should have zero height")
 	})
 
-	t.Run("Row with unbounded width", func(t *testing.T) {
+	t.Run("Row with unbounded width - flex child gets zero width", func(t *testing.T) {
 		row := &RowNode{
 			Children: []LayoutNode{
-				&FlexNode{Flex: 1, Child: box(10, 5)},
+				box(20, 10),                          // Fixed child
+				&FlexNode{Flex: 1, Child: box(5, 10)}, // Flex child
 			},
 		}
-		assert.PanicsWithValue(t,
-			"terma: Flex dimension in unbounded width context. "+
-				"A child of this Row has a Flex width, but the Row's max width is unbounded. "+
-				"Flex distributes remaining space proportionally, so it requires a bounded parent. "+
-				"Use Cells(n) for a fixed size, or ensure the parent has a bounded width.",
-			func() {
-				row.ComputeLayout(Constraints{
-					MinWidth: 0, MaxWidth: maxInt,
-					MinHeight: 0, MaxHeight: 100,
-				})
-			},
-		)
+		result := row.ComputeLayout(Constraints{
+			MinWidth: 0, MaxWidth: maxInt,
+			MinHeight: 0, MaxHeight: 100,
+		})
+		// Container shrink-wraps to fixed content only
+		assert.Equal(t, 20, result.Box.Width, "Row should shrink-wrap to fixed content")
+		assert.Equal(t, 10, result.Box.Height)
+		// Flex child gets zero allocation
+		assert.Equal(t, 0, result.Children[1].Layout.Box.Width, "Flex child should have zero width")
 	})
 
 	t.Run("Column with unbounded height after inset subtraction", func(t *testing.T) {
 		// When a parent subtracts padding/border from maxInt, the result is
-		// maxInt-N which is still effectively unbounded.
+		// maxInt-N which is still effectively unbounded. Should still work gracefully.
 		col := &ColumnNode{
 			Children: []LayoutNode{
 				&FlexNode{Flex: 1, Child: box(10, 5)},
 			},
 		}
-		assert.Panics(t, func() {
-			col.ComputeLayout(Constraints{
-				MinWidth: 0, MaxWidth: 100,
-				MinHeight: 0, MaxHeight: maxInt - 20, // Simulates padding/border subtracted
-			})
+		result := col.ComputeLayout(Constraints{
+			MinWidth: 0, MaxWidth: 100,
+			MinHeight: 0, MaxHeight: maxInt - 20, // Simulates padding/border subtracted
 		})
+		// Flex child gets zero allocation
+		assert.Equal(t, 0, result.Box.Height, "Container should have zero height with only flex children")
 	})
 
-	t.Run("Column with bounded height does not panic", func(t *testing.T) {
+	t.Run("Column with bounded height expands flex children", func(t *testing.T) {
 		col := &ColumnNode{
 			Children: []LayoutNode{
-				&FlexNode{Flex: 1, Child: box(10, 5)},
+				box(10, 20),                          // Fixed child: 20 tall
+				&FlexNode{Flex: 1, Child: box(10, 5)}, // Flex child
 			},
 		}
-		assert.NotPanics(t, func() {
-			col.ComputeLayout(Loose(100, 50))
-		})
+		result := col.ComputeLayout(Loose(100, 50))
+		// Container fills to 50
+		assert.Equal(t, 50, result.Box.Height)
+		// Flex child gets remaining space: 50 - 20 = 30
+		assert.Equal(t, 30, result.Children[1].Layout.Box.Height, "Flex child should expand in bounded context")
 	})
 
-	t.Run("Row with bounded width does not panic", func(t *testing.T) {
+	t.Run("Row with bounded width expands flex children", func(t *testing.T) {
 		row := &RowNode{
 			Children: []LayoutNode{
-				&FlexNode{Flex: 1, Child: box(10, 5)},
+				box(20, 10),                          // Fixed child: 20 wide
+				&FlexNode{Flex: 1, Child: box(5, 10)}, // Flex child
 			},
 		}
-		assert.NotPanics(t, func() {
-			row.ComputeLayout(Loose(100, 50))
+		result := row.ComputeLayout(Loose(100, 50))
+		// Container fills to 100
+		assert.Equal(t, 100, result.Box.Width)
+		// Flex child gets remaining space: 100 - 20 = 80
+		assert.Equal(t, 80, result.Children[1].Layout.Box.Width, "Flex child should expand in bounded context")
+	})
+
+	t.Run("Only flex children in unbounded context - container collapses to zero", func(t *testing.T) {
+		col := &ColumnNode{
+			Children: []LayoutNode{
+				&FlexNode{Flex: 1, Child: box(10, 5)},
+				&FlexNode{Flex: 2, Child: box(10, 5)},
+			},
+		}
+		result := col.ComputeLayout(Constraints{
+			MinWidth: 0, MaxWidth: 100,
+			MinHeight: 0, MaxHeight: maxInt,
 		})
+		// With no fixed content, container collapses
+		assert.Equal(t, 0, result.Box.Height, "Container with only flex children in unbounded context should be zero")
 	})
 }
