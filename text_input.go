@@ -107,6 +107,8 @@ func (s *TextInputState) Insert(text string) {
 	s.CursorIndex.Update(func(cursor int) int {
 		return cursor + len(newGraphemes)
 	})
+	// Clear selection anchor to prevent unwanted selection after typing
+	s.SelectionAnchor.Set(-1)
 }
 
 // DeleteBackward deletes the grapheme before the cursor.
@@ -302,6 +304,21 @@ func (s *TextInputState) GetSelectionBounds() (start, end int) {
 	if anchor < 0 || anchor == cursor {
 		return -1, -1
 	}
+
+	// Clamp to content length to handle external content modifications
+	n := len(s.Content.Peek())
+	if anchor > n {
+		anchor = n
+	}
+	if cursor > n {
+		cursor = n
+	}
+
+	// After clamping, check if still valid
+	if anchor == cursor {
+		return -1, -1
+	}
+
 	if anchor < cursor {
 		return anchor, cursor
 	}
