@@ -1,7 +1,5 @@
 package layout
 
-import "fmt"
-
 // LinearNode lays out children along a single axis (horizontal or vertical).
 // This is the shared implementation for Row (Horizontal) and Column (Vertical).
 // The algorithm operates on "main axis" and "cross axis" concepts, making
@@ -182,25 +180,16 @@ func (l *LinearNode) measureNonFlexChildren(contentConstraints Constraints) ([]C
 			info.flexValues[i] = flexVal
 			info.totalFlex += flexVal
 
-			// Flex children require a bounded main-axis constraint to distribute
-			// space proportionally. In an unbounded context (e.g. a table cell
-			// with Auto height), there is no finite space to divide, so flex
-			// is meaningless and would cause integer overflow or OOM.
+			// In unbounded contexts (e.g. Scrollable measuring with infinite height),
+			// Flex has no meaningful natural size. We treat flex children as zero-size
+			// during measurement - they will get proper allocation in the flex distribution
+			// phase if constraints become bounded. This follows Flutter/CSS behavior.
 			_, mainMax := l.mainConstraint(contentConstraints)
 			if isUnbounded(mainMax) {
-				axis := "height"
-				container := "Column"
-				if l.Axis == Horizontal {
-					axis = "width"
-					container = "Row"
-				}
-				panic(fmt.Sprintf(
-					"terma: Flex dimension in unbounded %s context. "+
-						"A child of this %s has a Flex %s, but the %s's max %s is unbounded. "+
-						"Flex distributes remaining space proportionally, so it requires a bounded parent. "+
-						"Use Cells(n) for a fixed size, or ensure the parent has a bounded %s.",
-					axis, container, axis, container, axis, axis,
-				))
+				// Flex child in unbounded context: treat as zero-size
+				// The child will collapse to its minimum content size
+				info.totalFlexMax += 0
+				continue
 			}
 
 			// Measure max main-axis size for shrink-wrapping when flex children

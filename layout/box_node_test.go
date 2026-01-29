@@ -433,48 +433,62 @@ func TestBoxNode_IsLeafNode(t *testing.T) {
 	assert.Nil(t, result.Children, "BoxNode is a leaf node with no children")
 }
 
-func TestBoxNode_ExpandInUnboundedContext_Panics(t *testing.T) {
-	t.Run("ExpandHeight with unbounded height", func(t *testing.T) {
-		node := &BoxNode{ExpandHeight: true}
-		assert.Panics(t, func() {
-			node.ComputeLayout(Constraints{
-				MinWidth: 0, MaxWidth: 100,
-				MinHeight: 0, MaxHeight: maxInt,
-			})
+func TestBoxNode_ExpandInUnboundedContext_ReturnsZero(t *testing.T) {
+	// Following Flutter/CSS behavior: Flex dimensions in unbounded contexts
+	// return a default size (0) instead of panicking. Flex has no meaningful
+	// natural size in infinite space.
+
+	t.Run("ExpandHeight with unbounded height returns zero", func(t *testing.T) {
+		node := &BoxNode{ExpandHeight: true, Width: 50}
+		result := node.ComputeLayout(Constraints{
+			MinWidth: 0, MaxWidth: 100,
+			MinHeight: 0, MaxHeight: maxInt,
 		})
+		assert.Equal(t, 50, result.Box.Width)
+		assert.Equal(t, 0, result.Box.Height, "Flex height in unbounded context should be 0")
 	})
 
-	t.Run("ExpandHeight with unbounded height after inset subtraction", func(t *testing.T) {
-		node := &BoxNode{ExpandHeight: true}
-		assert.Panics(t, func() {
-			node.ComputeLayout(Constraints{
-				MinWidth: 0, MaxWidth: 100,
-				MinHeight: 0, MaxHeight: maxInt - 20,
-			})
+	t.Run("ExpandHeight with unbounded height after inset subtraction returns zero", func(t *testing.T) {
+		node := &BoxNode{ExpandHeight: true, Width: 50}
+		result := node.ComputeLayout(Constraints{
+			MinWidth: 0, MaxWidth: 100,
+			MinHeight: 0, MaxHeight: maxInt - 20,
 		})
+		assert.Equal(t, 50, result.Box.Width)
+		assert.Equal(t, 0, result.Box.Height, "Flex height in unbounded context should be 0")
 	})
 
-	t.Run("ExpandWidth with unbounded width", func(t *testing.T) {
-		node := &BoxNode{ExpandWidth: true}
-		assert.Panics(t, func() {
-			node.ComputeLayout(Constraints{
-				MinWidth: 0, MaxWidth: maxInt,
-				MinHeight: 0, MaxHeight: 100,
-			})
+	t.Run("ExpandWidth with unbounded width returns zero", func(t *testing.T) {
+		node := &BoxNode{ExpandWidth: true, Height: 50}
+		result := node.ComputeLayout(Constraints{
+			MinWidth: 0, MaxWidth: maxInt,
+			MinHeight: 0, MaxHeight: 100,
 		})
+		assert.Equal(t, 0, result.Box.Width, "Flex width in unbounded context should be 0")
+		assert.Equal(t, 50, result.Box.Height)
 	})
 
-	t.Run("ExpandHeight with bounded height does not panic", func(t *testing.T) {
-		node := &BoxNode{ExpandHeight: true}
-		assert.NotPanics(t, func() {
-			node.ComputeLayout(Loose(100, 50))
-		})
+	t.Run("ExpandHeight with bounded height expands", func(t *testing.T) {
+		node := &BoxNode{ExpandHeight: true, Width: 30}
+		result := node.ComputeLayout(Loose(100, 50))
+		assert.Equal(t, 30, result.Box.Width)
+		assert.Equal(t, 50, result.Box.Height, "Flex height in bounded context should expand")
 	})
 
-	t.Run("ExpandWidth with bounded width does not panic", func(t *testing.T) {
-		node := &BoxNode{ExpandWidth: true}
-		assert.NotPanics(t, func() {
-			node.ComputeLayout(Loose(100, 50))
+	t.Run("ExpandWidth with bounded width expands", func(t *testing.T) {
+		node := &BoxNode{ExpandWidth: true, Height: 30}
+		result := node.ComputeLayout(Loose(100, 50))
+		assert.Equal(t, 100, result.Box.Width, "Flex width in bounded context should expand")
+		assert.Equal(t, 30, result.Box.Height)
+	})
+
+	t.Run("ExpandHeight with MinHeight in unbounded context uses MinHeight", func(t *testing.T) {
+		node := &BoxNode{ExpandHeight: true, Width: 50, MinHeight: 20}
+		result := node.ComputeLayout(Constraints{
+			MinWidth: 0, MaxWidth: 100,
+			MinHeight: 0, MaxHeight: maxInt,
 		})
+		assert.Equal(t, 50, result.Box.Width)
+		assert.Equal(t, 20, result.Box.Height, "Should clamp to MinHeight")
 	})
 }
