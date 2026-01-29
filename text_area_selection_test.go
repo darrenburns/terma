@@ -417,3 +417,110 @@ func TestSnapshot_TextArea_ReadOnly(t *testing.T) {
 	AssertSnapshot(t, widget, 15, 4,
 		"TextArea in read-only mode with cursor on line 2. Cursor should be visible but editing is disabled.")
 }
+
+// --- Bug Fix Tests ---
+
+func TestTextAreaState_GetSelectionBounds_ClampsToContentLength(t *testing.T) {
+	t.Run("clamps anchor when content shortened", func(t *testing.T) {
+		state := NewTextAreaState("hello world")
+		// Set selection that spans the entire text
+		state.SetSelectionAnchor(0)
+		state.CursorIndex.Set(11)
+
+		// Externally shorten the content
+		state.Content.Set([]string{"h", "i"}) // Now only 2 graphemes
+
+		// GetSelectionBounds should clamp and return valid bounds
+		start, end := state.GetSelectionBounds()
+		// anchor=0 is valid, cursor=11 should clamp to 2
+		if start != 0 || end != 2 {
+			t.Errorf("GetSelectionBounds() = (%d, %d), want (0, 2)", start, end)
+		}
+	})
+
+	t.Run("returns -1,-1 when clamped bounds are equal", func(t *testing.T) {
+		state := NewTextAreaState("hello")
+		state.SetSelectionAnchor(3)
+		state.CursorIndex.Set(5)
+
+		// Shorten content so both anchor and cursor clamp to same value
+		state.Content.Set([]string{"h"}) // Only 1 grapheme
+
+		// Both anchor=3 and cursor=5 clamp to 1, so no selection
+		start, end := state.GetSelectionBounds()
+		if start != -1 || end != -1 {
+			t.Errorf("GetSelectionBounds() = (%d, %d), want (-1, -1)", start, end)
+		}
+	})
+
+	t.Run("DeleteSelection does not panic when bounds exceed content", func(t *testing.T) {
+		state := NewTextAreaState("hello world")
+		state.SetSelectionAnchor(0)
+		state.CursorIndex.Set(11)
+
+		// Externally shorten content
+		state.Content.Set([]string{"h", "i"})
+
+		// This should not panic
+		deleted := state.DeleteSelection()
+		if !deleted {
+			t.Error("DeleteSelection() = false, want true")
+		}
+		if state.GetText() != "" {
+			t.Errorf("GetText() = %q, want empty", state.GetText())
+		}
+	})
+}
+
+func TestTextAreaState_Insert_ClearsSelectionAnchor(t *testing.T) {
+	t.Run("insert clears selection anchor", func(t *testing.T) {
+		state := NewTextAreaState("hello")
+		// Set anchor at cursor position (simulates click beyond content then typing)
+		state.CursorIndex.Set(5)
+		state.SetSelectionAnchor(5)
+
+		// Insert a character
+		state.Insert("!")
+
+		// After insert, anchor should be cleared
+		if state.SelectionAnchor.Peek() != -1 {
+			t.Errorf("SelectionAnchor = %d after Insert, want -1", state.SelectionAnchor.Peek())
+		}
+
+		// No selection should exist
+		if state.HasSelection() {
+			t.Error("HasSelection() = true after Insert, want false")
+		}
+	})
+
+	t.Run("typing after click beyond content does not create selection", func(t *testing.T) {
+		state := NewTextAreaState("abc")
+		// Simulate: click beyond content sets cursor at end and anchor at cursor
+		state.CursorIndex.Set(3)
+		state.SetSelectionAnchor(3)
+
+		// Type a character
+		state.Insert("d")
+
+		// Cursor should be at 4, anchor should be -1
+		if state.CursorIndex.Peek() != 4 {
+			t.Errorf("CursorIndex = %d, want 4", state.CursorIndex.Peek())
+		}
+		if state.SelectionAnchor.Peek() != -1 {
+			t.Errorf("SelectionAnchor = %d, want -1", state.SelectionAnchor.Peek())
+		}
+
+		// No selection
+		if state.HasSelection() {
+			t.Error("HasSelection() = true, want false")
+		}
+
+		// Type another character
+		state.Insert("e")
+
+		// Still no selection
+		if state.HasSelection() {
+			t.Error("HasSelection() = true after second Insert, want false")
+		}
+	})
+}
