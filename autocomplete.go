@@ -119,6 +119,7 @@ type AutocompleteState struct {
 	Suggestions     AnySignal[[]Suggestion]
 	listState       *ListState[Suggestion]
 	scrollState     *ScrollState
+	filterState     *FilterState
 	triggerPosition Signal[int]    // Where trigger char was typed (-1 if none)
 	filterQuery     Signal[string] // Text after trigger (for filtering)
 	dismissed       bool           // Tracks manual dismissal (e.g. Escape) until query changes
@@ -132,6 +133,7 @@ func NewAutocompleteState() *AutocompleteState {
 		Suggestions:     NewAnySignal([]Suggestion(nil)),
 		listState:       NewListState([]Suggestion{}),
 		scrollState:     NewScrollState(),
+		filterState:     NewFilterState(),
 		triggerPosition: NewSignal(-1),
 		filterQuery:     NewSignal(""),
 		anchorWidth:     NewSignal(0),
@@ -279,8 +281,9 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 		return a.Child
 	}
 
-	// Subscribe to suggestions changes
+	// Subscribe to suggestions changes and sync to list
 	allSuggestions := a.State.Suggestions.Get()
+	a.State.listState.SetItems(allSuggestions)
 
 	// Get child text and cursor for trigger detection
 	text, cursorPos := a.getChildTextAndCursor()
@@ -288,12 +291,16 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 	// Update trigger and query based on current text/cursor
 	a.updateTriggerAndQuery(text, cursorPos)
 
-	// Filter suggestions based on query
-	a.syncFilteredSuggestions(allSuggestions, a.State.filterQuery.Peek())
+	// Update filter state with current query and match mode
+	a.State.filterState.Query.Set(a.State.filterQuery.Peek())
+	a.State.filterState.Mode.Set(a.matchMode())
+
+	// Apply filter to get filtered count (List.Build will reuse cached results)
+	a.State.listState.ApplyFilter(a.State.filterState, suggestionMatchItem)
+	hasItems := a.State.listState.FilteredCount() > 0
 
 	// Determine visibility
 	visible := a.State.Visible.Get()
-	hasItems := a.State.listState.ItemCount() > 0
 
 	// Auto-dismiss when empty if configured
 	if a.DismissWhenEmpty && visible && !hasItems {
@@ -667,35 +674,6 @@ func (a Autocomplete) extractQuery(text string, cursorPos int, triggerPos int) s
 	return string(runes[queryStart:cursorPos])
 }
 
-// syncFilteredSuggestions filters and syncs suggestions to the list state.
-func (a Autocomplete) syncFilteredSuggestions(allSuggestions []Suggestion, query string) {
-	if a.State == nil {
-		return
-	}
-
-	var filtered []Suggestion
-	matchMode := a.matchMode()
-
-	if query == "" {
-		filtered = allSuggestions
-	} else {
-		for _, s := range allSuggestions {
-			result := MatchString(s.Label, query, FilterOptions{Mode: matchMode})
-			if result.Matched {
-				filtered = append(filtered, s)
-			}
-		}
-	}
-
-	prevCount := a.State.listState.ItemCount()
-	a.State.listState.SetItems(filtered)
-
-	// Reset selection to first item when results change
-	if len(filtered) != prevCount || (len(filtered) > 0 && prevCount == 0) {
-		a.State.listState.SelectFirst()
-	}
-}
-
 // matchMode returns the configured match mode.
 func (a Autocomplete) matchMode() FilterMode {
 	return a.MatchMode // defaults to FilterContains (0)
@@ -848,6 +826,8 @@ func (a Autocomplete) buildPopup(ctx BuildContext, visible bool) Widget {
 		ID:          a.ID + "-list",
 		State:       a.State.listState,
 		ScrollState: a.State.scrollState,
+		Filter:      a.State.filterState,
+		MatchItem:   suggestionMatchItem,
 		OnSelect:    a.selectSuggestion,
 		RenderItemWithMatch: func(item Suggestion, active bool, selected bool, match MatchResult) Widget {
 			if a.RenderSuggestion != nil {
@@ -995,6 +975,11 @@ func (a Autocomplete) defaultRenderSuggestion(item Suggestion, active bool, matc
 		Style:    style,
 		Children: children,
 	}
+}
+
+// suggestionMatchItem matches a Suggestion's Label against the query.
+func suggestionMatchItem(item Suggestion, query string, options FilterOptions) MatchResult {
+	return MatchString(item.Label, query, options)
 }
 
 // cursorPopupOffset returns the popup offset to align with the cursor position.

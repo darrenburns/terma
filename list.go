@@ -15,6 +15,8 @@ type ListState[T any] struct {
 	itemLayouts       []listItemLayout // Cached layout metrics (per item)
 	viewIndices       []int            // View index -> source index for filtered views
 	viewIndexBySource map[int]int      // Source index -> view index for filtered views
+	cachedMatches     []MatchResult    // Cached match results from filtering
+	cachedFilterQuery string           // Query used for cached filter results
 }
 
 // NewListState creates a new ListState with the given initial items.
@@ -355,6 +357,43 @@ func (s *ListState[T]) SelectRange(from, to int) {
 	s.Selection.Set(sel)
 }
 
+// ApplyFilter applies a filter to the items and caches the results.
+// Returns the number of items that match the filter.
+// The cached results are used by List.Build() to avoid re-filtering.
+func (s *ListState[T]) ApplyFilter(filter *FilterState, matchItem func(item T, query string, options FilterOptions) MatchResult) int {
+	items := s.Items.Peek()
+	if len(items) == 0 {
+		s.setViewIndices(nil)
+		s.cachedMatches = nil
+		s.cachedFilterQuery = ""
+		return 0
+	}
+
+	query, options := filterStateValues(filter)
+	if matchItem == nil {
+		matchItem = defaultListMatchItem[T]
+	}
+
+	filtered := ApplyFilter(items, query, func(item T, q string) MatchResult {
+		return matchItem(item, q, options)
+	})
+
+	s.setViewIndices(filtered.Indices)
+	s.cachedMatches = filtered.Matches
+	s.cachedFilterQuery = query
+
+	return len(filtered.Items)
+}
+
+// FilteredCount returns the number of items after filtering.
+// Returns total item count if no filter has been applied.
+func (s *ListState[T]) FilteredCount() int {
+	if s.viewIndices != nil {
+		return len(s.viewIndices)
+	}
+	return len(s.Items.Peek())
+}
+
 // List is a generic focusable widget that displays a navigable list of items.
 // It builds a Column of widgets, with the active item (cursor position) highlighted.
 // Use with Scrollable and a shared ScrollState to enable scroll-into-view.
@@ -526,16 +565,33 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 	}
 
 	query, options := filterStateValues(l.Filter)
-	matchItem := l.MatchItem
-	if matchItem == nil {
-		matchItem = defaultListMatchItem[T]
+
+	// Check if we have cached filter results for this query
+	var filtered FilteredView[T]
+	if l.State.cachedFilterQuery == query && l.State.viewIndices != nil {
+		// Use cached results
+		filtered = FilteredView[T]{
+			Items:   make([]T, len(l.State.viewIndices)),
+			Indices: l.State.viewIndices,
+			Matches: l.State.cachedMatches,
+		}
+		for i, idx := range l.State.viewIndices {
+			filtered.Items[i] = items[idx]
+		}
+	} else {
+		// Compute filter
+		matchItem := l.MatchItem
+		if matchItem == nil {
+			matchItem = defaultListMatchItem[T]
+		}
+		filtered = ApplyFilter(items, query, func(item T, q string) MatchResult {
+			return matchItem(item, q, options)
+		})
+		l.State.setViewIndices(filtered.Indices)
+		l.State.cachedMatches = filtered.Matches
+		l.State.cachedFilterQuery = query
 	}
 
-	filtered := ApplyFilter(items, query, func(item T, query string) MatchResult {
-		return matchItem(item, query, options)
-	})
-
-	l.State.setViewIndices(filtered.Indices)
 	if len(filtered.Items) == 0 {
 		l.State.itemLayouts = nil
 		return Column{}

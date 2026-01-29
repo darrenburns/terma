@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"terma"
 )
@@ -133,37 +132,6 @@ func (a *App) buildCommandPaletteSection(ctx terma.BuildContext) terma.Widget {
 				Insert:        terma.InsertReplace,
 				Style:         terma.Style{Height: terma.Auto},
 				AnchorToInput: true,
-				RenderSuggestion: func(s terma.Suggestion, active bool, match terma.MatchResult, ctx terma.BuildContext) terma.Widget {
-					style := terma.Style{Padding: terma.EdgeInsets{Left: 1, Right: 1}}
-					textColor := theme.Text
-					descColor := theme.TextMuted
-					if active {
-						style.BackgroundColor = theme.ActiveCursor
-						textColor = theme.SelectionText
-						descColor = theme.SelectionText
-					} else {
-						style.ForegroundColor = theme.Text
-					}
-
-					return terma.Row{
-						Style: style,
-						Children: []terma.Widget{
-							terma.Text{
-								Content: s.Label,
-								Style:   terma.Style{ForegroundColor: textColor},
-							},
-							terma.Spacer{
-								Width: terma.Flex(1),
-							},
-							terma.Text{
-								Content:   s.Description,
-								Style:     terma.Style{ForegroundColor: descColor},
-								TextAlign: terma.TextAlignRight,
-								Width:     terma.Flex(1),
-							},
-						},
-					}
-				},
 				Child: terma.TextInput{
 					ID:          "cmd-input",
 					State:       a.cmdInputState,
@@ -254,37 +222,6 @@ func (a *App) buildTagSection(ctx terma.BuildContext) terma.Widget {
 				},
 				OnSelect: func(s terma.Suggestion) {
 					a.lastTag.Set(s.Value)
-				},
-				RenderSuggestion: func(s terma.Suggestion, active bool, match terma.MatchResult, ctx terma.BuildContext) terma.Widget {
-					style := terma.Style{Padding: terma.EdgeInsets{Left: 1, Right: 1}}
-					if active {
-						style.BackgroundColor = theme.ActiveCursor
-						style.ForegroundColor = theme.ActiveCursor.AutoText()
-					} else {
-						style.ForegroundColor = theme.Text
-					}
-
-					// Color-code different tag types
-					tagColor := theme.Text
-					label := strings.TrimPrefix(s.Label, "#")
-					switch {
-					case strings.Contains(label, "bug"):
-						tagColor = theme.Error
-					case strings.Contains(label, "feature"), strings.Contains(label, "enhancement"):
-						tagColor = theme.Success
-					case strings.Contains(label, "help"), strings.Contains(label, "good"):
-						tagColor = theme.Info
-					case strings.Contains(label, "doc"):
-						tagColor = theme.Warning
-					}
-
-					return terma.Row{
-						Style: style,
-						Children: []terma.Widget{
-							terma.Text{Content: "#", Style: terma.Style{ForegroundColor: tagColor}},
-							terma.Text{Content: label, Style: terma.Style{ForegroundColor: style.ForegroundColor}},
-						},
-					}
 				},
 			},
 			terma.Text{

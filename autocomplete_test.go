@@ -433,86 +433,66 @@ func TestAutocomplete_MinChars(t *testing.T) {
 
 // --- Filtering Tests ---
 
-func TestAutocomplete_SyncFilteredSuggestions(t *testing.T) {
-	t.Run("filters by contains match", func(t *testing.T) {
+func TestAutocomplete_FilteredCount(t *testing.T) {
+	t.Run("contains match", func(t *testing.T) {
 		state := NewAutocompleteState()
-
 		suggestions := []Suggestion{
 			{Label: "apple"},
 			{Label: "application"},
 			{Label: "banana"},
 		}
+		state.listState.SetItems(suggestions)
+		state.filterState.Mode.Set(FilterContains)
 
-		ac := Autocomplete{
-			State:     state,
-			MatchMode: FilterContains,
-		}
+		state.filterState.Query.Set("app")
+		state.listState.ApplyFilter(state.filterState, suggestionMatchItem)
+		assert.Equal(t, 2, state.listState.FilteredCount())
 
-		ac.syncFilteredSuggestions(suggestions, "app")
-
-		assert.Equal(t, 2, state.listState.ItemCount())
+		state.filterState.Query.Set("xyz")
+		state.listState.ApplyFilter(state.filterState, suggestionMatchItem)
+		assert.Equal(t, 0, state.listState.FilteredCount())
 	})
 
-	t.Run("filters by fuzzy match", func(t *testing.T) {
+	t.Run("fuzzy match", func(t *testing.T) {
 		state := NewAutocompleteState()
-
 		suggestions := []Suggestion{
 			{Label: "file_open"},
 			{Label: "file_close"},
 			{Label: "folder_open"},
 		}
-
-		ac := Autocomplete{
-			State:     state,
-			MatchMode: FilterFuzzy,
-		}
-
-		ac.syncFilteredSuggestions(suggestions, "fop")
+		state.listState.SetItems(suggestions)
+		state.filterState.Mode.Set(FilterFuzzy)
 
 		// "fop" should match "file_open" and "folder_open" (f-o-p in sequence)
-		assert.Equal(t, 2, state.listState.ItemCount())
+		state.filterState.Query.Set("fop")
+		state.listState.ApplyFilter(state.filterState, suggestionMatchItem)
+		assert.Equal(t, 2, state.listState.FilteredCount())
+
+		state.filterState.Query.Set("xyz")
+		state.listState.ApplyFilter(state.filterState, suggestionMatchItem)
+		assert.Equal(t, 0, state.listState.FilteredCount())
 	})
 
-	t.Run("shows all when query empty", func(t *testing.T) {
+	t.Run("empty query matches all", func(t *testing.T) {
 		state := NewAutocompleteState()
-
 		suggestions := []Suggestion{
 			{Label: "a"},
 			{Label: "b"},
 			{Label: "c"},
 		}
+		state.listState.SetItems(suggestions)
 
-		ac := Autocomplete{
-			State: state,
-		}
-
-		ac.syncFilteredSuggestions(suggestions, "")
-
-		assert.Equal(t, 3, state.listState.ItemCount())
+		state.filterState.Query.Set("")
+		state.listState.ApplyFilter(state.filterState, suggestionMatchItem)
+		assert.Equal(t, 3, state.listState.FilteredCount())
 	})
 
-	t.Run("resets selection when results change", func(t *testing.T) {
+	t.Run("empty suggestions returns zero", func(t *testing.T) {
 		state := NewAutocompleteState()
+		state.listState.SetItems([]Suggestion{})
 
-		suggestions := []Suggestion{
-			{Label: "apple"},
-			{Label: "banana"},
-			{Label: "cherry"},
-		}
-
-		ac := Autocomplete{
-			State: state,
-		}
-
-		// Initial load
-		ac.syncFilteredSuggestions(suggestions, "")
-		state.listState.SelectLast() // Select "cherry" at index 2
-		assert.Equal(t, 2, state.listState.CursorIndex.Peek())
-
-		// Filter to just "apple" - should reset to first
-		ac.syncFilteredSuggestions(suggestions, "apple")
-		assert.Equal(t, 0, state.listState.CursorIndex.Peek())
-		assert.Equal(t, 1, state.listState.ItemCount()) // Only "apple" matches
+		state.listState.ApplyFilter(state.filterState, suggestionMatchItem)
+		assert.Equal(t, 0, state.listState.FilteredCount())
 	})
 }
 
@@ -547,13 +527,15 @@ func TestSnapshot_Autocomplete_WithSuggestions(t *testing.T) {
 	})
 	acState.Show()
 
-	// Sync filtered suggestions
+	// Set up filter state
+	acState.listState.SetItems(acState.Suggestions.Peek())
+	acState.filterState.Query.Set("he")
+
 	ac := Autocomplete{
 		ID:    "ac-visible",
 		State: acState,
 		Child: TextInput{ID: "input", State: inputState, Width: Cells(25)},
 	}
-	ac.syncFilteredSuggestions(acState.Suggestions.Peek(), "he")
 
 	AssertSnapshot(t, ac, 35, 12, "Autocomplete showing dropdown with 3 matching suggestions")
 }
@@ -568,12 +550,15 @@ func TestSnapshot_Autocomplete_ActiveItem(t *testing.T) {
 	})
 	acState.Show()
 
+	// Set up filter state
+	acState.listState.SetItems(acState.Suggestions.Peek())
+	acState.filterState.Query.Set("app")
+
 	ac := Autocomplete{
 		ID:    "ac-active",
 		State: acState,
 		Child: TextInput{ID: "input", State: inputState, Width: Cells(20)},
 	}
-	ac.syncFilteredSuggestions(acState.Suggestions.Peek(), "app")
 
 	// Select second item
 	acState.listState.SelectNext()
@@ -590,12 +575,15 @@ func TestSnapshot_Autocomplete_EmptyResults(t *testing.T) {
 		{Label: "world"},
 	})
 
+	// Set up filter state with non-matching query
+	acState.listState.SetItems(acState.Suggestions.Peek())
+	acState.filterState.Query.Set("xyz")
+
 	ac := Autocomplete{
 		ID:    "ac-empty",
 		State: acState,
 		Child: TextInput{ID: "input", State: inputState, Width: Cells(20)},
 	}
-	ac.syncFilteredSuggestions(acState.Suggestions.Peek(), "xyz")
 
 	// Popup should not show when no matches
 	AssertSnapshot(t, ac, 30, 8, "Autocomplete with no matching results - popup hidden")
@@ -611,13 +599,16 @@ func TestSnapshot_Autocomplete_WithTrigger(t *testing.T) {
 	})
 	acState.Show()
 
+	// Set up filter state
+	acState.listState.SetItems(acState.Suggestions.Peek())
+	acState.filterState.Query.Set("jo")
+
 	ac := Autocomplete{
 		ID:           "ac-trigger",
 		State:        acState,
 		TriggerChars: []rune{'@'},
 		Child:        TextInput{ID: "input", State: inputState, Width: Cells(25)},
 	}
-	ac.syncFilteredSuggestions(acState.Suggestions.Peek(), "jo")
 
 	AssertSnapshot(t, ac, 35, 10, "Autocomplete with @ trigger showing matching usernames")
 }
@@ -631,6 +622,10 @@ func TestSnapshot_Autocomplete_CustomRender(t *testing.T) {
 		{Label: "Quit", Icon: "Q", Description: "Ctrl+Q"},
 	})
 	acState.Show()
+
+	// Set up filter state (empty query shows all)
+	acState.listState.SetItems(acState.Suggestions.Peek())
+	acState.filterState.Query.Set("")
 
 	ac := Autocomplete{
 		ID:    "ac-custom",
@@ -655,7 +650,6 @@ func TestSnapshot_Autocomplete_CustomRender(t *testing.T) {
 			}
 		},
 	}
-	ac.syncFilteredSuggestions(acState.Suggestions.Peek(), "")
 
 	AssertSnapshot(t, ac, 45, 12, "Autocomplete with custom icon and shortcut rendering")
 }
