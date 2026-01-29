@@ -619,11 +619,7 @@ func (l List[T]) themedDefaultRenderItem(ctx BuildContext) func(item T, active b
 	cursorPrefix := l.CursorPrefix
 	selectedPrefix := l.SelectedPrefix
 
-	highlight := SpanStyle{
-		Underline:      UnderlineSingle,
-		UnderlineColor: theme.Accent,
-		Background:     theme.Selection,
-	}
+	highlight := MatchHighlightStyle(theme)
 	return func(item T, active bool, selected bool, match MatchResult) Widget {
 		content := fmt.Sprintf("%v", item)
 		prefix := ""

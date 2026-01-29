@@ -575,13 +575,8 @@ func (p CommandPalette) labelWidget(label string, style Style, match MatchResult
 		style.Width = Flex(1)
 	}
 	if match.Matched && len(match.Ranges) > 0 {
-		highlight := SpanStyle{
-			Underline:      UnderlineSingle,
-			UnderlineColor: theme.Accent,
-			Background:     theme.Selection,
-		}
 		return Text{
-			Spans: HighlightSpans(label, match.Ranges, highlight),
+			Spans: HighlightSpans(label, match.Ranges, MatchHighlightStyle(theme)),
 			Style: style,
 		}
 	}

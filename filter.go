@@ -253,6 +253,16 @@ func HighlightSpans(text string, ranges []MatchRange, highlight SpanStyle) []Spa
 	return spans
 }
 
+// MatchHighlightStyle returns the standard SpanStyle used to highlight
+// matched text in filtered lists, tables, trees, and similar widgets.
+func MatchHighlightStyle(theme ThemeData) SpanStyle {
+	return SpanStyle{
+		Underline:      UnderlineSingle,
+		UnderlineColor: theme.Accent,
+		Background:     theme.Selection,
+	}
+}
+
 func normalizeMatchRanges(ranges []MatchRange, textLen int) []MatchRange {
 	if len(ranges) == 0 || textLen <= 0 {
 		return nil

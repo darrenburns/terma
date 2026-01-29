@@ -967,12 +967,8 @@ func (a Autocomplete) defaultRenderSuggestion(item Suggestion, active bool, matc
 
 	// Main label with match highlighting
 	if match.Matched && len(match.Ranges) > 0 {
-		highlight := SpanStyle{
-			Underline:      UnderlineSingle,
-			UnderlineColor: theme.Accent,
-		}
 		children = append(children, Text{
-			Spans: HighlightSpans(item.Label, match.Ranges, highlight),
+			Spans: HighlightSpans(item.Label, match.Ranges, MatchHighlightStyle(theme)),
 			Style: Style{ForegroundColor: textColor},
 		})
 	} else {

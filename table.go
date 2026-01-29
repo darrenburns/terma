@@ -694,11 +694,7 @@ func (t Table[T]) themedDefaultRenderCell(ctx BuildContext) func(row T, rowIndex
 	cursorPrefix := t.CursorPrefix
 	selectedPrefix := t.SelectedPrefix
 
-	highlight := SpanStyle{
-		Underline:      UnderlineSingle,
-		UnderlineColor: theme.Accent,
-		Background:     theme.Selection,
-	}
+	highlight := MatchHighlightStyle(theme)
 	return func(row T, rowIndex int, colIndex int, active bool, selected bool, match MatchResult) Widget {
 		style := tableDefaultCellStyle(theme, active, selected, widgetFocused)
 		if content, ok := tableDefaultCellContent(row, colIndex); ok {

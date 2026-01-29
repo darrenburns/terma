@@ -905,11 +905,7 @@ func (t Tree[T]) shiftCursorToLast() {
 
 func (t Tree[T]) themedDefaultRenderNode(ctx BuildContext) func(node T, nodeCtx TreeNodeContext, match MatchResult) Widget {
 	theme := ctx.Theme()
-	highlight := SpanStyle{
-		Underline:      UnderlineSingle,
-		UnderlineColor: theme.Accent,
-		Background:     theme.Selection,
-	}
+	highlight := MatchHighlightStyle(theme)
 	return func(node T, nodeCtx TreeNodeContext, match MatchResult) Widget {
 		content := fmt.Sprintf("%v", node)
 		style := t.styleForContext(ctx, nodeCtx, ctx.IsFocused(t))
