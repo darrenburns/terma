@@ -137,9 +137,10 @@ func (a *App) buildCommandPaletteSection(ctx terma.BuildContext) terma.Widget {
 					State:       a.cmdInputState,
 					Placeholder: "Type a command...",
 					Style: terma.Style{
-						Width:   terma.Cells(40),
-						Padding: terma.EdgeInsetsXY(1, 0),
-						Border:  terma.Border{Style: terma.BorderRounded, Color: theme.Border},
+						Width:           terma.Cells(40),
+						Padding:         terma.EdgeInsetsXY(1, 0),
+						BackgroundColor: theme.Background,
+						Border:          terma.Border{Style: terma.BorderRounded, Color: theme.Border},
 					},
 				},
 				DismissOnBlur: terma.BoolPtr(true),
@@ -177,10 +178,11 @@ func (a *App) buildMentionSection(ctx terma.BuildContext) terma.Widget {
 					State:       a.mentionInputState,
 					Placeholder: "Type @ to mention someone...",
 					Style: terma.Style{
-						Width:   terma.Cells(40),
-						Height:  terma.Cells(3),
-						Padding: terma.EdgeInsetsXY(1, 0),
-						Border:  terma.Border{Style: terma.BorderRounded, Color: theme.Border},
+						Width:           terma.Cells(40),
+						Height:          terma.Cells(3),
+						Padding:         terma.EdgeInsetsXY(1, 0),
+						BackgroundColor: theme.Background,
+						Border:          terma.Border{Style: terma.BorderRounded, Color: theme.Border},
 					},
 				},
 				OnSelect: func(s terma.Suggestion) {
@@ -216,8 +218,9 @@ func (a *App) buildTagSection(ctx terma.BuildContext) terma.Widget {
 					Placeholder: "Type # to add a tag...",
 					Width:       terma.Cells(40),
 					Style: terma.Style{
-						Padding: terma.EdgeInsetsXY(1, 0),
-						Border:  terma.Border{Style: terma.BorderRounded, Color: theme.Border},
+						Padding:         terma.EdgeInsetsXY(1, 0),
+						BackgroundColor: theme.Background,
+						Border:          terma.Border{Style: terma.BorderRounded, Color: theme.Border},
 					},
 				},
 				OnSelect: func(s terma.Suggestion) {
