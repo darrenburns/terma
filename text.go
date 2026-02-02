@@ -423,6 +423,20 @@ func (t Text) collectSpanLines(width, height int) []lineData {
 				}
 
 				// Need to wrap - find break point
+				// For soft wrap: if we're mid-line and there's no space in the available width,
+				// flush to a new line first to give the text full width before breaking
+				if t.Wrap == WrapSoft && x > 0 {
+					truncated := ansi.Truncate(remaining, availableWidth, "")
+					if !strings.Contains(truncated, " ") {
+						// No word boundary in available space - flush line and retry with full width
+						currentLine.width = x
+						lines = append(lines, currentLine)
+						currentLine = lineData{}
+						x = 0
+						continue // Retry this span content with full width
+					}
+				}
+
 				chunk, rest := t.findWrapPoint(remaining, availableWidth)
 
 				if len(chunk) > 0 {
