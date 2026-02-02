@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // TreeNode represents a node in a tree.
@@ -25,6 +26,7 @@ type TreeState[T any] struct {
 	viewIndexByPath map[string]int
 	rowLayouts      []treeRowLayout
 	nodeID          func(T) string
+	eagerLoadOnce   sync.Once
 }
 
 // NewTreeState creates a new TreeState with the given root nodes.
@@ -694,7 +696,7 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 
 	return treeContainer[T]{
 		Column: Column{
-			ID:       t.ID,
+			ID: t.ID,
 			Style: func() Style {
 				style := t.Style
 				if style.Width.IsUnset() {

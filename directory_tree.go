@@ -22,6 +22,9 @@ type DirectoryTree struct {
 
 	// ReadDir returns the direct children of path. Default uses os.ReadDir.
 	ReadDir func(path string) ([]DirectoryEntry, error)
+	// EagerLoad preloads all directory children (recursively) in the background.
+	// Loaded nodes remain collapsed until expanded.
+	EagerLoad bool
 	// IncludeHidden controls whether entries starting with "." are included.
 	IncludeHidden bool
 	// Sort controls entry ordering; default sorts directories first by name.
@@ -98,6 +101,14 @@ func (d DirectoryTree) resolvedTree() Tree[DirectoryEntry] {
 			d.loadChildren(entry, setChildren)
 		}
 	}
+	if tree.State != nil {
+		tree.State.nodeID = tree.NodeID
+		if d.EagerLoad {
+			tree.State.eagerLoadOnce.Do(func() {
+				d.eagerLoad(tree.State)
+			})
+		}
+	}
 	return tree
 }
 
@@ -163,43 +174,89 @@ func directoryTreeNodeStyle(theme ThemeData, nodeCtx TreeNodeContext, widgetFocu
 }
 
 func (d DirectoryTree) loadChildren(entry DirectoryEntry, setChildren func([]TreeNode[DirectoryEntry])) {
+	go func(entry DirectoryEntry) {
+		setChildren(d.readChildren(entry))
+	}(entry)
+}
+
+func (d DirectoryTree) eagerLoad(state *TreeState[DirectoryEntry]) {
+	if state == nil {
+		return
+	}
+	go func() {
+		roots := state.Nodes.Peek()
+		if len(roots) == 0 {
+			return
+		}
+		type queueItem struct {
+			path []int
+			node TreeNode[DirectoryEntry]
+		}
+		queue := make([]queueItem, 0, len(roots))
+		for i, node := range roots {
+			queue = append(queue, queueItem{path: []int{i}, node: node})
+		}
+		for len(queue) > 0 {
+			item := queue[0]
+			queue = queue[1:]
+
+			node := item.node
+			if node.Data.Err != nil || !node.Data.IsDir {
+				continue
+			}
+			if node.Children == nil {
+				children := d.readChildren(node.Data)
+				state.SetChildren(item.path, children)
+				node.Children = children
+				if len(children) > 0 {
+					state.Collapse(item.path)
+				}
+			}
+			for i, child := range node.Children {
+				queue = append(queue, queueItem{
+					path: appendPath(item.path, i),
+					node: child,
+				})
+			}
+		}
+	}()
+}
+
+func (d DirectoryTree) readChildren(entry DirectoryEntry) []TreeNode[DirectoryEntry] {
 	readDir := d.ReadDir
 	if readDir == nil {
 		readDir = defaultDirectoryReadDir
 	}
-	path := entry.Path
-	if path == "" {
-		path = "."
+	parentPath := entry.Path
+	if parentPath == "" {
+		parentPath = "."
 	}
 
-	go func(parentPath string) {
-		children, err := readDir(parentPath)
-		if err != nil {
-			setChildren([]TreeNode[DirectoryEntry]{directoryTreeErrorNode(parentPath, err)})
-			return
-		}
+	children, err := readDir(parentPath)
+	if err != nil {
+		return []TreeNode[DirectoryEntry]{directoryTreeErrorNode(parentPath, err)}
+	}
 
-		normalized := make([]DirectoryEntry, 0, len(children))
-		for _, child := range children {
-			child = normalizeDirectoryEntry(parentPath, child)
-			if !d.IncludeHidden && strings.HasPrefix(child.Name, ".") {
-				continue
-			}
-			normalized = append(normalized, child)
+	normalized := make([]DirectoryEntry, 0, len(children))
+	for _, child := range children {
+		child = normalizeDirectoryEntry(parentPath, child)
+		if !d.IncludeHidden && strings.HasPrefix(child.Name, ".") {
+			continue
 		}
+		normalized = append(normalized, child)
+	}
 
-		if d.Sort != nil {
-			d.Sort(normalized)
-		} else {
-			defaultDirectorySort(normalized)
-		}
+	if d.Sort != nil {
+		d.Sort(normalized)
+	} else {
+		defaultDirectorySort(normalized)
+	}
 
-		nodes := make([]TreeNode[DirectoryEntry], 0, len(normalized))
-		for _, child := range normalized {
-			nodes = append(nodes, directoryTreeNode(child))
-		}
-		setChildren(nodes)
-	}(path)
+	nodes := make([]TreeNode[DirectoryEntry], 0, len(normalized))
+	for _, child := range normalized {
+		nodes = append(nodes, directoryTreeNode(child))
+	}
+	return nodes
 }
 
 func normalizeDirectoryEntry(parentPath string, entry DirectoryEntry) DirectoryEntry {

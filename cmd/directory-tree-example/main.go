@@ -57,6 +57,7 @@ func (d *DirectoryTreeDemo) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
 
 	tree := t.DirectoryTree{
+		EagerLoad: true,
 		Tree: t.Tree[t.DirectoryEntry]{
 			ID:          "dir-tree",
 			State:       d.treeState,
@@ -68,6 +69,9 @@ func (d *DirectoryTreeDemo) Build(ctx t.BuildContext) t.Widget {
 			},
 			OnCursorChange: func(entry t.DirectoryEntry) {
 				d.updateCursorStatus(entry)
+			},
+			Style: t.Style{
+				Width: t.Flex(1),
 			},
 		},
 	}
