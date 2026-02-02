@@ -152,6 +152,8 @@ func NewTodoApp() *TodoApp {
 		},
 	})
 
+	app.refreshTagSuggestions()
+
 	return app
 }
 
@@ -179,7 +181,6 @@ func (a *TodoApp) isAllDone() bool {
 // Build implements the Widget interface.
 func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
-	a.refreshTagSuggestions()
 
 	// Check celebration state and manage animation
 	celebrating := a.isAllDone()
@@ -202,25 +203,6 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 		).WithAngle(135)
 	} else {
 		bgColor = theme.Background
-	}
-
-	// Request focus on edit input when editing starts
-	if a.editingIndex.Get() >= 0 {
-		t.RequestFocus("edit-input")
-	}
-
-	// Request focus on theme list when picker opens
-	if a.showThemePicker.Get() {
-		if a.themeCategory.Get() == "light" {
-			t.RequestFocus("light-theme-list")
-		} else {
-			t.RequestFocus("dark-theme-list")
-		}
-	}
-
-	// Update filtered list when in filter mode
-	if a.filterMode.Get() {
-		a.filteredListState.SetItems(a.getFilteredTasks())
 	}
 
 	return t.Column{
@@ -361,6 +343,7 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 							BackgroundColor: theme.Surface,
 						},
 						OnSubmit: a.handleFilterSubmit,
+						OnChange: a.handleFilterChange,
 					},
 				},
 			},
@@ -858,6 +841,8 @@ func (a *TodoApp) addTask(title string) {
 	a.tasks.Prepend(task)
 	a.tasks.SelectIndex(0)
 	a.inputState.SetText("")
+	a.refreshTagSuggestions()
+	a.refreshFilteredTasks()
 }
 
 // toggleCurrentTask toggles the completion status of selected tasks.
@@ -944,6 +929,9 @@ func (a *TodoApp) deleteCurrentTask() {
 			return shouldDelete
 		})
 
+		a.refreshTagSuggestions()
+		a.refreshFilteredTasks()
+
 		listState.ClearSelection()
 		listState.ClearAnchor()
 
@@ -964,6 +952,8 @@ func (a *TodoApp) deleteCurrentTask() {
 	for i, tsk := range tasks {
 		if tsk.ID == task.ID {
 			a.tasks.RemoveAt(i)
+			a.refreshTagSuggestions()
+			a.refreshFilteredTasks()
 
 			// If in filter mode and no more filtered items, refocus the filter input
 			if isFilterMode && len(a.getFilteredTasks()) == 0 {
@@ -994,6 +984,7 @@ func (a *TodoApp) moveTaskUp() {
 		copy(tasks[firstIdx-1:lastIdx], tasks[firstIdx:lastIdx+1])
 		tasks[lastIdx] = itemAbove
 		a.tasks.SetItems(tasks)
+		a.refreshFilteredTasks()
 
 		// Update selection indices (all shift up by 1)
 		a.tasks.SelectRange(firstIdx-1, lastIdx-1)
@@ -1012,6 +1003,7 @@ func (a *TodoApp) moveTaskUp() {
 
 	tasks[idx], tasks[idx-1] = tasks[idx-1], tasks[idx]
 	a.tasks.SetItems(tasks)
+	a.refreshFilteredTasks()
 	a.tasks.SelectIndex(idx - 1)
 }
 
@@ -1035,6 +1027,7 @@ func (a *TodoApp) moveTaskDown() {
 		copy(tasks[firstIdx+1:lastIdx+2], tasks[firstIdx:lastIdx+1])
 		tasks[firstIdx] = itemBelow
 		a.tasks.SetItems(tasks)
+		a.refreshFilteredTasks()
 
 		// Update selection indices (all shift down by 1)
 		a.tasks.SelectRange(firstIdx+1, lastIdx+1)
@@ -1053,6 +1046,7 @@ func (a *TodoApp) moveTaskDown() {
 
 	tasks[idx], tasks[idx+1] = tasks[idx+1], tasks[idx]
 	a.tasks.SetItems(tasks)
+	a.refreshFilteredTasks()
 	a.tasks.SelectIndex(idx + 1)
 }
 
@@ -1066,6 +1060,7 @@ func (a *TodoApp) startEdit() {
 		a.editInputState.ClearSelection()
 		a.editInputState.CursorEnd() // Position cursor at end of text
 		a.editingIndex.Set(idx)
+		t.RequestFocus("edit-input")
 	}
 }
 
@@ -1081,6 +1076,8 @@ func (a *TodoApp) saveEdit(index int, newTitle string) {
 	if index >= 0 && index < len(tasks) {
 		tasks[index].Title = newTitle
 		a.tasks.SetItems(tasks)
+		a.refreshTagSuggestions()
+		a.refreshFilteredTasks()
 	}
 	a.editingIndex.Set(-1)
 	t.RequestFocus("task-list")
@@ -1258,6 +1255,7 @@ func (a *TodoApp) closeHelp() {
 func (a *TodoApp) enterFilterMode() {
 	a.filterMode.Set(true)
 	a.filterInputState.SetText("")
+	a.refreshFilteredTasks()
 	t.RequestFocus("filter-input")
 }
 
@@ -1282,6 +1280,8 @@ func (a *TodoApp) handleFilterSubmit(text string) {
 		CreatedAt: time.Now(),
 	}
 	a.tasks.Prepend(task)
+	a.refreshTagSuggestions()
+	a.refreshFilteredTasks()
 
 	// Select the newly created task (first item)
 	a.tasks.SelectIndex(0)
@@ -1312,6 +1312,11 @@ func (a *TodoApp) exitFilterMode() {
 	}
 
 	t.RequestFocus("task-list")
+}
+
+// handleFilterChange updates the filtered list as the user types.
+func (a *TodoApp) handleFilterChange(_ string) {
+	a.refreshFilteredTasks()
 }
 
 // getFilterText returns the current filter text (lowercase for case-insensitive matching).
@@ -1450,6 +1455,13 @@ func (a *TodoApp) refreshTagSuggestions() {
 	a.newTaskTagAcState.SetSuggestions(suggestions)
 	a.filterTagAcState.SetSuggestions(suggestions)
 	a.editTagAcState.SetSuggestions(suggestions)
+}
+
+func (a *TodoApp) refreshFilteredTasks() {
+	if !a.filterMode.Peek() {
+		return
+	}
+	a.filteredListState.SetItems(a.getFilteredTasks())
 }
 
 // tagHighlighter returns a Highlighter that highlights #tags in the accent color.

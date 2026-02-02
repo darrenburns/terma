@@ -143,6 +143,7 @@ func NewAutocompleteState() *AutocompleteState {
 // SetSuggestions sets the available suggestions.
 func (s *AutocompleteState) SetSuggestions(suggestions []Suggestion) {
 	s.Suggestions.Set(suggestions)
+	s.listState.SetItems(suggestions)
 }
 
 // Show makes the popup visible.
@@ -283,10 +284,6 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 	if a.State == nil || a.Child == nil {
 		return a.Child
 	}
-
-	// Subscribe to suggestions changes and sync to list
-	allSuggestions := a.State.Suggestions.Get()
-	a.State.listState.SetItems(allSuggestions)
 
 	// Get child text and cursor for trigger detection
 	text, cursorPos := a.getChildTextAndCursor()
