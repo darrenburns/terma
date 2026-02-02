@@ -132,6 +132,7 @@ func Run(root Widget) (runErr error) {
 	_, _ = t.WriteString(ansi.SetModeMouseAnyEvent)
 	_, _ = t.WriteString(ansi.SetModeMouseButtonEvent)
 	_, _ = t.WriteString(ansi.SetModeMouseExtSgr)
+	_, _ = t.WriteString(ansi.PushKittyKeyboard(ansi.KittyAllFlags))
 
 	// shutdownTerminal restores the terminal to its normal state.
 	// Safe to call multiple times (Shutdown is idempotent).
@@ -155,6 +156,7 @@ func Run(root Widget) (runErr error) {
 		_, _ = os.Stdout.WriteString(ansi.ResetModeMouseAnyEvent)
 		_, _ = os.Stdout.WriteString(ansi.ResetModeMouseButtonEvent)
 		_, _ = os.Stdout.WriteString(ansi.ResetModeMouseExtSgr)
+		_, _ = os.Stdout.WriteString(ansi.PopKittyKeyboard(1))
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

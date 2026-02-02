@@ -49,9 +49,8 @@
   <rect x="83.6" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="92.0" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="100.4" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <text x="16.4" y="47.2" fill="#E0DEF4">is</text>
-  <text x="41.6" y="47.2" fill="#E0DEF4">long</text>
-  <text x="83.6" y="47.2" fill="#E0DEF4">en</text>
+  <text x="8.0" y="47.2" fill="#E0DEF4">is</text>
+  <text x="33.2" y="47.2" fill="#E0DEF4">long</text>
   <rect x="8.0" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="16.4" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="24.8" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
@@ -64,7 +63,6 @@
   <rect x="83.6" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="92.0" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="100.4" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <text x="8.0" y="66.8" fill="#E0DEF4">ough</text>
-  <text x="50.0" y="66.8" fill="#E0DEF4">to</text>
-  <text x="75.2" y="66.8" fill="#E0DEF4">wra</text>
+  <text x="8.0" y="66.8" fill="#E0DEF4">enough</text>
+  <text x="66.8" y="66.8" fill="#E0DEF4">to</text>
 </svg>

@@ -497,6 +497,10 @@ func buildTextAreaLayout(graphemes []string, wrap WrapMode, maxWidth, cursorIdx 
 	cursorCol := 0
 	maxLineWidth := 0
 
+	// Track the last space position for soft wrapping
+	lastSpaceIdx := -1
+	lastSpaceWidth := 0
+
 	flushLine := func(end int) {
 		lines = append(lines, textAreaLine{start: lineStart, end: end, width: lineWidth})
 		if lineWidth > maxLineWidth {
@@ -515,18 +519,62 @@ func buildTextAreaLayout(graphemes []string, wrap WrapMode, maxWidth, cursorIdx 
 			lineStart = i + 1
 			lineWidth = 0
 			lineIndex++
+			lastSpaceIdx = -1
+			lastSpaceWidth = 0
 			continue
+		}
+
+		// Track space positions for soft wrapping
+		if g == " " {
+			lastSpaceIdx = i
+			lastSpaceWidth = lineWidth
 		}
 
 		gWidth := graphemeWidth(g)
 		if wrap != WrapNone && lineWidth+gWidth > maxWidth && lineWidth > 0 {
-			flushLine(i)
-			lineStart = i
-			lineWidth = 0
-			lineIndex++
-			if cursorIdx == i {
-				cursorLine = lineIndex
-				cursorCol = 0
+			// For soft wrap, try to break at the last space
+			if wrap == WrapSoft && lastSpaceIdx > lineStart {
+				// Break after the space
+				breakAt := lastSpaceIdx + 1
+				breakWidth := lastSpaceWidth + 1 // Include the space width
+
+				// Flush line up to and including the space
+				lines = append(lines, textAreaLine{start: lineStart, end: breakAt, width: breakWidth})
+				if breakWidth > maxLineWidth {
+					maxLineWidth = breakWidth
+				}
+
+				// Recalculate width from break point to current position
+				lineStart = breakAt
+				lineWidth = 0
+				for j := breakAt; j < i; j++ {
+					lineWidth += graphemeWidth(graphemes[j])
+				}
+				lineIndex++
+
+				// Update cursor position if it was in the wrapped portion
+				if cursorIdx > lastSpaceIdx && cursorIdx <= i {
+					cursorLine = lineIndex
+					cursorCol = 0
+					for j := breakAt; j < cursorIdx; j++ {
+						cursorCol += graphemeWidth(graphemes[j])
+					}
+				}
+
+				lastSpaceIdx = -1
+				lastSpaceWidth = 0
+			} else {
+				// Hard wrap at current position
+				flushLine(i)
+				lineStart = i
+				lineWidth = 0
+				lineIndex++
+				if cursorIdx == i {
+					cursorLine = lineIndex
+					cursorCol = 0
+				}
+				lastSpaceIdx = -1
+				lastSpaceWidth = 0
 			}
 		}
 
