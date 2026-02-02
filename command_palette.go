@@ -761,12 +761,13 @@ func (p CommandPalette) scrollList(level *CommandPaletteLevel, delta int) {
 	if level == nil || level.ScrollState == nil {
 		return
 	}
+	offset := level.ScrollState.GetOffset()
 	if delta < 0 {
-		level.ScrollState.ScrollUp(1)
+		level.ScrollState.SetOffset(offset - 1)
 		return
 	}
 	if delta > 0 {
-		level.ScrollState.ScrollDown(1)
+		level.ScrollState.SetOffset(offset + 1)
 	}
 }
 
