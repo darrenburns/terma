@@ -349,7 +349,6 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 					State:                 a.filterTagAcState,
 					TriggerChars:          []rune{'#'},
 					MinChars:              0,
-					AnchorToInput:         true,
 					DisableKeysWhenHidden: true,
 					Width:                 t.Flex(1),
 					Child: t.TextInput{
@@ -387,7 +386,6 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 				State:                 a.newTaskTagAcState,
 				TriggerChars:          []rune{'#'},
 				MinChars:              0,
-				AnchorToInput:         true,
 				DisableKeysWhenHidden: true,
 				Width:                 t.Flex(1),
 				Child: t.TextInput{
@@ -496,7 +494,6 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 						State:                 a.editTagAcState,
 						TriggerChars:          []rune{'#'},
 						MinChars:              0,
-						AnchorToInput:         true,
 						DisableKeysWhenHidden: true,
 						Width:                 t.Flex(1),
 						Child: t.TextArea{
