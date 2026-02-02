@@ -493,6 +493,7 @@ func (p CommandPalette) buildList(ctx BuildContext, level *CommandPaletteLevel, 
 		State: level.ScrollState,
 		Style: Style{
 			BackgroundColor: theme.Surface,
+			Height:          Flex(1),
 		},
 		Child: listChild,
 	}
