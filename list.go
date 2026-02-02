@@ -1075,16 +1075,32 @@ func (l List[T]) registerScrollCallbacks() {
 	}
 
 	l.ScrollState.OnScrollUp = func(lines int) bool {
+		if l.State == nil {
+			return false
+		}
+		before := l.State.CursorIndex.Peek()
 		l.moveCursorUp(lines)
+		after := l.State.CursorIndex.Peek()
+		if after == before {
+			return false
+		}
 		l.scrollCursorIntoView()
 		l.notifyCursorChange()
-		return true // We handle scrolling via scrollCursorIntoView
+		return true // We handled scrolling via cursor movement
 	}
 	l.ScrollState.OnScrollDown = func(lines int) bool {
+		if l.State == nil {
+			return false
+		}
+		before := l.State.CursorIndex.Peek()
 		l.moveCursorDown(lines)
+		after := l.State.CursorIndex.Peek()
+		if after == before {
+			return false
+		}
 		l.scrollCursorIntoView()
 		l.notifyCursorChange()
-		return true // We handle scrolling via scrollCursorIntoView
+		return true // We handled scrolling via cursor movement
 	}
 }
 

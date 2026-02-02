@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 
 	t "terma"
 )
@@ -11,6 +12,8 @@ type CommandPaletteDemo struct {
 	status  t.Signal[string]
 	preview t.Signal[string]
 }
+
+const themesPaletteTitle = "Themes"
 
 func NewCommandPaletteDemo() *CommandPaletteDemo {
 	app := &CommandPaletteDemo{
@@ -26,15 +29,9 @@ func NewCommandPaletteDemo() *CommandPaletteDemo {
 		{Label: "Copy", Hint: "Ctrl+C", Action: app.selectAction("Copy")},
 		{Label: "Paste", Hint: "Ctrl+V", Action: app.selectAction("Paste")},
 		{
-			Label:         "Theme",
-			ChildrenTitle: "Select Theme",
-			Children: func() []t.CommandPaletteItem {
-				return []t.CommandPaletteItem{
-					{Label: "Rose Pine", Action: app.selectAction("Theme: Rose Pine")},
-					{Label: "Dracula", Action: app.selectAction("Theme: Dracula")},
-					{Label: "Tokyo Night", Action: app.selectAction("Theme: Tokyo Night")},
-				}
-			},
+			Label:         themesPaletteTitle,
+			ChildrenTitle: themesPaletteTitle,
+			Children:      app.themeItems,
 		},
 		{
 			Label:         "Recent",
@@ -59,6 +56,47 @@ func (a *CommandPaletteDemo) selectAction(label string) func() {
 	}
 }
 
+func (a *CommandPaletteDemo) selectThemeAction(themeName, label string) func() {
+	return func() {
+		t.SetTheme(themeName)
+		a.status.Set("Selected: Theme " + label)
+		a.palette.Close(false)
+	}
+}
+
+func (a *CommandPaletteDemo) themeItems() []t.CommandPaletteItem {
+	items := make([]t.CommandPaletteItem, 0, 24)
+	addGroup := func(title string, names []string) {
+		if len(names) == 0 {
+			return
+		}
+		items = append(items, t.CommandPaletteItem{Divider: title})
+		for _, name := range names {
+			label := themeDisplayName(name)
+			items = append(items, t.CommandPaletteItem{
+				Label:      label,
+				FilterText: label + " " + name,
+				Data:       name,
+				Action:     a.selectThemeAction(name, label),
+			})
+		}
+	}
+	addGroup("Dark Themes", t.DarkThemeNames())
+	addGroup("Light Themes", t.LightThemeNames())
+	return items
+}
+
+func themeDisplayName(name string) string {
+	parts := strings.Split(name, "-")
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		parts[i] = strings.ToUpper(part[:1]) + part[1:]
+	}
+	return strings.Join(parts, " ")
+}
+
 func (a *CommandPaletteDemo) togglePalette() {
 	if a.palette.Visible.Peek() {
 		a.palette.Close(false)
@@ -73,10 +111,26 @@ func (a *CommandPaletteDemo) Keybinds() []t.Keybind {
 	}
 }
 
+func (a *CommandPaletteDemo) handleCursorChange(item t.CommandPaletteItem) {
+	a.preview.Set(item.Label)
+	level := a.palette.CurrentLevel()
+	if level == nil || level.Title != themesPaletteTitle {
+		return
+	}
+	if themeName, ok := item.Data.(string); ok {
+		t.SetTheme(themeName)
+	}
+}
+
 func (a *CommandPaletteDemo) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
 
 	return t.Stack{
+		Style: t.Style{
+			BackgroundColor: theme.Background,
+			Width:           t.Flex(1),
+			Height:          t.Flex(1),
+		},
 		Children: []t.Widget{
 			t.Column{
 				Style: t.Style{
@@ -113,13 +167,11 @@ func (a *CommandPaletteDemo) Build(ctx t.BuildContext) t.Widget {
 				},
 			},
 			t.CommandPalette{
-				ID:       "command-palette",
-				State:    a.palette,
-				Position: t.FloatPositionTopCenter,
-				Offset:   t.Offset{Y: 1},
-				OnCursorChange: func(item t.CommandPaletteItem) {
-					a.preview.Set(item.Label)
-				},
+				ID:             "command-palette",
+				State:          a.palette,
+				Position:       t.FloatPositionTopCenter,
+				Offset:         t.Offset{Y: 1},
+				OnCursorChange: a.handleCursorChange,
 			},
 		},
 	}

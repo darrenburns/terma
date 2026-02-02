@@ -9,6 +9,7 @@ const (
 	defaultCommandPaletteHeight      = 12
 	defaultCommandPalettePlaceholder = "Type to search..."
 	defaultCommandPaletteEmptyLabel  = "No results"
+	commandPaletteNestedIndicator    = "▸"
 )
 
 var commandPaletteDividerLine = strings.Repeat("─", 120)
@@ -296,18 +297,19 @@ func commandPaletteMatchItem(item CommandPaletteItem, query string, options Filt
 
 // CommandPalette renders a searchable command palette with nested navigation.
 type CommandPalette struct {
-	ID             string
-	State          *CommandPaletteState
-	OnSelect       func(item CommandPaletteItem) // Custom selection handler
-	OnCursorChange func(item CommandPaletteItem) // For live previews
-	OnDismiss      func()
-	RenderItem     func(item CommandPaletteItem, active bool, match MatchResult) Widget
-	Width          Dimension // Deprecated: use Style.Width (default: Cells(60))
-	Height         Dimension // Deprecated: use Style.Height (default: Cells(12))
-	Placeholder    string    // Default: "Type to search..."
-	Position       FloatPosition
-	Offset         Offset
-	Style          Style
+	ID                    string
+	State                 *CommandPaletteState
+	OnSelect              func(item CommandPaletteItem) // Custom selection handler
+	OnCursorChange        func(item CommandPaletteItem) // For live previews
+	OnDismiss             func()
+	RenderItem            func(item CommandPaletteItem, active bool, match MatchResult) Widget
+	DisableBackspaceToPop bool      // If true, backspace only edits the input (no auto-pop to previous level)
+	Width                 Dimension // Deprecated: use Style.Width (default: Cells(60))
+	Height                Dimension // Deprecated: use Style.Height (default: Cells(12))
+	Placeholder           string    // Default: "Type to search..."
+	Position              FloatPosition
+	Offset                Offset
+	Style                 Style
 }
 
 // Build renders the command palette as a floating modal.
@@ -430,6 +432,20 @@ func (p CommandPalette) buildInput(level *CommandPaletteLevel, theme ThemeData) 
 		p.notifyCursorChange()
 	}
 
+	extraKeybinds := []Keybind{
+		{Key: "up", Action: func() { p.moveCursor(-1) }, Hidden: true},
+		{Key: "down", Action: func() { p.moveCursor(1) }, Hidden: true},
+		{Key: "ctrl+p", Action: func() { p.moveCursor(-1) }, Hidden: true},
+		{Key: "ctrl+n", Action: func() { p.moveCursor(1) }, Hidden: true},
+		{Key: "home", Action: func() { p.moveCursorToStart() }, Hidden: true},
+		{Key: "end", Action: func() { p.moveCursorToEnd() }, Hidden: true},
+		{Key: "enter", Action: p.selectCurrent, Hidden: true},
+		{Key: "escape", Action: p.handleEscape, Hidden: true},
+	}
+	if !p.DisableBackspaceToPop {
+		extraKeybinds = append(extraKeybinds, Keybind{Key: "backspace", Action: func() { p.handleBackspace(level, onFilterChange) }, Hidden: true})
+	}
+
 	return TextInput{
 		ID:          p.inputID(),
 		State:       level.InputState,
@@ -440,18 +456,8 @@ func (p CommandPalette) buildInput(level *CommandPaletteLevel, theme ThemeData) 
 			Padding:         padding,
 			Width:           Flex(1),
 		},
-		OnChange: onFilterChange,
-		ExtraKeybinds: []Keybind{
-			{Key: "up", Action: func() { p.moveCursor(-1) }, Hidden: true},
-			{Key: "down", Action: func() { p.moveCursor(1) }, Hidden: true},
-			{Key: "ctrl+p", Action: func() { p.moveCursor(-1) }, Hidden: true},
-			{Key: "ctrl+n", Action: func() { p.moveCursor(1) }, Hidden: true},
-			{Key: "home", Action: func() { p.moveCursorToStart() }, Hidden: true},
-			{Key: "end", Action: func() { p.moveCursorToEnd() }, Hidden: true},
-			{Key: "enter", Action: p.selectCurrent, Hidden: true},
-			{Key: "escape", Action: p.handleEscape, Hidden: true},
-			{Key: "backspace", Action: func() { p.handleBackspace(level, onFilterChange) }, Hidden: true},
-		},
+		OnChange:      onFilterChange,
+		ExtraKeybinds: extraKeybinds,
 	}
 }
 
@@ -488,6 +494,9 @@ func (p CommandPalette) buildList(ctx BuildContext, level *CommandPaletteLevel, 
 			Filter:              level.FilterState,
 			MatchItem:           commandPaletteMatchItem,
 			RenderItemWithMatch: p.renderItem(ctx),
+			OnCursorChange: func(item CommandPaletteItem) {
+				p.notifyCursorChange()
+			},
 			Style: Style{
 				BackgroundColor: theme.Surface,
 			},
@@ -580,10 +589,11 @@ func (p CommandPalette) defaultRenderItem(theme ThemeData, item CommandPaletteIt
 	}
 
 	labelWidget := p.labelWidget(item.Label, labelStyle, match, theme)
-	hintWidget := p.hintWidget(item, hintStyle)
+	suffixWidgets := p.suffixWidgets(item, hintStyle)
 	rowChildren := []Widget{labelWidget}
-	if hintWidget != nil {
-		rowChildren = append(rowChildren, Spacer{Width: Flex(1)}, hintWidget)
+	if len(suffixWidgets) > 0 {
+		rowChildren = append(rowChildren, Spacer{Width: Flex(1)})
+		rowChildren = append(rowChildren, suffixWidgets...)
 	}
 	rowStyle := Style{Width: Flex(1)}
 	row := Row{
@@ -641,9 +651,25 @@ func (p CommandPalette) hintWidget(item CommandPaletteItem, style Style) Widget 
 	return Text{Content: item.Hint, Style: style}
 }
 
+func (p CommandPalette) suffixWidgets(item CommandPaletteItem, style Style) []Widget {
+	widgets := make([]Widget, 0, 3)
+	hintWidget := p.hintWidget(item, style)
+	if hintWidget != nil {
+		widgets = append(widgets, hintWidget)
+	}
+	if item.Children != nil {
+		if len(widgets) > 0 {
+			widgets = append(widgets, Spacer{Width: Cells(1)})
+		}
+		widgets = append(widgets, Text{Content: commandPaletteNestedIndicator, Style: style})
+	}
+	return widgets
+}
+
 func (p CommandPalette) dividerWidget(theme ThemeData, title string) Widget {
-	lineStyle := Style{ForegroundColor: theme.TextMuted}
-	dividerPadding := EdgeInsetsTRBL(1, 1, 0, 1)
+	lineColor := theme.TextMuted.Blend(theme.Background, 0.7)
+	lineStyle := Style{ForegroundColor: lineColor}
+	dividerPadding := EdgeInsetsTRBL(0, 1, 0, 1)
 	if title == "" {
 		return Text{
 			Content: commandPaletteDividerLine,
@@ -656,7 +682,7 @@ func (p CommandPalette) dividerWidget(theme ThemeData, title string) Widget {
 		Children: []Widget{
 			Text{
 				Content: title + " ",
-				Style:   Style{ForegroundColor: lineStyle.ForegroundColor, Bold: true},
+				Style:   Style{ForegroundColor: theme.TextMuted, Bold: true},
 			},
 			Text{
 				Content: commandPaletteDividerLine,
@@ -703,6 +729,8 @@ func (p CommandPalette) moveCursor(delta int) {
 			return
 		}
 	}
+
+	p.scrollList(level, delta)
 }
 
 func (p CommandPalette) moveCursorToStart() {
@@ -726,6 +754,19 @@ func (p CommandPalette) moveCursorToEnd() {
 	if last, ok := lastSelectableIndex(level.Items, view.Indices); ok {
 		level.ListState.SelectIndex(last)
 		p.notifyCursorChange()
+	}
+}
+
+func (p CommandPalette) scrollList(level *CommandPaletteLevel, delta int) {
+	if level == nil || level.ScrollState == nil {
+		return
+	}
+	if delta < 0 {
+		level.ScrollState.ScrollUp(1)
+		return
+	}
+	if delta > 0 {
+		level.ScrollState.ScrollDown(1)
 	}
 }
 
