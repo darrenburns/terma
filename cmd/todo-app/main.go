@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -66,6 +67,7 @@ type TodoApp struct {
 	// Filter state
 	filterMode          t.Signal[bool]
 	filterInputState    *t.TextInputState
+	filterTagAcState    *t.AutocompleteState
 	filteredListState   *t.ListState[Task]
 	filteredScrollState *t.ScrollState
 
@@ -91,6 +93,9 @@ type TodoApp struct {
 
 	// ID counter for generating unique task IDs
 	nextID int
+
+	// Tag autocomplete state
+	newTaskTagAcState *t.AutocompleteState
 }
 
 // NewTodoApp creates a new todo application.
@@ -114,6 +119,7 @@ func NewTodoApp() *TodoApp {
 		scrollState:           t.NewScrollState(),
 		filterMode:            t.NewSignal(false),
 		filterInputState:      t.NewTextInputState(""),
+		filterTagAcState:      t.NewAutocompleteState(),
 		filteredListState:     t.NewListState([]Task{}),
 		filteredScrollState:   t.NewScrollState(),
 		editingIndex:          t.NewSignal(-1),
@@ -126,6 +132,7 @@ func NewTodoApp() *TodoApp {
 		lightThemeScrollState: t.NewScrollState(),
 		showHelp:              t.NewSignal(false),
 		nextID:                10,
+		newTaskTagAcState:     t.NewAutocompleteState(),
 	}
 
 	// Initialize celebration animation (loops continuously when started)
@@ -170,6 +177,7 @@ func (a *TodoApp) isAllDone() bool {
 // Build implements the Widget interface.
 func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
+	a.refreshTagSuggestions()
 
 	// Check celebration state and manage animation
 	celebrating := a.isAllDone()
@@ -334,16 +342,24 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 						Bold:            true,
 					},
 				},
-				t.TextInput{
-					ID:          "filter-input",
-					State:       a.filterInputState,
-					Placeholder: "Filter tasks...",
-					Highlighter: tagHighlighter(theme.Accent),
-					Width:       t.Flex(1),
-					Style: t.Style{
-						BackgroundColor: theme.Surface,
+				t.Autocomplete{
+					ID:            "filter-tag-ac",
+					State:         a.filterTagAcState,
+					TriggerChars:  []rune{'#'},
+					MinChars:      0,
+					AnchorToInput: true,
+					Width:         t.Flex(1),
+					Child: t.TextInput{
+						ID:          "filter-input",
+						State:       a.filterInputState,
+						Placeholder: "Filter tasks...",
+						Highlighter: tagHighlighter(theme.Accent),
+						Width:       t.Flex(1),
+						Style: t.Style{
+							BackgroundColor: theme.Surface,
+						},
+						OnSubmit: a.handleFilterSubmit,
 					},
-					OnSubmit: a.handleFilterSubmit,
 				},
 			},
 		}
@@ -363,19 +379,27 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 					Bold:            true,
 				},
 			},
-			t.TextInput{
-				ID:          "new-task-input",
-				State:       a.inputState,
-				Placeholder: "What needs to be done?",
-				Highlighter: tagHighlighter(theme.Accent),
-				Width:       t.Flex(1),
-				Style: t.Style{
-					BackgroundColor: theme.Surface,
-				},
-				OnSubmit: a.addTask,
-				ExtraKeybinds: []t.Keybind{
-					{Key: "enter", Name: "Create", Action: func() { a.addTask(a.inputState.GetText()) }},
-					{Key: "tab", Name: "Tasks", Action: func() {}},
+			t.Autocomplete{
+				ID:            "new-task-tag-ac",
+				State:         a.newTaskTagAcState,
+				TriggerChars:  []rune{'#'},
+				MinChars:      0,
+				AnchorToInput: true,
+				Width:         t.Flex(1),
+				Child: t.TextInput{
+					ID:          "new-task-input",
+					State:       a.inputState,
+					Placeholder: "What needs to be done?",
+					Highlighter: tagHighlighter(theme.Accent),
+					Width:       t.Flex(1),
+					Style: t.Style{
+						BackgroundColor: theme.Surface,
+					},
+					OnSubmit: a.addTask,
+					ExtraKeybinds: []t.Keybind{
+						{Key: "enter", Name: "Create", Action: func() { a.addTask(a.inputState.GetText()) }},
+						{Key: "tab", Name: "Tasks", Action: func() {}},
+					},
 				},
 			},
 		},
@@ -1375,6 +1399,46 @@ func extractTags(title string) []string {
 		}
 	}
 	return tags
+}
+
+// buildTagSuggestions builds a sorted list of unique tag suggestions from tasks.
+func buildTagSuggestions(tasks []Task) []t.Suggestion {
+	seen := make(map[string]string)
+	for _, task := range tasks {
+		for _, tag := range extractTags(task.Title) {
+			trimmed := strings.TrimPrefix(tag, "#")
+			if trimmed == "" {
+				continue
+			}
+			key := strings.ToLower(trimmed)
+			if _, ok := seen[key]; !ok {
+				seen[key] = trimmed
+			}
+		}
+	}
+
+	labels := make([]string, 0, len(seen))
+	for _, label := range seen {
+		labels = append(labels, label)
+	}
+	sort.Slice(labels, func(i, j int) bool {
+		return strings.ToLower(labels[i]) < strings.ToLower(labels[j])
+	})
+
+	suggestions := make([]t.Suggestion, 0, len(labels))
+	for _, label := range labels {
+		suggestions = append(suggestions, t.Suggestion{
+			Label: label,
+			Value: "#" + label,
+		})
+	}
+	return suggestions
+}
+
+func (a *TodoApp) refreshTagSuggestions() {
+	suggestions := buildTagSuggestions(a.tasks.GetItems())
+	a.newTaskTagAcState.SetSuggestions(suggestions)
+	a.filterTagAcState.SetSuggestions(suggestions)
 }
 
 // tagHighlighter returns a Highlighter that highlights #tags in the accent color.

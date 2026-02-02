@@ -37,6 +37,7 @@ func (s *ListState[T]) SetItems(items []T) {
 		items = []T{}
 	}
 	s.Items.Set(items)
+	s.resetFilterCache()
 	s.clampCursor()
 }
 
@@ -55,6 +56,7 @@ func (s *ListState[T]) Append(item T) {
 	s.Items.Update(func(items []T) []T {
 		return append(items, item)
 	})
+	s.resetFilterCache()
 }
 
 // Prepend adds an item to the beginning of the list.
@@ -62,6 +64,7 @@ func (s *ListState[T]) Prepend(item T) {
 	s.Items.Update(func(items []T) []T {
 		return append([]T{item}, items...)
 	})
+	s.resetFilterCache()
 	// Adjust cursor to keep same item selected
 	s.CursorIndex.Update(func(i int) int {
 		return i + 1
@@ -84,6 +87,7 @@ func (s *ListState[T]) InsertAt(index int, item T) {
 		items[index] = item
 		return items
 	})
+	s.resetFilterCache()
 	// Adjust cursor if insertion was at or before cursor
 	cursorIdx := s.CursorIndex.Peek()
 	if index <= cursorIdx {
@@ -101,6 +105,7 @@ func (s *ListState[T]) RemoveAt(index int) bool {
 	s.Items.Update(func(items []T) []T {
 		return append(items[:index], items[index+1:]...)
 	})
+	s.resetFilterCache()
 	s.clampCursor()
 	return true
 }
@@ -120,6 +125,9 @@ func (s *ListState[T]) RemoveWhere(predicate func(T) bool) int {
 		}
 		return result
 	})
+	if removed > 0 {
+		s.resetFilterCache()
+	}
 	s.clampCursor()
 	return removed
 }
@@ -127,6 +135,7 @@ func (s *ListState[T]) RemoveWhere(predicate func(T) bool) int {
 // Clear removes all items from the list.
 func (s *ListState[T]) Clear() {
 	s.Items.Set([]T{})
+	s.resetFilterCache()
 	s.CursorIndex.Set(0)
 }
 
@@ -204,6 +213,12 @@ func (s *ListState[T]) setViewIndices(indices []int) {
 		viewIndexBySource[sourceIdx] = viewIdx
 	}
 	s.viewIndexBySource = viewIndexBySource
+}
+
+func (s *ListState[T]) resetFilterCache() {
+	s.setViewIndices(nil)
+	s.cachedMatches = nil
+	s.cachedFilterQuery = ""
 }
 
 func (s *ListState[T]) viewIndexForSource(sourceIdx int) (int, bool) {
@@ -568,7 +583,21 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 
 	// Check if we have cached filter results for this query
 	var filtered FilteredView[T]
-	if l.State.cachedFilterQuery == query && l.State.viewIndices != nil {
+	useCached := l.State.cachedFilterQuery == query && l.State.viewIndices != nil
+	if useCached {
+		if len(l.State.cachedMatches) > 0 && len(l.State.cachedMatches) != len(l.State.viewIndices) {
+			useCached = false
+		} else {
+			for _, idx := range l.State.viewIndices {
+				if idx < 0 || idx >= len(items) {
+					useCached = false
+					break
+				}
+			}
+		}
+	}
+
+	if useCached {
 		// Use cached results
 		filtered = FilteredView[T]{
 			Items:   make([]T, len(l.State.viewIndices)),
