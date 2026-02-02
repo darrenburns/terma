@@ -302,6 +302,7 @@ const (
 // It supports keyboard navigation and position-based keybindings.
 type TabBar struct {
 	ID             string            // Optional unique identifier
+	DisableFocus   bool              // If true, prevent keyboard focus
 	State          *TabState         // Required - holds tabs and active key
 	KeybindPattern TabKeybindPattern // Position keybind style
 	OnTabChange    func(key string)  // Tab selection callback
@@ -344,7 +345,7 @@ func (t TabBar) GetStyle() Style {
 
 // IsFocusable returns true to allow keyboard navigation.
 func (t TabBar) IsFocusable() bool {
-	return true
+	return !t.DisableFocus
 }
 
 // OnClick is called when the widget is clicked.

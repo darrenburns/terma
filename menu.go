@@ -129,8 +129,9 @@ func (s *MenuState) firstSelectableIndex() int {
 // Menu is a convenience widget for dropdown/context menus.
 // It composes Floating + list rendering internally.
 type Menu struct {
-	ID    string     // Optional unique identifier
-	State *MenuState // Required
+	ID           string     // Optional unique identifier
+	DisableFocus bool       // If true, prevent keyboard focus
+	State        *MenuState // Required
 
 	// Positioning (choose one approach)
 	AnchorID string      // Anchor to widget (dropdown style)
@@ -154,7 +155,7 @@ func (m Menu) WidgetID() string {
 
 // IsFocusable returns true to allow keyboard navigation.
 func (m Menu) IsFocusable() bool {
-	return m.State != nil
+	return m.State != nil && !m.DisableFocus
 }
 
 // OnKey handles keys not covered by declarative keybindings.

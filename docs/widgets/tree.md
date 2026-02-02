@@ -64,6 +64,7 @@ Tree[T]{
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `ID` | `string` | `""` | Optional identifier |
+| `DisableFocus` | `bool` | `false` | Prevent keyboard focus |
 | `State` | `*TreeState[T]` | — | Required state |
 | `NodeID` | `func(T) string` | path-based | Stable ID for nodes when tree structure changes |
 | `RenderNode` | `func(T, TreeNodeContext) Widget` | default | Node renderer |

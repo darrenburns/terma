@@ -66,6 +66,9 @@ type RenderContext struct {
 	buildContext BuildContext
 	// Widget registry for tracking widget positions
 	widgetRegistry *WidgetRegistry
+	// currentEventID is the event/focus ID for the widget being rendered.
+	// Used to resolve auto-IDs during Render() when widgets don't provide explicit IDs.
+	currentEventID string
 	// Returns inherited background color at absolute screen position.
 	// Used for transparent backgrounds to sample from underlying widgets with gradient/solid backgrounds.
 	// Takes both X and Y to support arbitrary-angle gradients.
@@ -132,6 +135,7 @@ func (ctx *RenderContext) SubContext(xOffset, yOffset, width, height int) *Rende
 		buildContext:   ctx.buildContext,
 		widgetRegistry: ctx.widgetRegistry,
 		inheritedBgAt:  ctx.inheritedBgAt,
+		currentEventID: ctx.currentEventID,
 	}
 }
 
@@ -165,6 +169,7 @@ func (ctx *RenderContext) OverflowSubContext(xOffset, yOffset, width, height int
 		buildContext:   ctx.buildContext,
 		widgetRegistry: ctx.widgetRegistry,
 		inheritedBgAt:  ctx.inheritedBgAt,
+		currentEventID: ctx.currentEventID,
 	}
 }
 
@@ -207,6 +212,7 @@ func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, sc
 		buildContext:   ctx.buildContext,
 		widgetRegistry: ctx.widgetRegistry,
 		inheritedBgAt:  ctx.inheritedBgAt,
+		currentEventID: ctx.currentEventID,
 	}
 }
 
@@ -228,7 +234,12 @@ func (ctx *RenderContext) IsFocused(widget Widget) bool {
 		return identifiable.WidgetID() == focusedID
 	}
 
-	// For auto-ID widgets, check against current path from BuildContext
+	// For auto-ID widgets, check against the current render node ID if available
+	if ctx.currentEventID != "" {
+		return ctx.currentEventID == focusedID
+	}
+
+	// Fallback to build context path (root auto-ID)
 	return ctx.buildContext.AutoID() == focusedID
 }
 
@@ -978,6 +989,11 @@ func (r *Renderer) renderInternal(root Widget) (focusables []FocusableEntry, lay
 // All positions come from BoxModel utilities - no manual offset calculations.
 // This is the new rendering path that uses computed layout geometry.
 func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, screenY int) {
+	// Bind current event ID to this render node so auto-ID focus works in Render().
+	selfCtx := *ctx
+	selfCtx.currentEventID = tree.EventID
+	ctx = &selfCtx
+
 	box := tree.Layout.Box
 
 	// Get positions using BoxModel utilities
