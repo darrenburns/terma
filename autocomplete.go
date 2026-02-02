@@ -187,6 +187,9 @@ type Autocomplete struct {
 	// Dismissal behavior
 	DismissOnBlur    *bool // Dismiss when input loses focus (default: true)
 	DismissWhenEmpty bool  // Dismiss when no matches (default: false)
+	// If true, only attach popup keybinds when the popup is visible.
+	// This allows parent widgets to handle keys like Up/Down when hidden.
+	DisableKeysWhenHidden bool
 
 	// Callbacks
 	OnSelect      func(Suggestion) // Called when a suggestion is selected
@@ -315,7 +318,11 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 	}
 
 	// Wrap child to inject keybinds and intercept changes
-	wrappedChild := a.wrapChild(ctx)
+	enablePopupKeys := true
+	if a.DisableKeysWhenHidden && !visible {
+		enablePopupKeys = false
+	}
+	wrappedChild := a.wrapChild(ctx, enablePopupKeys)
 
 	// Build popup
 	popup := a.buildPopup(ctx, visible && hasItems)
@@ -343,22 +350,24 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 }
 
 // wrapChild wraps the child widget with autocomplete keybinds and change handlers.
-func (a Autocomplete) wrapChild(ctx BuildContext) Widget {
+func (a Autocomplete) wrapChild(ctx BuildContext, enablePopupKeys bool) Widget {
 	switch child := a.Child.(type) {
 	case TextInput:
-		return a.wrapTextInput(child, ctx)
+		return a.wrapTextInput(child, ctx, enablePopupKeys)
 	case TextArea:
-		return a.wrapTextArea(child, ctx)
+		return a.wrapTextArea(child, ctx, enablePopupKeys)
 	default:
 		return a.Child
 	}
 }
 
 // wrapTextInput wraps a TextInput with autocomplete behavior.
-func (a Autocomplete) wrapTextInput(child TextInput, ctx BuildContext) Widget {
-	// Inject extra keybinds for popup navigation
-	extraKeybinds := a.popupKeybindsForTextInput()
-	child.ExtraKeybinds = append(extraKeybinds, child.ExtraKeybinds...)
+func (a Autocomplete) wrapTextInput(child TextInput, ctx BuildContext, enablePopupKeys bool) Widget {
+	if enablePopupKeys {
+		// Inject extra keybinds for popup navigation
+		extraKeybinds := a.popupKeybindsForTextInput()
+		child.ExtraKeybinds = append(extraKeybinds, child.ExtraKeybinds...)
+	}
 
 	// Wrap OnChange to process text changes
 	originalOnChange := child.OnChange
@@ -387,10 +396,12 @@ func (a Autocomplete) wrapTextInput(child TextInput, ctx BuildContext) Widget {
 }
 
 // wrapTextArea wraps a TextArea with autocomplete behavior.
-func (a Autocomplete) wrapTextArea(child TextArea, ctx BuildContext) Widget {
-	// Inject extra keybinds for popup navigation
-	extraKeybinds := a.popupKeybindsForTextArea()
-	child.ExtraKeybinds = append(extraKeybinds, child.ExtraKeybinds...)
+func (a Autocomplete) wrapTextArea(child TextArea, ctx BuildContext, enablePopupKeys bool) Widget {
+	if enablePopupKeys {
+		// Inject extra keybinds for popup navigation
+		extraKeybinds := a.popupKeybindsForTextArea()
+		child.ExtraKeybinds = append(extraKeybinds, child.ExtraKeybinds...)
+	}
 
 	// Wrap OnChange to process text changes
 	originalOnChange := child.OnChange
