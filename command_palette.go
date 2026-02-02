@@ -13,6 +13,10 @@ const (
 
 var commandPaletteDividerLine = strings.Repeat("─", 120)
 
+func commandPaletteInputPadding() EdgeInsets {
+	return EdgeInsetsTRBL(1, 1, 1, 1)
+}
+
 // CommandPaletteItem represents a single entry in the command palette.
 type CommandPaletteItem struct {
 	Label         string                      // Primary display text
@@ -362,11 +366,22 @@ func (p CommandPalette) buildContent(ctx BuildContext, level *CommandPaletteLeve
 	theme := ctx.Theme()
 
 	containerStyle := p.containerStyle(theme)
+	if containerStyle.Width.IsUnset() {
+		containerStyle.Width = p.paletteWidth()
+	}
+	if containerStyle.Height.IsUnset() {
+		containerStyle.Height = Auto
+	}
+	if containerStyle.MaxHeight.IsUnset() {
+		containerStyle.MaxHeight = p.paletteHeight()
+	}
 
 	children := make([]Widget, 0, 4)
 
 	headerChildren := make([]Widget, 0, 2)
+	hasBreadcrumbs := false
 	if path := p.State.BreadcrumbPath(); len(path) > 0 {
+		hasBreadcrumbs = true
 		headerChildren = append(headerChildren, Breadcrumbs{
 			ID:        p.ID + "-breadcrumbs",
 			Path:      path,
@@ -385,17 +400,8 @@ func (p CommandPalette) buildContent(ctx BuildContext, level *CommandPaletteLeve
 		Spacing:    0,
 		Children:   headerChildren,
 	})
-	children = append(children, p.buildList(ctx, level, theme))
+	children = append(children, p.buildList(ctx, level, theme, containerStyle, hasBreadcrumbs))
 
-	if containerStyle.Width.IsUnset() {
-		containerStyle.Width = p.paletteWidth()
-	}
-	if containerStyle.Height.IsUnset() {
-		containerStyle.Height = Auto
-	}
-	if containerStyle.MaxHeight.IsUnset() {
-		containerStyle.MaxHeight = p.paletteHeight()
-	}
 	return Column{
 		ID:         p.ID + "-content",
 		CrossAlign: CrossAxisStretch,
@@ -409,7 +415,7 @@ func (p CommandPalette) buildInput(level *CommandPaletteLevel, theme ThemeData) 
 		return EmptyWidget{}
 	}
 
-	padding := EdgeInsetsTRBL(1, 1, 1, 1)
+	padding := commandPaletteInputPadding()
 
 	onFilterChange := func(text string) {
 		if level.FilterState != nil {
@@ -449,7 +455,7 @@ func (p CommandPalette) buildInput(level *CommandPaletteLevel, theme ThemeData) 
 	}
 }
 
-func (p CommandPalette) buildList(ctx BuildContext, level *CommandPaletteLevel, theme ThemeData) Widget {
+func (p CommandPalette) buildList(ctx BuildContext, level *CommandPaletteLevel, theme ThemeData, containerStyle Style, hasBreadcrumbs bool) Widget {
 	if level == nil {
 		return EmptyWidget{}
 	}
@@ -488,15 +494,53 @@ func (p CommandPalette) buildList(ctx BuildContext, level *CommandPaletteLevel, 
 		}
 	}
 
+	listStyle := Style{
+		BackgroundColor: theme.Surface,
+	}
+	if maxHeight, ok := p.listMaxHeight(containerStyle, hasBreadcrumbs); ok {
+		listStyle.MaxHeight = Cells(maxHeight)
+	} else {
+		listStyle.Height = Flex(1)
+	}
+
 	return Scrollable{
 		ID:    p.scrollID(),
 		State: level.ScrollState,
-		Style: Style{
-			BackgroundColor: theme.Surface,
-			Height:          Flex(1),
-		},
+		Style: listStyle,
 		Child: listChild,
 	}
+}
+
+func (p CommandPalette) listMaxHeight(containerStyle Style, hasBreadcrumbs bool) (int, bool) {
+	maxHeight, ok := p.paletteContentHeightCells(containerStyle)
+	if !ok {
+		return 0, false
+	}
+
+	available := maxHeight - p.headerHeight(hasBreadcrumbs)
+	if available < 0 {
+		available = 0
+	}
+	return available, true
+}
+
+func (p CommandPalette) headerHeight(hasBreadcrumbs bool) int {
+	inputHeight := 1 + commandPaletteInputPadding().Vertical()
+	if hasBreadcrumbs {
+		return inputHeight + 1
+	}
+	return inputHeight
+}
+
+func (p CommandPalette) paletteContentHeightCells(style Style) (int, bool) {
+	dims := style.GetDimensions()
+	if dims.Height.IsCells() {
+		return dims.Height.CellsValue(), true
+	}
+	if dims.MaxHeight.IsCells() {
+		return dims.MaxHeight.CellsValue(), true
+	}
+	return 0, false
 }
 
 func (p CommandPalette) renderItem(ctx BuildContext) func(item CommandPaletteItem, active bool, selected bool, match MatchResult) Widget {

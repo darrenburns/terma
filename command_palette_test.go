@@ -1,6 +1,7 @@
 package terma
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -130,4 +131,35 @@ func TestSnapshot_CommandPalette_NoResults(t *testing.T) {
 	}
 
 	AssertSnapshot(t, widget, 80, 20, "Command palette showing empty state when no items match the filter")
+}
+
+func TestSnapshot_CommandPalette_ScrollOverflow(t *testing.T) {
+	items := make([]CommandPaletteItem, 0, 30)
+	for i := 0; i < 30; i++ {
+		items = append(items, CommandPaletteItem{
+			Label: fmt.Sprintf("File %02d", i+1),
+			Hint:  "txt",
+		})
+	}
+
+	state := NewCommandPaletteState("Files", items)
+	state.Visible.Set(true)
+
+	level := state.CurrentLevel()
+	level.InputState.SetText("")
+	level.FilterState.Query.Set("")
+	// Force a large offset so the layout clamps to the bottom of the list.
+	level.ScrollState.Offset.Set(999)
+
+	widget := CommandPalette{
+		ID:       "palette-scroll-overflow",
+		State:    state,
+		Position: FloatPositionTopLeft,
+		Offset:   Offset{X: 2, Y: 1},
+		Style: Style{
+			MaxHeight: Cells(8),
+		},
+	}
+
+	AssertSnapshot(t, widget, 60, 16, "Command palette with constrained height and enough items to require scrolling; scrollbar should remain visible within the palette")
 }
