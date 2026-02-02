@@ -96,6 +96,7 @@ type TodoApp struct {
 
 	// Tag autocomplete state
 	newTaskTagAcState *t.AutocompleteState
+	editTagAcState    *t.AutocompleteState
 }
 
 // NewTodoApp creates a new todo application.
@@ -133,6 +134,7 @@ func NewTodoApp() *TodoApp {
 		showHelp:              t.NewSignal(false),
 		nextID:                10,
 		newTaskTagAcState:     t.NewAutocompleteState(),
+		editTagAcState:        t.NewAutocompleteState(),
 	}
 
 	// Initialize celebration animation (loops continuously when started)
@@ -489,21 +491,30 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 				Width: t.Flex(1),
 				Children: []t.Widget{
 					t.Text{Content: "  ○  "}, // Match the prefix + circle + space
-					t.TextArea{
-						ID:          "edit-input",
-						State:       a.editInputState,
-						Highlighter: tagHighlighter(theme.Accent),
-						Width:       t.Flex(1),
-						Style: t.Style{
-							BackgroundColor: theme.Surface,
-						},
-						ExtraKeybinds: []t.Keybind{
-							{Key: "enter", Name: "Save", Action: func() {
-								a.saveEdit(idx, a.editInputState.GetText())
-							}},
-							{Key: "shift+enter", Name: "Newline", Action: func() {
-								a.editInputState.ReplaceSelection("\n")
-							}},
+					t.Autocomplete{
+						ID:                    "edit-tag-ac",
+						State:                 a.editTagAcState,
+						TriggerChars:          []rune{'#'},
+						MinChars:              0,
+						AnchorToInput:         true,
+						DisableKeysWhenHidden: true,
+						Width:                 t.Flex(1),
+						Child: t.TextArea{
+							ID:          "edit-input",
+							State:       a.editInputState,
+							Highlighter: tagHighlighter(theme.Accent),
+							Width:       t.Flex(1),
+							Style: t.Style{
+								BackgroundColor: theme.Surface,
+							},
+							ExtraKeybinds: []t.Keybind{
+								{Key: "enter", Name: "Save", Action: func() {
+									a.saveEdit(idx, a.editInputState.GetText())
+								}},
+								{Key: "shift+enter", Name: "Newline", Action: func() {
+									a.editInputState.ReplaceSelection("\n")
+								}},
+							},
 						},
 					},
 				},
@@ -1441,6 +1452,7 @@ func (a *TodoApp) refreshTagSuggestions() {
 	suggestions := buildTagSuggestions(a.tasks.GetItems())
 	a.newTaskTagAcState.SetSuggestions(suggestions)
 	a.filterTagAcState.SetSuggestions(suggestions)
+	a.editTagAcState.SetSuggestions(suggestions)
 }
 
 // tagHighlighter returns a Highlighter that highlights #tags in the accent color.
