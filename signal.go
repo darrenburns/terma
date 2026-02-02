@@ -1,12 +1,21 @@
 package terma
 
-import "sync"
+import (
+	"fmt"
+	"path/filepath"
+	"runtime"
+	"sync"
+	"sync/atomic"
+)
 
 // currentBuildingNode tracks which widget node is currently being built.
 // When a Signal.Get() is called during Build(), the node is subscribed.
 // Protected by currentBuildMu for thread-safe access.
 var currentBuildingNode *widgetNode
 var currentBuildMu sync.Mutex
+
+var debugRenderCauseEnabled atomic.Bool
+var lastRenderCause atomic.Value
 
 // signalCore holds the internal state for Signal.
 // All fields are protected by mu for thread-safe access.
@@ -72,6 +81,7 @@ func (s Signal[T]) Set(value T) {
 	for _, listener := range listeners {
 		listener.markDirty()
 	}
+	recordRenderCause("Signal.Set", value, s.core, 2)
 	scheduleRender()
 }
 
@@ -106,6 +116,7 @@ func (s Signal[T]) Update(fn func(T) T) {
 	for _, listener := range listeners {
 		listener.markDirty()
 	}
+	recordRenderCause("Signal.Update", newValue, s.core, 2)
 	scheduleRender()
 }
 
@@ -183,6 +194,7 @@ func (s AnySignal[T]) Set(value T) {
 	for _, listener := range listeners {
 		listener.markDirty()
 	}
+	recordRenderCause("AnySignal.Set", value, s.core, 2)
 	scheduleRender()
 }
 
@@ -211,6 +223,7 @@ func (s AnySignal[T]) Update(fn func(T) T) {
 	for _, listener := range listeners {
 		listener.markDirty()
 	}
+	recordRenderCause("AnySignal.Update", s.core.value, s.core, 2)
 	scheduleRender()
 }
 
@@ -227,6 +240,54 @@ func (s AnySignal[T]) unsubscribe(node *widgetNode) {
 // An uninitialized AnySignal (zero value) returns false.
 func (s AnySignal[T]) IsValid() bool {
 	return s.core != nil
+}
+
+// EnableDebugRenderCause turns on tracking of the most recent render cause.
+func EnableDebugRenderCause() {
+	debugRenderCauseEnabled.Store(true)
+}
+
+// LastRenderCause returns a debug string describing the most recent render cause.
+func LastRenderCause() string {
+	value := lastRenderCause.Load()
+	if value == nil {
+		return ""
+	}
+	if s, ok := value.(string); ok {
+		return s
+	}
+	return ""
+}
+
+func recordRenderCause(kind string, value any, core any, skip int) {
+	if !debugRenderCauseEnabled.Load() {
+		return
+	}
+
+	pc, file, line, ok := runtime.Caller(skip)
+	location := "unknown"
+	if ok {
+		location = fmt.Sprintf("%s:%d", filepath.Base(file), line)
+	}
+
+	funcName := ""
+	if fn := runtime.FuncForPC(pc); fn != nil {
+		funcName = fn.Name()
+	}
+
+	coreInfo := ""
+	if core != nil {
+		coreInfo = fmt.Sprintf(" core=%p", core)
+	}
+
+	cause := fmt.Sprintf("%s %T%s", kind, value, coreInfo)
+	if funcName != "" {
+		cause = fmt.Sprintf("%s via %s (%s)", cause, funcName, location)
+	} else if location != "unknown" {
+		cause = fmt.Sprintf("%s at %s", cause, location)
+	}
+
+	lastRenderCause.Store(cause)
 }
 
 // scheduleRender signals the app to re-render.

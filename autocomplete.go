@@ -143,6 +143,7 @@ func NewAutocompleteState() *AutocompleteState {
 // SetSuggestions sets the available suggestions.
 func (s *AutocompleteState) SetSuggestions(suggestions []Suggestion) {
 	s.Suggestions.Set(suggestions)
+	s.listState.SetItems(suggestions)
 }
 
 // Show makes the popup visible.
@@ -284,23 +285,14 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 		return a.Child
 	}
 
-	// Subscribe to suggestions changes and sync to list
-	allSuggestions := a.State.Suggestions.Get()
-	a.State.listState.SetItems(allSuggestions)
-
 	// Get child text and cursor for trigger detection
 	text, cursorPos := a.getChildTextAndCursor()
 
 	// Update trigger and query based on current text/cursor
 	a.updateTriggerAndQuery(text, cursorPos)
 
-	// Update filter state with current query and match mode
-	a.State.filterState.Query.Set(a.State.filterQuery.Peek())
-	a.State.filterState.Mode.Set(a.matchMode())
-
 	// Apply filter to get filtered count (List.Build will reuse cached results)
-	a.State.listState.ApplyFilter(a.State.filterState, suggestionMatchItem)
-	hasItems := a.State.listState.FilteredCount() > 0
+	hasItems := a.filteredSuggestionCount() > 0
 
 	// Determine visibility
 	visible := a.State.Visible.Get()
@@ -319,7 +311,7 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 
 	// Wrap child to inject keybinds and intercept changes
 	enablePopupKeys := true
-	if a.DisableKeysWhenHidden && !visible {
+	if a.DisableKeysWhenHidden && (!visible || !hasItems) {
 		enablePopupKeys = false
 	}
 	wrappedChild := a.wrapChild(ctx, enablePopupKeys)
@@ -459,10 +451,13 @@ func (a Autocomplete) onDown() {
 	}
 	if !a.State.Visible.Peek() {
 		// Popup hidden - show it if we have suggestions
-		if a.State.listState.ItemCount() > 0 {
+		if a.filteredSuggestionCount() > 0 {
 			a.State.dismissed = false
 			a.State.Visible.Set(true)
 		}
+		return
+	}
+	if a.filteredSuggestionCount() == 0 {
 		return
 	}
 	a.State.listState.SelectNext()
@@ -474,6 +469,9 @@ func (a Autocomplete) onUp() {
 		return
 	}
 	if !a.State.Visible.Peek() {
+		return
+	}
+	if a.filteredSuggestionCount() == 0 {
 		return
 	}
 	a.State.listState.SelectPrevious()
@@ -491,6 +489,12 @@ func (a Autocomplete) onDownTextArea() {
 		}
 		return
 	}
+	if a.filteredSuggestionCount() == 0 {
+		if state := a.textAreaState(); state != nil {
+			state.CursorDown()
+		}
+		return
+	}
 	a.State.listState.SelectNext()
 	a.scrollCursorIntoView()
 }
@@ -501,6 +505,12 @@ func (a Autocomplete) onUpTextArea() {
 	}
 	if !a.State.Visible.Peek() {
 		// Popup hidden - invoke TextArea's default cursor movement
+		if state := a.textAreaState(); state != nil {
+			state.CursorUp()
+		}
+		return
+	}
+	if a.filteredSuggestionCount() == 0 {
 		if state := a.textAreaState(); state != nil {
 			state.CursorUp()
 		}
@@ -523,7 +533,7 @@ func (a Autocomplete) onEnterTextInput() {
 	if a.State == nil {
 		return
 	}
-	if a.State.Visible.Peek() && a.State.listState.ItemCount() > 0 {
+	if a.State.Visible.Peek() && a.filteredSuggestionCount() > 0 {
 		a.selectCurrentSuggestion()
 		return
 	}
@@ -536,7 +546,7 @@ func (a Autocomplete) onTabTextInput() {
 	if a.State == nil {
 		return
 	}
-	if a.State.Visible.Peek() && a.State.listState.ItemCount() > 0 {
+	if a.State.Visible.Peek() && a.filteredSuggestionCount() > 0 {
 		a.selectCurrentSuggestion()
 	}
 	// If popup not visible, don't consume - let focus manager handle tab
@@ -546,7 +556,7 @@ func (a Autocomplete) onEnterTextArea() {
 	if a.State == nil {
 		return
 	}
-	if a.State.Visible.Peek() && a.State.listState.ItemCount() > 0 {
+	if a.State.Visible.Peek() && a.filteredSuggestionCount() > 0 {
 		a.selectCurrentSuggestion()
 		return
 	}
@@ -562,7 +572,7 @@ func (a Autocomplete) onTabTextArea() {
 	if a.State == nil {
 		return
 	}
-	if a.State.Visible.Peek() && a.State.listState.ItemCount() > 0 {
+	if a.State.Visible.Peek() && a.filteredSuggestionCount() > 0 {
 		a.selectCurrentSuggestion()
 	}
 	// If popup not visible, let TextArea handle it (insert tab or focus)
@@ -688,6 +698,15 @@ func (a Autocomplete) extractQuery(text string, cursorPos int, triggerPos int) s
 // matchMode returns the configured match mode.
 func (a Autocomplete) matchMode() FilterMode {
 	return a.MatchMode // defaults to FilterContains (0)
+}
+
+func (a Autocomplete) filteredSuggestionCount() int {
+	if a.State == nil {
+		return 0
+	}
+	a.State.filterState.Query.Set(a.State.filterQuery.Peek())
+	a.State.filterState.Mode.Set(a.matchMode())
+	return a.State.listState.ApplyFilter(a.State.filterState, suggestionMatchItem)
 }
 
 func (a Autocomplete) dismissOnBlurEnabled() bool {
