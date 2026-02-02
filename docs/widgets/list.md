@@ -14,6 +14,7 @@ List[string]{
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `ID` | `string` | `""` | Optional unique identifier |
+| `DisableFocus` | `bool` | `false` | Prevent keyboard focus |
 | `State` | `*ListState[T]` | — | **Required** - holds items and cursor position |
 | `RenderItem` | `func(item T, index int, active, selected bool) Widget` | — | Custom item renderer |
 | `RenderItemWithMatch` | `func(item T, index int, active, selected bool, match MatchResult) Widget` | — | Item renderer with filter match data |

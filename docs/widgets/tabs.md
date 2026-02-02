@@ -38,6 +38,7 @@ The tab system consists of three main components:
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `ID` | `string` | `""` | Required for focus management |
+| `DisableFocus` | `bool` | `false` | Prevent keyboard focus |
 | `State` | `*TabState` | — | Required - holds tabs and active key |
 | `KeybindPattern` | `TabKeybindPattern` | `TabKeybindNone` | Position-based keybind style |
 | `OnTabChange` | `func(key string)` | `nil` | Called when active tab changes |

@@ -408,6 +408,7 @@ const (
 // Use with Scrollable and a shared ScrollState to enable scroll-into-view.
 type Table[T any] struct {
 	ID                  string                                                                                        // Optional unique identifier
+	DisableFocus        bool                                                                                          // If true, prevent keyboard focus
 	CursorStyle                                                                                                       // Embedded - CursorPrefix/SelectedPrefix fields for customizable indicators
 	State               *TableState[T]                                                                                // Required - holds rows and cursor position
 	Columns             []TableColumn                                                                                 // Required - defines column count and widths
@@ -566,7 +567,7 @@ func (t Table[T]) OnHover(hovered bool) {
 // IsFocusable returns true to allow keyboard navigation.
 // Implements the Focusable interface.
 func (t Table[T]) IsFocusable() bool {
-	return true
+	return !t.DisableFocus
 }
 
 // Build returns a table container that arranges the rendered cells.

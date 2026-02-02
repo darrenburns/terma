@@ -21,6 +21,7 @@ Scrollable{
 | `Child` | `Widget` | — | The content to scroll |
 | `State` | `*ScrollState` | — | Required scroll state |
 | `DisableScroll` | `bool` | `false` | Disable scrolling and hide scrollbar |
+| `Focusable` | `bool` | `false` | Allow keyboard focus for scroll navigation |
 | `DisableFocus` | `bool` | `false` | Prevent keyboard focus |
 | `Width` | `Dimension` | — | Container width |
 | `Height` | `Dimension` | — | Container height |

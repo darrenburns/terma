@@ -25,6 +25,7 @@ A single-line focusable text entry widget with cursor navigation, editing comman
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `ID` | `string` | — | Required for focus management |
+| `DisableFocus` | `bool` | `false` | Prevent keyboard focus |
 | `State` | `*TextInputState` | — | Required - holds text and cursor position |
 | `Placeholder` | `string` | `""` | Text shown when empty and unfocused |
 | `Width` | `Dimension` | `Auto` | Optional width |

@@ -18,6 +18,7 @@ Table[[]string]{
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `ID` | `string` | `""` | Optional unique identifier |
+| `DisableFocus` | `bool` | `false` | Prevent keyboard focus |
 | `State` | `*TableState[T]` | — | **Required** - holds rows and cursor position |
 | `Columns` | `[]TableColumn` | — | **Required** - defines column count and widths |
 | `RenderCell` | `func(row T, rowIdx, colIdx int, active, selected bool) Widget` | — | Custom cell renderer |
