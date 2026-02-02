@@ -2,11 +2,15 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
 	t "terma"
 )
+
+// tagPattern matches hashtags: # followed by alphanumeric, underscore, or hyphen
+var tagPattern = regexp.MustCompile(`#[a-zA-Z0-9_-]+`)
 
 // darkThemeNames are the dark theme names in display order.
 var darkThemeNames = []string{
@@ -93,15 +97,15 @@ type TodoApp struct {
 func NewTodoApp() *TodoApp {
 	now := time.Now()
 	initialTasks := []Task{
-		{ID: "task-1", Title: "Invent a new color", Completed: false, CreatedAt: now},
-		{ID: "task-2", Title: "Teach the cat to file taxes", Completed: false, CreatedAt: now},
-		{ID: "task-3", Title: "Find out who let the dogs out", Completed: true, CreatedAt: now},
-		{ID: "task-4", Title: "Convince houseplants I'm responsible", Completed: false, CreatedAt: now},
-		{ID: "task-5", Title: "Reply to email from 2019", Completed: false, CreatedAt: now},
-		{ID: "task-6", Title: "Figure out what the fox says", Completed: true, CreatedAt: now},
-		{ID: "task-7", Title: "Organize sock drawer by emotional value", Completed: false, CreatedAt: now},
-		{ID: "task-8", Title: "Finally read the terms and conditions", Completed: false, CreatedAt: now},
-		{ID: "task-9", Title: "Become a morning person (unlikely)", Completed: false, CreatedAt: now},
+		{ID: "task-1", Title: "Invent a new color #creative #fun", Completed: false, CreatedAt: now},
+		{ID: "task-2", Title: "Teach the cat to file taxes #pets #finance", Completed: false, CreatedAt: now},
+		{ID: "task-3", Title: "Find out who let the dogs out #pets #mystery", Completed: true, CreatedAt: now},
+		{ID: "task-4", Title: "Convince houseplants I'm responsible #home", Completed: false, CreatedAt: now},
+		{ID: "task-5", Title: "Reply to email from 2019 #work #overdue", Completed: false, CreatedAt: now},
+		{ID: "task-6", Title: "Figure out what the fox says #mystery #fun", Completed: true, CreatedAt: now},
+		{ID: "task-7", Title: "Organize sock drawer by emotional value #home #creative", Completed: false, CreatedAt: now},
+		{ID: "task-8", Title: "Finally read the terms and conditions #work", Completed: false, CreatedAt: now},
+		{ID: "task-9", Title: "Become a morning person (unlikely) #health #fun", Completed: false, CreatedAt: now},
 	}
 
 	app := &TodoApp{
@@ -334,6 +338,7 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 					ID:          "filter-input",
 					State:       a.filterInputState,
 					Placeholder: "Filter tasks...",
+					Highlighter: tagHighlighter(theme.Accent),
 					Width:       t.Flex(1),
 					Style: t.Style{
 						BackgroundColor: theme.Surface,
@@ -362,6 +367,7 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 				ID:          "new-task-input",
 				State:       a.inputState,
 				Placeholder: "What needs to be done?",
+				Highlighter: tagHighlighter(theme.Accent),
 				Width:       t.Flex(1),
 				Style: t.Style{
 					BackgroundColor: theme.Surface,
@@ -458,9 +464,10 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 				Children: []t.Widget{
 					t.Text{Content: "  ○  "}, // Match the prefix + circle + space
 					t.TextArea{
-						ID:    "edit-input",
-						State: a.editInputState,
-						Width: t.Flex(1),
+						ID:          "edit-input",
+						State:       a.editInputState,
+						Highlighter: tagHighlighter(theme.Accent),
+						Width:       t.Flex(1),
 						Style: t.Style{
 							BackgroundColor: theme.Surface,
 						},
@@ -512,18 +519,19 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 			textStyle.Strikethrough = true
 		}
 
-		// Build the title widget - use spans with highlighting when filtering
+		// Build the title widget - always highlight tags, also highlight filter matches when filtering
 		var titleWidget t.Text
 		if a.filterMode.Get() && a.getFilterText() != "" {
+			// In filter mode: highlight both filter matches and tags
 			titleWidget = t.Text{
-				Spans: a.highlightMatches(task.Title, textStyle, theme.Accent, theme.Accent.WithAlpha(0.1)),
+				Spans: a.highlightMatchesAndTags(task.Title, textStyle, theme.Accent, theme.Accent.WithAlpha(0.1), theme.Accent),
 				Width: t.Flex(1),
 			}
 		} else {
+			// Normal mode: just highlight tags
 			titleWidget = t.Text{
-				Content: task.Title,
-				Style:   textStyle,
-				Width:   t.Flex(1),
+				Spans: a.highlightTags(task.Title, textStyle, theme.Accent),
+				Width: t.Flex(1),
 			}
 		}
 		titleWidget.Wrap = t.WrapSoft
@@ -1352,6 +1360,158 @@ func styleToSpanStyle(s t.Style) t.SpanStyle {
 		Italic:        s.Italic,
 		Strikethrough: s.Strikethrough,
 	}
+}
+
+// extractTags returns all unique tags from a task title.
+func extractTags(title string) []string {
+	matches := tagPattern.FindAllString(title, -1)
+	seen := make(map[string]bool)
+	var tags []string
+	for _, tag := range matches {
+		lower := strings.ToLower(tag)
+		if !seen[lower] {
+			seen[lower] = true
+			tags = append(tags, tag)
+		}
+	}
+	return tags
+}
+
+// tagHighlighter returns a Highlighter that highlights #tags in the accent color.
+func tagHighlighter(accentColor t.Color) t.HighlighterFunc {
+	return func(text string, graphemes []string) []t.TextHighlight {
+		matches := tagPattern.FindAllStringIndex(text, -1)
+		if len(matches) == 0 {
+			return nil
+		}
+
+		// Build a map from byte offset to grapheme index
+		byteToGrapheme := make(map[int]int)
+		bytePos := 0
+		for i, g := range graphemes {
+			byteToGrapheme[bytePos] = i
+			bytePos += len(g)
+		}
+		byteToGrapheme[bytePos] = len(graphemes) // end position
+
+		var highlights []t.TextHighlight
+		for _, match := range matches {
+			startGrapheme, ok1 := byteToGrapheme[match[0]]
+			endGrapheme, ok2 := byteToGrapheme[match[1]]
+			if ok1 && ok2 {
+				highlights = append(highlights, t.TextHighlight{
+					Start: startGrapheme,
+					End:   endGrapheme,
+					Style: t.SpanStyle{
+						Foreground: accentColor,
+						Italic:     true,
+					},
+				})
+			}
+		}
+		return highlights
+	}
+}
+
+// highlightTags creates spans with highlighted tags.
+func (a *TodoApp) highlightTags(title string, baseStyle t.Style, tagColor t.Color) []t.Span {
+	matches := tagPattern.FindAllStringIndex(title, -1)
+	if len(matches) == 0 {
+		return []t.Span{{Text: title, Style: styleToSpanStyle(baseStyle)}}
+	}
+
+	var spans []t.Span
+	pos := 0
+
+	for _, match := range matches {
+		start, end := match[0], match[1]
+
+		// Add text before the tag
+		if start > pos {
+			spans = append(spans, t.Span{Text: title[pos:start], Style: styleToSpanStyle(baseStyle)})
+		}
+
+		// Add the highlighted tag
+		tagStyle := styleToSpanStyle(baseStyle)
+		tagStyle.Foreground = tagColor
+		tagStyle.Italic = true
+		spans = append(spans, t.Span{Text: title[start:end], Style: tagStyle})
+
+		pos = end
+	}
+
+	// Add remaining text after last tag
+	if pos < len(title) {
+		spans = append(spans, t.Span{Text: title[pos:], Style: styleToSpanStyle(baseStyle)})
+	}
+
+	return spans
+}
+
+// highlightMatchesAndTags creates spans with both filter matches and tags highlighted.
+func (a *TodoApp) highlightMatchesAndTags(title string, baseStyle t.Style, matchColor t.Color, matchBgColor t.Color, tagColor t.Color) []t.Span {
+	filterText := a.getFilterText()
+
+	// Build a character-level style map
+	type charStyle struct {
+		isTag         bool
+		isFilterMatch bool
+	}
+	styles := make([]charStyle, len(title))
+
+	// Mark tag positions
+	tagMatches := tagPattern.FindAllStringIndex(title, -1)
+	for _, match := range tagMatches {
+		for i := match[0]; i < match[1]; i++ {
+			styles[i].isTag = true
+		}
+	}
+
+	// Mark filter match positions
+	if filterText != "" {
+		titleLower := strings.ToLower(title)
+		pos := 0
+		for {
+			idx := strings.Index(titleLower[pos:], filterText)
+			if idx == -1 {
+				break
+			}
+			start := pos + idx
+			end := start + len(filterText)
+			for i := start; i < end; i++ {
+				styles[i].isFilterMatch = true
+			}
+			pos = end
+		}
+	}
+
+	// Build spans by grouping consecutive characters with the same style
+	var spans []t.Span
+	pos := 0
+
+	for pos < len(title) {
+		currentStyle := styles[pos]
+		end := pos + 1
+		for end < len(title) && styles[end] == currentStyle {
+			end++
+		}
+
+		spanStyle := styleToSpanStyle(baseStyle)
+		if currentStyle.isTag {
+			spanStyle.Foreground = tagColor
+			spanStyle.Italic = true
+		}
+		if currentStyle.isFilterMatch {
+			spanStyle.Underline = t.UnderlineSingle
+			spanStyle.UnderlineColor = matchColor
+			spanStyle.Background = matchBgColor
+		}
+
+		spans = append(spans, t.Span{Text: title[pos:end], Style: spanStyle})
+		pos = end
+	}
+
+	return spans
 }
 
 // colorProviderToColor converts a ColorProvider to a Color.
