@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // TreeNode represents a node in a tree.
@@ -25,6 +26,7 @@ type TreeState[T any] struct {
 	viewIndexByPath map[string]int
 	rowLayouts      []treeRowLayout
 	nodeID          func(T) string
+	eagerLoadOnce   sync.Once
 }
 
 // NewTreeState creates a new TreeState with the given root nodes.
@@ -695,7 +697,7 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 
 	return treeContainer[T]{
 		Column: Column{
-			ID:       t.ID,
+			ID: t.ID,
 			Style: func() Style {
 				style := t.Style
 				if style.Width.IsUnset() {
@@ -1022,17 +1024,29 @@ func treeLastSiblingByPath[T any](entries []treeViewEntry[T]) map[string]bool {
 }
 
 func treeGuidePrefix(path []int, depth int, indent int, lastSiblingByPath map[string]bool) string {
-	if depth <= 0 {
+	if depth <= 0 || indent <= 0 {
 		return ""
 	}
-	// Indentation for depth (spaces for ancestor levels)
-	indentStr := strings.Repeat(" ", indent*(depth-1))
-	// Branch character based on whether this node is last sibling
-	isLast := lastSiblingByPath[pathKey(path)]
-	if isLast {
-		return indentStr + "└─"
+	var b strings.Builder
+	// Build guide segments for ancestor levels (excluding root).
+	for level := 1; level <= depth-1; level++ {
+		ancestorPath := path[:level+1]
+		if lastSiblingByPath[pathKey(ancestorPath)] {
+			b.WriteString(strings.Repeat(" ", indent))
+		} else {
+			b.WriteString("│")
+			if indent > 1 {
+				b.WriteString(strings.Repeat(" ", indent-1))
+			}
+		}
 	}
-	return indentStr + "├─"
+	// Branch character based on whether this node is last sibling.
+	if lastSiblingByPath[pathKey(path)] {
+		b.WriteString("└─")
+		return b.String()
+	}
+	b.WriteString("├─")
+	return b.String()
 }
 
 func (t Tree[T]) buildViewEntries(nodes []TreeNode[T], query string, options FilterOptions) []treeViewEntry[T] {
