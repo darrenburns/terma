@@ -472,6 +472,7 @@ type TreeNodeContext struct {
 // Tree is a generic focusable widget that displays a navigable tree.
 type Tree[T any] struct {
 	ID                  string
+	DisableFocus        bool
 	State               *TreeState[T]
 	NodeID              func(data T) string
 	RenderNode          func(node T, ctx TreeNodeContext) Widget
@@ -570,7 +571,7 @@ func (t Tree[T]) GetStyle() Style {
 
 // IsFocusable returns true to allow keyboard navigation.
 func (t Tree[T]) IsFocusable() bool {
-	return true
+	return !t.DisableFocus
 }
 
 // Build builds the tree into a column of rendered nodes.

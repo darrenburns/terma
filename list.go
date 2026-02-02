@@ -430,6 +430,7 @@ func (s *ListState[T]) FilteredCount() int {
 //	state.RemoveAt(0)
 type List[T any] struct {
 	ID                  string                                                             // Optional unique identifier
+	DisableFocus        bool                                                               // If true, prevent keyboard focus
 	CursorStyle                                                                            // Embedded - CursorPrefix/SelectedPrefix fields for customizable indicators
 	State               *ListState[T]                                                      // Required - holds items and cursor position
 	OnSelect            func(item T)                                                       // Callback invoked when Enter is pressed on an item
@@ -562,7 +563,7 @@ func (l List[T]) OnBlur() {
 // IsFocusable returns true to allow keyboard navigation.
 // Implements the Focusable interface.
 func (l List[T]) IsFocusable() bool {
-	return true
+	return !l.DisableFocus
 }
 
 // Build returns a Column of widgets, each rendered via RenderItem.

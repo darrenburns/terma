@@ -691,6 +691,7 @@ func reservedContentWidth(viewportWidth int) int {
 // TextArea is a multi-line focusable text entry widget.
 type TextArea struct {
 	ID                string            // Optional unique identifier
+	DisableFocus      bool              // If true, prevent keyboard focus
 	State             *TextAreaState    // Required - holds text and cursor position
 	Placeholder       string            // Text shown when empty and unfocused
 	Highlighter       Highlighter       // Optional: dynamic text highlighting
@@ -717,7 +718,7 @@ func (t TextArea) WidgetID() string {
 
 // IsFocusable returns true, indicating this widget can receive keyboard focus.
 func (t TextArea) IsFocusable() bool {
-	return true
+	return !t.DisableFocus
 }
 
 // CapturesKey returns true if this key would be captured by the text area

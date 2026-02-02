@@ -36,14 +36,15 @@ func buttonVariantColors(variant ButtonVariant, theme ThemeData) (fg, bg Color) 
 // Button is a focusable widget that renders as styled text.
 // It can be pressed with Enter or Space when focused.
 type Button struct {
-	ID      string        // Optional unique identifier for the button
-	Label   string        // Display text for the button
-	Variant ButtonVariant // Semantic color variant (default: ButtonDefault)
-	OnPress func()        // Callback invoked when button is pressed
-	Width   Dimension     // Deprecated: use Style.Width
-	Height  Dimension     // Deprecated: use Style.Height
-	Style   Style         // Optional styling (colors) applied when not focused
-	Click   func(MouseEvent) // Optional callback invoked when clicked
+	ID           string        // Optional unique identifier for the button
+	DisableFocus bool          // If true, prevent keyboard focus
+	Label        string        // Display text for the button
+	Variant      ButtonVariant // Semantic color variant (default: ButtonDefault)
+	OnPress      func()        // Callback invoked when button is pressed
+	Width        Dimension     // Deprecated: use Style.Width
+	Height       Dimension     // Deprecated: use Style.Height
+	Style        Style         // Optional styling (colors) applied when not focused
+	Click        func(MouseEvent) // Optional callback invoked when clicked
 	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
 	Hover   func(bool) // Optional callback invoked when hover state changes
@@ -58,7 +59,7 @@ func (b Button) WidgetID() string {
 // IsFocusable returns true, indicating this button can receive keyboard focus.
 // Implements the Focusable interface.
 func (b Button) IsFocusable() bool {
-	return true
+	return !b.DisableFocus
 }
 
 // Keybinds returns the declarative keybindings for this button.

@@ -31,14 +31,15 @@ func (s *CheckboxState) IsChecked() bool {
 // Checkbox is a focusable widget that displays a checkable box with an optional label.
 // It can be toggled with Enter or Space when focused.
 type Checkbox struct {
-	ID        string          // Optional unique identifier for the checkbox
-	State     *CheckboxState  // Required - holds checked state
-	Label     string          // Optional text displayed after the indicator
-	Width     Dimension       // Deprecated: use Style.Width
-	Height    Dimension       // Deprecated: use Style.Height
-	Style     Style           // Optional styling applied when not focused
-	OnChange  func(bool)      // Optional callback invoked after state changes
-	Click     func(MouseEvent) // Optional callback invoked when clicked
+	ID           string          // Optional unique identifier for the checkbox
+	DisableFocus bool            // If true, prevent keyboard focus
+	State        *CheckboxState  // Required - holds checked state
+	Label        string          // Optional text displayed after the indicator
+	Width        Dimension       // Deprecated: use Style.Width
+	Height       Dimension       // Deprecated: use Style.Height
+	Style        Style           // Optional styling applied when not focused
+	OnChange     func(bool)      // Optional callback invoked after state changes
+	Click        func(MouseEvent) // Optional callback invoked when clicked
 	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
 	Hover     func(bool)      // Optional callback invoked when hover state changes
@@ -53,7 +54,7 @@ func (c *Checkbox) WidgetID() string {
 // IsFocusable returns true, indicating this checkbox can receive keyboard focus.
 // Implements the Focusable interface.
 func (c *Checkbox) IsFocusable() bool {
-	return true
+	return !c.DisableFocus
 }
 
 // Keybinds returns the declarative keybindings for this checkbox.
