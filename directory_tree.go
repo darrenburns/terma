@@ -108,6 +108,7 @@ func (d DirectoryTree) defaultRenderNode(ctx BuildContext, tree Tree[DirectoryEn
 
 	return func(entry DirectoryEntry, nodeCtx TreeNodeContext, match MatchResult) Widget {
 		style := directoryTreeNodeStyle(theme, nodeCtx, widgetFocused, entry.Err != nil)
+		style.Width = Flex(1)
 
 		label := entry.Name
 		if label == "" {
