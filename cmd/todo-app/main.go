@@ -67,7 +67,7 @@ type TodoApp struct {
 
 	// Editing state
 	editingIndex   t.Signal[int]
-	editInputState *t.TextInputState
+	editInputState *t.TextAreaState
 
 	// Theme picker state
 	showThemePicker       t.Signal[bool]
@@ -105,23 +105,23 @@ func NewTodoApp() *TodoApp {
 	}
 
 	app := &TodoApp{
-		tasks:               t.NewListState(initialTasks),
-		inputState:          t.NewTextInputState(""),
-		scrollState:         t.NewScrollState(),
-		filterMode:          t.NewSignal(false),
-		filterInputState:    t.NewTextInputState(""),
-		filteredListState:   t.NewListState([]Task{}),
-		filteredScrollState: t.NewScrollState(),
-		editingIndex:        t.NewSignal(-1),
-		editInputState:      t.NewTextInputState(""),
+		tasks:                 t.NewListState(initialTasks),
+		inputState:            t.NewTextInputState(""),
+		scrollState:           t.NewScrollState(),
+		filterMode:            t.NewSignal(false),
+		filterInputState:      t.NewTextInputState(""),
+		filteredListState:     t.NewListState([]Task{}),
+		filteredScrollState:   t.NewScrollState(),
+		editingIndex:          t.NewSignal(-1),
+		editInputState:        t.NewTextAreaState(""),
 		showThemePicker:       t.NewSignal(false),
 		themeCategory:         t.NewSignal("dark"),
 		darkThemeListState:    t.NewListState(darkThemeNames),
 		lightThemeListState:   t.NewListState(lightThemeNames),
 		darkThemeScrollState:  t.NewScrollState(),
 		lightThemeScrollState: t.NewScrollState(),
-		showHelp:            t.NewSignal(false),
-		nextID:              10,
+		showHelp:              t.NewSignal(false),
+		nextID:                10,
 	}
 
 	// Initialize celebration animation (loops continuously when started)
@@ -447,44 +447,30 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 			}
 		}
 
-		// If this task is being edited, show TextInput
+		// If this task is being edited, show TextArea
 		if editingIdx == itemIndex {
 			// Capture index for closures
 			idx := itemIndex
-			itemCount := a.tasks.ItemCount()
 
 			// Align with normal display: "  ○  " = prefix + circle + spacing
 			return t.Row{
 				Width: t.Flex(1),
 				Children: []t.Widget{
 					t.Text{Content: "  ○  "}, // Match the prefix + circle + space
-					t.TextInput{
+					t.TextArea{
 						ID:    "edit-input",
 						State: a.editInputState,
 						Width: t.Flex(1),
 						Style: t.Style{
 							BackgroundColor: theme.Surface,
 						},
-						OnSubmit: func(text string) {
-							a.saveEdit(idx, text)
-						},
 						ExtraKeybinds: []t.Keybind{
-							{Key: "up", Action: func() {
-								a.editingIndex.Set(-1)
-								if idx == 0 {
-									t.RequestFocus("new-task-input")
-								} else {
-									a.tasks.SelectPrevious()
-									t.RequestFocus("task-list")
-								}
-							}, Hidden: true},
-							{Key: "down", Action: func() {
-								a.editingIndex.Set(-1)
-								if idx < itemCount-1 {
-									a.tasks.SelectNext()
-								}
-								t.RequestFocus("task-list")
-							}, Hidden: true},
+							{Key: "enter", Name: "Save", Action: func() {
+								a.saveEdit(idx, a.editInputState.GetText())
+							}},
+							{Key: "shift+enter", Name: "Newline", Action: func() {
+								a.editInputState.ReplaceSelection("\n")
+							}},
 						},
 					},
 				},
@@ -1035,6 +1021,7 @@ func (a *TodoApp) startEdit() {
 	if idx >= 0 && idx < len(tasks) {
 		a.tasks.ClearSelection()
 		a.editInputState.SetText(tasks[idx].Title)
+		a.editInputState.ClearSelection()
 		a.editInputState.CursorEnd() // Position cursor at end of text
 		a.editingIndex.Set(idx)
 	}
