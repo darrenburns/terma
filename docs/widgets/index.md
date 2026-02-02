@@ -24,6 +24,7 @@ Widgets that display content:
 - List - Generic navigable list
 - Table - Navigable multi-column table
 - [Tree](tree.md) - Hierarchical expandable list
+- [DirectoryTree](directorytree.md) - Directory tree powered by Tree
 - [ProgressBar](progressbar.md) - Horizontal progress indicator
 - [Tabs](tabs.md) - TabBar and TabView for tab navigation
 
