@@ -60,6 +60,7 @@ nav:
     - TextInput: widgets/textinput.md
     - Tooltip: widgets/tooltip.md
     - Tree: widgets/tree.md
+    - DirectoryTree: widgets/directorytree.md
   - Layout:
     - Overview: layout/index.md
     - Row & Column: layout/row-column.md
