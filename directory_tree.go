@@ -168,7 +168,6 @@ func directoryTreeNodeStyle(theme ThemeData, nodeCtx TreeNodeContext, widgetFocu
 	}
 	if nodeCtx.Selected {
 		style.BackgroundColor = theme.Selection
-		style.ForegroundColor = theme.SelectionText
 	}
 	return style
 }
