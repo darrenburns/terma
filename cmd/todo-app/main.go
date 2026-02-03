@@ -326,18 +326,19 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 						Bold:            true,
 					},
 				},
-				t.Autocomplete{
-					ID:                    "filter-tag-ac",
-					State:                 a.filterTagAcState,
-					TriggerChars:          []rune{'#'},
-					MinChars:              0,
-					DisableKeysWhenHidden: true,
-					Width:                 t.Flex(1),
-					Child: t.TextInput{
-						ID:          "filter-input",
-						State:       a.filterInputState,
-						Placeholder: "Filter tasks...",
-						Highlighter: tagHighlighter(theme.Accent),
+			t.Autocomplete{
+				ID:                    "filter-tag-ac",
+				State:                 a.filterTagAcState,
+				TriggerChars:          []rune{'#'},
+				MinChars:              0,
+				DisableKeysWhenHidden: true,
+				Width:                 t.Flex(1),
+				RenderSuggestion:      tagSuggestionRenderer("filter-input"),
+				Child: t.TextInput{
+					ID:          "filter-input",
+					State:       a.filterInputState,
+					Placeholder: "Filter tasks...",
+					Highlighter: tagHighlighter(theme.Accent),
 						Width:       t.Flex(1),
 						Style: t.Style{
 							BackgroundColor: theme.Surface,
@@ -371,6 +372,7 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 				MinChars:              0,
 				DisableKeysWhenHidden: true,
 				Width:                 t.Flex(1),
+				RenderSuggestion:      tagSuggestionRenderer("new-task-input"),
 				Child: t.TextInput{
 					ID:          "new-task-input",
 					State:       a.inputState,
@@ -479,6 +481,7 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 						MinChars:              0,
 						DisableKeysWhenHidden: true,
 						Width:                 t.Flex(1),
+						RenderSuggestion:      tagSuggestionRenderer("edit-input"),
 						Child: t.TextArea{
 							ID:          "edit-input",
 							State:       a.editInputState,
@@ -577,6 +580,16 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 	category := a.themeCategory.Get()
 	isDark := category == "dark"
+	listHeight := func(items []string) t.Dimension {
+		height := len(items)
+		if height > 10 {
+			height = 10
+		}
+		if height == 0 {
+			height = 1
+		}
+		return t.Cells(height)
+	}
 
 	// Tab style helpers
 	activeTabStyle := t.Style{
@@ -632,7 +645,7 @@ func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 					Children: map[string]t.Widget{
 						"dark": t.Scrollable{
 							State:  a.darkThemeScrollState,
-							Height: t.Cells(12),
+							Height: listHeight(darkThemeNames),
 							Child: t.List[string]{
 								ID:             "dark-theme-list",
 								State:          a.darkThemeListState,
@@ -644,7 +657,7 @@ func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 						},
 						"light": t.Scrollable{
 							State:  a.lightThemeScrollState,
-							Height: t.Cells(12),
+							Height: listHeight(lightThemeNames),
 							Child: t.List[string]{
 								ID:             "light-theme-list",
 								State:          a.lightThemeListState,
@@ -1419,6 +1432,7 @@ func extractTags(title string) []string {
 // buildTagSuggestions builds a sorted list of unique tag suggestions from tasks.
 func buildTagSuggestions(tasks []Task) []t.Suggestion {
 	seen := make(map[string]string)
+	counts := make(map[string]int)
 	for _, task := range tasks {
 		for _, tag := range extractTags(task.Title) {
 			trimmed := strings.TrimPrefix(tag, "#")
@@ -1429,6 +1443,7 @@ func buildTagSuggestions(tasks []Task) []t.Suggestion {
 			if _, ok := seen[key]; !ok {
 				seen[key] = trimmed
 			}
+			counts[key]++
 		}
 	}
 
@@ -1442,9 +1457,12 @@ func buildTagSuggestions(tasks []Task) []t.Suggestion {
 
 	suggestions := make([]t.Suggestion, 0, len(labels))
 	for _, label := range labels {
+		key := strings.ToLower(label)
+		count := counts[key]
 		suggestions = append(suggestions, t.Suggestion{
-			Label: label,
-			Value: "#" + label,
+			Label:       label,
+			Value:       "#" + label,
+			Description: fmt.Sprintf("(%d)", count),
 		})
 	}
 	return suggestions
@@ -1462,6 +1480,63 @@ func (a *TodoApp) refreshFilteredTasks() {
 		return
 	}
 	a.filteredListState.SetItems(a.getFilteredTasks())
+}
+
+func tagSuggestionRenderer(childID string) func(t.Suggestion, bool, t.MatchResult, t.BuildContext) t.Widget {
+	return func(item t.Suggestion, active bool, match t.MatchResult, ctx t.BuildContext) t.Widget {
+		theme := ctx.Theme()
+		showCursor := false
+		if active {
+			focused := ctx.Focused()
+			if focused != nil {
+				if identifiable, ok := focused.(t.Identifiable); ok && identifiable.WidgetID() == childID {
+					showCursor = true
+				}
+			}
+		}
+
+		textColor := theme.Text
+		if showCursor {
+			textColor = theme.SelectionText
+		}
+
+		style := t.Style{
+			Padding: t.EdgeInsets{Left: 1, Right: 1},
+		}
+		if showCursor {
+			style.BackgroundColor = theme.ActiveCursor
+		}
+
+		spans := make([]t.Span, 0, 4)
+		if item.Icon != "" {
+			spans = append(spans, t.Span{Text: item.Icon + " "})
+		}
+		if match.Matched && len(match.Ranges) > 0 {
+			spans = append(spans, t.HighlightSpans(item.Label, match.Ranges, t.MatchHighlightStyle(theme))...)
+		} else {
+			spans = append(spans, t.Span{Text: item.Label})
+		}
+		if item.Description != "" {
+			countColor := theme.TextMuted.WithAlpha(0.7)
+			if showCursor {
+				countColor = theme.SelectionText.WithAlpha(0.7)
+			}
+			spans = append(spans,
+				t.Span{Text: " "},
+				t.Span{Text: item.Description, Style: t.SpanStyle{Foreground: countColor}},
+			)
+		}
+
+		return t.Row{
+			Style: style,
+			Children: []t.Widget{
+				t.Text{
+					Spans: spans,
+					Style: t.Style{ForegroundColor: textColor},
+				},
+			},
+		}
+	}
 }
 
 // tagHighlighter returns a Highlighter that highlights #tags in the accent color.
