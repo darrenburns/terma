@@ -84,6 +84,7 @@ Floating{
 
 | Anchor | Description |
 |--------|-------------|
+| `AnchorUnset` | Use widget default (menus: below anchor, aligned left) |
 | `AnchorTopLeft` | Above anchor, aligned left |
 | `AnchorTopCenter` | Above anchor, centered |
 | `AnchorTopRight` | Above anchor, aligned right |

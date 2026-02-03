@@ -57,12 +57,25 @@ type Task struct {
 	CreatedAt time.Time
 }
 
+// TaskList represents a named list of tasks.
+type TaskList struct {
+	ID          string
+	Name        string
+	Tasks       *t.ListState[Task]
+	ScrollState *t.ScrollState
+}
+
 // TodoApp is the main application widget.
 type TodoApp struct {
 	// Core state
-	tasks       *t.ListState[Task]
-	inputState  *t.TextInputState
-	scrollState *t.ScrollState
+	taskLists     []*TaskList
+	activeListIdx t.Signal[int]
+	inputState    *t.TextInputState
+
+	// Move menu state
+	showMoveMenu     t.Signal[bool]
+	moveMenuState    *t.MenuState
+	moveMenuAnchorID string
 
 	// Filter state
 	filterMode          t.Signal[bool]
@@ -114,10 +127,26 @@ func NewTodoApp() *TodoApp {
 		{ID: "task-9", Title: "Become a morning person (unlikely) #health #fun", Completed: false, CreatedAt: now},
 	}
 
+	todayList := &TaskList{
+		ID:          "today",
+		Name:        "Today's tasks",
+		Tasks:       t.NewListState(initialTasks),
+		ScrollState: t.NewScrollState(),
+	}
+
+	inboxList := &TaskList{
+		ID:          "inbox",
+		Name:        "Inbox",
+		Tasks:       t.NewListState([]Task{}),
+		ScrollState: t.NewScrollState(),
+	}
+
 	app := &TodoApp{
-		tasks:                 t.NewListState(initialTasks),
+		taskLists:             []*TaskList{todayList, inboxList},
+		activeListIdx:         t.NewSignal(0),
 		inputState:            t.NewTextInputState(""),
-		scrollState:           t.NewScrollState(),
+		showMoveMenu:          t.NewSignal(false),
+		moveMenuState:         t.NewMenuState([]t.MenuItem{}),
 		filterMode:            t.NewSignal(false),
 		filterInputState:      t.NewTextInputState(""),
 		filterTagAcState:      t.NewAutocompleteState(),
@@ -164,9 +193,27 @@ func (a *TodoApp) generateID() string {
 	return id
 }
 
+func (a *TodoApp) taskRowID(taskID string) string {
+	return "task-row-" + taskID
+}
+
+// activeList returns the currently active TaskList.
+func (a *TodoApp) activeList() *TaskList {
+	return a.taskLists[a.activeListIdx.Peek()]
+}
+
+// allTasks returns tasks from all lists.
+func (a *TodoApp) allTasks() []Task {
+	var all []Task
+	for _, list := range a.taskLists {
+		all = append(all, list.Tasks.GetItems()...)
+	}
+	return all
+}
+
 // isAllDone returns true if all tasks are completed and there's at least one task.
 func (a *TodoApp) isAllDone() bool {
-	tasks := a.tasks.GetItems()
+	tasks := a.activeList().Tasks.GetItems()
 	if len(tasks) == 0 {
 		return false
 	}
@@ -226,6 +273,7 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 				Body: a.buildMainContainer(ctx, bgColor),
 			},
 			a.buildThemePicker(theme),
+			a.buildMoveMenu(theme),
 			a.buildHelpModal(theme),
 		},
 	}
@@ -240,7 +288,7 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 	angle := a.celebrationAngle.Value().Get()
 
 	// Calculate task counts for the decoration
-	tasks := a.tasks.GetItems()
+	tasks := a.activeList().Tasks.GetItems()
 	completed := 0
 	for _, task := range tasks {
 		if task.Completed {
@@ -274,10 +322,10 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 		}
 	} else {
 		// Normal mode: static gradient
-		headerText := "Today's tasks"
+		headerText := a.activeList().Name
 		if a.filterMode.Get() {
 			headerText = "Type to filter"
-		} else if selectedCount := len(a.tasks.SelectedItems()); selectedCount > 1 {
+		} else if selectedCount := len(a.activeList().Tasks.SelectedItems()); selectedCount > 1 {
 			headerText = fmt.Sprintf("%d items selected", selectedCount)
 		}
 		border = t.Border{
@@ -326,19 +374,19 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 						Bold:            true,
 					},
 				},
-			t.Autocomplete{
-				ID:                    "filter-tag-ac",
-				State:                 a.filterTagAcState,
-				TriggerChars:          []rune{'#'},
-				MinChars:              0,
-				DisableKeysWhenHidden: true,
-				Width:                 t.Flex(1),
-				RenderSuggestion:      tagSuggestionRenderer("filter-input"),
-				Child: t.TextInput{
-					ID:          "filter-input",
-					State:       a.filterInputState,
-					Placeholder: "Filter tasks...",
-					Highlighter: tagHighlighter(theme.Accent),
+				t.Autocomplete{
+					ID:                    "filter-tag-ac",
+					State:                 a.filterTagAcState,
+					TriggerChars:          []rune{'#'},
+					MinChars:              0,
+					DisableKeysWhenHidden: true,
+					Width:                 t.Flex(1),
+					RenderSuggestion:      tagSuggestionRenderer("filter-input"),
+					Child: t.TextInput{
+						ID:          "filter-input",
+						State:       a.filterInputState,
+						Placeholder: "Filter tasks...",
+						Highlighter: tagHighlighter(theme.Accent),
 						Width:       t.Flex(1),
 						Style: t.Style{
 							BackgroundColor: theme.Surface,
@@ -386,6 +434,8 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 					ExtraKeybinds: []t.Keybind{
 						{Key: "enter", Name: "Create", Action: func() { a.addTask(a.inputState.GetText()) }},
 						{Key: "tab", Name: "Tasks", Action: func() {}},
+						{Key: "left", Action: a.handleNewTaskInputLeft, Hidden: true},
+						{Key: "right", Action: a.handleNewTaskInputRight, Hidden: true},
 					},
 				},
 			},
@@ -399,8 +449,8 @@ func (a *TodoApp) buildTaskList(ctx t.BuildContext) t.Widget {
 	isFilterMode := a.filterMode.Get()
 
 	// Use filtered list when in filter mode
-	listState := a.tasks
-	scrollState := a.scrollState
+	listState := a.activeList().Tasks
+	scrollState := a.activeList().ScrollState
 	if isFilterMode {
 		listState = a.filteredListState
 		scrollState = a.filteredScrollState
@@ -454,8 +504,10 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 	editingIdx := a.editingIndex.Get()
 
 	return func(task Task, active bool, selected bool) t.Widget {
+		rowID := a.taskRowID(task.ID)
+
 		// Find the index of this task
-		tasks := a.tasks.GetItems()
+		tasks := a.activeList().Tasks.GetItems()
 		itemIndex := -1
 		for i, tsk := range tasks {
 			if tsk.ID == task.ID {
@@ -471,6 +523,7 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 
 			// Align with normal display: "  ○  " = prefix + circle + spacing
 			return t.Row{
+				ID:    rowID,
 				Width: t.Flex(1),
 				Children: []t.Widget{
 					t.Text{Content: "  ○  "}, // Match the prefix + circle + space
@@ -557,6 +610,7 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 		titleWidget.Wrap = t.WrapSoft
 
 		return t.Row{
+			ID:    rowID,
 			Width: t.Flex(1),
 			Style: rowStyle,
 			Children: []t.Widget{
@@ -680,6 +734,34 @@ func (a *TodoApp) buildThemePicker(theme t.ThemeData) t.Widget {
 	}
 }
 
+// buildMoveMenu creates the move task menu modal.
+func (a *TodoApp) buildMoveMenu(theme t.ThemeData) t.Widget {
+	return t.ShowWhen(a.showMoveMenu.Get(), t.Column{
+		Children: []t.Widget{
+			t.Floating{
+				Visible: true,
+				Config: t.FloatConfig{
+					Position:      t.FloatPositionCenter,
+					OnDismiss:     a.dismissMoveMenu,
+					BackdropColor: t.Black.WithAlpha(0.2),
+				},
+				Child: t.Spacer{Width: t.Cells(1), Height: t.Cells(1)},
+			},
+			t.Menu{
+				ID:        "move-menu",
+				State:     a.moveMenuState,
+				AnchorID:  a.moveMenuAnchorID,
+				Anchor:    t.AnchorTopLeft,
+				OnSelect:  a.handleMoveMenuSelect,
+				OnDismiss: a.dismissMoveMenu,
+				Style: t.Style{
+					BackgroundColor: theme.Surface,
+				},
+			},
+		},
+	})
+}
+
 // renderThemeItem returns the render function for theme list items.
 func (a *TodoApp) renderThemeItem(theme t.ThemeData) func(string, bool, bool) t.Widget {
 	currentTheme := t.CurrentThemeName()
@@ -737,6 +819,7 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 	editingIdx := a.editingIndex.Peek()
 	isEditing := editingIdx >= 0
 	isThemePicker := a.showThemePicker.Peek()
+	isMoveMenu := a.showMoveMenu.Peek()
 	isFilterMode := a.filterMode.Peek()
 	isHelp := a.showHelp.Peek()
 
@@ -757,6 +840,13 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 		}
 	}
 
+	// Move menu modal has its own keybinds
+	if isMoveMenu {
+		return []t.Keybind{
+			{Key: "escape", Name: "Cancel", Action: a.dismissMoveMenu},
+		}
+	}
+
 	// Filter mode has its own keybinds
 	if isFilterMode {
 		return []t.Keybind{
@@ -774,6 +864,8 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 		// Navigation between input and list (these bubble up from focused widgets)
 		{Key: "up", Action: a.navigateUp, Hidden: true},
 		{Key: "down", Action: a.navigateDown, Hidden: true},
+		{Key: "left", Name: "Prev List", Action: a.switchToPreviousList, Hidden: true},
+		{Key: "right", Name: "Next List", Action: a.switchToNextList, Hidden: true},
 	}
 
 	if !isEditing {
@@ -782,6 +874,7 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 			t.Keybind{Key: " ", Name: "Toggle", Action: a.toggleCurrentTask},
 			t.Keybind{Key: "e", Name: "Edit", Action: a.startEdit},
 			t.Keybind{Key: "d", Name: "Delete", Action: a.deleteCurrentTask},
+			t.Keybind{Key: "m", Name: "Move", Action: a.openMoveMenu},
 			t.Keybind{Key: "t", Name: "Theme", Action: a.openThemePicker},
 			t.Keybind{Key: "/", Name: "Filter", Action: a.enterFilterMode},
 			t.Keybind{Key: "ctrl+j", Name: "Move Down", Action: a.moveTaskDown, Hidden: true},
@@ -797,24 +890,181 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 	return keybinds
 }
 
+func (a *TodoApp) switchToPreviousList() {
+	if a.editingIndex.Peek() >= 0 {
+		a.cancelEdit()
+	}
+	a.activeListIdx.Update(func(idx int) int {
+		if idx > 0 {
+			return idx - 1
+		}
+		return len(a.taskLists) - 1
+	})
+	a.filteredScrollState.SetOffset(0)
+	a.refreshFilteredTasks()
+}
+
+func (a *TodoApp) switchToNextList() {
+	if a.editingIndex.Peek() >= 0 {
+		a.cancelEdit()
+	}
+	a.activeListIdx.Update(func(idx int) int {
+		if idx < len(a.taskLists)-1 {
+			return idx + 1
+		}
+		return 0
+	})
+	a.filteredScrollState.SetOffset(0)
+	a.refreshFilteredTasks()
+}
+
+func (a *TodoApp) handleNewTaskInputLeft() {
+	if a.inputState == nil {
+		return
+	}
+	if a.inputState.GetText() == "" {
+		a.switchToPreviousList()
+		return
+	}
+	a.inputState.ClearSelection()
+	a.inputState.CursorLeft()
+}
+
+func (a *TodoApp) handleNewTaskInputRight() {
+	if a.inputState == nil {
+		return
+	}
+	if a.inputState.GetText() == "" {
+		a.switchToNextList()
+		return
+	}
+	a.inputState.ClearSelection()
+	a.inputState.CursorRight()
+}
+
+func (a *TodoApp) openMoveMenu() {
+	listState := a.activeList().Tasks
+	if a.filterMode.Peek() {
+		listState = a.filteredListState
+	}
+	if listState.ItemCount() == 0 {
+		return
+	}
+
+	anchorTask, ok := listState.SelectedItem()
+	if !ok {
+		return
+	}
+	a.moveMenuAnchorID = a.taskRowID(anchorTask.ID)
+
+	items := a.buildMoveMenuItems()
+	if len(items) == 0 {
+		return
+	}
+
+	a.moveMenuState = t.NewMenuState(items)
+	a.showMoveMenu.Set(true)
+	t.RequestFocus("move-menu")
+}
+
+func (a *TodoApp) dismissMoveMenu() {
+	if a.moveMenuState != nil {
+		a.moveMenuState.CloseSubmenu()
+	}
+	a.showMoveMenu.Set(false)
+	a.moveMenuAnchorID = ""
+	t.RequestFocus("task-list")
+}
+
+func (a *TodoApp) handleMoveMenuSelect(item t.MenuItem) {
+	if item.Action != nil {
+		item.Action()
+	}
+}
+
+func (a *TodoApp) buildMoveMenuItems() []t.MenuItem {
+	currentID := a.activeList().ID
+	items := make([]t.MenuItem, 0, len(a.taskLists)-1)
+	for _, list := range a.taskLists {
+		if list.ID == currentID {
+			continue
+		}
+		listCopy := list
+		items = append(items, t.MenuItem{
+			Label:  "Move to " + list.Name,
+			Action: func() { a.moveTaskToList(listCopy) },
+		})
+	}
+	return items
+}
+
+func (a *TodoApp) moveTaskToList(targetList *TaskList) {
+	if targetList == nil {
+		a.dismissMoveMenu()
+		return
+	}
+
+	sourceList := a.activeList()
+	if sourceList.ID == targetList.ID {
+		a.dismissMoveMenu()
+		return
+	}
+
+	listState := sourceList.Tasks
+	selectedTasks := listState.SelectedItems()
+	if len(selectedTasks) == 0 {
+		if task, ok := listState.SelectedItem(); ok {
+			selectedTasks = []Task{task}
+		}
+	}
+	if len(selectedTasks) == 0 {
+		a.dismissMoveMenu()
+		return
+	}
+
+	idsToMove := make(map[string]struct{}, len(selectedTasks))
+	for _, task := range selectedTasks {
+		idsToMove[task.ID] = struct{}{}
+	}
+
+	sourceList.Tasks.RemoveWhere(func(task Task) bool {
+		_, shouldMove := idsToMove[task.ID]
+		return shouldMove
+	})
+	listState.ClearSelection()
+	listState.ClearAnchor()
+
+	for i := len(selectedTasks) - 1; i >= 0; i-- {
+		targetList.Tasks.Prepend(selectedTasks[i])
+	}
+
+	a.refreshTagSuggestions()
+	a.refreshFilteredTasks()
+	a.dismissMoveMenu()
+}
+
 // navigateUp handles up arrow for cross-widget navigation.
 // Called when: input focused, list at top item, or in edit mode.
 func (a *TodoApp) navigateUp() {
 	editingIdx := a.editingIndex.Peek()
+	listState := a.activeList().Tasks
+	if a.filterMode.Peek() {
+		listState = a.filteredListState
+	}
 
 	if editingIdx >= 0 {
 		// In edit mode: cancel edit and move cursor up (or to input if at top)
 		a.editingIndex.Set(-1)
 		if editingIdx == 0 {
-			a.tasks.ClearSelection()
+			listState.ClearSelection()
 			t.RequestFocus("new-task-input")
 		} else {
-			a.tasks.SelectPrevious()
+			listState.SelectPrevious()
 			t.RequestFocus("task-list")
 		}
 	} else {
 		// List at top or input focused - move to input
-		a.tasks.ClearSelection()
+		listState.ClearSelection()
 		t.RequestFocus("new-task-input")
 	}
 }
@@ -823,13 +1073,17 @@ func (a *TodoApp) navigateUp() {
 // Called when: input focused, list at bottom item, or in edit mode.
 func (a *TodoApp) navigateDown() {
 	editingIdx := a.editingIndex.Peek()
+	listState := a.activeList().Tasks
+	if a.filterMode.Peek() {
+		listState = a.filteredListState
+	}
 
 	if editingIdx >= 0 {
 		// In edit mode: cancel edit and move cursor down
 		a.editingIndex.Set(-1)
-		itemCount := a.tasks.ItemCount()
+		itemCount := listState.ItemCount()
 		if editingIdx < itemCount-1 {
-			a.tasks.SelectNext()
+			listState.SelectNext()
 		}
 		t.RequestFocus("task-list")
 	} else {
@@ -851,8 +1105,9 @@ func (a *TodoApp) addTask(title string) {
 		Completed: false,
 		CreatedAt: time.Now(),
 	}
-	a.tasks.Prepend(task)
-	a.tasks.SelectIndex(0)
+	listState := a.activeList().Tasks
+	listState.Prepend(task)
+	listState.SelectIndex(0)
 	a.inputState.SetText("")
 	a.refreshTagSuggestions()
 	a.refreshFilteredTasks()
@@ -863,7 +1118,7 @@ func (a *TodoApp) addTask(title string) {
 // otherwise sets all to uncompleted. If no selection, toggles the cursor item.
 func (a *TodoApp) toggleCurrentTask() {
 	// Use the appropriate list state based on filter mode
-	listState := a.tasks
+	listState := a.activeList().Tasks
 	if a.filterMode.Peek() {
 		listState = a.filteredListState
 	}
@@ -895,26 +1150,43 @@ func (a *TodoApp) toggleCurrentTask() {
 
 // toggleTask toggles the completion status of the given task.
 func (a *TodoApp) toggleTask(task Task) {
-	tasks := a.tasks.GetItems()
-	for i, tsk := range tasks {
-		if tsk.ID == task.ID {
-			tasks[i].Completed = !tasks[i].Completed
-			a.tasks.SetItems(tasks)
-			return
-		}
+	newState := !task.Completed
+	a.updateTaskCompletion(a.activeList().Tasks, task.ID, newState)
+	if a.filterMode.Peek() {
+		a.updateTaskCompletion(a.filteredListState, task.ID, newState)
 	}
 }
 
 // setTaskCompleted sets the completion status of the given task to a specific value.
 func (a *TodoApp) setTaskCompleted(task Task, completed bool) {
-	tasks := a.tasks.GetItems()
-	for i, tsk := range tasks {
-		if tsk.ID == task.ID {
-			tasks[i].Completed = completed
-			a.tasks.SetItems(tasks)
-			return
-		}
+	a.updateTaskCompletion(a.activeList().Tasks, task.ID, completed)
+	if a.filterMode.Peek() {
+		a.updateTaskCompletion(a.filteredListState, task.ID, completed)
 	}
+}
+
+func (a *TodoApp) updateTaskCompletion(listState *t.ListState[Task], id string, completed bool) {
+	listState.Items.Update(func(items []Task) []Task {
+		for i := range items {
+			if items[i].ID == id {
+				items[i].Completed = completed
+				break
+			}
+		}
+		return items
+	})
+}
+
+func (a *TodoApp) updateTaskTitle(listState *t.ListState[Task], id string, title string) {
+	listState.Items.Update(func(items []Task) []Task {
+		for i := range items {
+			if items[i].ID == id {
+				items[i].Title = title
+				break
+			}
+		}
+		return items
+	})
 }
 
 // deleteCurrentTask removes selected tasks.
@@ -922,10 +1194,11 @@ func (a *TodoApp) setTaskCompleted(task Task, completed bool) {
 func (a *TodoApp) deleteCurrentTask() {
 	// Use the appropriate list state based on filter mode
 	isFilterMode := a.filterMode.Peek()
-	listState := a.tasks
+	listState := a.activeList().Tasks
 	if isFilterMode {
 		listState = a.filteredListState
 	}
+	sourceList := a.activeList().Tasks
 
 	// Check for multi-select: if items are selected, delete all of them
 	selectedTasks := listState.SelectedItems()
@@ -937,7 +1210,7 @@ func (a *TodoApp) deleteCurrentTask() {
 		}
 
 		// Remove all matching tasks
-		a.tasks.RemoveWhere(func(task Task) bool {
+		sourceList.RemoveWhere(func(task Task) bool {
 			_, shouldDelete := idsToDelete[task.ID]
 			return shouldDelete
 		})
@@ -961,10 +1234,10 @@ func (a *TodoApp) deleteCurrentTask() {
 		return
 	}
 
-	tasks := a.tasks.GetItems()
+	tasks := sourceList.GetItems()
 	for i, tsk := range tasks {
 		if tsk.ID == task.ID {
-			a.tasks.RemoveAt(i)
+			sourceList.RemoveAt(i)
 			a.refreshTagSuggestions()
 			a.refreshFilteredTasks()
 
@@ -980,8 +1253,9 @@ func (a *TodoApp) deleteCurrentTask() {
 // moveTaskUp moves selected tasks up in the list.
 // If multiple items are selected, moves all of them as a block.
 func (a *TodoApp) moveTaskUp() {
-	tasks := a.tasks.GetItems()
-	selectedIndices := a.tasks.SelectedIndices()
+	listState := a.activeList().Tasks
+	tasks := listState.GetItems()
+	selectedIndices := listState.SelectedIndices()
 
 	// If there's a selection, move the entire selection block
 	if len(selectedIndices) > 0 {
@@ -996,35 +1270,36 @@ func (a *TodoApp) moveTaskUp() {
 		itemAbove := tasks[firstIdx-1]
 		copy(tasks[firstIdx-1:lastIdx], tasks[firstIdx:lastIdx+1])
 		tasks[lastIdx] = itemAbove
-		a.tasks.SetItems(tasks)
+		listState.SetItems(tasks)
 		a.refreshFilteredTasks()
 
 		// Update selection indices (all shift up by 1)
-		a.tasks.SelectRange(firstIdx-1, lastIdx-1)
+		listState.SelectRange(firstIdx-1, lastIdx-1)
 
 		// Move cursor up
-		cursorIdx := a.tasks.CursorIndex.Peek()
-		a.tasks.SelectIndex(cursorIdx - 1)
+		cursorIdx := listState.CursorIndex.Peek()
+		listState.SelectIndex(cursorIdx - 1)
 		return
 	}
 
 	// No selection - move just the cursor item
-	idx := a.tasks.CursorIndex.Peek()
+	idx := listState.CursorIndex.Peek()
 	if idx <= 0 || idx >= len(tasks) {
 		return
 	}
 
 	tasks[idx], tasks[idx-1] = tasks[idx-1], tasks[idx]
-	a.tasks.SetItems(tasks)
+	listState.SetItems(tasks)
 	a.refreshFilteredTasks()
-	a.tasks.SelectIndex(idx - 1)
+	listState.SelectIndex(idx - 1)
 }
 
 // moveTaskDown moves selected tasks down in the list.
 // If multiple items are selected, moves all of them as a block.
 func (a *TodoApp) moveTaskDown() {
-	tasks := a.tasks.GetItems()
-	selectedIndices := a.tasks.SelectedIndices()
+	listState := a.activeList().Tasks
+	tasks := listState.GetItems()
+	selectedIndices := listState.SelectedIndices()
 
 	// If there's a selection, move the entire selection block
 	if len(selectedIndices) > 0 {
@@ -1039,36 +1314,37 @@ func (a *TodoApp) moveTaskDown() {
 		itemBelow := tasks[lastIdx+1]
 		copy(tasks[firstIdx+1:lastIdx+2], tasks[firstIdx:lastIdx+1])
 		tasks[firstIdx] = itemBelow
-		a.tasks.SetItems(tasks)
+		listState.SetItems(tasks)
 		a.refreshFilteredTasks()
 
 		// Update selection indices (all shift down by 1)
-		a.tasks.SelectRange(firstIdx+1, lastIdx+1)
+		listState.SelectRange(firstIdx+1, lastIdx+1)
 
 		// Move cursor down
-		cursorIdx := a.tasks.CursorIndex.Peek()
-		a.tasks.SelectIndex(cursorIdx + 1)
+		cursorIdx := listState.CursorIndex.Peek()
+		listState.SelectIndex(cursorIdx + 1)
 		return
 	}
 
 	// No selection - move just the cursor item
-	idx := a.tasks.CursorIndex.Peek()
+	idx := listState.CursorIndex.Peek()
 	if idx < 0 || idx >= len(tasks)-1 {
 		return
 	}
 
 	tasks[idx], tasks[idx+1] = tasks[idx+1], tasks[idx]
-	a.tasks.SetItems(tasks)
+	listState.SetItems(tasks)
 	a.refreshFilteredTasks()
-	a.tasks.SelectIndex(idx + 1)
+	listState.SelectIndex(idx + 1)
 }
 
 // startEdit begins inline editing of the current task.
 func (a *TodoApp) startEdit() {
-	idx := a.tasks.CursorIndex.Peek()
-	tasks := a.tasks.GetItems()
+	listState := a.activeList().Tasks
+	idx := listState.CursorIndex.Peek()
+	tasks := listState.GetItems()
 	if idx >= 0 && idx < len(tasks) {
-		a.tasks.ClearSelection()
+		listState.ClearSelection()
 		a.editInputState.SetText(tasks[idx].Title)
 		a.editInputState.ClearSelection()
 		a.editInputState.CursorEnd() // Position cursor at end of text
@@ -1085,10 +1361,14 @@ func (a *TodoApp) saveEdit(index int, newTitle string) {
 		return
 	}
 
-	tasks := a.tasks.GetItems()
+	listState := a.activeList().Tasks
+	tasks := listState.GetItems()
 	if index >= 0 && index < len(tasks) {
 		tasks[index].Title = newTitle
-		a.tasks.SetItems(tasks)
+		listState.SetItems(tasks)
+		if a.filterMode.Peek() {
+			a.updateTaskTitle(a.filteredListState, tasks[index].ID, newTitle)
+		}
 		a.refreshTagSuggestions()
 		a.refreshFilteredTasks()
 	}
@@ -1245,6 +1525,12 @@ func (a *TodoApp) buildHelpModal(theme t.ThemeData) t.Widget {
 				},
 				t.Row{
 					Children: []t.Widget{
+						keyCell("left/right", "Switch list"),
+						keyCell("m", "Move"),
+					},
+				},
+				t.Row{
+					Children: []t.Widget{
 						keyCell("t", "Theme"),
 						keyCell("q", "Quit"),
 					},
@@ -1292,12 +1578,13 @@ func (a *TodoApp) handleFilterSubmit(text string) {
 		Completed: false,
 		CreatedAt: time.Now(),
 	}
-	a.tasks.Prepend(task)
+	listState := a.activeList().Tasks
+	listState.Prepend(task)
 	a.refreshTagSuggestions()
 	a.refreshFilteredTasks()
 
 	// Select the newly created task (first item)
-	a.tasks.SelectIndex(0)
+	listState.SelectIndex(0)
 
 	// Exit filter mode
 	a.filterMode.Set(false)
@@ -1315,10 +1602,10 @@ func (a *TodoApp) exitFilterMode() {
 
 	// Restore cursor to the same task in the main list
 	if hasSelection {
-		tasks := a.tasks.GetItems()
+		tasks := a.activeList().Tasks.GetItems()
 		for i, task := range tasks {
 			if task.ID == selectedTask.ID {
-				a.tasks.SelectIndex(i)
+				a.activeList().Tasks.SelectIndex(i)
 				break
 			}
 		}
@@ -1350,11 +1637,11 @@ func (a *TodoApp) taskMatchesFilter(task Task) bool {
 func (a *TodoApp) getFilteredTasks() []Task {
 	filterText := a.getFilterText()
 	if filterText == "" {
-		return a.tasks.GetItems()
+		return a.activeList().Tasks.GetItems()
 	}
 
 	var filtered []Task
-	for _, task := range a.tasks.GetItems() {
+	for _, task := range a.activeList().Tasks.GetItems() {
 		if a.taskMatchesFilter(task) {
 			filtered = append(filtered, task)
 		}
@@ -1469,7 +1756,7 @@ func buildTagSuggestions(tasks []Task) []t.Suggestion {
 }
 
 func (a *TodoApp) refreshTagSuggestions() {
-	suggestions := buildTagSuggestions(a.tasks.GetItems())
+	suggestions := buildTagSuggestions(a.allTasks())
 	a.newTaskTagAcState.SetSuggestions(suggestions)
 	a.filterTagAcState.SetSuggestions(suggestions)
 	a.editTagAcState.SetSuggestions(suggestions)
