@@ -434,6 +434,8 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 					ExtraKeybinds: []t.Keybind{
 						{Key: "enter", Name: "Create", Action: func() { a.addTask(a.inputState.GetText()) }},
 						{Key: "tab", Name: "Tasks", Action: func() {}},
+						{Key: "left", Action: a.handleNewTaskInputLeft, Hidden: true},
+						{Key: "right", Action: a.handleNewTaskInputRight, Hidden: true},
 					},
 				},
 			},
@@ -914,6 +916,30 @@ func (a *TodoApp) switchToNextList() {
 	})
 	a.filteredScrollState.SetOffset(0)
 	a.refreshFilteredTasks()
+}
+
+func (a *TodoApp) handleNewTaskInputLeft() {
+	if a.inputState == nil {
+		return
+	}
+	if a.inputState.GetText() == "" {
+		a.switchToPreviousList()
+		return
+	}
+	a.inputState.ClearSelection()
+	a.inputState.CursorLeft()
+}
+
+func (a *TodoApp) handleNewTaskInputRight() {
+	if a.inputState == nil {
+		return
+	}
+	if a.inputState.GetText() == "" {
+		a.switchToNextList()
+		return
+	}
+	a.inputState.ClearSelection()
+	a.inputState.CursorRight()
 }
 
 func (a *TodoApp) openMoveMenu() {
