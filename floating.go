@@ -31,8 +31,10 @@ const (
 type AnchorPoint int
 
 const (
+	// AnchorUnset indicates no explicit anchor was set.
+	AnchorUnset AnchorPoint = iota
 	// AnchorTopLeft positions the float at the top-left of the anchor.
-	AnchorTopLeft AnchorPoint = iota
+	AnchorTopLeft
 	// AnchorTopCenter positions the float at the top-center of the anchor.
 	AnchorTopCenter
 	// AnchorTopRight positions the float at the top-right of the anchor.
@@ -240,6 +242,8 @@ func calculateAnchorPosition(anchor *WidgetEntry, anchorPoint AnchorPoint, float
 	bounds := anchor.Bounds
 
 	switch anchorPoint {
+	case AnchorUnset:
+		fallthrough
 	case AnchorTopLeft:
 		x = bounds.X
 		y = bounds.Y - floatHeight

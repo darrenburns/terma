@@ -145,7 +145,7 @@ type Menu struct {
 
 	// Styling
 	Width Dimension // Deprecated: use Style.Width
-	Style Style // Container style
+	Style Style     // Container style
 }
 
 // WidgetID returns the menu's unique identifier.
@@ -209,7 +209,7 @@ func (m Menu) anchor() AnchorPoint {
 	if m.AnchorID == "" {
 		return m.Anchor
 	}
-	if m.Anchor == AnchorTopLeft {
+	if m.Anchor == AnchorUnset {
 		return AnchorBottomLeft
 	}
 	return m.Anchor
