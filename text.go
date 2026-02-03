@@ -312,6 +312,53 @@ type lineData struct {
 	width    int // total width of the line
 }
 
+type styledGrapheme struct {
+	text  string
+	style SpanStyle
+	width int
+}
+
+func collectSpanGraphemes(spans []Span) []styledGrapheme {
+	if len(spans) == 0 {
+		return nil
+	}
+	result := make([]styledGrapheme, 0, len(spans))
+	for _, span := range spans {
+		if span.Text == "" {
+			continue
+		}
+		for _, g := range splitGraphemes(span.Text) {
+			result = append(result, styledGrapheme{
+				text:  g,
+				style: span.Style,
+				width: graphemeWidth(g),
+			})
+		}
+	}
+	return result
+}
+
+func appendStyledGrapheme(line *lineData, g styledGrapheme, x *int) {
+	if g.width == 0 {
+		return
+	}
+	if len(line.segments) > 0 {
+		last := &line.segments[len(line.segments)-1]
+		if last.span.Style == g.style && last.relX+last.width == *x {
+			last.span.Text += g.text
+			last.width += g.width
+			*x += g.width
+			return
+		}
+	}
+	line.segments = append(line.segments, spanSegment{
+		span:  Span{Text: g.text, Style: g.style},
+		relX:  *x,
+		width: g.width,
+	})
+	*x += g.width
+}
+
 // renderSpans renders rich text with multiple styled spans.
 func (t Text) renderSpans(ctx *RenderContext) {
 	// Start with the full style, then ensure foreground color has a default
@@ -361,131 +408,226 @@ func (t Text) renderSpans(ctx *RenderContext) {
 
 // collectSpanLines collects all span segments organized by line.
 func (t Text) collectSpanLines(width, height int) []lineData {
+	if height == 0 {
+		return nil
+	}
+	graphemes := collectSpanGraphemes(t.Spans)
+	if len(graphemes) == 0 {
+		return []lineData{{}}
+	}
+
+	if width <= 0 || t.Wrap == WrapNone {
+		return collectSpanLinesNoWrap(graphemes, width, height)
+	}
+
+	switch t.Wrap {
+	case WrapHard:
+		return collectSpanLinesHard(graphemes, width, height)
+	default:
+		lines := collectSpanLinesSoft(graphemes, width, height)
+		return hardWrapSpanLines(lines, width, height)
+	}
+}
+
+func collectSpanLinesNoWrap(graphemes []styledGrapheme, width, height int) []lineData {
 	var lines []lineData
 	var currentLine lineData
 	x := 0
 
-	for _, span := range t.Spans {
-		parts := strings.Split(span.Text, "\n")
-		for partIdx, part := range parts {
-			// Handle explicit newline
-			if partIdx > 0 {
-				currentLine.width = x
-				lines = append(lines, currentLine)
-				currentLine = lineData{}
-				x = 0
-				if len(lines) >= height {
-					return lines
-				}
-			}
-
-			if len(part) == 0 {
-				continue
-			}
-
-			// Process this part with wrapping
-			remaining := part
-			for len(remaining) > 0 {
-				if len(lines) >= height {
-					return lines
-				}
-
-				availableWidth := width - x
-				if availableWidth <= 0 {
-					currentLine.width = x
-					lines = append(lines, currentLine)
-					currentLine = lineData{}
-					x = 0
-					availableWidth = width
-					if len(lines) >= height {
-						return lines
-					}
-				}
-
-				partWidth := ansi.StringWidth(remaining)
-
-				// If it fits or no wrapping, add segment and continue
-				if partWidth <= availableWidth || t.Wrap == WrapNone {
-					chunk := remaining
-					if partWidth > availableWidth {
-						chunk = ansi.Truncate(remaining, availableWidth, "")
-						partWidth = ansi.StringWidth(chunk)
-					}
-					if len(chunk) > 0 {
-						currentLine.segments = append(currentLine.segments, spanSegment{
-							span:  Span{Text: chunk, Style: span.Style},
-							relX:  x,
-							width: partWidth,
-						})
-						x += partWidth
-					}
-					break
-				}
-
-				// Need to wrap - find break point
-				// For soft wrap: if we're mid-line and there's no space in the available width,
-				// flush to a new line first to give the text full width before breaking
-				if t.Wrap == WrapSoft && x > 0 {
-					truncated := ansi.Truncate(remaining, availableWidth, "")
-					if !strings.Contains(truncated, " ") {
-						// No word boundary in available space - flush line and retry with full width
-						currentLine.width = x
-						lines = append(lines, currentLine)
-						currentLine = lineData{}
-						x = 0
-						continue // Retry this span content with full width
-					}
-				}
-
-				chunk, rest := t.findWrapPoint(remaining, availableWidth)
-
-				if len(chunk) > 0 {
-					chunkWidth := ansi.StringWidth(chunk)
-					currentLine.segments = append(currentLine.segments, spanSegment{
-						span:  Span{Text: chunk, Style: span.Style},
-						relX:  x,
-						width: chunkWidth,
-					})
-					x += chunkWidth
-				}
-
-				remaining = rest
-				if len(remaining) > 0 {
-					currentLine.width = x
-					lines = append(lines, currentLine)
-					currentLine = lineData{}
-					x = 0
-				}
-			}
-		}
+	flushLine := func() bool {
+		currentLine.width = x
+		lines = append(lines, currentLine)
+		currentLine = lineData{}
+		x = 0
+		return height > 0 && len(lines) >= height
 	}
 
-	// Don't forget the last line
-	currentLine.width = x
-	lines = append(lines, currentLine)
+	for _, g := range graphemes {
+		if g.text == "\n" {
+			if flushLine() {
+				return lines
+			}
+			continue
+		}
+		if width > 0 && x+g.width > width {
+			continue
+		}
+		appendStyledGrapheme(&currentLine, g, &x)
+	}
 
+	flushLine()
+	if height > 0 && len(lines) > height {
+		return lines[:height]
+	}
 	return lines
 }
 
-// findWrapPoint finds where to break text for wrapping, returning the chunk to render
-// and the remaining text.
-func (t Text) findWrapPoint(text string, availableWidth int) (chunk, remaining string) {
-	if t.Wrap == WrapHard {
-		chunk = ansi.Truncate(text, availableWidth, "")
-		remaining = text[len(chunk):]
-		return
+func collectSpanLinesHard(graphemes []styledGrapheme, width, height int) []lineData {
+	if width <= 0 {
+		return collectSpanLinesNoWrap(graphemes, width, height)
 	}
 
-	// Soft wrap: find last space within available width
-	chunk = ansi.Truncate(text, availableWidth, "")
-	lastSpace := strings.LastIndex(chunk, " ")
+	var lines []lineData
+	var currentLine lineData
+	x := 0
 
-	if lastSpace > 0 {
-		chunk = chunk[:lastSpace]
-		remaining = strings.TrimPrefix(text[lastSpace:], " ")
-	} else {
-		// No space found, must break the word (fallback to hard wrap)
-		remaining = text[len(chunk):]
+	flushLine := func() bool {
+		currentLine.width = x
+		lines = append(lines, currentLine)
+		currentLine = lineData{}
+		x = 0
+		return height > 0 && len(lines) >= height
 	}
-	return
+
+	for _, g := range graphemes {
+		if g.text == "\n" {
+			if flushLine() {
+				return lines
+			}
+			continue
+		}
+
+		if x > 0 && x+g.width > width {
+			if flushLine() {
+				return lines
+			}
+		}
+
+		appendStyledGrapheme(&currentLine, g, &x)
+	}
+
+	flushLine()
+	if height > 0 && len(lines) > height {
+		return lines[:height]
+	}
+	return lines
+}
+
+func collectSpanLinesSoft(graphemes []styledGrapheme, width, height int) []lineData {
+	if width <= 0 {
+		return collectSpanLinesNoWrap(graphemes, width, height)
+	}
+
+	var lines []lineData
+	var currentLine lineData
+	x := 0
+
+	var word []styledGrapheme
+	wordWidth := 0
+	var space []styledGrapheme
+	spaceWidth := 0
+
+	flushLine := func() bool {
+		currentLine.width = x
+		lines = append(lines, currentLine)
+		currentLine = lineData{}
+		x = 0
+		return height > 0 && len(lines) >= height
+	}
+
+	flushWord := func() {
+		if len(word) == 0 {
+			return
+		}
+		if len(space) > 0 {
+			for _, g := range space {
+				appendStyledGrapheme(&currentLine, g, &x)
+			}
+			space = nil
+			spaceWidth = 0
+		}
+		for _, g := range word {
+			appendStyledGrapheme(&currentLine, g, &x)
+		}
+		word = nil
+		wordWidth = 0
+	}
+
+	for _, g := range graphemes {
+		if g.text == "\n" {
+			flushWord()
+			space = nil
+			spaceWidth = 0
+			if flushLine() {
+				return lines
+			}
+			continue
+		}
+
+		if g.text == " " {
+			flushWord()
+			space = append(space, g)
+			spaceWidth += g.width
+			continue
+		}
+
+		word = append(word, g)
+		wordWidth += g.width
+
+		if x+spaceWidth+wordWidth > width && wordWidth < width {
+			if x > 0 {
+				if flushLine() {
+					return lines
+				}
+			}
+			space = nil
+			spaceWidth = 0
+		}
+	}
+
+	flushWord()
+	flushLine()
+	if height > 0 && len(lines) > height {
+		return lines[:height]
+	}
+	return lines
+}
+
+func hardWrapSpanLines(lines []lineData, width, height int) []lineData {
+	if width <= 0 {
+		return lines
+	}
+
+	var wrapped []lineData
+
+	appendLine := func(line lineData) bool {
+		wrapped = append(wrapped, line)
+		return height > 0 && len(wrapped) >= height
+	}
+
+	for _, line := range lines {
+		if line.width <= width {
+			if appendLine(line) {
+				return wrapped
+			}
+			continue
+		}
+
+		var currentLine lineData
+		x := 0
+		for _, seg := range line.segments {
+			for _, g := range splitGraphemes(seg.span.Text) {
+				gWidth := graphemeWidth(g)
+				if x > 0 && x+gWidth > width {
+					currentLine.width = x
+					if appendLine(currentLine) {
+						return wrapped
+					}
+					currentLine = lineData{}
+					x = 0
+				}
+				appendStyledGrapheme(&currentLine, styledGrapheme{
+					text:  g,
+					style: seg.span.Style,
+					width: gWidth,
+				}, &x)
+			}
+		}
+		currentLine.width = x
+		if appendLine(currentLine) {
+			return wrapped
+		}
+	}
+
+	return wrapped
 }

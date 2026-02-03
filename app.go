@@ -206,6 +206,9 @@ func Run(root Widget) (runErr error) {
 	size := t.Size()
 	width, height := size.Width, size.Height
 	debugOverlayEnabled := os.Getenv("TERMA_DEBUG_OVERLAY") != ""
+	if debugOverlayEnabled {
+		EnableDebugRenderCause()
+	}
 
 	// Create focus manager and focused signal
 	focusManager := NewFocusManager()
@@ -235,6 +238,7 @@ func Run(root Widget) (runErr error) {
 		overrunFrames           int
 		lastFrameDuration       time.Duration
 		lastOverlayWidth        int
+		lastCauseOverlayWidth   int
 	)
 
 	drawDebugOverlay := func() {
@@ -252,11 +256,30 @@ func Run(root Widget) (runErr error) {
 			lastOverlayWidth = textWidth
 		}
 
+		cause := LastRenderCause()
+		if cause == "" {
+			cause = "(none)"
+		}
+		causeText := fmt.Sprintf("cause %s", cause)
+		causeWidth := ansi.StringWidth(causeText)
+		if causeWidth < lastCauseOverlayWidth {
+			causeText += strings.Repeat(" ", lastCauseOverlayWidth-causeWidth)
+			causeWidth = lastCauseOverlayWidth
+		} else {
+			lastCauseOverlayWidth = causeWidth
+		}
+
 		ctx := NewRenderContext(t, width, height, nil, nil, BuildContext{}, nil)
 		ctx.DrawStyledText(0, 0, text, Style{
 			ForegroundColor: BrightWhite,
 			BackgroundColor: Black,
 		})
+		if height > 1 {
+			ctx.DrawStyledText(0, 1, causeText, Style{
+				ForegroundColor: BrightWhite,
+				BackgroundColor: Black,
+			})
+		}
 	}
 
 	renderInterval := time.Second / time.Duration(defaultFPS)
