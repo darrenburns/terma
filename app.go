@@ -295,10 +295,7 @@ func Run(root Widget) (runErr error) {
 		focusables := renderer.Render(root)
 		focusManager.SetFocusables(focusables)
 
-		// If focus changed after render (auto-focus or focus removal), re-render
-		if updateFocusedSignal() {
-			renderer.Render(root)
-		}
+		needsRerender := updateFocusedSignal() // auto-focus or focus removal
 
 		// Manage modal focus transitions (open/close) and keep focus inside topmost modal.
 		modalCount := renderer.ModalCount()
@@ -319,10 +316,6 @@ func Run(root Widget) (runErr error) {
 		if pendingFocusID != "" {
 			focusManager.FocusByID(pendingFocusID)
 			pendingFocusID = ""
-			// Update the signal and re-render so the focused widget shows focus style
-			if updateFocusedSignal() {
-				renderer.Render(root)
-			}
 		}
 
 		for i := 0; i < closedModals; i++ {
@@ -330,8 +323,11 @@ func Run(root Widget) (runErr error) {
 		}
 
 		lastModalCount = modalCount
-		// Update the signal and re-render so the focused widget shows focus style
+		// Update the signal and re-render once if focus changed.
 		if updateFocusedSignal() {
+			needsRerender = true
+		}
+		if needsRerender {
 			renderer.Render(root)
 		}
 		// Position terminal cursor for IME support (emoji picker, input methods)
