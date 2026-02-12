@@ -193,19 +193,19 @@ func (s *ScrollState) updateLayout(viewportHeight, contentHeight int) {
 //	    Child:  myContent,
 //	}
 type Scrollable struct {
-	ID            string       // Optional unique identifier for the widget
-	Child         Widget       // The child widget to scroll
-	State         *ScrollState // Required - holds scroll position
-	DisableScroll bool         // If true, scrolling is disabled and scrollbar hidden (default: false)
-	Focusable     bool         // If true, widget can receive keyboard focus for scroll navigation
-	DisableFocus  bool         // If true, prevent keyboard focus
-	Width         Dimension    // Deprecated: use Style.Width
-	Height        Dimension    // Deprecated: use Style.Height
-	Style         Style        // Optional styling
+	ID            string           // Optional unique identifier for the widget
+	Child         Widget           // The child widget to scroll
+	State         *ScrollState     // Required - holds scroll position
+	DisableScroll bool             // If true, scrolling is disabled and scrollbar hidden (default: false)
+	Focusable     bool             // If true, widget can receive keyboard focus for scroll navigation
+	DisableFocus  bool             // If true, prevent keyboard focus
+	Width         Dimension        // Deprecated: use Style.Width
+	Height        Dimension        // Deprecated: use Style.Height
+	Style         Style            // Optional styling
 	Click         func(MouseEvent) // Optional callback invoked when clicked
 	MouseDown     func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp       func(MouseEvent) // Optional callback invoked when mouse is released
-	Hover         func(bool)   // Optional callback invoked when hover state changes
+	Hover         func(bool)       // Optional callback invoked when hover state changes
 
 	// Scrollbar appearance customization
 	ScrollbarThumbColor Color // Custom thumb color (default: White unfocused, BrightCyan focused)
@@ -569,11 +569,11 @@ func (s Scrollable) OnKey(event KeyEvent) bool {
 		s.ScrollDown(1)
 		Log("Scrollable[%s].OnKey: scroll down, offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
 		return true
-	case event.MatchString("pageup", "ctrl+u"):
+	case event.MatchString("pgup", "pageup", "ctrl+u"):
 		s.ScrollUp(viewportHeight / 2)
 		Log("Scrollable[%s].OnKey: page up, offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
 		return true
-	case event.MatchString("pagedown", "ctrl+d"):
+	case event.MatchString("pgdown", "pagedown", "ctrl+d"):
 		s.ScrollDown(viewportHeight / 2)
 		Log("Scrollable[%s].OnKey: page down, offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
 		return true

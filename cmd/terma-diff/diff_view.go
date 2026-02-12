@@ -10,13 +10,14 @@ import (
 
 // DiffView is a purpose-built diff renderer with fixed gutter and scroll support.
 type DiffView struct {
-	ID           string
-	DisableFocus bool
-	State        *DiffViewState
-	Palette      ThemePalette
-	Width        t.Dimension
-	Height       t.Dimension
-	Style        t.Style
+	ID             string
+	DisableFocus   bool
+	State          *DiffViewState
+	VerticalScroll *t.ScrollState
+	Palette        ThemePalette
+	Width          t.Dimension
+	Height         t.Dimension
+	Style          t.Style
 }
 
 func (d DiffView) Build(ctx t.BuildContext) t.Widget {
@@ -30,28 +31,6 @@ func (d DiffView) WidgetID() string {
 
 func (d DiffView) IsFocusable() bool {
 	return !d.DisableFocus
-}
-
-func (d DiffView) Keybinds() []t.Keybind {
-	if d.State == nil {
-		return nil
-	}
-	return []t.Keybind{
-		{Key: "up", Hidden: true, Action: func() { d.scrollY(-1) }},
-		{Key: "k", Hidden: true, Action: func() { d.scrollY(-1) }},
-		{Key: "down", Hidden: true, Action: func() { d.scrollY(1) }},
-		{Key: "j", Hidden: true, Action: func() { d.scrollY(1) }},
-		{Key: "pgup", Hidden: true, Action: func() { d.pageUp() }},
-		{Key: "pgdown", Hidden: true, Action: func() { d.pageDown() }},
-		{Key: "ctrl+u", Hidden: true, Action: func() { d.halfPageUp() }},
-		{Key: "ctrl+d", Hidden: true, Action: func() { d.halfPageDown() }},
-		{Key: "g", Hidden: true, Action: func() { d.toTop() }},
-		{Key: "G", Hidden: true, Action: func() { d.toBottom() }},
-		{Key: "left", Hidden: true, Action: func() { d.scrollX(-1) }},
-		{Key: "h", Hidden: true, Action: func() { d.scrollX(-1) }},
-		{Key: "right", Hidden: true, Action: func() { d.scrollX(1) }},
-		{Key: "l", Hidden: true, Action: func() { d.scrollX(1) }},
-	}
 }
 
 func (d DiffView) GetContentDimensions() (width, height t.Dimension) {
@@ -146,7 +125,7 @@ func (d DiffView) Layout(ctx t.BuildContext, constraints t.Constraints) t.Size {
 
 	width = clampInt(width, constraints.MinWidth, constraints.MaxWidth)
 	height = clampInt(height, constraints.MinHeight, constraints.MaxHeight)
-	
+
 	return t.Size{Width: width, Height: height}
 }
 
@@ -160,10 +139,34 @@ func (d DiffView) Render(ctx *t.RenderContext) {
 		rendered = buildMetaRenderedFile("Diff", []string{"No diff content to display."})
 	}
 
+	clip := ctx.ClipBounds()
+	visibleStart := 0
+	if clip.Y > ctx.Y {
+		visibleStart = clip.Y - ctx.Y
+	}
+	if visibleStart < 0 {
+		visibleStart = 0
+	}
+	visibleEnd := ctx.Height
+	clipEnd := clip.Y + clip.Height - ctx.Y
+	if clipEnd < visibleEnd {
+		visibleEnd = clipEnd
+	}
+	if visibleEnd > ctx.Height {
+		visibleEnd = ctx.Height
+	}
+	if visibleEnd <= visibleStart {
+		return
+	}
+
 	gutterWidth := renderedGutterWidth(rendered)
-	d.State.SetViewport(ctx.Width, ctx.Height, gutterWidth)
+	d.State.SetViewport(ctx.Width, visibleEnd-visibleStart, gutterWidth)
 
 	scrollY := d.State.ScrollY.Get()
+	if d.VerticalScroll != nil {
+		scrollY = d.VerticalScroll.Offset.Get()
+		d.State.ScrollY.Set(scrollY)
+	}
 	scrollX := d.State.ScrollX.Get()
 	if scrollY < 0 {
 		scrollY = 0
@@ -172,8 +175,11 @@ func (d DiffView) Render(ctx *t.RenderContext) {
 		scrollX = 0
 	}
 
-	for row := 0; row < ctx.Height; row++ {
-		lineIdx := scrollY + row
+	for row := visibleStart; row < visibleEnd; row++ {
+		lineIdx := row
+		if d.VerticalScroll == nil {
+			lineIdx = scrollY + row
+		}
 		if lineIdx < 0 || lineIdx >= len(rendered.Lines) {
 			continue
 		}
@@ -315,66 +321,6 @@ func (d DiffView) currentRendered() *RenderedFile {
 		return nil
 	}
 	return d.State.Rendered.Peek()
-}
-
-func (d DiffView) scrollY(delta int) {
-	if d.State == nil {
-		return
-	}
-	d.State.MoveY(delta, d.gutterWidth())
-}
-
-func (d DiffView) scrollX(delta int) {
-	if d.State == nil {
-		return
-	}
-	d.State.MoveX(delta, d.gutterWidth())
-}
-
-func (d DiffView) pageUp() {
-	if d.State == nil {
-		return
-	}
-	d.State.PageUp(d.gutterWidth())
-}
-
-func (d DiffView) pageDown() {
-	if d.State == nil {
-		return
-	}
-	d.State.PageDown(d.gutterWidth())
-}
-
-func (d DiffView) halfPageUp() {
-	if d.State == nil {
-		return
-	}
-	d.State.HalfPageUp(d.gutterWidth())
-}
-
-func (d DiffView) halfPageDown() {
-	if d.State == nil {
-		return
-	}
-	d.State.HalfPageDown(d.gutterWidth())
-}
-
-func (d DiffView) toTop() {
-	if d.State == nil {
-		return
-	}
-	d.State.GoTop(d.gutterWidth())
-}
-
-func (d DiffView) toBottom() {
-	if d.State == nil {
-		return
-	}
-	d.State.GoBottom(d.gutterWidth())
-}
-
-func (d DiffView) gutterWidth() int {
-	return renderedGutterWidth(d.currentRendered())
 }
 
 func renderedGutterWidth(rendered *RenderedFile) int {

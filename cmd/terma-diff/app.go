@@ -26,6 +26,7 @@ type DiffApp struct {
 
 	treeState       *t.TreeState[DiffTreeNodeData]
 	treeScrollState *t.ScrollState
+	diffScrollState *t.ScrollState
 	diffViewState   *DiffViewState
 	splitState      *t.SplitPaneState
 	themeNames      []string
@@ -40,11 +41,13 @@ func NewDiffApp(provider DiffProvider, staged bool) *DiffApp {
 		orderedFilePaths:   []string{},
 		treeState:          t.NewTreeState([]t.TreeNode[DiffTreeNodeData]{}),
 		treeScrollState:    t.NewScrollState(),
+		diffScrollState:    t.NewScrollState(),
 		diffViewState:      NewDiffViewState(buildMetaRenderedFile("Diff", []string{"Loading diff..."})),
 		splitState:         t.NewSplitPaneState(0.30),
 		themeNames:         t.ThemeNames(),
 	}
 	app.refreshDiff()
+	t.RequestFocus("terma-diff-viewer-scroll")
 	return app
 }
 
@@ -212,10 +215,23 @@ func (a *DiffApp) renderTreeNode(theme t.ThemeData, widgetFocused bool) func(nod
 }
 
 func (a *DiffApp) buildRightPane(theme t.ThemeData) t.Widget {
-	return DiffView{
-		ID:      "terma-diff-viewer",
-		State:   a.diffViewState,
-		Palette: NewThemePalette(theme),
+	viewer := DiffView{
+		ID:             "terma-diff-viewer",
+		DisableFocus:   true,
+		State:          a.diffViewState,
+		VerticalScroll: a.diffScrollState,
+		Palette:        NewThemePalette(theme),
+		Style: t.Style{
+			Width:           t.Flex(1),
+			Padding:         t.EdgeInsets{},
+			BackgroundColor: theme.Surface,
+		},
+	}
+
+	return t.Scrollable{
+		ID:        "terma-diff-viewer-scroll",
+		State:     a.diffScrollState,
+		Focusable: true,
 		Style: t.Style{
 			Width:           t.Flex(1),
 			Height:          t.Flex(1),
@@ -223,6 +239,7 @@ func (a *DiffApp) buildRightPane(theme t.ThemeData) t.Widget {
 			BackgroundColor: theme.Surface,
 			Border:          t.RoundedBorder(theme.Border, t.BorderTitle(a.viewerTitle())),
 		},
+		Child: viewer,
 	}
 }
 
@@ -249,6 +266,7 @@ func (a *DiffApp) refreshDiff() {
 		a.treeState.CursorPath.Set(nil)
 		a.treeState.Collapsed.Set(map[string]bool{})
 		a.diffViewState.SetRendered(messageToRendered("Error", a.errorMessage()))
+		a.diffScrollState.SetOffset(0)
 		return
 	}
 
@@ -265,6 +283,7 @@ func (a *DiffApp) refreshDiff() {
 		a.treeState.CursorPath.Set(nil)
 		a.treeState.Collapsed.Set(map[string]bool{})
 		a.diffViewState.SetRendered(messageToRendered("Error", a.errorMessage()))
+		a.diffScrollState.SetOffset(0)
 		return
 	}
 
@@ -289,6 +308,7 @@ func (a *DiffApp) refreshDiff() {
 		a.activeIsDir = false
 		a.treeState.CursorPath.Set(nil)
 		a.diffViewState.SetRendered(messageToRendered("Diff", a.emptyMessage()))
+		a.diffScrollState.SetOffset(0)
 		return
 	}
 
@@ -354,6 +374,7 @@ func (a *DiffApp) onTreeCursorChange(node DiffTreeNodeData) {
 		a.activePath = node.Path
 		a.activeIsDir = false
 		a.diffViewState.SetRendered(rendered)
+		a.diffScrollState.SetOffset(0)
 	}
 }
 
@@ -369,12 +390,14 @@ func (a *DiffApp) setActiveFile(file *DiffFile) {
 		a.renderedByPath[file.DisplayPath] = rendered
 	}
 	a.diffViewState.SetRendered(rendered)
+	a.diffScrollState.SetOffset(0)
 }
 
 func (a *DiffApp) setActiveDirectory(node DiffTreeNodeData) {
 	a.activePath = node.Path
 	a.activeIsDir = true
 	a.diffViewState.SetRendered(buildDirectorySummaryRenderedFile(node))
+	a.diffScrollState.SetOffset(0)
 }
 
 func (a *DiffApp) cycleTheme() {
