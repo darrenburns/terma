@@ -1,10 +1,13 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	t "terma"
@@ -104,8 +107,12 @@ type TodoApp struct {
 	celebrationAngle *t.Animation[float64]
 	wasCelebrating   bool // Track previous celebration state
 
-	// ID counter for generating unique task IDs
-	nextID int
+	// Persistence state
+	statePath   string
+	saveDelay   time.Duration
+	saveMu      sync.Mutex
+	saveTimer   *time.Timer
+	pendingSave *todoStateV1
 
 	// Tag autocomplete state
 	newTaskTagAcState *t.AutocompleteState
@@ -161,7 +168,7 @@ func NewTodoApp() *TodoApp {
 		darkThemeScrollState:  t.NewScrollState(),
 		lightThemeScrollState: t.NewScrollState(),
 		showHelp:              t.NewSignal(false),
-		nextID:                10,
+		saveDelay:             350 * time.Millisecond,
 		newTaskTagAcState:     t.NewAutocompleteState(),
 		editTagAcState:        t.NewAutocompleteState(),
 	}
@@ -188,9 +195,26 @@ func NewTodoApp() *TodoApp {
 
 // generateID creates a unique ID for a new task.
 func (a *TodoApp) generateID() string {
-	id := fmt.Sprintf("task-%d", a.nextID)
-	a.nextID++
-	return id
+	for i := 0; i < 8; i++ {
+		b := make([]byte, 6)
+		if _, err := rand.Read(b); err != nil {
+			continue
+		}
+		id := "task-" + hex.EncodeToString(b)
+		if !a.taskIDExists(id) {
+			return id
+		}
+	}
+	return fmt.Sprintf("task-%d", time.Now().UnixNano())
+}
+
+func (a *TodoApp) taskIDExists(id string) bool {
+	for _, task := range a.allTasks() {
+		if task.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *TodoApp) taskRowID(taskID string) string {
@@ -902,6 +926,7 @@ func (a *TodoApp) switchToPreviousList() {
 	})
 	a.filteredScrollState.SetOffset(0)
 	a.refreshFilteredTasks()
+	a.scheduleSave()
 }
 
 func (a *TodoApp) switchToNextList() {
@@ -916,6 +941,7 @@ func (a *TodoApp) switchToNextList() {
 	})
 	a.filteredScrollState.SetOffset(0)
 	a.refreshFilteredTasks()
+	a.scheduleSave()
 }
 
 func (a *TodoApp) handleNewTaskInputLeft() {
@@ -1040,6 +1066,7 @@ func (a *TodoApp) moveTaskToList(targetList *TaskList) {
 
 	a.refreshTagSuggestions()
 	a.refreshFilteredTasks()
+	a.scheduleSave()
 	a.dismissMoveMenu()
 }
 
@@ -1111,6 +1138,7 @@ func (a *TodoApp) addTask(title string) {
 	a.inputState.SetText("")
 	a.refreshTagSuggestions()
 	a.refreshFilteredTasks()
+	a.scheduleSave()
 }
 
 // toggleCurrentTask toggles the completion status of selected tasks.
@@ -1155,6 +1183,7 @@ func (a *TodoApp) toggleTask(task Task) {
 	if a.filterMode.Peek() {
 		a.updateTaskCompletion(a.filteredListState, task.ID, newState)
 	}
+	a.scheduleSave()
 }
 
 // setTaskCompleted sets the completion status of the given task to a specific value.
@@ -1163,6 +1192,7 @@ func (a *TodoApp) setTaskCompleted(task Task, completed bool) {
 	if a.filterMode.Peek() {
 		a.updateTaskCompletion(a.filteredListState, task.ID, completed)
 	}
+	a.scheduleSave()
 }
 
 func (a *TodoApp) updateTaskCompletion(listState *t.ListState[Task], id string, completed bool) {
@@ -1225,6 +1255,7 @@ func (a *TodoApp) deleteCurrentTask() {
 		if isFilterMode && len(a.getFilteredTasks()) == 0 {
 			t.RequestFocus("filter-input")
 		}
+		a.scheduleSave()
 		return
 	}
 
@@ -1245,6 +1276,7 @@ func (a *TodoApp) deleteCurrentTask() {
 			if isFilterMode && len(a.getFilteredTasks()) == 0 {
 				t.RequestFocus("filter-input")
 			}
+			a.scheduleSave()
 			return
 		}
 	}
@@ -1279,6 +1311,7 @@ func (a *TodoApp) moveTaskUp() {
 		// Move cursor up
 		cursorIdx := listState.CursorIndex.Peek()
 		listState.SelectIndex(cursorIdx - 1)
+		a.scheduleSave()
 		return
 	}
 
@@ -1292,6 +1325,7 @@ func (a *TodoApp) moveTaskUp() {
 	listState.SetItems(tasks)
 	a.refreshFilteredTasks()
 	listState.SelectIndex(idx - 1)
+	a.scheduleSave()
 }
 
 // moveTaskDown moves selected tasks down in the list.
@@ -1323,6 +1357,7 @@ func (a *TodoApp) moveTaskDown() {
 		// Move cursor down
 		cursorIdx := listState.CursorIndex.Peek()
 		listState.SelectIndex(cursorIdx + 1)
+		a.scheduleSave()
 		return
 	}
 
@@ -1336,6 +1371,7 @@ func (a *TodoApp) moveTaskDown() {
 	listState.SetItems(tasks)
 	a.refreshFilteredTasks()
 	listState.SelectIndex(idx + 1)
+	a.scheduleSave()
 }
 
 // startEdit begins inline editing of the current task.
@@ -1371,6 +1407,7 @@ func (a *TodoApp) saveEdit(index int, newTitle string) {
 		}
 		a.refreshTagSuggestions()
 		a.refreshFilteredTasks()
+		a.scheduleSave()
 	}
 	a.editingIndex.Set(-1)
 	t.RequestFocus("task-list")
@@ -1429,6 +1466,7 @@ func (a *TodoApp) selectTheme(themeName string) {
 	t.SetTheme(themeName)
 	a.showThemePicker.Set(false)
 	t.RequestFocus("task-list")
+	a.scheduleSave()
 }
 
 // showDarkThemes switches to the dark themes category.
@@ -1582,6 +1620,7 @@ func (a *TodoApp) handleFilterSubmit(text string) {
 	listState.Prepend(task)
 	a.refreshTagSuggestions()
 	a.refreshFilteredTasks()
+	a.scheduleSave()
 
 	// Select the newly created task (first item)
 	listState.SelectIndex(0)
@@ -1975,6 +2014,8 @@ func colorProviderToColor(cp t.ColorProvider) t.Color {
 }
 
 func main() {
-	t.SetTheme("kanagawa")
-	_ = t.Run(NewTodoApp())
+	app := NewTodoApp()
+	app.initializePersistence()
+	_ = t.Run(app)
+	app.flushSave()
 }
