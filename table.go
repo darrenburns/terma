@@ -631,22 +631,13 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 		}
 
 		if len(rows) > 0 {
-			clampedRow := clampInt(cursorRow, 0, len(rows)-1)
-			if clampedRow != cursorRow {
-				t.State.CursorIndex.Set(clampedRow)
-				cursorRow = clampedRow
-			}
+			cursorRow = clampInt(cursorRow, 0, len(rows)-1)
 		}
 
-		clampedCol := clampInt(cursorCol, 0, columnCount-1)
-		if clampedCol != cursorCol {
-			t.State.CursorColumn.Set(clampedCol)
-			cursorCol = clampedCol
-		}
+		cursorCol = clampInt(cursorCol, 0, columnCount-1)
 
 		if _, ok := t.State.viewIndexForSource(cursorRow); !ok {
 			cursorRow = viewIndices[0]
-			t.State.CursorIndex.Set(cursorRow)
 		}
 
 		t.registerScrollCallbacks(mode, hasHeader)
@@ -871,6 +862,7 @@ func (t Table[T]) Keybinds() []Keybind {
 }
 
 func (t Table[T]) selectRow() {
+	t.normalizeRowCursorForInteraction()
 	if t.OnSelect != nil {
 		if row, ok := t.State.SelectedRow(); ok {
 			t.OnSelect(row)
@@ -884,12 +876,7 @@ func (t Table[T]) keyCursorUp() {
 		t.scrollBy(-1)
 		return
 	}
-	view := t.viewIndices()
-	if len(view) == 0 {
-		return
-	}
-	cursorRow := t.State.CursorIndex.Peek()
-	cursorViewIdx, ok := t.viewIndexForSource(cursorRow)
+	_, cursorViewIdx, ok := t.normalizeRowCursorForInteraction()
 	if !ok {
 		return
 	}
@@ -911,12 +898,7 @@ func (t Table[T]) keyCursorDown() {
 		t.scrollBy(1)
 		return
 	}
-	view := t.viewIndices()
-	if len(view) == 0 {
-		return
-	}
-	cursorRow := t.State.CursorIndex.Peek()
-	cursorViewIdx, ok := t.viewIndexForSource(cursorRow)
+	view, cursorViewIdx, ok := t.normalizeRowCursorForInteraction()
 	if !ok {
 		return
 	}
@@ -976,14 +958,9 @@ func (t Table[T]) pageUp() {
 		t.scrollBy(-10)
 		return
 	}
-	view := t.viewIndices()
-	if len(view) == 0 {
-		return
-	}
-	cursorRow := t.State.CursorIndex.Peek()
-	cursorViewIdx, ok := t.viewIndexForSource(cursorRow)
+	_, cursorViewIdx, ok := t.normalizeRowCursorForInteraction()
 	if !ok {
-		cursorViewIdx = 0
+		return
 	}
 	if t.MultiSelect {
 		t.State.ClearSelection()
@@ -1000,14 +977,9 @@ func (t Table[T]) pageDown() {
 		t.scrollBy(10)
 		return
 	}
-	view := t.viewIndices()
-	if len(view) == 0 {
-		return
-	}
-	cursorRow := t.State.CursorIndex.Peek()
-	cursorViewIdx, ok := t.viewIndexForSource(cursorRow)
+	_, cursorViewIdx, ok := t.normalizeRowCursorForInteraction()
 	if !ok {
-		cursorViewIdx = 0
+		return
 	}
 	if t.MultiSelect {
 		t.State.ClearSelection()
@@ -1020,7 +992,7 @@ func (t Table[T]) pageDown() {
 
 func (t Table[T]) keyCursorLeft() {
 	columnCount := len(t.Columns)
-	if columnCount == 0 {
+	if !t.normalizeColumnCursorForInteraction(columnCount) {
 		return
 	}
 	cursorCol := t.State.CursorColumn.Peek()
@@ -1036,7 +1008,7 @@ func (t Table[T]) keyCursorLeft() {
 
 func (t Table[T]) keyCursorRight() {
 	columnCount := len(t.Columns)
-	if columnCount == 0 {
+	if !t.normalizeColumnCursorForInteraction(columnCount) {
 		return
 	}
 	cursorCol := t.State.CursorColumn.Peek()
@@ -1425,6 +1397,52 @@ func (t Table[T]) setCursorToViewIndex(viewIdx int) {
 	}
 	viewIdx = clampInt(viewIdx, 0, len(view)-1)
 	t.State.SelectIndex(view[viewIdx])
+}
+
+// normalizeRowCursorForInteraction clamps the source row cursor to bounds and
+// ensures it points at a visible row when filtering is active.
+func (t Table[T]) normalizeRowCursorForInteraction() (view []int, cursorViewIdx int, ok bool) {
+	if t.State == nil {
+		return nil, 0, false
+	}
+
+	view = t.viewIndices()
+	if len(view) == 0 {
+		return nil, 0, false
+	}
+
+	rows := t.State.Rows.Peek()
+	if len(rows) == 0 {
+		return nil, 0, false
+	}
+
+	cursorRow := t.State.CursorIndex.Peek()
+	clamped := clampInt(cursorRow, 0, len(rows)-1)
+	if clamped != cursorRow {
+		cursorRow = clamped
+		t.State.CursorIndex.Set(cursorRow)
+	}
+
+	cursorViewIdx, ok = t.viewIndexForSource(cursorRow)
+	if ok {
+		return view, cursorViewIdx, true
+	}
+
+	t.State.CursorIndex.Set(view[0])
+	return view, 0, true
+}
+
+func (t Table[T]) normalizeColumnCursorForInteraction(columnCount int) bool {
+	if t.State == nil || columnCount == 0 {
+		return false
+	}
+
+	cursorCol := t.State.CursorColumn.Peek()
+	clamped := clampInt(cursorCol, 0, columnCount-1)
+	if clamped != cursorCol {
+		t.State.CursorColumn.Set(clamped)
+	}
+	return true
 }
 
 func (t Table[T]) viewIndices() []int {
