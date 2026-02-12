@@ -17,33 +17,33 @@ type DiffApp struct {
 	loadErr  string
 	files    []*DiffFile
 
-	activePath     string
-	renderedByPath map[string]*RenderedFile
+	activePath  string
+	activeIsDir bool
 
-	listState       *t.ListState[*DiffFile]
-	listScrollState *t.ScrollState
-	viewerState     *t.TextAreaState
+	renderedByPath     map[string]*RenderedFile
+	filePathToTreePath map[string][]int
+	orderedFilePaths   []string
+
+	treeState       *t.TreeState[DiffTreeNodeData]
+	treeScrollState *t.ScrollState
+	diffViewState   *DiffViewState
 	splitState      *t.SplitPaneState
 	themeNames      []string
 }
 
 func NewDiffApp(provider DiffProvider, staged bool) *DiffApp {
-	viewerState := t.NewTextAreaState("")
-	viewerState.ReadOnly.Set(true)
-	viewerState.WrapMode.Set(t.WrapNone)
-	viewerState.CursorIndex.Set(0)
-
 	app := &DiffApp{
-		provider:        provider,
-		staged:          staged,
-		listState:       t.NewListState([]*DiffFile{}),
-		listScrollState: t.NewScrollState(),
-		viewerState:     viewerState,
-		splitState:      t.NewSplitPaneState(0.30),
-		renderedByPath:  map[string]*RenderedFile{},
-		themeNames:      t.ThemeNames(),
+		provider:           provider,
+		staged:             staged,
+		renderedByPath:     map[string]*RenderedFile{},
+		filePathToTreePath: map[string][]int{},
+		orderedFilePaths:   []string{},
+		treeState:          t.NewTreeState([]t.TreeNode[DiffTreeNodeData]{}),
+		treeScrollState:    t.NewScrollState(),
+		diffViewState:      NewDiffViewState(buildMetaRenderedFile("Diff", []string{"Loading diff..."})),
+		splitState:         t.NewSplitPaneState(0.30),
+		themeNames:         t.ThemeNames(),
 	}
-
 	app.refreshDiff()
 	return app
 }
@@ -62,27 +62,6 @@ func (a *DiffApp) Keybinds() []t.Keybind {
 
 func (a *DiffApp) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
-	palette := NewThemePalette(theme)
-
-	var highlighter t.Highlighter
-	lineHighlights := []t.LineHighlight{}
-	if rendered := a.currentRendered(); rendered != nil {
-		highlighter = DiffHighlighter{Tokens: rendered.Tokens, Palette: palette}
-		lineHighlights = buildLineHighlights(rendered, palette)
-	}
-
-	split := t.SplitPane{
-		ID:                "terma-diff-split",
-		State:             a.splitState,
-		Orientation:       t.SplitHorizontal,
-		DividerSize:       1,
-		MinPaneSize:       20,
-		DisableFocus:      true,
-		DividerBackground: theme.Surface2,
-		First:             a.buildLeftPane(theme),
-		Second:            a.buildRightPane(theme, highlighter, lineHighlights),
-	}
-
 	return t.Dock{
 		Top: []t.Widget{a.buildHeader(theme)},
 		Bottom: []t.Widget{
@@ -93,7 +72,17 @@ func (a *DiffApp) Build(ctx t.BuildContext) t.Widget {
 				},
 			},
 		},
-		Body: split,
+		Body: t.SplitPane{
+			ID:                "terma-diff-split",
+			State:             a.splitState,
+			Orientation:       t.SplitHorizontal,
+			DividerSize:       1,
+			MinPaneSize:       20,
+			DisableFocus:      true,
+			DividerBackground: theme.Surface2,
+			First:             a.buildLeftPane(ctx, theme),
+			Second:            a.buildRightPane(theme),
+		},
 	}
 }
 
@@ -103,7 +92,7 @@ func (a *DiffApp) buildHeader(theme t.ThemeData) t.Widget {
 		repoName = filepath.Base(a.repoRoot)
 	}
 
-	status := fmt.Sprintf("Repo: %s  Mode: %s  Files: %d  Theme: %s", repoName, a.modeLabel(), len(a.files), t.CurrentThemeName())
+	status := fmt.Sprintf("Repo: %s  Mode: %s  Files: %d  Theme: %s", repoName, a.modeLabel(), len(a.orderedFilePaths), t.CurrentThemeName())
 	statusStyle := t.Style{ForegroundColor: theme.TextMuted}
 	if a.loadErr != "" {
 		status = "Error loading diff. See viewer panel for details."
@@ -134,7 +123,26 @@ func (a *DiffApp) buildHeader(theme t.ThemeData) t.Widget {
 	}
 }
 
-func (a *DiffApp) buildLeftPane(theme t.ThemeData) t.Widget {
+func (a *DiffApp) buildLeftPane(ctx t.BuildContext, theme t.ThemeData) t.Widget {
+	treeWidget := SplitFriendlyTree{
+		Tree: t.Tree[DiffTreeNodeData]{
+			ID:          "terma-diff-files-tree",
+			State:       a.treeState,
+			ScrollState: a.treeScrollState,
+			Style:       t.Style{Width: t.Flex(1)},
+			NodeID: func(node DiffTreeNodeData) string {
+				return node.Path
+			},
+			HasChildren: func(node DiffTreeNodeData) bool {
+				return node.IsDir
+			},
+			OnCursorChange: a.onTreeCursorChange,
+		},
+	}
+
+	sidebarFocused := ctx.IsFocused(treeWidget)
+	treeWidget.RenderNodeWithMatch = a.renderTreeNode(theme, sidebarFocused)
+
 	return t.Column{
 		Height: t.Flex(1),
 		Style: t.Style{
@@ -144,80 +152,77 @@ func (a *DiffApp) buildLeftPane(theme t.ThemeData) t.Widget {
 		Children: []t.Widget{
 			t.Scrollable{
 				ID:    "terma-diff-files-scroll",
-				State: a.listScrollState,
+				State: a.treeScrollState,
 				Style: t.Style{
+					Width:  t.Flex(1),
 					Height: t.Flex(1),
 					Border: t.RoundedBorder(theme.Border, t.BorderTitle("Files")),
 				},
-				Child: t.List[*DiffFile]{
-					ID:             "terma-diff-files-list",
-					State:          a.listState,
-					ScrollState:    a.listScrollState,
-					OnCursorChange: a.onFileCursorChange,
-					RenderItem:     a.renderFileItem(theme),
-				},
+				Child: treeWidget,
 			},
 		},
 	}
 }
 
-func (a *DiffApp) buildRightPane(theme t.ThemeData, highlighter t.Highlighter, lineHighlights []t.LineHighlight) t.Widget {
-	title := "Diff"
-	if a.activePath != "" {
-		title = a.activePath
-	}
+func (a *DiffApp) renderTreeNode(theme t.ThemeData, widgetFocused bool) func(node DiffTreeNodeData, nodeCtx t.TreeNodeContext, match t.MatchResult) t.Widget {
+	return func(node DiffTreeNodeData, nodeCtx t.TreeNodeContext, _ t.MatchResult) t.Widget {
+		rowStyle := t.Style{
+			Width:   t.Flex(1),
+			Padding: t.EdgeInsetsXY(1, 0),
+		}
+		labelStyle := t.Style{ForegroundColor: theme.Text}
+		addStyle := t.Style{ForegroundColor: theme.Success}
+		delStyle := t.Style{ForegroundColor: theme.Error}
+		metaStyle := t.Style{ForegroundColor: theme.TextMuted}
 
-	return t.TextArea{
-		ID:             "terma-diff-viewer",
-		State:          a.viewerState,
-		Highlighter:    highlighter,
-		LineHighlights: lineHighlights,
+		showCursor := nodeCtx.Active && widgetFocused
+		if showCursor {
+			rowStyle.BackgroundColor = theme.ActiveCursor
+			labelStyle.ForegroundColor = theme.SelectionText
+			addStyle.ForegroundColor = theme.SelectionText
+			delStyle.ForegroundColor = theme.SelectionText
+			metaStyle.ForegroundColor = theme.SelectionText
+		}
+
+		label := node.Name
+		meta := ""
+		if node.IsDir {
+			label += "/"
+			meta = fmt.Sprintf("%d files", node.TouchedFiles)
+		}
+
+		children := []t.Widget{
+			t.Text{Content: label, Style: labelStyle},
+		}
+		if meta != "" {
+			children = append(children, t.Text{Content: " " + meta, Style: metaStyle})
+		}
+		children = append(children,
+			t.Spacer{Width: t.Flex(1)},
+			t.Text{Content: fmt.Sprintf("+%d", node.Additions), Style: addStyle},
+			t.Text{Content: " "},
+			t.Text{Content: fmt.Sprintf("-%d", node.Deletions), Style: delStyle},
+		)
+
+		return t.Row{
+			Style:    rowStyle,
+			Children: children,
+		}
+	}
+}
+
+func (a *DiffApp) buildRightPane(theme t.ThemeData) t.Widget {
+	return DiffView{
+		ID:      "terma-diff-viewer",
+		State:   a.diffViewState,
+		Palette: NewThemePalette(theme),
 		Style: t.Style{
 			Width:           t.Flex(1),
 			Height:          t.Flex(1),
 			Padding:         t.EdgeInsetsXY(1, 0),
 			BackgroundColor: theme.Surface,
-			Border:          t.RoundedBorder(theme.Border, t.BorderTitle(title)),
+			Border:          t.RoundedBorder(theme.Border, t.BorderTitle(a.viewerTitle())),
 		},
-		ExtraKeybinds: []t.Keybind{
-			{Key: "j", Hidden: true, Action: func() { a.viewerState.CursorDown() }},
-			{Key: "k", Hidden: true, Action: func() { a.viewerState.CursorUp() }},
-			{Key: "h", Hidden: true, Action: func() { a.viewerState.CursorLeft() }},
-			{Key: "l", Hidden: true, Action: func() { a.viewerState.CursorRight() }},
-		},
-	}
-}
-
-func (a *DiffApp) renderFileItem(theme t.ThemeData) func(file *DiffFile, active bool, selected bool) t.Widget {
-	return func(file *DiffFile, active bool, _ bool) t.Widget {
-		if file == nil {
-			return t.Text{Content: ""}
-		}
-
-		rowStyle := t.Style{
-			Width:   t.Flex(1),
-			Padding: t.EdgeInsetsXY(1, 0),
-		}
-		pathStyle := t.Style{ForegroundColor: theme.Text}
-		addStyle := t.Style{ForegroundColor: theme.Success}
-		delStyle := t.Style{ForegroundColor: theme.Error}
-		if active {
-			rowStyle.BackgroundColor = theme.ActiveCursor
-			pathStyle.ForegroundColor = theme.SelectionText
-			addStyle.ForegroundColor = theme.SelectionText
-			delStyle.ForegroundColor = theme.SelectionText
-		}
-
-		return t.Row{
-			Style: rowStyle,
-			Children: []t.Widget{
-				t.Text{Content: file.DisplayPath, Style: pathStyle},
-				t.Spacer{Width: t.Flex(1)},
-				t.Text{Content: fmt.Sprintf("+%d", file.Additions), Style: addStyle},
-				t.Text{Content: " "},
-				t.Text{Content: fmt.Sprintf("-%d", file.Deletions), Style: delStyle},
-			},
-		}
 	}
 }
 
@@ -226,14 +231,24 @@ func (a *DiffApp) refreshDiff() {
 		a.repoRoot = repoRoot
 	}
 
+	previousActiveFile := ""
+	if !a.activeIsDir {
+		previousActiveFile = a.activePath
+	}
+
 	raw, err := a.provider.LoadDiff(a.staged)
 	if err != nil {
 		a.loadErr = err.Error()
 		a.files = nil
 		a.activePath = ""
+		a.activeIsDir = false
 		a.renderedByPath = map[string]*RenderedFile{}
-		a.listState.SetItems([]*DiffFile{})
-		a.setViewerText(a.errorMessage())
+		a.filePathToTreePath = map[string][]int{}
+		a.orderedFilePaths = nil
+		a.treeState.Nodes.Set([]t.TreeNode[DiffTreeNodeData]{})
+		a.treeState.CursorPath.Set(nil)
+		a.treeState.Collapsed.Set(map[string]bool{})
+		a.diffViewState.SetRendered(messageToRendered("Error", a.errorMessage()))
 		return
 	}
 
@@ -242,59 +257,104 @@ func (a *DiffApp) refreshDiff() {
 		a.loadErr = fmt.Sprintf("parse error: %v", err)
 		a.files = nil
 		a.activePath = ""
+		a.activeIsDir = false
 		a.renderedByPath = map[string]*RenderedFile{}
-		a.listState.SetItems([]*DiffFile{})
-		a.setViewerText(a.errorMessage())
+		a.filePathToTreePath = map[string][]int{}
+		a.orderedFilePaths = nil
+		a.treeState.Nodes.Set([]t.TreeNode[DiffTreeNodeData]{})
+		a.treeState.CursorPath.Set(nil)
+		a.treeState.Collapsed.Set(map[string]bool{})
+		a.diffViewState.SetRendered(messageToRendered("Error", a.errorMessage()))
 		return
 	}
 
 	a.loadErr = ""
 	a.files = doc.Files
 	a.renderedByPath = make(map[string]*RenderedFile, len(a.files))
-	a.listState.SetItems(a.files)
+	for _, file := range a.files {
+		if file == nil {
+			continue
+		}
+		a.renderedByPath[file.DisplayPath] = buildRenderedFile(file)
+	}
 
-	if len(a.files) == 0 {
+	roots, filePathToTreePath, orderedFilePaths := buildDiffTree(a.files)
+	a.filePathToTreePath = filePathToTreePath
+	a.orderedFilePaths = orderedFilePaths
+	a.treeState.Nodes.Set(roots)
+	a.treeState.Collapsed.Set(map[string]bool{})
+
+	if len(a.orderedFilePaths) == 0 {
 		a.activePath = ""
-		a.setViewerText(a.emptyMessage())
+		a.activeIsDir = false
+		a.treeState.CursorPath.Set(nil)
+		a.diffViewState.SetRendered(messageToRendered("Diff", a.emptyMessage()))
 		return
 	}
 
-	targetIdx := a.indexOfPath(a.activePath)
-	if targetIdx < 0 {
-		targetIdx = 0
+	targetPath := previousActiveFile
+	if _, ok := a.filePathToTreePath[targetPath]; !ok {
+		targetPath = a.orderedFilePaths[0]
 	}
-	a.listState.SelectIndex(targetIdx)
-	a.updateActiveFromCursor()
+	if !a.selectFilePath(targetPath) {
+		a.selectFilePath(a.orderedFilePaths[0])
+	}
 }
 
 func (a *DiffApp) moveFileCursor(delta int) {
-	if len(a.files) == 0 {
+	if len(a.orderedFilePaths) == 0 {
 		return
 	}
-	current := a.listState.CursorIndex.Peek()
-	next := current + delta
-	if next < 0 {
-		next = len(a.files) - 1
+
+	currentIdx := -1
+	if !a.activeIsDir {
+		currentIdx = a.indexOfOrderedPath(a.activePath)
 	}
-	if next >= len(a.files) {
-		next = 0
+
+	nextIdx := 0
+	if currentIdx < 0 {
+		if delta < 0 {
+			nextIdx = len(a.orderedFilePaths) - 1
+		}
+	} else {
+		nextIdx = currentIdx + delta
+		for nextIdx < 0 {
+			nextIdx += len(a.orderedFilePaths)
+		}
+		nextIdx = nextIdx % len(a.orderedFilePaths)
 	}
-	a.listState.SelectIndex(next)
-	a.updateActiveFromCursor()
+
+	a.selectFilePath(a.orderedFilePaths[nextIdx])
 }
 
-func (a *DiffApp) onFileCursorChange(file *DiffFile) {
-	a.setActiveFile(file)
+func (a *DiffApp) selectFilePath(filePath string) bool {
+	treePath, ok := a.filePathToTreePath[filePath]
+	if !ok {
+		return false
+	}
+	a.treeState.CursorPath.Set(clonePath(treePath))
+	node, ok := a.treeState.NodeAtPath(treePath)
+	if !ok {
+		return false
+	}
+	a.onTreeCursorChange(node.Data)
+	return true
 }
 
-func (a *DiffApp) updateActiveFromCursor() {
-	file, ok := a.listState.SelectedItem()
-	if !ok || file == nil {
-		a.activePath = ""
-		a.setViewerText(a.emptyMessage())
+func (a *DiffApp) onTreeCursorChange(node DiffTreeNodeData) {
+	if node.IsDir {
+		a.setActiveDirectory(node)
 		return
 	}
-	a.setActiveFile(file)
+	if node.File != nil {
+		a.setActiveFile(node.File)
+		return
+	}
+	if rendered, ok := a.renderedByPath[node.Path]; ok {
+		a.activePath = node.Path
+		a.activeIsDir = false
+		a.diffViewState.SetRendered(rendered)
+	}
 }
 
 func (a *DiffApp) setActiveFile(file *DiffFile) {
@@ -302,25 +362,19 @@ func (a *DiffApp) setActiveFile(file *DiffFile) {
 		return
 	}
 	a.activePath = file.DisplayPath
+	a.activeIsDir = false
 	rendered, ok := a.renderedByPath[file.DisplayPath]
 	if !ok {
 		rendered = buildRenderedFile(file)
 		a.renderedByPath[file.DisplayPath] = rendered
 	}
-	a.setViewerText(rendered.Text)
+	a.diffViewState.SetRendered(rendered)
 }
 
-func (a *DiffApp) setViewerText(text string) {
-	a.viewerState.SetText(text)
-	a.viewerState.CursorIndex.Set(0)
-	a.viewerState.SelectionAnchor.Set(-1)
-}
-
-func (a *DiffApp) currentRendered() *RenderedFile {
-	if a.activePath == "" {
-		return nil
-	}
-	return a.renderedByPath[a.activePath]
+func (a *DiffApp) setActiveDirectory(node DiffTreeNodeData) {
+	a.activePath = node.Path
+	a.activeIsDir = true
+	a.diffViewState.SetRendered(buildDirectorySummaryRenderedFile(node))
 }
 
 func (a *DiffApp) cycleTheme() {
@@ -346,6 +400,19 @@ func (a *DiffApp) modeLabel() string {
 	return "unstaged"
 }
 
+func (a *DiffApp) viewerTitle() string {
+	if a.activePath == "" {
+		if a.loadErr != "" {
+			return "Error"
+		}
+		return "Diff"
+	}
+	if a.activeIsDir {
+		return a.activePath + " (directory)"
+	}
+	return a.activePath
+}
+
 func (a *DiffApp) emptyMessage() string {
 	if a.staged {
 		return "No staged changes.\n\nRun git add <file> and press r to refresh."
@@ -361,31 +428,37 @@ func (a *DiffApp) errorMessage() string {
 	return "Failed to load git diff:\n\n" + msg + "\n\nPress r to retry."
 }
 
-func (a *DiffApp) indexOfPath(path string) int {
+func (a *DiffApp) indexOfOrderedPath(path string) int {
 	if path == "" {
 		return -1
 	}
-	for i, file := range a.files {
-		if file != nil && file.DisplayPath == path {
-			return i
+	for idx, filePath := range a.orderedFilePaths {
+		if filePath == path {
+			return idx
 		}
 	}
 	return -1
 }
 
-func buildLineHighlights(rendered *RenderedFile, palette ThemePalette) []t.LineHighlight {
-	if rendered == nil || len(rendered.LineKinds) == 0 {
-		return nil
+func messageToRendered(title string, text string) *RenderedFile {
+	normalized := strings.ReplaceAll(text, "\r\n", "\n")
+	return buildMetaRenderedFile(title, strings.Split(normalized, "\n"))
+}
+
+func buildDirectorySummaryRenderedFile(node DiffTreeNodeData) *RenderedFile {
+	path := node.Path
+	if path == "" {
+		path = node.Name
 	}
-	highlights := make([]t.LineHighlight, 0, len(rendered.LineKinds))
-	for lineIdx, kind := range rendered.LineKinds {
-		if style, ok := palette.LineStyleForKind(kind); ok {
-			highlights = append(highlights, t.LineHighlight{
-				StartLine: lineIdx,
-				EndLine:   lineIdx + 1,
-				Style:     style,
-			})
-		}
+	if path == "" {
+		path = "(root)"
 	}
-	return highlights
+	return buildMetaRenderedFile(path, []string{
+		fmt.Sprintf("Directory: %s", path),
+		fmt.Sprintf("Touched files: %d", node.TouchedFiles),
+		fmt.Sprintf("Additions: +%d", node.Additions),
+		fmt.Sprintf("Deletions: -%d", node.Deletions),
+		"",
+		"Use n/p to jump between changed files.",
+	})
 }

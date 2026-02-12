@@ -7,6 +7,7 @@ import (
 
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/lexers"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // RenderedLineKind is the visual category of a rendered line.
@@ -43,32 +44,31 @@ const (
 	TokenRoleSyntaxPunctuation
 )
 
-// HighlightToken identifies a byte range in rendered text and its semantic role.
-type HighlightToken struct {
-	StartByte int
-	EndByte   int
-	Role      TokenRole
+const diffTabWidth = 4
+
+// RenderedSegment is a tokenized text fragment with semantic styling.
+type RenderedSegment struct {
+	Text string
+	Role TokenRole
+}
+
+// RenderedDiffLine is a single display line in the custom diff viewer.
+type RenderedDiffLine struct {
+	Kind         RenderedLineKind
+	OldLine      int
+	NewLine      int
+	Prefix       string
+	Segments     []RenderedSegment
+	ContentWidth int
 }
 
 // RenderedFile is the display model for one file diff.
 type RenderedFile struct {
-	Text      string
-	Tokens    []HighlightToken
-	LineKinds []RenderedLineKind
-}
-
-type renderLine struct {
-	Kind    RenderedLineKind
-	Prefix  string
-	Content string
-	OldLine int
-	NewLine int
-}
-
-type syntaxToken struct {
-	Start int
-	End   int
-	Role  TokenRole
+	Title           string
+	Lines           []RenderedDiffLine
+	OldNumWidth     int
+	NewNumWidth     int
+	MaxContentWidth int
 }
 
 func buildRenderedFile(file *DiffFile) *RenderedFile {
@@ -76,113 +76,83 @@ func buildRenderedFile(file *DiffFile) *RenderedFile {
 		return nil
 	}
 
-	lines := buildRenderLines(file)
+	lexer := chooseLexer(file)
+	lines := buildRenderLines(file, lexer)
 	if len(lines) == 0 {
-		lines = []renderLine{{Kind: RenderedLineMeta, Prefix: " ", Content: "No changes to render"}}
+		lines = []RenderedDiffLine{
+			newRenderedLine(RenderedLineMeta, 0, 0, " ", []RenderedSegment{{Text: "No changes to render", Role: TokenRoleDiffMeta}}),
+		}
 	}
 
 	oldWidth, newWidth := lineNumberWidths(lines)
-	lexer := chooseLexer(file)
-
-	var builder strings.Builder
-	tokens := make([]HighlightToken, 0, len(lines)*3)
-	lineKinds := make([]RenderedLineKind, 0, len(lines))
-
-	for lineIdx, line := range lines {
-		oldText := lineNumberText(line.OldLine, oldWidth)
-		newText := lineNumberText(line.NewLine, newWidth)
-
-		oldStart := builder.Len()
-		builder.WriteString(oldText)
-		oldEnd := builder.Len()
-
-		builder.WriteByte(' ')
-
-		newStart := builder.Len()
-		builder.WriteString(newText)
-		newEnd := builder.Len()
-
-		builder.WriteByte(' ')
-
-		prefixStart := builder.Len()
-		builder.WriteString(line.Prefix)
-		prefixEnd := builder.Len()
-
-		builder.WriteByte(' ')
-
-		contentStart := builder.Len()
-		builder.WriteString(line.Content)
-		contentEnd := builder.Len()
-
-		if lineIdx < len(lines)-1 {
-			builder.WriteByte('\n')
+	maxContent := 0
+	for i := range lines {
+		if lines[i].ContentWidth > maxContent {
+			maxContent = lines[i].ContentWidth
 		}
-
-		lineKinds = append(lineKinds, line.Kind)
-
-		if strings.TrimSpace(oldText) != "" {
-			tokens = append(tokens, HighlightToken{StartByte: oldStart, EndByte: oldEnd, Role: TokenRoleOldLineNumber})
-		}
-		if strings.TrimSpace(newText) != "" {
-			tokens = append(tokens, HighlightToken{StartByte: newStart, EndByte: newEnd, Role: TokenRoleNewLineNumber})
-		}
-
-		if prefixRole, ok := prefixRoleForLine(line.Kind); ok {
-			tokens = append(tokens, HighlightToken{StartByte: prefixStart, EndByte: prefixEnd, Role: prefixRole})
-		}
-
-		switch line.Kind {
-		case RenderedLineFileHeader:
-			tokens = append(tokens, HighlightToken{StartByte: contentStart, EndByte: contentEnd, Role: TokenRoleDiffFileHeader})
-		case RenderedLineHunkHeader:
-			tokens = append(tokens, HighlightToken{StartByte: contentStart, EndByte: contentEnd, Role: TokenRoleDiffHunkHeader})
-		case RenderedLineMeta:
-			tokens = append(tokens, HighlightToken{StartByte: contentStart, EndByte: contentEnd, Role: TokenRoleDiffMeta})
-		case RenderedLineContext, RenderedLineAdd, RenderedLineRemove:
-			if lexer != nil && line.Content != "" {
-				for _, token := range lexLine(lexer, line.Content) {
-					tokens = append(tokens, HighlightToken{
-						StartByte: contentStart + token.Start,
-						EndByte:   contentStart + token.End,
-						Role:      token.Role,
-					})
-				}
-			}
-		}
-
 	}
 
 	return &RenderedFile{
-		Text:      builder.String(),
-		Tokens:    tokens,
-		LineKinds: lineKinds,
+		Title:           file.DisplayPath,
+		Lines:           lines,
+		OldNumWidth:     oldWidth,
+		NewNumWidth:     newWidth,
+		MaxContentWidth: maxContent,
 	}
 }
 
-func buildRenderLines(file *DiffFile) []renderLine {
-	lines := make([]renderLine, 0, len(file.Headers)+len(file.Hunks)*8)
+func buildMetaRenderedFile(title string, body []string) *RenderedFile {
+	lines := make([]RenderedDiffLine, 0, len(body))
+	for _, line := range body {
+		lines = append(lines, newRenderedLine(RenderedLineMeta, 0, 0, " ", []RenderedSegment{{Text: line, Role: TokenRoleDiffMeta}}))
+	}
+	if len(lines) == 0 {
+		lines = append(lines, newRenderedLine(RenderedLineMeta, 0, 0, " ", []RenderedSegment{{Text: "", Role: TokenRoleDiffMeta}}))
+	}
+
+	maxContent := 0
+	for _, line := range lines {
+		if line.ContentWidth > maxContent {
+			maxContent = line.ContentWidth
+		}
+	}
+
+	return &RenderedFile{
+		Title:           title,
+		Lines:           lines,
+		OldNumWidth:     1,
+		NewNumWidth:     1,
+		MaxContentWidth: maxContent,
+	}
+}
+
+func buildRenderLines(file *DiffFile, lexer chroma.Lexer) []RenderedDiffLine {
+	lines := make([]RenderedDiffLine, 0, len(file.Headers)+len(file.Hunks)*8)
 	for _, header := range file.Headers {
 		if header == "" {
 			continue
 		}
-		lines = append(lines, renderLine{
-			Kind:    RenderedLineFileHeader,
-			Prefix:  " ",
-			Content: header,
-		})
+		lines = append(lines, newRenderedLine(
+			RenderedLineFileHeader,
+			0,
+			0,
+			" ",
+			[]RenderedSegment{{Text: header, Role: TokenRoleDiffFileHeader}},
+		))
 	}
 
 	for _, hunk := range file.Hunks {
-		lines = append(lines, renderLine{
-			Kind:    RenderedLineHunkHeader,
-			Prefix:  " ",
-			Content: hunk.Header,
-		})
+		lines = append(lines, newRenderedLine(
+			RenderedLineHunkHeader,
+			0,
+			0,
+			" ",
+			[]RenderedSegment{{Text: hunk.Header, Role: TokenRoleDiffHunkHeader}},
+		))
 
 		for _, line := range hunk.Lines {
-			rendered := renderLine{
+			rendered := RenderedDiffLine{
 				Prefix:  " ",
-				Content: line.Content,
 				OldLine: line.OldLine,
 				NewLine: line.NewLine,
 			}
@@ -190,31 +160,63 @@ func buildRenderLines(file *DiffFile) []renderLine {
 			case DiffLineContext:
 				rendered.Kind = RenderedLineContext
 				rendered.Prefix = " "
+				rendered = newRenderedLine(rendered.Kind, rendered.OldLine, rendered.NewLine, rendered.Prefix, lineSegmentsForCode(line.Content, lexer))
 			case DiffLineAdd:
 				rendered.Kind = RenderedLineAdd
 				rendered.Prefix = "+"
+				rendered = newRenderedLine(rendered.Kind, rendered.OldLine, rendered.NewLine, rendered.Prefix, lineSegmentsForCode(line.Content, lexer))
 			case DiffLineRemove:
 				rendered.Kind = RenderedLineRemove
 				rendered.Prefix = "-"
+				rendered = newRenderedLine(rendered.Kind, rendered.OldLine, rendered.NewLine, rendered.Prefix, lineSegmentsForCode(line.Content, lexer))
 			default:
 				rendered.Kind = RenderedLineMeta
 				rendered.Prefix = " "
+				rendered = newRenderedLine(rendered.Kind, 0, 0, rendered.Prefix, []RenderedSegment{{Text: line.Content, Role: TokenRoleDiffMeta}})
 			}
 			lines = append(lines, rendered)
 		}
 	}
 
 	if len(lines) == 0 {
-		lines = append(lines, renderLine{
-			Kind:    RenderedLineMeta,
-			Prefix:  " ",
-			Content: "No displayable content",
-		})
+		lines = append(lines, newRenderedLine(
+			RenderedLineMeta,
+			0,
+			0,
+			" ",
+			[]RenderedSegment{{Text: "No displayable content", Role: TokenRoleDiffMeta}},
+		))
 	}
 	return lines
 }
 
-func lineNumberWidths(lines []renderLine) (oldWidth int, newWidth int) {
+func lineSegmentsForCode(content string, lexer chroma.Lexer) []RenderedSegment {
+	if content == "" {
+		return []RenderedSegment{}
+	}
+	if lexer == nil {
+		return []RenderedSegment{{Text: content, Role: TokenRoleSyntaxPlain}}
+	}
+	segments := lexLineSegments(lexer, content)
+	if len(segments) == 0 {
+		return []RenderedSegment{{Text: content, Role: TokenRoleSyntaxPlain}}
+	}
+	return segments
+}
+
+func newRenderedLine(kind RenderedLineKind, oldLine int, newLine int, prefix string, segments []RenderedSegment) RenderedDiffLine {
+	expanded, width := expandTabsInSegments(segments, diffTabWidth)
+	return RenderedDiffLine{
+		Kind:         kind,
+		OldLine:      oldLine,
+		NewLine:      newLine,
+		Prefix:       prefix,
+		Segments:     expanded,
+		ContentWidth: width,
+	}
+}
+
+func lineNumberWidths(lines []RenderedDiffLine) (oldWidth int, newWidth int) {
 	maxOld := 1
 	maxNew := 1
 	for _, line := range lines {
@@ -263,29 +265,76 @@ func chooseLexer(file *DiffFile) chroma.Lexer {
 	return chroma.Coalesce(lexer)
 }
 
-func lexLine(lexer chroma.Lexer, content string) []syntaxToken {
+func lexLineSegments(lexer chroma.Lexer, content string) []RenderedSegment {
 	iterator, err := lexer.Tokenise(nil, content)
 	if err != nil {
 		return nil
 	}
 
-	result := make([]syntaxToken, 0, 8)
-	offset := 0
+	result := make([]RenderedSegment, 0, 8)
 	for token := iterator(); token != chroma.EOF; token = iterator() {
-		length := len(token.Value)
-		if length == 0 {
+		if token.Value == "" {
 			continue
 		}
 		role := tokenRoleFromChroma(token.Type)
-		result = append(result, syntaxToken{Start: offset, End: offset + length, Role: role})
-		offset += length
-	}
-
-	if offset < len(content) {
-		result = append(result, syntaxToken{Start: offset, End: len(content), Role: TokenRoleSyntaxPlain})
+		result = append(result, RenderedSegment{
+			Text: token.Value,
+			Role: role,
+		})
 	}
 
 	return result
+}
+
+func expandTabsInSegments(segments []RenderedSegment, tabWidth int) ([]RenderedSegment, int) {
+	if tabWidth <= 0 {
+		tabWidth = diffTabWidth
+	}
+
+	expanded := make([]RenderedSegment, 0, len(segments))
+	column := 0
+	for _, segment := range segments {
+		remaining := segment.Text
+		for len(remaining) > 0 {
+			grapheme, width := ansi.FirstGraphemeCluster(remaining, ansi.GraphemeWidth)
+			if grapheme == "" {
+				break
+			}
+			if grapheme == "\t" {
+				spaces := tabWidth - (column % tabWidth)
+				if spaces <= 0 {
+					spaces = tabWidth
+				}
+				appendRoleText(&expanded, segment.Role, strings.Repeat(" ", spaces))
+				column += spaces
+			} else {
+				appendRoleText(&expanded, segment.Role, grapheme)
+				if width <= 0 {
+					width = ansi.StringWidth(grapheme)
+				}
+				if width <= 0 {
+					width = 1
+				}
+				column += width
+			}
+			remaining = remaining[len(grapheme):]
+		}
+	}
+
+	return expanded, column
+}
+
+func appendRoleText(segments *[]RenderedSegment, role TokenRole, text string) {
+	if text == "" {
+		return
+	}
+	existing := *segments
+	if len(existing) > 0 && existing[len(existing)-1].Role == role {
+		existing[len(existing)-1].Text += text
+		*segments = existing
+		return
+	}
+	*segments = append(existing, RenderedSegment{Text: text, Role: role})
 }
 
 func tokenRoleFromChroma(token chroma.TokenType) TokenRole {

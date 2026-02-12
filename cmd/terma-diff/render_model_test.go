@@ -1,15 +1,17 @@
 package main
 
 import (
-	"strings"
 	"testing"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/stretchr/testify/require"
 )
 
-func TestBuildRenderedFile_IncludesLineNumbersAndPrefixes(t *testing.T) {
+func TestBuildRenderedFile_StructuredLinesAndGutters(t *testing.T) {
 	file := &DiffFile{
-		Headers: []string{"diff --git a/main.go b/main.go", "--- a/main.go", "+++ b/main.go"},
+		NewPath:     "main.go",
+		DisplayPath: "main.go",
+		Headers:     []string{"diff --git a/main.go b/main.go", "--- a/main.go", "+++ b/main.go"},
 		Hunks: []DiffHunk{
 			{
 				Header: "@@ -1,2 +1,2 @@",
@@ -24,24 +26,67 @@ func TestBuildRenderedFile_IncludesLineNumbersAndPrefixes(t *testing.T) {
 
 	rendered := buildRenderedFile(file)
 	require.NotNil(t, rendered)
-	require.NotEmpty(t, rendered.Text)
+	require.Equal(t, "main.go", rendered.Title)
+	require.GreaterOrEqual(t, len(rendered.Lines), 7)
+	require.Equal(t, 1, rendered.OldNumWidth)
+	require.Equal(t, 1, rendered.NewNumWidth)
 
-	lines := strings.Split(rendered.Text, "\n")
-	require.GreaterOrEqual(t, len(lines), 7)
-	require.Contains(t, rendered.Text, "1 1   package main")
-	require.Contains(t, rendered.Text, "2   - fmt.Println(\"old\")")
-	require.Contains(t, rendered.Text, " 2 + fmt.Println(\"new\")")
+	header := rendered.Lines[0]
+	require.Equal(t, RenderedLineFileHeader, header.Kind)
+	require.Equal(t, "diff --git a/main.go b/main.go", lineText(header))
 
-	var hasAddPrefix bool
-	var hasRemovePrefix bool
-	for _, tok := range rendered.Tokens {
-		if tok.Role == TokenRoleDiffPrefixAdd {
-			hasAddPrefix = true
-		}
-		if tok.Role == TokenRoleDiffPrefixRemove {
-			hasRemovePrefix = true
-		}
+	context := rendered.Lines[4]
+	require.Equal(t, RenderedLineContext, context.Kind)
+	require.Equal(t, 1, context.OldLine)
+	require.Equal(t, 1, context.NewLine)
+	require.Equal(t, " ", context.Prefix)
+	require.Equal(t, "package main", lineText(context))
+
+	remove := rendered.Lines[5]
+	require.Equal(t, RenderedLineRemove, remove.Kind)
+	require.Equal(t, 2, remove.OldLine)
+	require.Equal(t, 0, remove.NewLine)
+	require.Equal(t, "-", remove.Prefix)
+	require.Equal(t, "fmt.Println(\"old\")", lineText(remove))
+
+	add := rendered.Lines[6]
+	require.Equal(t, RenderedLineAdd, add.Kind)
+	require.Equal(t, 0, add.OldLine)
+	require.Equal(t, 2, add.NewLine)
+	require.Equal(t, "+", add.Prefix)
+	require.Equal(t, "fmt.Println(\"new\")", lineText(add))
+}
+
+func TestBuildRenderedFile_ExpandsTabsWithTabStops(t *testing.T) {
+	file := &DiffFile{
+		NewPath:     "main.go",
+		DisplayPath: "main.go",
+		Hunks: []DiffHunk{
+			{
+				Header: "@@ -1,1 +1,1 @@",
+				Lines: []DiffLine{
+					{Kind: DiffLineContext, Content: "\tfoo\tbar", OldLine: 1, NewLine: 1},
+				},
+			},
+		},
 	}
-	require.True(t, hasAddPrefix)
-	require.True(t, hasRemovePrefix)
+
+	rendered := buildRenderedFile(file)
+	require.NotNil(t, rendered)
+	require.Len(t, rendered.Lines, 2)
+
+	line := rendered.Lines[1]
+	require.Equal(t, RenderedLineContext, line.Kind)
+	require.Equal(t, "    foo bar", lineText(line))
+	require.Equal(t, ansi.StringWidth("    foo bar"), line.ContentWidth)
+}
+
+func TestBuildMetaRenderedFile_ProducesMetaLines(t *testing.T) {
+	rendered := buildMetaRenderedFile("Summary", []string{"Line one", "Line two"})
+	require.NotNil(t, rendered)
+	require.Equal(t, "Summary", rendered.Title)
+	require.Len(t, rendered.Lines, 2)
+	require.Equal(t, RenderedLineMeta, rendered.Lines[0].Kind)
+	require.Equal(t, "Line one", lineText(rendered.Lines[0]))
+	require.Equal(t, "Line two", lineText(rendered.Lines[1]))
 }
