@@ -496,6 +496,64 @@ func TestAutocomplete_FilteredCount(t *testing.T) {
 	})
 }
 
+func TestAutocomplete_SelectSuggestion_CallsTextInputOnChange(t *testing.T) {
+	state := NewAutocompleteState()
+	inputState := NewTextInputState("#f")
+	inputState.CursorIndex.Set(2)
+
+	var changedText string
+	changeCalls := 0
+
+	ac := Autocomplete{
+		State:        state,
+		TriggerChars: []rune{'#'},
+		Child: TextInput{
+			ID:    "input",
+			State: inputState,
+			OnChange: func(text string) {
+				changeCalls++
+				changedText = text
+			},
+		},
+	}
+
+	state.triggerPosition.Set(0)
+	ac.selectSuggestion(Suggestion{Value: "#fun"})
+
+	assert.Equal(t, "#fun", inputState.GetText())
+	assert.Equal(t, 1, changeCalls)
+	assert.Equal(t, "#fun", changedText)
+}
+
+func TestAutocomplete_SelectSuggestion_CallsTextAreaOnChange(t *testing.T) {
+	state := NewAutocompleteState()
+	textAreaState := NewTextAreaState("#f")
+	textAreaState.CursorIndex.Set(2)
+
+	var changedText string
+	changeCalls := 0
+
+	ac := Autocomplete{
+		State:        state,
+		TriggerChars: []rune{'#'},
+		Child: TextArea{
+			ID:    "editor",
+			State: textAreaState,
+			OnChange: func(text string) {
+				changeCalls++
+				changedText = text
+			},
+		},
+	}
+
+	state.triggerPosition.Set(0)
+	ac.selectSuggestion(Suggestion{Value: "#fun"})
+
+	assert.Equal(t, "#fun", textAreaState.GetText())
+	assert.Equal(t, 1, changeCalls)
+	assert.Equal(t, "#fun", changedText)
+}
+
 // --- Snapshot Tests ---
 
 func TestSnapshot_Autocomplete_Hidden(t *testing.T) {

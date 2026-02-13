@@ -517,7 +517,14 @@ func (a *TodoApp) buildTaskList(ctx t.BuildContext) t.Widget {
 			RenderItem:  a.renderTaskItem(ctx, listFocused),
 			OnSelect:    a.toggleTask,
 			MultiSelect: true,
-			Blur:        func() { listState.ClearSelection() },
+			Blur: func() {
+				// Preserve multi-selection while the move menu is open so menu actions
+				// can operate on the full selected set.
+				if a.showMoveMenu.Peek() {
+					return
+				}
+				listState.ClearSelection()
+			},
 		},
 	}
 }
@@ -1036,10 +1043,14 @@ func (a *TodoApp) moveTaskToList(targetList *TaskList) {
 		return
 	}
 
-	listState := sourceList.Tasks
-	selectedTasks := listState.SelectedItems()
+	selectionState := sourceList.Tasks
+	if a.filterMode.Peek() {
+		selectionState = a.filteredListState
+	}
+
+	selectedTasks := selectionState.SelectedItems()
 	if len(selectedTasks) == 0 {
-		if task, ok := listState.SelectedItem(); ok {
+		if task, ok := selectionState.SelectedItem(); ok {
 			selectedTasks = []Task{task}
 		}
 	}
@@ -1057,8 +1068,12 @@ func (a *TodoApp) moveTaskToList(targetList *TaskList) {
 		_, shouldMove := idsToMove[task.ID]
 		return shouldMove
 	})
-	listState.ClearSelection()
-	listState.ClearAnchor()
+	selectionState.ClearSelection()
+	selectionState.ClearAnchor()
+	if selectionState != sourceList.Tasks {
+		sourceList.Tasks.ClearSelection()
+		sourceList.Tasks.ClearAnchor()
+	}
 
 	for i := len(selectedTasks) - 1; i >= 0; i-- {
 		targetList.Tasks.Prepend(selectedTasks[i])
