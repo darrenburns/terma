@@ -196,10 +196,11 @@ func (d DiffView) Render(ctx *t.RenderContext) {
 func (d DiffView) renderGutterLine(ctx *t.RenderContext, rendered *RenderedFile, row int, line RenderedDiffLine) {
 	oldNum := lineNumberText(line.OldLine, rendered.OldNumWidth)
 	newNum := lineNumberText(line.NewLine, rendered.NewNumWidth)
+	oldNumRole, newNumRole := lineNumberRolesForLine(line.Kind)
 
 	x := 0
 	if x < ctx.Width {
-		d.drawText(ctx, x, row, oldNum, TokenRoleOldLineNumber)
+		d.drawText(ctx, x, row, oldNum, oldNumRole)
 	}
 	x += rendered.OldNumWidth
 	if x < ctx.Width {
@@ -207,7 +208,7 @@ func (d DiffView) renderGutterLine(ctx *t.RenderContext, rendered *RenderedFile,
 	}
 	x++
 	if x < ctx.Width {
-		d.drawText(ctx, x, row, newNum, TokenRoleNewLineNumber)
+		d.drawText(ctx, x, row, newNum, newNumRole)
 	}
 	x += rendered.NewNumWidth
 	if x < ctx.Width {
@@ -229,6 +230,19 @@ func (d DiffView) renderGutterLine(ctx *t.RenderContext, rendered *RenderedFile,
 	x++
 	if x < ctx.Width {
 		ctx.DrawText(x, row, " ")
+	}
+}
+
+func lineNumberRolesForLine(kind RenderedLineKind) (oldRole TokenRole, newRole TokenRole) {
+	oldRole = TokenRoleOldLineNumber
+	newRole = TokenRoleNewLineNumber
+	switch kind {
+	case RenderedLineAdd:
+		return TokenRoleLineNumberAdd, TokenRoleLineNumberAdd
+	case RenderedLineRemove:
+		return TokenRoleLineNumberRemove, TokenRoleLineNumberRemove
+	default:
+		return oldRole, newRole
 	}
 }
 

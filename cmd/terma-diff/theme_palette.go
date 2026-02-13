@@ -18,6 +18,8 @@ func NewThemePalette(theme t.ThemeData) ThemePalette {
 		roleStyles: map[TokenRole]t.SpanStyle{
 			TokenRoleOldLineNumber:     {Foreground: theme.TextMuted},
 			TokenRoleNewLineNumber:     {Foreground: theme.TextMuted},
+			TokenRoleLineNumberAdd:     {Foreground: theme.Success},
+			TokenRoleLineNumberRemove:  {Foreground: theme.Error},
 			TokenRoleDiffPrefixAdd:     {Foreground: theme.Success, Bold: true},
 			TokenRoleDiffPrefixRemove:  {Foreground: theme.Error, Bold: true},
 			TokenRoleDiffPrefixContext: {Foreground: theme.TextMuted},

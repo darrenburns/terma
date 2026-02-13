@@ -6,6 +6,7 @@ type LabelVariant int
 const (
 	LabelDefault LabelVariant = iota
 	LabelPrimary
+	LabelSecondary
 	LabelAccent
 	LabelSuccess
 	LabelError
@@ -31,6 +32,8 @@ func labelVariantColors(variant LabelVariant, theme ThemeData) (fg, bg Color) {
 	switch variant {
 	case LabelPrimary:
 		return theme.PrimaryText, theme.PrimaryBg
+	case LabelSecondary:
+		return theme.SecondaryText, theme.SecondaryBg
 	case LabelAccent:
 		return theme.AccentText, theme.AccentBg
 	case LabelSuccess:

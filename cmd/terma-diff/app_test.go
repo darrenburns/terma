@@ -139,6 +139,76 @@ func TestDiffApp_ThemePreviewOnCursorChange(tt *testing.T) {
 	require.Equal(tt, themeName, t.CurrentThemeName())
 }
 
+func TestDiffApp_OpenTreeFilterRequiresFocusedTree(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("a.txt")}}, false)
+
+	app.focusedWidgetID = diffViewerScrollID
+	app.openTreeFilter()
+	require.False(tt, app.treeFilterVisible)
+
+	app.focusedWidgetID = diffFilesTreeID
+	app.openTreeFilter()
+	require.True(tt, app.treeFilterVisible)
+}
+
+func TestDiffApp_HandleEscapeClearsActiveTreeFilter(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("a.txt")}}, false)
+	app.treeFilterVisible = true
+	app.onTreeFilterChange("a")
+
+	require.Equal(tt, "a", app.treeFilterState.PeekQuery())
+	require.Equal(tt, "", app.treeFilterInput.GetText())
+
+	app.treeFilterInput.SetText("a")
+	app.handleEscape()
+
+	require.Equal(tt, "", app.treeFilterState.PeekQuery())
+	require.Equal(tt, "", app.treeFilterInput.GetText())
+	require.False(tt, app.treeFilterVisible)
+}
+
+func TestDiffApp_RenderTreeNodeHighlightsMatchWithDefaultStyle(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("server.go")}}, false)
+	theme, ok := t.GetTheme(t.CurrentThemeName())
+	require.True(tt, ok)
+
+	render := app.renderTreeNode(theme, false)
+	rowWidget := render(
+		DiffTreeNodeData{Name: "server.go", Path: "server.go", Additions: 1, Deletions: 1},
+		t.TreeNodeContext{},
+		t.MatchResult{
+			Matched: true,
+			Ranges:  []t.MatchRange{{Start: 0, End: len("server")}},
+		},
+	)
+
+	row, ok := rowWidget.(t.Row)
+	require.True(tt, ok)
+	require.NotEmpty(tt, row.Children)
+
+	label, ok := row.Children[0].(t.Text)
+	require.True(tt, ok)
+	require.NotEmpty(tt, label.Spans)
+
+	highlight := t.MatchHighlightStyle(theme)
+	found := false
+	for _, span := range label.Spans {
+		if span.Style == highlight {
+			found = true
+			break
+		}
+	}
+	require.True(tt, found, "expected at least one highlighted span")
+}
+
+func TestDiffApp_SidebarSummaryLabelIncludesMode(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("a.txt")}}, false)
+	require.Equal(tt, "1 unstaged", app.sidebarSummaryLabel())
+
+	app.toggleMode()
+	require.Equal(tt, "1 staged", app.sidebarSummaryLabel())
+}
+
 type scriptedDiffProvider struct {
 	repoRoot string
 	diffs    []string

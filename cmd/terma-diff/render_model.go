@@ -28,6 +28,8 @@ type TokenRole int
 const (
 	TokenRoleOldLineNumber TokenRole = iota
 	TokenRoleNewLineNumber
+	TokenRoleLineNumberAdd
+	TokenRoleLineNumberRemove
 	TokenRoleDiffPrefixAdd
 	TokenRoleDiffPrefixRemove
 	TokenRoleDiffPrefixContext
