@@ -9,10 +9,10 @@ type ThemePalette struct {
 }
 
 func NewThemePalette(theme t.ThemeData) ThemePalette {
-	addBg := theme.Surface.Blend(theme.Success, 0.14)
-	removeBg := theme.Surface.Blend(theme.Error, 0.14)
-	hunkBg := theme.Surface.Blend(theme.Info, 0.13)
-	headerBg := theme.Surface.Blend(theme.Primary, 0.11)
+	addBg := theme.Background.Blend(theme.Success, 0.14)
+	removeBg := theme.Background.Blend(theme.Error, 0.14)
+	hunkBg := theme.Background.Blend(theme.Info, 0.13)
+	headerBg := theme.Background.Blend(theme.Primary, 0.11)
 
 	return ThemePalette{
 		roleStyles: map[TokenRole]t.SpanStyle{

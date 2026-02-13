@@ -53,6 +53,42 @@ func TestCommandPaletteState_CurrentItemSkipsDividers(t *testing.T) {
 	}
 }
 
+func TestCommandPaletteState_CloseUsesNextFocusOverride(t *testing.T) {
+	state := NewCommandPaletteState("Commands", []CommandPaletteItem{
+		{Label: "Open"},
+	})
+	palette := CommandPalette{
+		ID:    "palette",
+		State: state,
+	}
+
+	// Simulate a previously-visible palette closing.
+	state.wasVisible = true
+	state.lastFocusID = "last-focus"
+	state.Visible.Set(false)
+	state.SetNextFocusIDOnClose("override-focus")
+
+	oldPending := pendingFocusID
+	defer func() { pendingFocusID = oldPending }()
+	pendingFocusID = ""
+
+	ctx := NewBuildContext(
+		NewFocusManager(),
+		NewAnySignal[Focusable](nil),
+		NewAnySignal[Widget](nil),
+		NewFloatCollector(),
+	)
+
+	_ = palette.Build(ctx)
+
+	if pendingFocusID != "override-focus" {
+		t.Fatalf("expected pending focus override, got %q", pendingFocusID)
+	}
+	if state.nextFocusID != "" {
+		t.Fatalf("expected nextFocusID to be cleared, got %q", state.nextFocusID)
+	}
+}
+
 func TestSnapshot_CommandPalette_Basic(t *testing.T) {
 	items := []CommandPaletteItem{
 		{Label: "New File", Hint: "Ctrl+N"},

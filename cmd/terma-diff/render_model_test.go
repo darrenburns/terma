@@ -27,29 +27,29 @@ func TestBuildRenderedFile_StructuredLinesAndGutters(t *testing.T) {
 	rendered := buildRenderedFile(file)
 	require.NotNil(t, rendered)
 	require.Equal(t, "main.go", rendered.Title)
-	require.GreaterOrEqual(t, len(rendered.Lines), 7)
+	require.Len(t, rendered.Lines, 4)
 	require.Equal(t, 1, rendered.OldNumWidth)
 	require.Equal(t, 1, rendered.NewNumWidth)
 
-	header := rendered.Lines[0]
-	require.Equal(t, RenderedLineFileHeader, header.Kind)
-	require.Equal(t, "diff --git a/main.go b/main.go", lineText(header))
+	hunk := rendered.Lines[0]
+	require.Equal(t, RenderedLineHunkHeader, hunk.Kind)
+	require.Equal(t, "@@ -1,2 +1,2 @@", lineText(hunk))
 
-	context := rendered.Lines[4]
+	context := rendered.Lines[1]
 	require.Equal(t, RenderedLineContext, context.Kind)
 	require.Equal(t, 1, context.OldLine)
 	require.Equal(t, 1, context.NewLine)
 	require.Equal(t, " ", context.Prefix)
 	require.Equal(t, "package main", lineText(context))
 
-	remove := rendered.Lines[5]
+	remove := rendered.Lines[2]
 	require.Equal(t, RenderedLineRemove, remove.Kind)
 	require.Equal(t, 2, remove.OldLine)
 	require.Equal(t, 0, remove.NewLine)
 	require.Equal(t, "-", remove.Prefix)
 	require.Equal(t, "fmt.Println(\"old\")", lineText(remove))
 
-	add := rendered.Lines[6]
+	add := rendered.Lines[3]
 	require.Equal(t, RenderedLineAdd, add.Kind)
 	require.Equal(t, 0, add.OldLine)
 	require.Equal(t, 2, add.NewLine)

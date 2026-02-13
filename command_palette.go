@@ -72,6 +72,7 @@ type CommandPaletteState struct {
 
 	wasVisible  bool
 	lastFocusID string
+	nextFocusID string
 }
 
 // NewCommandPaletteState creates a new palette state with a root level.
@@ -104,6 +105,15 @@ func (s *CommandPaletteState) Close(keepPosition bool) {
 	if !keepPosition {
 		s.resetToRoot()
 	}
+}
+
+// SetNextFocusIDOnClose overrides the focus target used on the next close.
+// If empty, normal focus restore behavior is used.
+func (s *CommandPaletteState) SetNextFocusIDOnClose(id string) {
+	if s == nil {
+		return
+	}
+	s.nextFocusID = id
 }
 
 // PushLevel adds a new level to the stack.
@@ -309,6 +319,7 @@ type CommandPalette struct {
 	Placeholder           string    // Default: "Type to search..."
 	Position              FloatPosition
 	Offset                Offset
+	BackdropColor         Color // Optional modal backdrop color override (default: theme.Overlay)
 	Style                 Style
 }
 
@@ -332,8 +343,13 @@ func (p CommandPalette) Build(ctx BuildContext) Widget {
 	if visible {
 		RequestFocus(p.inputID())
 	} else if p.State.wasVisible {
-		if p.State.lastFocusID != "" {
-			RequestFocus(p.State.lastFocusID)
+		focusID := p.State.nextFocusID
+		if focusID == "" {
+			focusID = p.State.lastFocusID
+		}
+		p.State.nextFocusID = ""
+		if focusID != "" {
+			RequestFocus(focusID)
 		}
 	}
 	p.State.wasVisible = visible
@@ -348,6 +364,10 @@ func (p CommandPalette) Build(ctx BuildContext) Widget {
 	}
 
 	content := p.buildContent(ctx, level)
+	backdropColor := ctx.Theme().Overlay
+	if p.BackdropColor.IsSet() {
+		backdropColor = p.BackdropColor
+	}
 	float := Floating{
 		Visible: true,
 		Config: FloatConfig{
@@ -357,7 +377,7 @@ func (p CommandPalette) Build(ctx BuildContext) Widget {
 			DismissOnEsc:          BoolPtr(false),
 			DismissOnClickOutside: BoolPtr(true),
 			OnDismiss:             p.dismiss,
-			BackdropColor:         ctx.Theme().Overlay,
+			BackdropColor:         backdropColor,
 		},
 		Child: content,
 	}

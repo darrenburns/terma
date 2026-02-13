@@ -87,6 +87,58 @@ func TestDiffApp_DirectoryCursorShowsSummaryInViewer(t *testing.T) {
 	require.True(t, strings.Contains(lineText(rendered.Lines[1]), "Touched files: 2"))
 }
 
+func TestDiffApp_CommandPaletteIncludesCommonActions(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+	level := app.commandPalette.CurrentLevel()
+	require.NotNil(tt, level)
+
+	toggle := findPaletteItemByLabel(level.Items, "Toggle staged mode")
+	require.True(tt, toggle.IsSelectable())
+	require.Equal(tt, "[s]", toggle.Hint)
+
+	refresh := findPaletteItemByLabel(level.Items, "Refresh")
+	require.True(tt, refresh.IsSelectable())
+	require.Equal(tt, "[r]", refresh.Hint)
+
+	divider := findPaletteItemByLabel(level.Items, "Focus divider")
+	require.True(tt, divider.IsSelectable())
+	require.Equal(tt, "[d]", divider.Hint)
+}
+
+func TestDiffApp_KeybindsHideCommandsExposedInPalette(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+	keybinds := app.Keybinds()
+
+	require.True(tt, keybindIsHidden(keybinds, "s"))
+	require.True(tt, keybindIsHidden(keybinds, "r"))
+	require.True(tt, keybindIsHidden(keybinds, "d"))
+	require.False(tt, keybindIsHidden(keybinds, "ctrl+p"))
+}
+
+func TestDiffApp_ThemePreviewOnCursorChange(tt *testing.T) {
+	originalTheme := t.CurrentThemeName()
+	defer t.SetTheme(originalTheme)
+
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+	items := app.themeItems()
+	preview := t.CommandPaletteItem{}
+	for _, item := range items {
+		themeName, ok := item.Data.(string)
+		if !ok || themeName == "" || themeName == originalTheme {
+			continue
+		}
+		preview = item
+		break
+	}
+	require.NotEmpty(tt, preview.Label, "expected at least one theme item different from current theme")
+
+	app.commandPalette.PushLevel(diffThemesPalette, items)
+	app.handlePaletteCursorChange(preview)
+
+	themeName, _ := preview.Data.(string)
+	require.Equal(tt, themeName, t.CurrentThemeName())
+}
+
 type scriptedDiffProvider struct {
 	repoRoot string
 	diffs    []string
@@ -146,4 +198,22 @@ func findTreePathByDataPath(nodes []t.TreeNode[DiffTreeNodeData], target string)
 		return nil, false
 	}
 	return walk(nodes, nil)
+}
+
+func findPaletteItemByLabel(items []t.CommandPaletteItem, label string) t.CommandPaletteItem {
+	for _, item := range items {
+		if item.Label == label {
+			return item
+		}
+	}
+	return t.CommandPaletteItem{}
+}
+
+func keybindIsHidden(keybinds []t.Keybind, key string) bool {
+	for _, keybind := range keybinds {
+		if keybind.Key == key {
+			return keybind.Hidden
+		}
+	}
+	return false
 }

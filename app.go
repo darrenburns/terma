@@ -315,7 +315,12 @@ func Run(root Widget) (runErr error) {
 			focusManager.SaveFocus()
 		}
 
-		// Apply pending focus request from ctx.RequestFocus()
+		for i := 0; i < closedModals; i++ {
+			focusManager.RestoreFocus()
+		}
+
+		// Apply pending focus request from ctx.RequestFocus() after modal
+		// restore logic so explicit focus requests win.
 		if pendingFocusID != "" {
 			focusManager.FocusByID(pendingFocusID)
 			pendingFocusID = ""
@@ -323,10 +328,6 @@ func Run(root Widget) (runErr error) {
 			if updateFocusedSignal() {
 				renderer.Render(root)
 			}
-		}
-
-		for i := 0; i < closedModals; i++ {
-			focusManager.RestoreFocus()
 		}
 
 		lastModalCount = modalCount

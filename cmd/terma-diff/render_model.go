@@ -128,19 +128,6 @@ func buildMetaRenderedFile(title string, body []string) *RenderedFile {
 
 func buildRenderLines(file *DiffFile, lexer chroma.Lexer) []RenderedDiffLine {
 	lines := make([]RenderedDiffLine, 0, len(file.Headers)+len(file.Hunks)*8)
-	for _, header := range file.Headers {
-		if header == "" {
-			continue
-		}
-		lines = append(lines, newRenderedLine(
-			RenderedLineFileHeader,
-			0,
-			0,
-			" ",
-			[]RenderedSegment{{Text: header, Role: TokenRoleDiffFileHeader}},
-		))
-	}
-
 	for _, hunk := range file.Hunks {
 		lines = append(lines, newRenderedLine(
 			RenderedLineHunkHeader,
@@ -179,12 +166,16 @@ func buildRenderLines(file *DiffFile, lexer chroma.Lexer) []RenderedDiffLine {
 	}
 
 	if len(lines) == 0 {
+		message := "No displayable content"
+		if file.IsBinary {
+			message = "Binary file changed"
+		}
 		lines = append(lines, newRenderedLine(
 			RenderedLineMeta,
 			0,
 			0,
 			" ",
-			[]RenderedSegment{{Text: "No displayable content", Role: TokenRoleDiffMeta}},
+			[]RenderedSegment{{Text: message, Role: TokenRoleDiffMeta}},
 		))
 	}
 	return lines

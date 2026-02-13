@@ -90,6 +90,7 @@ type SplitPane struct {
 	DividerSize  int
 	MinPaneSize  int
 	DisableFocus bool
+	OnExitFocus  func()
 
 	// Appearance
 	DividerForeground      ColorProvider
@@ -172,17 +173,30 @@ func (s SplitPane) Keybinds() []Keybind {
 		return nil
 	}
 
-	if s.Orientation == SplitVertical {
-		return []Keybind{
-			{Key: "up", Name: "Move divider up", Action: s.moveDividerUp},
-			{Key: "down", Name: "Move divider down", Action: s.moveDividerDown},
+	withExit := func(keybinds []Keybind) []Keybind {
+		if s.OnExitFocus == nil {
+			return keybinds
 		}
+		return append(keybinds, Keybind{
+			Key:    "escape",
+			Name:   "Exit divider",
+			Action: s.OnExitFocus,
+		})
 	}
 
-	return []Keybind{
-		{Key: "left", Name: "Move divider left", Action: s.moveDividerLeft},
-		{Key: "right", Name: "Move divider right", Action: s.moveDividerRight},
+	if s.Orientation == SplitVertical {
+		return withExit([]Keybind{
+			{Key: "up", Name: "Move divider up", Action: s.moveDividerUp},
+			{Key: "down", Name: "Move divider down", Action: s.moveDividerDown},
+		})
 	}
+
+	return withExit([]Keybind{
+		{Key: "left", Name: "Move divider left", Action: s.moveDividerLeft},
+		{Key: "h", Name: "Move divider left", Action: s.moveDividerLeft},
+		{Key: "right", Name: "Move divider right", Action: s.moveDividerRight},
+		{Key: "l", Name: "Move divider right", Action: s.moveDividerRight},
+	})
 }
 
 func (s SplitPane) moveDividerLeft() {
