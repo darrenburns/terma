@@ -23,8 +23,11 @@ const (
 //	scrollable := terma.Scrollable{State: scrollState, ...}
 //	list := terma.List[string]{ScrollState: scrollState, ...}
 type ScrollState struct {
-	Offset         Signal[int] // Current scroll offset
+	OffsetX        Signal[int] // Current horizontal scroll offset
+	Offset         Signal[int] // Current vertical scroll offset
+	viewportWidth  int         // Set by Scrollable during layout
 	viewportHeight int         // Set by Scrollable during layout
+	contentWidth   int         // Set by Scrollable during layout
 	contentHeight  int         // Set by Scrollable during layout
 
 	// PinToBottom enables auto-scroll when content grows while at bottom.
@@ -41,20 +44,45 @@ type ScrollState struct {
 	// If it returns true, the default viewport scrolling is suppressed.
 	// Use this for selection-first scrolling (e.g., in List widget).
 	OnScrollDown func(lines int) bool
+
+	// OnScrollLeft is called when ScrollLeft is invoked with the number of columns.
+	// If it returns true, the default viewport scrolling is suppressed.
+	OnScrollLeft func(cols int) bool
+
+	// OnScrollRight is called when ScrollRight is invoked with the number of columns.
+	// If it returns true, the default viewport scrolling is suppressed.
+	OnScrollRight func(cols int) bool
 }
 
 // NewScrollState creates a new scroll state with initial offset of 0.
 // isPinned starts true so that initial content (offset 0) is considered "at bottom".
 func NewScrollState() *ScrollState {
 	return &ScrollState{
+		OffsetX:  NewSignal(0),
 		Offset:   NewSignal(0),
 		isPinned: true,
 	}
 }
 
+// GetOffsetX returns the current horizontal scroll offset (without subscribing).
+func (s *ScrollState) GetOffsetX() int {
+	return s.OffsetX.Peek()
+}
+
 // GetOffset returns the current scroll offset (without subscribing).
 func (s *ScrollState) GetOffset() int {
 	return s.Offset.Peek()
+}
+
+// SetOffsetX sets the horizontal scroll offset directly, clamping to valid bounds.
+func (s *ScrollState) SetOffsetX(offset int) {
+	max := s.maxOffsetX()
+	if offset < 0 {
+		offset = 0
+	} else if offset > max {
+		offset = max
+	}
+	s.OffsetX.Set(offset)
 }
 
 // SetOffset sets the scroll offset directly, clamping to valid bounds.
@@ -132,6 +160,30 @@ func (s *ScrollState) ScrollDown(lines int) bool {
 	return s.Offset.Peek() != oldOffset
 }
 
+// ScrollLeft scrolls left by the given number of columns.
+// Returns true if scrolling was handled (callback handled it or offset changed).
+// Returns false if already at the left edge and no callback handled it.
+func (s *ScrollState) ScrollLeft(cols int) bool {
+	if s.OnScrollLeft != nil && s.OnScrollLeft(cols) {
+		return true
+	}
+	oldOffset := s.OffsetX.Peek()
+	s.SetOffsetX(oldOffset - cols)
+	return s.OffsetX.Peek() != oldOffset
+}
+
+// ScrollRight scrolls right by the given number of columns.
+// Returns true if scrolling was handled (callback handled it or offset changed).
+// Returns false if already at the right edge and no callback handled it.
+func (s *ScrollState) ScrollRight(cols int) bool {
+	if s.OnScrollRight != nil && s.OnScrollRight(cols) {
+		return true
+	}
+	oldOffset := s.OffsetX.Peek()
+	s.SetOffsetX(oldOffset + cols)
+	return s.OffsetX.Peek() != oldOffset
+}
+
 // maxOffset returns the maximum valid scroll offset.
 func (s *ScrollState) maxOffset() int {
 	max := s.contentHeight - s.viewportHeight
@@ -141,9 +193,32 @@ func (s *ScrollState) maxOffset() int {
 	return max
 }
 
+// maxOffsetX returns the maximum valid horizontal scroll offset.
+func (s *ScrollState) maxOffsetX() int {
+	max := s.contentWidth - s.viewportWidth
+	if max < 0 {
+		return 0
+	}
+	return max
+}
+
 // canScroll returns true if scrolling is possible (content exceeds viewport).
 func (s *ScrollState) canScroll() bool {
+	return s.canScrollY()
+}
+
+// canScrollY returns true if vertical scrolling is possible.
+func (s *ScrollState) canScrollY() bool {
 	return s.contentHeight > s.viewportHeight
+}
+
+// canScrollX returns true if horizontal scrolling is possible.
+func (s *ScrollState) canScrollX() bool {
+	return s.contentWidth > s.viewportWidth
+}
+
+func (s *ScrollState) hasHorizontalCallbacks() bool {
+	return s.OnScrollLeft != nil || s.OnScrollRight != nil
 }
 
 // IsAtBottom returns true if currently scrolled to the bottom.
@@ -178,6 +253,12 @@ func (s *ScrollState) updateLayout(viewportHeight, contentHeight int) {
 	if s.PinToBottom && s.isPinned && contentHeight > oldContentHeight && oldContentHeight > 0 {
 		s.Offset.Set(s.maxOffset())
 	}
+}
+
+// updateHorizontalLayout is called by Scrollable to update horizontal dimensions.
+func (s *ScrollState) updateHorizontalLayout(viewportWidth, contentWidth int) {
+	s.viewportWidth = viewportWidth
+	s.contentWidth = contentWidth
 }
 
 // Scrollable is a container widget that enables vertical scrolling of its child
@@ -296,10 +377,12 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		childNode = buildFallbackLayoutNode(built, childCtx)
 	}
 
-	// Get scroll offset from state
-	// Use Get() to subscribe to offset changes so PinToBottom auto-scroll triggers re-render
+	// Get scroll offsets from state.
+	// Use Get() to subscribe to offset changes so state updates trigger re-render.
+	scrollOffsetX := 0
 	scrollOffsetY := 0
 	if s.State != nil {
+		scrollOffsetX = s.State.OffsetX.Get()
 		scrollOffsetY = s.State.Offset.Get()
 	}
 
@@ -316,9 +399,10 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 
 	node := layout.LayoutNode(&layout.ScrollableNode{
 		Child:           childNode,
+		ScrollOffsetX:   scrollOffsetX,
 		ScrollOffsetY:   scrollOffsetY,
 		ScrollbarWidth:  scrollbarWidth,
-		ScrollbarHeight: 0, // Horizontal scrolling not supported yet
+		ScrollbarHeight: 0, // Horizontal scrollbar rendering is not implemented yet.
 		Padding:         padding,
 		Border:          border,
 		Margin:          toLayoutEdgeInsets(s.Style.Margin),
@@ -351,6 +435,14 @@ func (s Scrollable) getScrollOffset() int {
 	return s.State.Offset.Peek()
 }
 
+// getScrollOffsetX returns the current horizontal scroll offset.
+func (s Scrollable) getScrollOffsetX() int {
+	if s.State == nil {
+		return 0
+	}
+	return s.State.OffsetX.Peek()
+}
+
 // setScrollOffset sets the scroll offset.
 func (s Scrollable) setScrollOffset(offset int) {
 	if s.State != nil {
@@ -358,12 +450,32 @@ func (s Scrollable) setScrollOffset(offset int) {
 	}
 }
 
-// canScroll returns true if scrolling is possible (content exceeds viewport).
-func (s Scrollable) canScroll() bool {
+// setScrollOffsetX sets the horizontal scroll offset.
+func (s Scrollable) setScrollOffsetX(offset int) {
+	if s.State != nil {
+		s.State.SetOffsetX(offset)
+	}
+}
+
+// canScrollY returns true if vertical scrolling is possible.
+func (s Scrollable) canScrollY() bool {
 	if s.DisableScroll || s.State == nil {
 		return false
 	}
-	return s.State.canScroll()
+	return s.State.canScrollY()
+}
+
+// canScrollX returns true if horizontal scrolling is possible.
+func (s Scrollable) canScrollX() bool {
+	if s.DisableScroll || s.State == nil {
+		return false
+	}
+	return s.State.canScrollX() || s.State.hasHorizontalCallbacks()
+}
+
+// canScrollAny returns true if vertical or horizontal scrolling is possible.
+func (s Scrollable) canScrollAny() bool {
+	return s.canScrollY() || s.canScrollX()
 }
 
 // maxScrollOffset returns the maximum valid scroll offset.
@@ -374,10 +486,18 @@ func (s Scrollable) maxScrollOffset() int {
 	return s.State.maxOffset()
 }
 
+// maxScrollOffsetX returns the maximum valid horizontal scroll offset.
+func (s Scrollable) maxScrollOffsetX() int {
+	if s.State == nil {
+		return 0
+	}
+	return s.State.maxOffsetX()
+}
+
 // ScrollUp scrolls the content up by the given number of lines.
 // Returns true if scrolling was handled, false if scroll is disabled or at limit.
 func (s Scrollable) ScrollUp(lines int) bool {
-	if !s.canScroll() {
+	if !s.canScrollY() {
 		return false
 	}
 	return s.State.ScrollUp(lines)
@@ -386,10 +506,28 @@ func (s Scrollable) ScrollUp(lines int) bool {
 // ScrollDown scrolls the content down by the given number of lines.
 // Returns true if scrolling was handled, false if scroll is disabled or at limit.
 func (s Scrollable) ScrollDown(lines int) bool {
-	if !s.canScroll() {
+	if !s.canScrollY() {
 		return false
 	}
 	return s.State.ScrollDown(lines)
+}
+
+// ScrollLeft scrolls the content left by the given number of columns.
+// Returns true if scrolling was handled, false if scroll is disabled or at limit.
+func (s Scrollable) ScrollLeft(cols int) bool {
+	if !s.canScrollX() {
+		return false
+	}
+	return s.State.ScrollLeft(cols)
+}
+
+// ScrollRight scrolls the content right by the given number of columns.
+// Returns true if scrolling was handled, false if scroll is disabled or at limit.
+func (s Scrollable) ScrollRight(cols int) bool {
+	if !s.canScrollX() {
+		return false
+	}
+	return s.State.ScrollRight(cols)
 }
 
 // Render draws the scrollable widget and its child.
@@ -552,46 +690,79 @@ func (s Scrollable) IsFocusable() bool {
 
 // OnKey handles key events when the widget is focused.
 func (s Scrollable) OnKey(event KeyEvent) bool {
-	if !s.canScroll() || s.State == nil {
+	if !s.canScrollAny() || s.State == nil {
 		Log("Scrollable[%s].OnKey: cannot scroll, ignoring key", s.ID)
 		return false
 	}
 
-	oldOffset := s.getScrollOffset()
+	oldOffsetY := s.getScrollOffset()
+	oldOffsetX := s.getScrollOffsetX()
 	viewportHeight := s.State.viewportHeight
 
 	switch {
 	case event.MatchString("up", "k"):
+		if !s.canScrollY() {
+			return false
+		}
 		s.ScrollUp(1)
-		Log("Scrollable[%s].OnKey: scroll up, offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
+		Log("Scrollable[%s].OnKey: scroll up, offset %d -> %d", s.ID, oldOffsetY, s.getScrollOffset())
 		return true
 	case event.MatchString("down", "j"):
+		if !s.canScrollY() {
+			return false
+		}
 		s.ScrollDown(1)
-		Log("Scrollable[%s].OnKey: scroll down, offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
+		Log("Scrollable[%s].OnKey: scroll down, offset %d -> %d", s.ID, oldOffsetY, s.getScrollOffset())
 		return true
 	case event.MatchString("pgup", "pageup", "ctrl+u"):
+		if !s.canScrollY() {
+			return false
+		}
 		s.ScrollUp(viewportHeight / 2)
-		Log("Scrollable[%s].OnKey: page up, offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
+		Log("Scrollable[%s].OnKey: page up, offset %d -> %d", s.ID, oldOffsetY, s.getScrollOffset())
 		return true
 	case event.MatchString("pgdown", "pagedown", "ctrl+d"):
+		if !s.canScrollY() {
+			return false
+		}
 		s.ScrollDown(viewportHeight / 2)
-		Log("Scrollable[%s].OnKey: page down, offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
+		Log("Scrollable[%s].OnKey: page down, offset %d -> %d", s.ID, oldOffsetY, s.getScrollOffset())
 		return true
 	case event.MatchString("home", "g"):
+		if !s.canScrollY() {
+			return false
+		}
 		// Break pin when going to top
 		if s.State.PinToBottom && s.State.isPinned {
 			s.State.isPinned = false
 		}
 		s.setScrollOffset(0)
-		Log("Scrollable[%s].OnKey: home, offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
+		Log("Scrollable[%s].OnKey: home, offset %d -> %d", s.ID, oldOffsetY, s.getScrollOffset())
 		return true
 	case event.MatchString("end", "G"):
+		if !s.canScrollY() {
+			return false
+		}
 		maxOff := s.maxScrollOffset()
 		Log("Scrollable[%s].OnKey: end BEFORE - stateViewport=%d, stateContent=%d, maxOffset=%d",
 			s.ID, s.State.viewportHeight, s.State.contentHeight, maxOff)
 		// Use ScrollToBottom to re-engage pin
 		s.State.ScrollToBottom()
-		Log("Scrollable[%s].OnKey: end AFTER - offset %d -> %d", s.ID, oldOffset, s.getScrollOffset())
+		Log("Scrollable[%s].OnKey: end AFTER - offset %d -> %d", s.ID, oldOffsetY, s.getScrollOffset())
+		return true
+	case event.MatchString("left", "h"):
+		if !s.canScrollX() {
+			return false
+		}
+		s.ScrollLeft(1)
+		Log("Scrollable[%s].OnKey: scroll left, offsetX %d -> %d", s.ID, oldOffsetX, s.getScrollOffsetX())
+		return true
+	case event.MatchString("right", "l"):
+		if !s.canScrollX() {
+			return false
+		}
+		s.ScrollRight(1)
+		Log("Scrollable[%s].OnKey: scroll right, offsetX %d -> %d", s.ID, oldOffsetX, s.getScrollOffsetX())
 		return true
 	}
 

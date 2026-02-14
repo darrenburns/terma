@@ -61,6 +61,52 @@ func TestDiffApp_NextPrevCycleFilesAndSyncTreeCursor(t *testing.T) {
 	require.Equal(t, app.filePathToTreePath[last], app.treeState.CursorPath.Peek())
 }
 
+func TestDiffApp_NextPrevCycleOnlyFilteredFiles(t *testing.T) {
+	provider := &scriptedDiffProvider{
+		repoRoot: "/tmp/repo",
+		diffs: []string{
+			diffForPaths("a.go", "b.go", "c.txt"),
+		},
+	}
+
+	app := NewDiffApp(provider, false)
+	app.onTreeFilterChange(".go")
+	require.False(t, app.treeFilterNoMatches)
+	require.Equal(t, "a.go", app.activePath)
+
+	app.moveFileCursor(1)
+	require.Equal(t, "b.go", app.activePath)
+
+	app.moveFileCursor(1)
+	require.Equal(t, "a.go", app.activePath)
+
+	app.moveFileCursor(-1)
+	require.Equal(t, "b.go", app.activePath)
+}
+
+func TestDiffApp_NextPrevStartsAtFilteredSetWhenActiveFileExcluded(t *testing.T) {
+	provider := &scriptedDiffProvider{
+		repoRoot: "/tmp/repo",
+		diffs: []string{
+			diffForPaths("a.go", "b.go", "c.txt"),
+		},
+	}
+
+	app := NewDiffApp(provider, false)
+	require.True(t, app.selectFilePath("c.txt"))
+	require.Equal(t, "c.txt", app.activePath)
+
+	app.onTreeFilterChange(".go")
+	require.False(t, app.treeFilterNoMatches)
+	require.Equal(t, "c.txt", app.activePath)
+
+	app.moveFileCursor(1)
+	require.Equal(t, "a.go", app.activePath)
+
+	app.moveFileCursor(-1)
+	require.Equal(t, "b.go", app.activePath)
+}
+
 func TestDiffApp_DirectoryCursorShowsSummaryInViewer(t *testing.T) {
 	provider := &scriptedDiffProvider{
 		repoRoot: "/tmp/repo",
@@ -747,6 +793,42 @@ func TestDiffApp_ToggleDiffWrap(tt *testing.T) {
 
 	app.toggleDiffWrap()
 	require.False(tt, app.diffHardWrap)
+}
+
+func TestDiffApp_DiffScrollStateHorizontalCallbacksMoveAndClamp(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+
+	rendered := buildTestRenderedFile(20, 120)
+	app.diffViewState.SetRendered(rendered)
+	gutterWidth := renderedGutterWidth(rendered, app.diffHideChangeSigns)
+	app.diffViewState.SetViewport(40, 10, gutterWidth)
+	require.NotNil(tt, app.diffScrollState.OnScrollRight)
+	require.NotNil(tt, app.diffScrollState.OnScrollLeft)
+
+	handled := app.diffScrollState.ScrollRight(5)
+	require.True(tt, handled)
+	require.Equal(tt, 5, app.diffViewState.ScrollX.Peek())
+
+	handled = app.diffScrollState.ScrollRight(1000)
+	require.True(tt, handled)
+	require.Equal(tt, app.diffViewState.MaxScrollX(gutterWidth), app.diffViewState.ScrollX.Peek())
+
+	handled = app.diffScrollState.ScrollLeft(1000)
+	require.True(tt, handled)
+	require.Equal(tt, 0, app.diffViewState.ScrollX.Peek())
+}
+
+func TestDiffApp_DiffScrollStateHorizontalCallbacksNoopWhenWrapped(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+
+	rendered := buildTestRenderedFile(20, 120)
+	app.diffViewState.SetRendered(rendered)
+	app.diffViewState.ScrollX.Set(9)
+
+	app.diffHardWrap = true
+	handled := app.diffScrollState.ScrollRight(1)
+	require.False(tt, handled)
+	require.Equal(tt, 9, app.diffViewState.ScrollX.Peek())
 }
 
 func TestDiffApp_ToggleDiffChangeSigns(tt *testing.T) {

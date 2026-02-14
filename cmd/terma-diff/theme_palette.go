@@ -4,15 +4,18 @@ import t "terma"
 
 // ThemePalette stores all styles needed by the diff renderer for one theme.
 type ThemePalette struct {
-	roleStyles map[TokenRole]t.SpanStyle
-	lineStyles map[RenderedLineKind]t.Style
+	roleStyles   map[TokenRole]t.SpanStyle
+	lineStyles   map[RenderedLineKind]t.Style
+	gutterStyles map[RenderedLineKind]t.Style
 }
 
 func NewThemePalette(theme t.ThemeData) ThemePalette {
+	const gutterDarkenAmount = 0.08
+
 	addBg := theme.Background.Blend(theme.Success, 0.14)
 	removeBg := theme.Background.Blend(theme.Error, 0.14)
 	hunkBg := theme.Background.Blend(theme.Info, 0.1)
-	hunkFg := theme.TextMuted.Blend(theme.InfoText, 0.3)
+	hunkFg := theme.TextMuted.Blend(theme.InfoText, 0.35)
 	headerBg := theme.Background.Blend(theme.Primary, 0.11)
 
 	return ThemePalette{
@@ -21,18 +24,18 @@ func NewThemePalette(theme t.ThemeData) ThemePalette {
 			TokenRoleNewLineNumber:     {Foreground: theme.TextMuted},
 			TokenRoleLineNumberAdd:     {Foreground: theme.Success},
 			TokenRoleLineNumberRemove:  {Foreground: theme.Error},
-			TokenRoleDiffPrefixAdd:     {Foreground: theme.Success, Bold: true},
-			TokenRoleDiffPrefixRemove:  {Foreground: theme.Error, Bold: true},
+			TokenRoleDiffPrefixAdd:     {Foreground: theme.Success},
+			TokenRoleDiffPrefixRemove:  {Foreground: theme.Error},
 			TokenRoleDiffPrefixContext: {Foreground: theme.TextMuted},
 			TokenRoleDiffFileHeader:    {Foreground: theme.PrimaryText, Bold: true},
 			TokenRoleDiffHunkHeader:    {Foreground: hunkFg},
 			TokenRoleDiffMeta:          {Foreground: theme.WarningText, Italic: true},
 			TokenRoleSyntaxPlain:       {Foreground: theme.Text},
-			TokenRoleSyntaxKeyword:     {Foreground: theme.Accent, Bold: true},
-			TokenRoleSyntaxType:        {Foreground: theme.Primary},
-			TokenRoleSyntaxFunction:    {Foreground: theme.Secondary},
-			TokenRoleSyntaxString:      {Foreground: theme.Success},
-			TokenRoleSyntaxNumber:      {Foreground: theme.Warning},
+			TokenRoleSyntaxKeyword:     {Foreground: theme.AccentText, Bold: true},
+			TokenRoleSyntaxType:        {Foreground: theme.PrimaryText},
+			TokenRoleSyntaxFunction:    {Foreground: theme.SecondaryText},
+			TokenRoleSyntaxString:      {Foreground: theme.SuccessText},
+			TokenRoleSyntaxNumber:      {Foreground: theme.WarningText},
 			TokenRoleSyntaxComment:     {Foreground: theme.TextMuted, Italic: true},
 			TokenRoleSyntaxPunctuation: {Foreground: theme.Text},
 		},
@@ -41,6 +44,10 @@ func NewThemePalette(theme t.ThemeData) ThemePalette {
 			RenderedLineHunkHeader: {BackgroundColor: hunkBg},
 			RenderedLineAdd:        {BackgroundColor: addBg},
 			RenderedLineRemove:     {BackgroundColor: removeBg},
+		},
+		gutterStyles: map[RenderedLineKind]t.Style{
+			RenderedLineAdd:    {BackgroundColor: addBg.Darken(gutterDarkenAmount)},
+			RenderedLineRemove: {BackgroundColor: removeBg.Darken(gutterDarkenAmount)},
 		},
 	}
 }
@@ -52,5 +59,10 @@ func (p ThemePalette) StyleForRole(role TokenRole) (t.SpanStyle, bool) {
 
 func (p ThemePalette) LineStyleForKind(kind RenderedLineKind) (t.Style, bool) {
 	style, ok := p.lineStyles[kind]
+	return style, ok
+}
+
+func (p ThemePalette) GutterStyleForKind(kind RenderedLineKind) (t.Style, bool) {
+	style, ok := p.gutterStyles[kind]
 	return style, ok
 }

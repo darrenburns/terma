@@ -80,6 +80,7 @@ func NewDiffApp(provider DiffProvider, staged bool) *DiffApp {
 		lastNonDividerFocus: diffViewerScrollID,
 		focusReturnID:       diffViewerScrollID,
 	}
+	app.configureDiffHorizontalScroll()
 	app.commandPalette = app.newCommandPalette()
 	app.refreshDiff()
 	t.RequestFocus(diffViewerScrollID)
@@ -590,29 +591,30 @@ func (a *DiffApp) refreshDiff() {
 }
 
 func (a *DiffApp) moveFileCursor(delta int) {
-	if len(a.orderedFilePaths) == 0 {
+	filePaths := a.filePathsForNavigation()
+	if len(filePaths) == 0 {
 		return
 	}
 
 	currentIdx := -1
 	if !a.activeIsDir {
-		currentIdx = a.indexOfOrderedPath(a.activePath)
+		currentIdx = indexOfPath(filePaths, a.activePath)
 	}
 
 	nextIdx := 0
 	if currentIdx < 0 {
 		if delta < 0 {
-			nextIdx = len(a.orderedFilePaths) - 1
+			nextIdx = len(filePaths) - 1
 		}
 	} else {
 		nextIdx = currentIdx + delta
 		for nextIdx < 0 {
-			nextIdx += len(a.orderedFilePaths)
+			nextIdx += len(filePaths)
 		}
-		nextIdx = nextIdx % len(a.orderedFilePaths)
+		nextIdx = nextIdx % len(filePaths)
 	}
 
-	a.selectFilePath(a.orderedFilePaths[nextIdx])
+	a.selectFilePath(filePaths[nextIdx])
 }
 
 func (a *DiffApp) selectFilePath(filePath string) bool {
@@ -680,8 +682,35 @@ func (a *DiffApp) toggleDiffWrap() {
 	}
 }
 
+func (a *DiffApp) configureDiffHorizontalScroll() {
+	if a.diffScrollState == nil {
+		return
+	}
+	a.diffScrollState.OnScrollLeft = func(cols int) bool {
+		return a.scrollDiffHorizontal(-cols)
+	}
+	a.diffScrollState.OnScrollRight = func(cols int) bool {
+		return a.scrollDiffHorizontal(cols)
+	}
+}
+
+func (a *DiffApp) scrollDiffHorizontal(delta int) bool {
+	if delta == 0 || a.diffHardWrap || a.diffViewState == nil {
+		return false
+	}
+	gutterWidth := renderedGutterWidth(a.diffViewState.Rendered.Peek(), a.diffHideChangeSigns)
+	before := a.diffViewState.ScrollX.Peek()
+	a.diffViewState.MoveX(delta, gutterWidth)
+	return a.diffViewState.ScrollX.Peek() != before
+}
+
 func (a *DiffApp) toggleDiffChangeSigns() {
 	a.diffHideChangeSigns = !a.diffHideChangeSigns
+	if a.diffViewState == nil {
+		return
+	}
+	gutterWidth := renderedGutterWidth(a.diffViewState.Rendered.Peek(), a.diffHideChangeSigns)
+	a.diffViewState.Clamp(gutterWidth)
 }
 
 func (a *DiffApp) toggleSidebar() {
@@ -1220,12 +1249,28 @@ func (a *DiffApp) errorMessage() string {
 	return "Failed to load git diff:\n\n" + msg + "\n\nPress r to retry."
 }
 
-func (a *DiffApp) indexOfOrderedPath(path string) int {
+func (a *DiffApp) filePathsForNavigation() []string {
+	if len(a.orderedFilePaths) == 0 {
+		return nil
+	}
+	query := ""
+	options := t.FilterOptions{}
+	if a.treeFilterState != nil {
+		query = a.treeFilterState.PeekQuery()
+		options = a.treeFilterState.PeekOptions()
+	}
+	if query == "" {
+		return a.orderedFilePaths
+	}
+	return collectFilteredTreeFilePaths(a.treeState.Nodes.Peek(), query, options)
+}
+
+func indexOfPath(paths []string, path string) int {
 	if path == "" {
 		return -1
 	}
-	for idx, filePath := range a.orderedFilePaths {
-		if filePath == path {
+	for idx, value := range paths {
+		if value == path {
 			return idx
 		}
 	}
@@ -1266,6 +1311,27 @@ func findFirstTreeFilterMatch(nodes []t.TreeNode[DiffTreeNodeData], parentPath [
 		}
 	}
 	return nil, DiffTreeNodeData{}, false
+}
+
+func collectFilteredTreeFilePaths(nodes []t.TreeNode[DiffTreeNodeData], query string, options t.FilterOptions) []string {
+	paths := make([]string, 0)
+	appendFilteredTreeFilePaths(nodes, query, options, &paths)
+	return paths
+}
+
+func appendFilteredTreeFilePaths(nodes []t.TreeNode[DiffTreeNodeData], query string, options t.FilterOptions, paths *[]string) bool {
+	hasMatch := false
+	for _, node := range nodes {
+		childHasMatch := appendFilteredTreeFilePaths(node.Children, query, options, paths)
+		matched := t.MatchString(node.Data.Name, query, options).Matched
+		if matched || childHasMatch {
+			if !node.Data.IsDir && node.Data.Path != "" {
+				*paths = append(*paths, node.Data.Path)
+			}
+			hasMatch = true
+		}
+	}
+	return hasMatch
 }
 
 func nonZeroChangeTexts(additions int, deletions int) (addText string, delText string) {

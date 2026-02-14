@@ -129,10 +129,11 @@ func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 		}
 		naturalWidthLayout := s.Child.ComputeLayout(unboundedWidthConstraints)
 		naturalWidth := naturalWidthLayout.Box.MarginBoxWidth()
-		if naturalWidth > 0 {
+		if naturalWidth > 0 && !isUnbounded(naturalWidth) && naturalWidth < unboundedWidthConstraints.MaxWidth {
 			virtualWidth = naturalWidth
 		} else {
-			// Flex-based content returns 0 in unbounded context - use bounded measurement
+			// Some layouts (e.g. percent/fill) report unbounded sentinels when probed with
+			// unbounded width. Those aren't real intrinsic widths, so use bounded measurement.
 			virtualWidth = childLayout.Box.MarginBoxWidth()
 		}
 
@@ -213,4 +214,3 @@ func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 		}},
 	}
 }
-

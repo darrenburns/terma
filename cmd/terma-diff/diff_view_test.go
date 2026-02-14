@@ -37,6 +37,18 @@ func TestDisplayLinePrefix(tt *testing.T) {
 	require.Equal(tt, " ", displayLinePrefix(empty, false))
 }
 
+func TestRenderedGutterWidth(tt *testing.T) {
+	rendered := &RenderedFile{
+		OldNumWidth: 3,
+		NewNumWidth: 4,
+	}
+
+	require.Equal(tt, 11, renderedGutterWidth(rendered, false))
+	require.Equal(tt, 9, renderedGutterWidth(rendered, true))
+	require.Equal(tt, 6, renderedGutterWidth(nil, false))
+	require.Equal(tt, 4, renderedGutterWidth(nil, true))
+}
+
 func TestWrappedLineRowCount(tt *testing.T) {
 	line := RenderedDiffLine{
 		Segments:     []RenderedSegment{{Text: "abcdefghi", Role: TokenRoleSyntaxPlain}},

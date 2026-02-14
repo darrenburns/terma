@@ -9,7 +9,7 @@ import (
 func TestDiffViewState_ClampScrollXAndY(t *testing.T) {
 	rendered := buildTestRenderedFile(40, 80)
 	state := NewDiffViewState(rendered)
-	gutterWidth := renderedGutterWidth(rendered)
+	gutterWidth := renderedGutterWidth(rendered, false)
 
 	state.SetViewport(30, 10, gutterWidth)
 	state.ScrollY.Set(999)
@@ -26,7 +26,7 @@ func TestDiffViewState_ClampScrollXAndY(t *testing.T) {
 func TestDiffViewState_PageAndHalfPageSteps(t *testing.T) {
 	rendered := buildTestRenderedFile(100, 20)
 	state := NewDiffViewState(rendered)
-	gutterWidth := renderedGutterWidth(rendered)
+	gutterWidth := renderedGutterWidth(rendered, false)
 	state.SetViewport(40, 12, gutterWidth)
 
 	state.PageDown(gutterWidth)
@@ -45,7 +45,7 @@ func TestDiffViewState_PageAndHalfPageSteps(t *testing.T) {
 func TestDiffViewState_GoTopAndGoBottom(t *testing.T) {
 	rendered := buildTestRenderedFile(25, 10)
 	state := NewDiffViewState(rendered)
-	gutterWidth := renderedGutterWidth(rendered)
+	gutterWidth := renderedGutterWidth(rendered, false)
 	state.SetViewport(20, 5, gutterWidth)
 
 	state.GoBottom(gutterWidth)

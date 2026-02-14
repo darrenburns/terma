@@ -102,7 +102,7 @@ func (d DiffView) Layout(ctx t.BuildContext, constraints t.Constraints) t.Size {
 		heightDim = d.Height
 	}
 
-	gutterWidth := renderedGutterWidth(rendered)
+	gutterWidth := renderedGutterWidth(rendered, d.HideChangeSigns)
 	contentWidth := 1
 	contentHeight := 1
 	if rendered != nil {
@@ -168,7 +168,7 @@ func (d DiffView) Render(ctx *t.RenderContext) {
 		return
 	}
 
-	gutterWidth := renderedGutterWidth(rendered)
+	gutterWidth := renderedGutterWidth(rendered, d.HideChangeSigns)
 	d.State.SetViewport(ctx.Width, visibleEnd-visibleStart, gutterWidth)
 
 	scrollY := d.State.ScrollY.Get()
@@ -220,6 +220,16 @@ func (d DiffView) Render(ctx *t.RenderContext) {
 			bg := lineStyle.BackgroundColor.ColorAt(ctx.Width, 1, 0, 0)
 			ctx.FillRect(0, row, ctx.Width, 1, bg)
 		}
+		if gutterStyle, ok := d.Palette.GutterStyleForKind(line.Kind); ok && gutterStyle.BackgroundColor != nil && gutterStyle.BackgroundColor.IsSet() {
+			gutterBg := gutterStyle.BackgroundColor.ColorAt(gutterWidth, 1, 0, 0)
+			gutterCols := gutterWidth
+			if gutterCols > ctx.Width {
+				gutterCols = ctx.Width
+			}
+			if gutterCols > 0 {
+				ctx.FillRect(0, row, gutterCols, 1, gutterBg)
+			}
+		}
 		gutterLine := line
 		if continuation {
 			gutterLine.OldLine = 0
@@ -254,17 +264,19 @@ func (d DiffView) renderGutterLine(ctx *t.RenderContext, rendered *RenderedFile,
 	}
 	x++
 
-	prefixRole := TokenRoleDiffPrefixContext
-	if role, ok := prefixRoleForLine(line.Kind); ok {
-		prefixRole = role
-	}
-	if x < ctx.Width {
-		prefix := displayLinePrefix(line, d.HideChangeSigns)
-		d.drawText(ctx, x, row, prefix, prefixRole)
-	}
-	x++
-	if x < ctx.Width {
-		ctx.DrawText(x, row, " ")
+	if !d.HideChangeSigns {
+		prefixRole := TokenRoleDiffPrefixContext
+		if role, ok := prefixRoleForLine(line.Kind); ok {
+			prefixRole = role
+		}
+		if x < ctx.Width {
+			prefix := displayLinePrefix(line, d.HideChangeSigns)
+			d.drawText(ctx, x, row, prefix, prefixRole)
+		}
+		x++
+		if x < ctx.Width {
+			ctx.DrawText(x, row, " ")
+		}
 	}
 }
 
@@ -386,8 +398,11 @@ func (d DiffView) currentRendered() *RenderedFile {
 	return d.State.Rendered.Peek()
 }
 
-func renderedGutterWidth(rendered *RenderedFile) int {
+func renderedGutterWidth(rendered *RenderedFile, hideChangeSigns bool) int {
 	if rendered == nil {
+		if hideChangeSigns {
+			return 4
+		}
 		return 6
 	}
 	oldWidth := rendered.OldNumWidth
@@ -398,7 +413,11 @@ func renderedGutterWidth(rendered *RenderedFile) int {
 	if newWidth <= 0 {
 		newWidth = 1
 	}
-	return oldWidth + 1 + newWidth + 1 + 1 + 1
+	width := oldWidth + 1 + newWidth + 1
+	if !hideChangeSigns {
+		width += 2
+	}
+	return width
 }
 
 func wrappedContentHeight(lines []RenderedDiffLine, wrapWidth int) int {

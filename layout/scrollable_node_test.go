@@ -12,6 +12,22 @@ func fixedBox(width, height int) *BoxNode {
 	return &BoxNode{Width: width, Height: height}
 }
 
+// fillsMaxWidthNode expands to whatever max width it's given.
+// This simulates layouts that "fill available width" and therefore do not
+// have a meaningful intrinsic width in unbounded contexts.
+type fillsMaxWidthNode struct {
+	Height int
+}
+
+func (n *fillsMaxWidthNode) ComputeLayout(constraints Constraints) ComputedLayout {
+	return ComputedLayout{
+		Box: BoxModel{
+			Width:  constraints.MaxWidth,
+			Height: n.Height,
+		},
+	}
+}
+
 func TestScrollableNode_NoScrollNeeded(t *testing.T) {
 	t.Run("ContentFitsInViewport", func(t *testing.T) {
 		// Child is 50x30, viewport is 100x100 - no scrolling needed
@@ -390,6 +406,22 @@ func TestScrollableNode_ScrollbarInteraction(t *testing.T) {
 		assert.Equal(t, 1, result.Box.ScrollbarWidth)
 
 		// Content (90w) < viewport after scrollbar (99w), no horizontal scroll
+		assert.False(t, result.Box.IsScrollableX())
+		assert.Equal(t, 0, result.Box.ScrollbarHeight)
+	})
+
+	t.Run("UnboundedWidthProbeFallsBackToBoundedWidth", func(t *testing.T) {
+		// Regression test: probing natural width with MaxInt can return a sentinel
+		// width for fill/percent-like layouts. Scrollable should ignore that value.
+		scrollable := &ScrollableNode{
+			Child:           &fillsMaxWidthNode{Height: 200},
+			ScrollbarWidth:  1,
+			ScrollbarHeight: 1,
+		}
+		result := scrollable.ComputeLayout(Tight(100, 100))
+
+		assert.True(t, result.Box.IsScrollableY())
+		assert.Equal(t, 99, result.Box.VirtualWidth)
 		assert.False(t, result.Box.IsScrollableX())
 		assert.Equal(t, 0, result.Box.ScrollbarHeight)
 	})

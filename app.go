@@ -127,7 +127,8 @@ func Run(root Widget) (runErr error) {
 
 	t.EnterAltScreen()
 
-	// Enable mouse tracking (normal + button + motion + SGR extended encoding)
+	// Enable mouse tracking (normal + button + motion + SGR extended encoding).
+	// In SGR mode (DECSET 1006), wheel left/right are reported as buttons 6/7.
 	_, _ = t.WriteString(ansi.SetModeMouseNormal)
 	_, _ = t.WriteString(ansi.SetModeMouseAnyEvent)
 	_, _ = t.WriteString(ansi.SetModeMouseButtonEvent)
@@ -708,20 +709,7 @@ func Run(root Widget) (runErr error) {
 					}
 
 				case uv.MouseWheelEvent:
-					// Find all scrollable widgets under the cursor (innermost to outermost)
-					// and try each until one handles the scroll (bubble up if at limit)
-					for _, scrollable := range renderer.ScrollablesAt(ev.X, ev.Y) {
-						var handled bool
-						switch ev.Button {
-						case uv.MouseWheelUp:
-							handled = scrollable.ScrollUp(1)
-						case uv.MouseWheelDown:
-							handled = scrollable.ScrollDown(1)
-						}
-						if handled {
-							break
-						}
-					}
+					dispatchMouseWheel(renderer, ev.X, ev.Y, ev.Button)
 					requestRender()
 
 				default:
@@ -734,6 +722,31 @@ func Run(root Widget) (runErr error) {
 
 	<-ctx.Done()
 	return runErr
+}
+
+// dispatchMouseWheel routes wheel events to scrollable widgets under the cursor.
+// Scrollables are tried from innermost to outermost until one handles the event.
+func dispatchMouseWheel(renderer *Renderer, x int, y int, button uv.MouseButton) bool {
+	if renderer == nil {
+		return false
+	}
+	for _, scrollable := range renderer.ScrollablesAt(x, y) {
+		var handled bool
+		switch button {
+		case uv.MouseWheelUp:
+			handled = scrollable.ScrollUp(1)
+		case uv.MouseWheelDown:
+			handled = scrollable.ScrollDown(1)
+		case uv.MouseWheelLeft:
+			handled = scrollable.ScrollLeft(1)
+		case uv.MouseWheelRight:
+			handled = scrollable.ScrollRight(1)
+		}
+		if handled {
+			return true
+		}
+	}
+	return false
 }
 
 // exportScreenToFile saves the current screen content to a timestamped file.
