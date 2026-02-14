@@ -10,15 +10,16 @@ import (
 
 // DiffView is a purpose-built diff renderer with fixed gutter and scroll support.
 type DiffView struct {
-	ID             string
-	DisableFocus   bool
-	State          *DiffViewState
-	VerticalScroll *t.ScrollState
-	HardWrap       bool
-	Palette        ThemePalette
-	Width          t.Dimension
-	Height         t.Dimension
-	Style          t.Style
+	ID              string
+	DisableFocus    bool
+	State           *DiffViewState
+	VerticalScroll  *t.ScrollState
+	HardWrap        bool
+	HideChangeSigns bool
+	Palette         ThemePalette
+	Width           t.Dimension
+	Height          t.Dimension
+	Style           t.Style
 }
 
 func (d DiffView) Build(ctx t.BuildContext) t.Widget {
@@ -258,10 +259,7 @@ func (d DiffView) renderGutterLine(ctx *t.RenderContext, rendered *RenderedFile,
 		prefixRole = role
 	}
 	if x < ctx.Width {
-		prefix := line.Prefix
-		if prefix == "" {
-			prefix = " "
-		}
+		prefix := displayLinePrefix(line, d.HideChangeSigns)
 		d.drawText(ctx, x, row, prefix, prefixRole)
 	}
 	x++
@@ -281,6 +279,20 @@ func lineNumberRolesForLine(kind RenderedLineKind) (oldRole TokenRole, newRole T
 	default:
 		return oldRole, newRole
 	}
+}
+
+func displayLinePrefix(line RenderedDiffLine, hideChangeSigns bool) string {
+	if hideChangeSigns {
+		switch line.Kind {
+		case RenderedLineAdd, RenderedLineRemove:
+			return " "
+		}
+	}
+	prefix := line.Prefix
+	if prefix == "" {
+		return " "
+	}
+	return prefix
 }
 
 func (d DiffView) renderContentLine(ctx *t.RenderContext, row int, gutterWidth int, line RenderedDiffLine, scrollX int) {

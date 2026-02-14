@@ -49,6 +49,7 @@ type DiffApp struct {
 	treeFilterVisible   bool
 	treeFilterNoMatches bool
 	diffHardWrap        bool
+	diffHideChangeSigns bool
 	focusedWidgetID     string
 	sidebarVisible      bool
 
@@ -388,17 +389,22 @@ func (a *DiffApp) renderTreeNode(theme t.ThemeData, widgetFocused bool) func(nod
 
 func (a *DiffApp) buildRightPane(theme t.ThemeData) t.Widget {
 	viewer := DiffView{
-		ID:             diffViewerID,
-		DisableFocus:   true,
-		State:          a.diffViewState,
-		VerticalScroll: a.diffScrollState,
-		HardWrap:       a.diffHardWrap,
-		Palette:        NewThemePalette(theme),
+		ID:              diffViewerID,
+		DisableFocus:    true,
+		State:           a.diffViewState,
+		VerticalScroll:  a.diffScrollState,
+		HardWrap:        a.diffHardWrap,
+		HideChangeSigns: a.diffHideChangeSigns,
+		Palette:         NewThemePalette(theme),
 		Style: t.Style{
 			Width:           t.Flex(1),
 			Padding:         t.EdgeInsets{},
 			BackgroundColor: theme.Background,
 		},
+	}
+	viewerContent := t.Widget(viewer)
+	if a.shouldShowDiffEmptyState() {
+		viewerContent = a.buildDiffEmptyState(theme)
 	}
 
 	return t.Column{
@@ -417,7 +423,45 @@ func (a *DiffApp) buildRightPane(theme t.ThemeData) t.Widget {
 					Height:          t.Flex(1),
 					BackgroundColor: theme.Background,
 				},
-				Child: viewer,
+				Child: viewerContent,
+			},
+		},
+	}
+}
+
+func (a *DiffApp) shouldShowDiffEmptyState() bool {
+	return a.loadErr == "" &&
+		!a.treeFilterNoMatches &&
+		a.activePath == "" &&
+		!a.activeIsDir &&
+		len(a.orderedFilePaths) == 0
+}
+
+func (a *DiffApp) buildDiffEmptyState(theme t.ThemeData) t.Widget {
+	heading, details := a.emptyMessageParts()
+	return t.Column{
+		Style: t.Style{
+			Width:           t.Flex(1),
+			Height:          t.Flex(1),
+			Padding:         t.EdgeInsets{Top: 1, Left: 2, Right: 2},
+			BackgroundColor: theme.Background,
+		},
+		Children: []t.Widget{
+			t.Text{
+				Content: heading,
+				Wrap:    t.WrapSoft,
+				Style: t.Style{
+					ForegroundColor: theme.TextMuted,
+					Bold:            true,
+				},
+			},
+			t.Spacer{Height: t.Cells(1)},
+			t.Text{
+				Content: details,
+				Wrap:    t.WrapSoft,
+				Style: t.Style{
+					ForegroundColor: theme.TextMuted,
+				},
 			},
 		},
 	}
@@ -634,6 +678,10 @@ func (a *DiffApp) toggleDiffWrap() {
 	if a.diffViewState != nil {
 		a.diffViewState.ScrollX.Set(0)
 	}
+}
+
+func (a *DiffApp) toggleDiffChangeSigns() {
+	a.diffHideChangeSigns = !a.diffHideChangeSigns
 }
 
 func (a *DiffApp) toggleSidebar() {
@@ -868,7 +916,7 @@ func dividerFocusForeground(theme t.ThemeData) t.ColorProvider {
 }
 
 func dividerForeground(theme t.ThemeData) t.ColorProvider {
-	return dividerGradient(theme, theme.Border)
+	return dividerGradient(theme, theme.TextDisabled)
 }
 
 func dividerGradient(theme t.ThemeData, center t.Color) t.ColorProvider {
@@ -934,6 +982,11 @@ func (a *DiffApp) newCommandPalette() *t.CommandPaletteState {
 			FilterText: "Toggle line wrap hard wrap soft wrap",
 			Hint:       "[w]",
 			Action:     a.paletteAction(a.toggleDiffWrap),
+		},
+		{
+			Label:      "Toggle +/- symbols",
+			FilterText: "Toggle plus minus symbols signs prefixes add remove",
+			Action:     a.paletteAction(a.toggleDiffChangeSigns),
 		},
 		{
 			Label:         "Theme",
@@ -1148,10 +1201,15 @@ func (a *DiffApp) viewerTitle() string {
 }
 
 func (a *DiffApp) emptyMessage() string {
+	heading, details := a.emptyMessageParts()
+	return heading + "\n\n" + details
+}
+
+func (a *DiffApp) emptyMessageParts() (heading string, details string) {
 	if a.staged {
-		return "No staged changes.\n\nRun git add <file> and press r to refresh."
+		return "No staged changes.", "Run git add <file> and press r to refresh."
 	}
-	return "No unstaged changes.\n\nMake edits in this repo and press r to refresh."
+	return "No unstaged changes.", "Make edits in this repo and press r to refresh."
 }
 
 func (a *DiffApp) errorMessage() string {

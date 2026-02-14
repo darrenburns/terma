@@ -6,9 +6,10 @@ import (
 
 const (
 	defaultCommandPaletteWidth       = 60
-	defaultCommandPaletteHeight      = 12
+	defaultCommandPaletteHeight      = 16
 	defaultCommandPalettePlaceholder = "Type to search..."
 	defaultCommandPaletteEmptyLabel  = "No results"
+	defaultCommandPaletteTopOffsetY  = 2
 	commandPaletteNestedIndicator    = "▸"
 )
 
@@ -372,7 +373,7 @@ func (p CommandPalette) Build(ctx BuildContext) Widget {
 		Visible: true,
 		Config: FloatConfig{
 			Position:              p.floatPosition(),
-			Offset:                p.Offset,
+			Offset:                p.floatOffset(),
 			Modal:                 true,
 			DismissOnEsc:          BoolPtr(false),
 			DismissOnClickOutside: BoolPtr(true),
@@ -891,6 +892,17 @@ func (p CommandPalette) floatPosition() FloatPosition {
 		return FloatPositionTopCenter
 	}
 	return p.Position
+}
+
+func (p CommandPalette) floatOffset() Offset {
+	offset := p.Offset
+	switch p.floatPosition() {
+	case FloatPositionTopLeft, FloatPositionTopCenter, FloatPositionTopRight:
+		if offset.Y == 0 {
+			offset.Y = defaultCommandPaletteTopOffsetY
+		}
+	}
+	return offset
 }
 
 func (p CommandPalette) paletteWidth() Dimension {

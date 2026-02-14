@@ -109,6 +109,9 @@ func TestDiffApp_CommandPaletteIncludesCommonActions(tt *testing.T) {
 	require.True(tt, wrap.IsSelectable())
 	require.Equal(tt, "[w]", wrap.Hint)
 
+	signs := findPaletteItemByLabel(level.Items, "Toggle +/- symbols")
+	require.True(tt, signs.IsSelectable())
+
 	divider := findPaletteItemByLabel(level.Items, "Focus divider")
 	require.True(tt, divider.IsSelectable())
 	require.Equal(tt, "[d]", divider.Hint)
@@ -124,6 +127,7 @@ func TestDiffApp_CommandPaletteUsesLayoutAndAppearanceSections(tt *testing.T) {
 	sidebarIdx := -1
 	dividerIdx := -1
 	wrapIdx := -1
+	signsIdx := -1
 	themeIdx := -1
 
 	for idx, item := range level.Items {
@@ -138,6 +142,8 @@ func TestDiffApp_CommandPaletteUsesLayoutAndAppearanceSections(tt *testing.T) {
 			dividerIdx = idx
 		case item.Label == "Toggle line wrap":
 			wrapIdx = idx
+		case item.Label == "Toggle +/- symbols":
+			signsIdx = idx
 		case item.Label == "Theme":
 			themeIdx = idx
 		}
@@ -149,7 +155,8 @@ func TestDiffApp_CommandPaletteUsesLayoutAndAppearanceSections(tt *testing.T) {
 	require.Greater(tt, dividerIdx, layoutDivider)
 	require.Greater(tt, appearanceDivider, dividerIdx)
 	require.Greater(tt, wrapIdx, appearanceDivider)
-	require.Greater(tt, themeIdx, wrapIdx)
+	require.Greater(tt, signsIdx, wrapIdx)
+	require.Greater(tt, themeIdx, signsIdx)
 }
 
 func TestDiffApp_KeybindsHideCommandsExposedInPalette(tt *testing.T) {
@@ -677,6 +684,49 @@ func TestDiffApp_ViewerTitleOmitsZeroStats(tt *testing.T) {
 	require.NotContains(tt, strings.Join(delOnlySpanTexts, ""), "+0")
 }
 
+func TestDiffApp_RightPaneUsesPaddedEmptyStateWhenNoDiffs(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+	theme, ok := t.GetTheme(t.CurrentThemeName())
+	require.True(tt, ok)
+
+	widget := app.buildRightPane(theme)
+	column, ok := widget.(t.Column)
+	require.True(tt, ok)
+	require.Len(tt, column.Children, 2)
+
+	scrollable, ok := column.Children[1].(t.Scrollable)
+	require.True(tt, ok)
+
+	emptyState, ok := scrollable.Child.(t.Column)
+	require.True(tt, ok, "expected a padded empty-state widget when no diff files exist")
+	require.Equal(tt, 1, emptyState.Style.Padding.Top)
+	require.Equal(tt, 2, emptyState.Style.Padding.Left)
+	require.Equal(tt, 2, emptyState.Style.Padding.Right)
+	require.Len(tt, emptyState.Children, 3)
+
+	heading, ok := emptyState.Children[0].(t.Text)
+	require.True(tt, ok)
+	require.Equal(tt, "No unstaged changes.", heading.Content)
+	require.True(tt, heading.Style.Bold)
+
+	details, ok := emptyState.Children[2].(t.Text)
+	require.True(tt, ok)
+	require.Equal(tt, "Make edits in this repo and press r to refresh.", details.Content)
+
+	app.toggleMode()
+	widget = app.buildRightPane(theme)
+	column, ok = widget.(t.Column)
+	require.True(tt, ok)
+	scrollable, ok = column.Children[1].(t.Scrollable)
+	require.True(tt, ok)
+	emptyState, ok = scrollable.Child.(t.Column)
+	require.True(tt, ok)
+
+	heading, ok = emptyState.Children[0].(t.Text)
+	require.True(tt, ok)
+	require.Equal(tt, "No staged changes.", heading.Content)
+}
+
 func TestDiffApp_ToggleSidebarVisibility(tt *testing.T) {
 	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("a.txt")}}, false)
 	require.True(tt, app.sidebarVisible)
@@ -697,6 +747,17 @@ func TestDiffApp_ToggleDiffWrap(tt *testing.T) {
 
 	app.toggleDiffWrap()
 	require.False(tt, app.diffHardWrap)
+}
+
+func TestDiffApp_ToggleDiffChangeSigns(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("a.txt")}}, false)
+	require.False(tt, app.diffHideChangeSigns)
+
+	app.toggleDiffChangeSigns()
+	require.True(tt, app.diffHideChangeSigns)
+
+	app.toggleDiffChangeSigns()
+	require.False(tt, app.diffHideChangeSigns)
 }
 
 func TestDiffApp_FocusDividerNoopWhenSidebarHidden(tt *testing.T) {

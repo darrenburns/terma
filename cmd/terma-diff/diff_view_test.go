@@ -20,6 +20,23 @@ func TestLineNumberRolesForLine(tt *testing.T) {
 	require.Equal(tt, TokenRoleLineNumberRemove, newRole)
 }
 
+func TestDisplayLinePrefix(tt *testing.T) {
+	add := RenderedDiffLine{Kind: RenderedLineAdd, Prefix: "+"}
+	require.Equal(tt, "+", displayLinePrefix(add, false))
+	require.Equal(tt, " ", displayLinePrefix(add, true))
+
+	remove := RenderedDiffLine{Kind: RenderedLineRemove, Prefix: "-"}
+	require.Equal(tt, "-", displayLinePrefix(remove, false))
+	require.Equal(tt, " ", displayLinePrefix(remove, true))
+
+	context := RenderedDiffLine{Kind: RenderedLineContext, Prefix: " "}
+	require.Equal(tt, " ", displayLinePrefix(context, false))
+	require.Equal(tt, " ", displayLinePrefix(context, true))
+
+	empty := RenderedDiffLine{Kind: RenderedLineMeta, Prefix: ""}
+	require.Equal(tt, " ", displayLinePrefix(empty, false))
+}
+
 func TestWrappedLineRowCount(tt *testing.T) {
 	line := RenderedDiffLine{
 		Segments:     []RenderedSegment{{Text: "abcdefghi", Role: TokenRoleSyntaxPlain}},
