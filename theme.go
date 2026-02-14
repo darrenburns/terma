@@ -1081,10 +1081,10 @@ var themeRegistry = map[string]ThemeData{
 }
 
 // activeTheme is the signal holding the current theme
-var activeTheme = NewAnySignal(catppuccinThemeData)
+var activeTheme = NewAnySignal(rosePineThemeData)
 
 // activeThemeName tracks the current theme name
-var activeThemeName = ThemeNameCatppuccin
+var activeThemeName = ThemeNameRosePine
 
 // SetTheme switches to the theme with the given name.
 // If the theme is not found, this logs a warning and does nothing.

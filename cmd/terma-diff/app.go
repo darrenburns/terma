@@ -62,6 +62,8 @@ type DiffApp struct {
 }
 
 func NewDiffApp(provider DiffProvider, staged bool) *DiffApp {
+	t.SetTheme(t.ThemeNameCatppuccin)
+
 	app := &DiffApp{
 		provider:            provider,
 		staged:              staged,
