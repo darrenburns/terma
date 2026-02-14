@@ -443,7 +443,7 @@ func (a *DiffApp) buildDiffEmptyState(theme t.ThemeData) t.Widget {
 	return t.Column{
 		Style: t.Style{
 			Width:           t.Flex(1),
-			Height:          t.Flex(1),
+			Height:          t.Auto,
 			Padding:         t.EdgeInsets{Top: 1, Left: 2, Right: 2},
 			BackgroundColor: theme.Background,
 		},
