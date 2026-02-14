@@ -12,6 +12,7 @@ import (
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/screen"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/charmbracelet/x/term"
 )
 
 // ErrPanicked is returned by Run when the application panicked.
@@ -32,6 +33,98 @@ const (
 	clickChainTimeout = 500 * time.Millisecond
 	defaultFPS        = 60
 )
+
+var terminalEnableSequences = []string{
+	ansi.SetModeMouseNormal,
+	ansi.SetModeMouseAnyEvent,
+	ansi.SetModeMouseButtonEvent,
+	ansi.SetModeMouseExtSgr,
+}
+
+var terminalDisableSequences = []string{
+	ansi.ResetModeMouseNormal,
+	ansi.ResetModeMouseAnyEvent,
+	ansi.ResetModeMouseButtonEvent,
+	ansi.ResetModeMouseExtSgr,
+}
+
+func writeTerminalSequences(writeString func(string) (int, error), sequences []string) {
+	for _, seq := range sequences {
+		_, _ = writeString(seq)
+	}
+}
+
+func boolEnv(name string) bool {
+	v := strings.TrimSpace(strings.ToLower(os.Getenv(name)))
+	return v != "" && v != "0" && v != "false" && v != "no"
+}
+
+func kittyKeyboardDisabledByEnv() bool {
+	return boolEnv("TERMA_DISABLE_KITTY_KEYBOARD")
+}
+
+func kittyKeyboardEnabledByEnv() bool {
+	return boolEnv("TERMA_ENABLE_KITTY_KEYBOARD")
+}
+
+func enableTerminalInputModes(writeString func(string) (int, error), enableKittyKeyboard bool) {
+	writeTerminalSequences(writeString, terminalEnableSequences)
+	if enableKittyKeyboard {
+		// Preserve any pre-existing Kitty keyboard state by using stack push.
+		_, _ = writeString(ansi.PushKittyKeyboard(ansi.KittyAllFlags))
+	}
+}
+
+func disableTerminalInputModes(writeString func(string) (int, error), enableKittyKeyboard bool, aggressive bool) {
+	writeTerminalSequences(writeString, terminalDisableSequences)
+	if enableKittyKeyboard {
+		// Restore the previous Kitty keyboard state from the terminal stack.
+		_, _ = writeString(ansi.PopKittyKeyboard(1))
+	}
+	if aggressive {
+		// Optional hard reset path for terminals that still misbehave.
+		extra := []string{
+			ansi.ResetModeMouseX10,
+			ansi.ResetModeMouseExtUtf8,
+			ansi.ResetModeMouseExtUrxvt,
+			ansi.ResetModeMouseExtSgrPixel,
+			ansi.ResetModeBracketedPaste,
+			ansi.ResetModeCursorKeys,
+			ansi.ResetModeKeyboardAction,
+			ansi.ResetModeInsertReplace,
+			ansi.ResetModeNumericKeypad,
+			ansi.KeypadNumericMode,
+			ansi.ResetModeFocusEvent,
+			"\x1b[>4;0m", // xterm modifyOtherKeys
+		}
+		writeTerminalSequences(writeString, extra)
+		if enableKittyKeyboard {
+			_, _ = writeString(ansi.KittyKeyboard(0, 1))
+		}
+	}
+}
+
+func snapshotTTYState(f *os.File) *term.State {
+	if f == nil {
+		return nil
+	}
+	fd := f.Fd()
+	if !term.IsTerminal(fd) {
+		return nil
+	}
+	state, err := term.GetState(fd)
+	if err != nil {
+		return nil
+	}
+	return state
+}
+
+func restoreTTYState(f *os.File, state *term.State) {
+	if f == nil || state == nil {
+		return
+	}
+	_ = term.Restore(f.Fd(), state)
+}
 
 type mouseClickTracker struct {
 	lastClickTime time.Time
@@ -120,24 +213,43 @@ func ScreenText() string {
 // from focused descendants.
 func Run(root Widget) (runErr error) {
 	t := uv.DefaultTerminal()
+	origStdinState := snapshotTTYState(os.Stdin)
+	origStdoutState := snapshotTTYState(os.Stdout)
+	restoreOriginalTTY := func() {
+		restoreTTYState(os.Stdin, origStdinState)
+		restoreTTYState(os.Stdout, origStdoutState)
+	}
 
 	if err := t.Start(); err != nil {
 		return err
 	}
+	// Keep Kitty keyboard protocol enabled by default, but allow opt-out for
+	// environments with buggy pager/terminal combinations.
+	enableKittyKeyboard := !kittyKeyboardDisabledByEnv()
+	if kittyKeyboardEnabledByEnv() {
+		enableKittyKeyboard = true
+	}
 
 	t.EnterAltScreen()
 
-	// Enable mouse tracking (normal + button + motion + SGR extended encoding)
-	_, _ = t.WriteString(ansi.SetModeMouseNormal)
-	_, _ = t.WriteString(ansi.SetModeMouseAnyEvent)
-	_, _ = t.WriteString(ansi.SetModeMouseButtonEvent)
-	_, _ = t.WriteString(ansi.SetModeMouseExtSgr)
-	_, _ = t.WriteString(ansi.PushKittyKeyboard(ansi.KittyAllFlags))
+	// Enable input reporting modes used by Terma (mouse + Kitty keyboard).
+	enableTerminalInputModes(t.WriteString, enableKittyKeyboard)
 
 	// shutdownTerminal restores the terminal to its normal state.
 	// Safe to call multiple times (Shutdown is idempotent).
 	shutdownTerminal := func() {
-		_ = t.Shutdown(context.Background())
+		// First, disable modes while the terminal session is still active.
+		// Some emulators/shell multiplexer stacks can scope keyboard protocol
+		// state to screen buffers, so doing this before shutdown is more
+		// reliable than only restoring after shutdown.
+		preRestoreDone := false
+		disableTerminalInputModes(t.WriteString, enableKittyKeyboard, false)
+		if err := t.Flush(); err == nil {
+			preRestoreDone = true
+		}
+
+		shutdownErr := t.Shutdown(context.Background())
+		aggressiveRestore := shutdownErr != nil || boolEnv("TERMA_AGGRESSIVE_TERMINAL_RESTORE")
 		// Write restore sequences directly to stdout after Shutdown.
 		//
 		// When a panic occurs before the first Display() call, Shutdown's
@@ -152,11 +264,13 @@ func Run(root Widget) (runErr error) {
 		// are idempotent — harmless if Shutdown already handled them.
 		_, _ = os.Stdout.WriteString(ansi.ResetModeAltScreenSaveCursor)
 		_, _ = os.Stdout.WriteString(ansi.SetModeTextCursorEnable)
-		_, _ = os.Stdout.WriteString(ansi.ResetModeMouseNormal)
-		_, _ = os.Stdout.WriteString(ansi.ResetModeMouseAnyEvent)
-		_, _ = os.Stdout.WriteString(ansi.ResetModeMouseButtonEvent)
-		_, _ = os.Stdout.WriteString(ansi.ResetModeMouseExtSgr)
-		_, _ = os.Stdout.WriteString(ansi.PopKittyKeyboard(1))
+		// If pre-shutdown restore succeeded, avoid a second Kitty pop on stdout.
+		postRestoreKitty := enableKittyKeyboard && !preRestoreDone
+		disableTerminalInputModes(os.Stdout.WriteString, postRestoreKitty, aggressiveRestore)
+		if boolEnv("TERMA_FORCE_TERMINAL_RIS") {
+			_, _ = os.Stdout.WriteString(ansi.ResetInitialState)
+		}
+		restoreOriginalTTY()
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -512,11 +626,9 @@ func Run(root Widget) (runErr error) {
 
 					// Suspend on Ctrl+Z
 					if ev.MatchString("ctrl+z") {
-						// Disable mouse tracking before suspending
-						_, _ = t.WriteString(ansi.ResetModeMouseNormal)
-						_, _ = t.WriteString(ansi.ResetModeMouseAnyEvent)
-						_, _ = t.WriteString(ansi.ResetModeMouseButtonEvent)
-						_, _ = t.WriteString(ansi.ResetModeMouseExtSgr)
+						// Disable input reporting modes before suspending so
+						// the shell gets plain keyboard input while suspended.
+						disableTerminalInputModes(t.WriteString, enableKittyKeyboard, false)
 
 						// Exit alternate screen to show shell
 						t.ExitAltScreen()
@@ -532,10 +644,7 @@ func Run(root Widget) (runErr error) {
 						t.EnterAltScreen()
 
 						// Re-enable mouse tracking
-						_, _ = t.WriteString(ansi.SetModeMouseNormal)
-						_, _ = t.WriteString(ansi.SetModeMouseAnyEvent)
-						_, _ = t.WriteString(ansi.SetModeMouseButtonEvent)
-						_, _ = t.WriteString(ansi.SetModeMouseExtSgr)
+						enableTerminalInputModes(t.WriteString, enableKittyKeyboard)
 
 						// Redraw the screen
 						requestRender()
