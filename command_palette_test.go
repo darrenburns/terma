@@ -53,6 +53,119 @@ func TestCommandPaletteState_CurrentItemSkipsDividers(t *testing.T) {
 	}
 }
 
+func TestCommandPaletteState_CloseUsesNextFocusOverride(t *testing.T) {
+	state := NewCommandPaletteState("Commands", []CommandPaletteItem{
+		{Label: "Open"},
+	})
+	palette := CommandPalette{
+		ID:    "palette",
+		State: state,
+	}
+
+	// Simulate a previously-visible palette closing.
+	state.wasVisible = true
+	state.lastFocusID = "last-focus"
+	state.Visible.Set(false)
+	state.SetNextFocusIDOnClose("override-focus")
+
+	oldPending := pendingFocusID
+	defer func() { pendingFocusID = oldPending }()
+	pendingFocusID = ""
+
+	ctx := NewBuildContext(
+		NewFocusManager(),
+		NewAnySignal[Focusable](nil),
+		NewAnySignal[Widget](nil),
+		NewFloatCollector(),
+	)
+
+	_ = palette.Build(ctx)
+
+	if pendingFocusID != "override-focus" {
+		t.Fatalf("expected pending focus override, got %q", pendingFocusID)
+	}
+	if state.nextFocusID != "" {
+		t.Fatalf("expected nextFocusID to be cleared, got %q", state.nextFocusID)
+	}
+}
+
+func TestCommandPalette_FloatOffset_DefaultTopInset(t *testing.T) {
+	tests := []struct {
+		name     string
+		palette  CommandPalette
+		expected Offset
+	}{
+		{
+			name:     "default top center when position unset",
+			palette:  CommandPalette{},
+			expected: Offset{X: 0, Y: 2},
+		},
+		{
+			name:     "top left with no explicit y",
+			palette:  CommandPalette{Position: FloatPositionTopLeft},
+			expected: Offset{X: 0, Y: 2},
+		},
+		{
+			name:     "top right preserves x while applying default y",
+			palette:  CommandPalette{Position: FloatPositionTopRight, Offset: Offset{X: 3}},
+			expected: Offset{X: 3, Y: 2},
+		},
+		{
+			name:     "absolute without offset still uses top default",
+			palette:  CommandPalette{Position: FloatPositionAbsolute},
+			expected: Offset{X: 0, Y: 2},
+		},
+	}
+
+	for _, tt := range tests {
+		got := tt.palette.floatOffset()
+		if got != tt.expected {
+			t.Fatalf("%s: got %+v, want %+v", tt.name, got, tt.expected)
+		}
+	}
+}
+
+func TestCommandPalette_FloatOffset_ExplicitAndNonTopOffsetsUnchanged(t *testing.T) {
+	tests := []struct {
+		name     string
+		palette  CommandPalette
+		expected Offset
+	}{
+		{
+			name:     "explicit top y preserved",
+			palette:  CommandPalette{Position: FloatPositionTopCenter, Offset: Offset{Y: 1}},
+			expected: Offset{X: 0, Y: 1},
+		},
+		{
+			name:     "explicit large top y preserved",
+			palette:  CommandPalette{Position: FloatPositionTopCenter, Offset: Offset{Y: 5}},
+			expected: Offset{X: 0, Y: 5},
+		},
+		{
+			name:     "center position unchanged",
+			palette:  CommandPalette{Position: FloatPositionCenter},
+			expected: Offset{X: 0, Y: 0},
+		},
+		{
+			name:     "bottom position unchanged",
+			palette:  CommandPalette{Position: FloatPositionBottomLeft},
+			expected: Offset{X: 0, Y: 0},
+		},
+		{
+			name:     "absolute with explicit coordinates unchanged",
+			palette:  CommandPalette{Position: FloatPositionAbsolute, Offset: Offset{X: 4, Y: 1}},
+			expected: Offset{X: 4, Y: 1},
+		},
+	}
+
+	for _, tt := range tests {
+		got := tt.palette.floatOffset()
+		if got != tt.expected {
+			t.Fatalf("%s: got %+v, want %+v", tt.name, got, tt.expected)
+		}
+	}
+}
+
 func TestSnapshot_CommandPalette_Basic(t *testing.T) {
 	items := []CommandPaletteItem{
 		{Label: "New File", Hint: "Ctrl+N"},

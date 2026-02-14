@@ -91,20 +91,22 @@ type ThemeData struct {
 	Link Color // Clickable text links
 
 	// Label text colors (variant colors blended toward readable text)
-	PrimaryText Color
-	AccentText  Color
-	SuccessText Color
-	ErrorText   Color
-	WarningText Color
-	InfoText    Color
+	PrimaryText   Color
+	SecondaryText Color
+	AccentText    Color
+	SuccessText   Color
+	ErrorText     Color
+	WarningText   Color
+	InfoText      Color
 
 	// Label background colors (variant colors faded/dimmed)
-	PrimaryBg Color
-	AccentBg  Color
-	SuccessBg Color
-	ErrorBg   Color
-	WarningBg Color
-	InfoBg    Color
+	PrimaryBg   Color
+	SecondaryBg Color
+	AccentBg    Color
+	SuccessBg   Color
+	ErrorBg     Color
+	WarningBg   Color
+	InfoBg      Color
 }
 
 // computeLabelColors fills in derived label colors from base variant colors.
@@ -113,6 +115,7 @@ func computeLabelColors(data *ThemeData) {
 
 	// Text: 50% variant, 50% auto-text for readability with more color
 	data.PrimaryText = data.Primary.Blend(autoText, 0.5)
+	data.SecondaryText = data.Secondary.Blend(autoText, 0.5)
 	data.AccentText = data.Accent.Blend(autoText, 0.5)
 	data.SuccessText = data.Success.Blend(autoText, 0.5)
 	data.ErrorText = data.Error.Blend(autoText, 0.5)
@@ -121,6 +124,7 @@ func computeLabelColors(data *ThemeData) {
 
 	// Background: 35% variant blended into background
 	data.PrimaryBg = data.Background.Blend(data.Primary, 0.35)
+	data.SecondaryBg = data.Background.Blend(data.Secondary, 0.35)
 	data.AccentBg = data.Background.Blend(data.Accent, 0.35)
 	data.SuccessBg = data.Background.Blend(data.Success, 0.35)
 	data.ErrorBg = data.Background.Blend(data.Error, 0.35)
@@ -132,6 +136,10 @@ func init() {
 	for name, theme := range themeRegistry {
 		computeLabelColors(&theme)
 		themeRegistry[name] = theme
+	}
+	// Ensure the initial active theme includes derived label colors.
+	if active, ok := themeRegistry[activeThemeName]; ok {
+		activeTheme.Set(active)
 	}
 }
 
@@ -1073,10 +1081,10 @@ var themeRegistry = map[string]ThemeData{
 }
 
 // activeTheme is the signal holding the current theme
-var activeTheme = NewAnySignal(rosePineThemeData)
+var activeTheme = NewAnySignal(catppuccinThemeData)
 
 // activeThemeName tracks the current theme name
-var activeThemeName = ThemeNameRosePine
+var activeThemeName = ThemeNameCatppuccin
 
 // SetTheme switches to the theme with the given name.
 // If the theme is not found, this logs a warning and does nothing.

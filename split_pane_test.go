@@ -66,3 +66,58 @@ func TestSplitPane_DisableFocus(t *testing.T) {
 	svg := snapshotWithFocus(widget, 20, 5, "split")
 	assertSnapshotFromSVG(t, svg, "Attempting to focus SplitPane by ID should fail when DisableFocus=true; divider remains in unfocused color (red), not the focus gradient")
 }
+
+func TestSplitPane_KeybindsHorizontalIncludesVimAliases(t *testing.T) {
+	state := NewSplitPaneState(0.5)
+	pane := SplitPane{
+		State:       state,
+		Orientation: SplitHorizontal,
+	}
+
+	keybinds := pane.Keybinds()
+	if _, ok := splitPaneKeybindByKey(keybinds, "left"); !ok {
+		t.Fatalf("expected left keybind")
+	}
+	if _, ok := splitPaneKeybindByKey(keybinds, "right"); !ok {
+		t.Fatalf("expected right keybind")
+	}
+	if _, ok := splitPaneKeybindByKey(keybinds, "h"); !ok {
+		t.Fatalf("expected h keybind")
+	}
+	if _, ok := splitPaneKeybindByKey(keybinds, "l"); !ok {
+		t.Fatalf("expected l keybind")
+	}
+}
+
+func TestSplitPane_KeybindsEscapeUsesOnExitFocus(t *testing.T) {
+	state := NewSplitPaneState(0.5)
+	calls := 0
+	pane := SplitPane{
+		State:       state,
+		Orientation: SplitHorizontal,
+		OnExitFocus: func() {
+			calls++
+		},
+	}
+
+	keybind, ok := splitPaneKeybindByKey(pane.Keybinds(), "escape")
+	if !ok {
+		t.Fatalf("expected escape keybind")
+	}
+	if keybind.Action == nil {
+		t.Fatalf("expected escape keybind action")
+	}
+	keybind.Action()
+	if calls != 1 {
+		t.Fatalf("expected OnExitFocus to be called once, got %d", calls)
+	}
+}
+
+func splitPaneKeybindByKey(keybinds []Keybind, key string) (Keybind, bool) {
+	for _, keybind := range keybinds {
+		if keybind.Key == key {
+			return keybind, true
+		}
+	}
+	return Keybind{}, false
+}

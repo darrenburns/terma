@@ -702,6 +702,27 @@ func TestTextInput_Keybinds_ReadOnly(t *testing.T) {
 		}
 	})
 
+	t.Run("keeps submit keybind hidden when not read-only", func(t *testing.T) {
+		state := NewTextInputState("hello")
+		widget := TextInput{ID: "test", State: state}
+		keybinds := widget.Keybinds()
+
+		for _, kb := range keybinds {
+			if kb.Key != "enter" {
+				continue
+			}
+			if kb.Name != "Submit" {
+				t.Errorf("Enter keybind name = %q, want %q", kb.Name, "Submit")
+			}
+			if !kb.Hidden {
+				t.Error("Enter submit keybind should be hidden")
+			}
+			return
+		}
+
+		t.Error("Keybinds should include 'enter' when not read-only")
+	})
+
 	t.Run("excludes editing keybinds when read-only", func(t *testing.T) {
 		state := NewTextInputState("hello")
 		state.ReadOnly.Set(true)

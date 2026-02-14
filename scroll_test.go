@@ -317,3 +317,68 @@ func TestScrollState_ChatLikeBehavior(t *testing.T) {
 		t.Errorf("expected offset=15 after resuming pin, got %d", s.Offset.Peek())
 	}
 }
+
+func TestScrollState_SetOffsetX_ClampsToBounds(t *testing.T) {
+	s := NewScrollState()
+	s.updateHorizontalLayout(10, 30) // maxOffsetX = 20
+
+	s.SetOffsetX(-5)
+	if s.GetOffsetX() != 0 {
+		t.Errorf("expected horizontal offset=0, got %d", s.GetOffsetX())
+	}
+
+	s.SetOffsetX(100)
+	if s.GetOffsetX() != 20 {
+		t.Errorf("expected horizontal offset=20, got %d", s.GetOffsetX())
+	}
+}
+
+func TestScrollState_ScrollLeftRight(t *testing.T) {
+	s := NewScrollState()
+	s.updateHorizontalLayout(10, 30) // maxOffsetX = 20
+
+	if handled := s.ScrollRight(3); !handled {
+		t.Error("expected ScrollRight to be handled")
+	}
+	if s.GetOffsetX() != 3 {
+		t.Errorf("expected horizontal offset=3, got %d", s.GetOffsetX())
+	}
+
+	if handled := s.ScrollLeft(2); !handled {
+		t.Error("expected ScrollLeft to be handled")
+	}
+	if s.GetOffsetX() != 1 {
+		t.Errorf("expected horizontal offset=1, got %d", s.GetOffsetX())
+	}
+}
+
+func TestScrollState_ScrollLeftRight_Callbacks(t *testing.T) {
+	s := NewScrollState()
+	leftCalls := 0
+	rightCalls := 0
+	s.OnScrollLeft = func(cols int) bool {
+		leftCalls += cols
+		return true
+	}
+	s.OnScrollRight = func(cols int) bool {
+		rightCalls += cols
+		return true
+	}
+
+	if handled := s.ScrollRight(4); !handled {
+		t.Error("expected ScrollRight callback to handle")
+	}
+	if handled := s.ScrollLeft(3); !handled {
+		t.Error("expected ScrollLeft callback to handle")
+	}
+
+	if rightCalls != 4 {
+		t.Errorf("expected right callback count=4, got %d", rightCalls)
+	}
+	if leftCalls != 3 {
+		t.Errorf("expected left callback count=3, got %d", leftCalls)
+	}
+	if s.GetOffsetX() != 0 {
+		t.Errorf("expected horizontal offset unchanged at 0, got %d", s.GetOffsetX())
+	}
+}

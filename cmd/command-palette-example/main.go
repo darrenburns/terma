@@ -170,7 +170,6 @@ func (a *CommandPaletteDemo) Build(ctx t.BuildContext) t.Widget {
 				ID:             "command-palette",
 				State:          a.palette,
 				Position:       t.FloatPositionTopCenter,
-				Offset:         t.Offset{Y: 1},
 				OnCursorChange: a.handleCursorChange,
 			},
 		},

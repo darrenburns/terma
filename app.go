@@ -429,7 +429,12 @@ func Run(root Widget) (runErr error) {
 			focusManager.SaveFocus()
 		}
 
-		// Apply pending focus request from ctx.RequestFocus()
+		for i := 0; i < closedModals; i++ {
+			focusManager.RestoreFocus()
+		}
+
+		// Apply pending focus request from ctx.RequestFocus() after modal
+		// restore logic so explicit focus requests win.
 		if pendingFocusID != "" {
 			focusManager.FocusByID(pendingFocusID)
 			pendingFocusID = ""
@@ -437,10 +442,6 @@ func Run(root Widget) (runErr error) {
 			if updateFocusedSignal() {
 				renderer.Render(root)
 			}
-		}
-
-		for i := 0; i < closedModals; i++ {
-			focusManager.RestoreFocus()
 		}
 
 		lastModalCount = modalCount
@@ -816,20 +817,7 @@ func Run(root Widget) (runErr error) {
 					}
 
 				case uv.MouseWheelEvent:
-					// Find all scrollable widgets under the cursor (innermost to outermost)
-					// and try each until one handles the scroll (bubble up if at limit)
-					for _, scrollable := range renderer.ScrollablesAt(ev.X, ev.Y) {
-						var handled bool
-						switch ev.Button {
-						case uv.MouseWheelUp:
-							handled = scrollable.ScrollUp(1)
-						case uv.MouseWheelDown:
-							handled = scrollable.ScrollDown(1)
-						}
-						if handled {
-							break
-						}
-					}
+					dispatchMouseWheel(renderer, ev.X, ev.Y, ev.Button)
 					requestRender()
 
 				default:
@@ -842,6 +830,31 @@ func Run(root Widget) (runErr error) {
 
 	<-ctx.Done()
 	return runErr
+}
+
+// dispatchMouseWheel routes wheel events to scrollable widgets under the cursor.
+// Scrollables are tried from innermost to outermost until one handles the event.
+func dispatchMouseWheel(renderer *Renderer, x int, y int, button uv.MouseButton) bool {
+	if renderer == nil {
+		return false
+	}
+	for _, scrollable := range renderer.ScrollablesAt(x, y) {
+		var handled bool
+		switch button {
+		case uv.MouseWheelUp:
+			handled = scrollable.ScrollUp(1)
+		case uv.MouseWheelDown:
+			handled = scrollable.ScrollDown(1)
+		case uv.MouseWheelLeft:
+			handled = scrollable.ScrollLeft(1)
+		case uv.MouseWheelRight:
+			handled = scrollable.ScrollRight(1)
+		}
+		if handled {
+			return true
+		}
+	}
+	return false
 }
 
 // exportScreenToFile saves the current screen content to a timestamped file.

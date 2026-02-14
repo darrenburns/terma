@@ -77,6 +77,39 @@ func TestExtendTheme_LabelColorsRecomputed(t *testing.T) {
 	}
 }
 
+func TestActiveTheme_LabelColorsInitialized(t *testing.T) {
+	active := getTheme()
+	if active.PrimaryText == (Color{}) {
+		t.Fatal("active theme PrimaryText should be initialized")
+	}
+	if active.PrimaryBg == (Color{}) {
+		t.Fatal("active theme PrimaryBg should be initialized")
+	}
+	if active.SecondaryText == (Color{}) {
+		t.Fatal("active theme SecondaryText should be initialized")
+	}
+	if active.SecondaryBg == (Color{}) {
+		t.Fatal("active theme SecondaryBg should be initialized")
+	}
+
+	expected, ok := GetTheme(CurrentThemeName())
+	if !ok {
+		t.Fatalf("current theme %q should exist in registry", CurrentThemeName())
+	}
+	if active.PrimaryText != expected.PrimaryText {
+		t.Fatalf("active PrimaryText mismatch: got %v, want %v", active.PrimaryText, expected.PrimaryText)
+	}
+	if active.PrimaryBg != expected.PrimaryBg {
+		t.Fatalf("active PrimaryBg mismatch: got %v, want %v", active.PrimaryBg, expected.PrimaryBg)
+	}
+	if active.SecondaryText != expected.SecondaryText {
+		t.Fatalf("active SecondaryText mismatch: got %v, want %v", active.SecondaryText, expected.SecondaryText)
+	}
+	if active.SecondaryBg != expected.SecondaryBg {
+		t.Fatalf("active SecondaryBg mismatch: got %v, want %v", active.SecondaryBg, expected.SecondaryBg)
+	}
+}
+
 func TestExtendAndRegisterTheme_Success(t *testing.T) {
 	ok := ExtendAndRegisterTheme("test-custom-theme", "tokyo-night",
 		WithPrimary(Hex("#ff0000")),
@@ -202,10 +235,10 @@ func TestSnapshot_ThemeInheritance_ExtendedTheme(t *testing.T) {
 	// Create a dramatically different theme by extending dracula
 	// Use bright, obvious colors that are clearly different from the base
 	ExtendAndRegisterTheme("test-neon", "dracula",
-		WithPrimary(Hex("#ff0000")),   // Bright red (dracula has purple #bd93f9)
-		WithAccent(Hex("#00ff00")),    // Bright green (dracula has cyan #8be9fd)
-		WithSuccess(Hex("#ffff00")),   // Yellow (dracula has green #50fa7b)
-		WithError(Hex("#ff00ff")),     // Magenta (dracula has red #ff5555)
+		WithPrimary(Hex("#ff0000")),    // Bright red (dracula has purple #bd93f9)
+		WithAccent(Hex("#00ff00")),     // Bright green (dracula has cyan #8be9fd)
+		WithSuccess(Hex("#ffff00")),    // Yellow (dracula has green #50fa7b)
+		WithError(Hex("#ff00ff")),      // Magenta (dracula has red #ff5555)
 		WithBackground(Hex("#000033")), // Dark blue background
 		WithSurface(Hex("#000066")),    // Lighter blue surface
 	)

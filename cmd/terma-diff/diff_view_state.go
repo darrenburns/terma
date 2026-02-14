@@ -1,0 +1,211 @@
+package main
+
+import t "terma"
+
+// DiffViewState tracks scroll state and rendered diff content for DiffView.
+type DiffViewState struct {
+	ScrollY  t.Signal[int]
+	ScrollX  t.Signal[int]
+	Rendered t.AnySignal[*RenderedFile]
+
+	viewportWidth  int
+	viewportHeight int
+}
+
+func NewDiffViewState(rendered *RenderedFile) *DiffViewState {
+	return &DiffViewState{
+		ScrollY:  t.NewSignal(0),
+		ScrollX:  t.NewSignal(0),
+		Rendered: t.NewAnySignal(rendered),
+	}
+}
+
+func (s *DiffViewState) SetRendered(rendered *RenderedFile) {
+	if s == nil {
+		return
+	}
+	s.Rendered.Set(rendered)
+	s.ScrollY.Set(0)
+	s.ScrollX.Set(0)
+	s.Clamp(0)
+}
+
+func (s *DiffViewState) SetViewport(width int, height int, gutterWidth int) {
+	if s == nil {
+		return
+	}
+	if width < 0 {
+		width = 0
+	}
+	if height < 0 {
+		height = 0
+	}
+	s.viewportWidth = width
+	s.viewportHeight = height
+	s.Clamp(gutterWidth)
+}
+
+func (s *DiffViewState) Clamp(gutterWidth int) {
+	if s == nil {
+		return
+	}
+	maxY := s.MaxScrollY()
+	maxX := s.MaxScrollX(gutterWidth)
+
+	nextY := s.ScrollY.Peek()
+	if nextY < 0 {
+		nextY = 0
+	} else if nextY > maxY {
+		nextY = maxY
+	}
+	if nextY != s.ScrollY.Peek() {
+		s.ScrollY.Set(nextY)
+	}
+
+	nextX := s.ScrollX.Peek()
+	if nextX < 0 {
+		nextX = 0
+	} else if nextX > maxX {
+		nextX = maxX
+	}
+	if nextX != s.ScrollX.Peek() {
+		s.ScrollX.Set(nextX)
+	}
+}
+
+func (s *DiffViewState) MoveY(delta int, gutterWidth int) {
+	if s == nil {
+		return
+	}
+	next := s.ScrollY.Peek() + delta
+	if next < 0 {
+		next = 0
+	}
+	maxY := s.MaxScrollY()
+	if next > maxY {
+		next = maxY
+	}
+	if next != s.ScrollY.Peek() {
+		s.ScrollY.Set(next)
+	}
+	s.Clamp(gutterWidth)
+}
+
+func (s *DiffViewState) MoveX(delta int, gutterWidth int) {
+	if s == nil {
+		return
+	}
+	next := s.ScrollX.Peek() + delta
+	if next < 0 {
+		next = 0
+	}
+	maxX := s.MaxScrollX(gutterWidth)
+	if next > maxX {
+		next = maxX
+	}
+	if next != s.ScrollX.Peek() {
+		s.ScrollX.Set(next)
+	}
+	s.Clamp(gutterWidth)
+}
+
+func (s *DiffViewState) PageUp(gutterWidth int) {
+	if s == nil {
+		return
+	}
+	s.MoveY(-s.pageStep(), gutterWidth)
+}
+
+func (s *DiffViewState) PageDown(gutterWidth int) {
+	if s == nil {
+		return
+	}
+	s.MoveY(s.pageStep(), gutterWidth)
+}
+
+func (s *DiffViewState) HalfPageUp(gutterWidth int) {
+	if s == nil {
+		return
+	}
+	s.MoveY(-s.halfPageStep(), gutterWidth)
+}
+
+func (s *DiffViewState) HalfPageDown(gutterWidth int) {
+	if s == nil {
+		return
+	}
+	s.MoveY(s.halfPageStep(), gutterWidth)
+}
+
+func (s *DiffViewState) GoTop(gutterWidth int) {
+	if s == nil {
+		return
+	}
+	if s.ScrollY.Peek() != 0 {
+		s.ScrollY.Set(0)
+	}
+	s.Clamp(gutterWidth)
+}
+
+func (s *DiffViewState) GoBottom(gutterWidth int) {
+	if s == nil {
+		return
+	}
+	maxY := s.MaxScrollY()
+	if s.ScrollY.Peek() != maxY {
+		s.ScrollY.Set(maxY)
+	}
+	s.Clamp(gutterWidth)
+}
+
+func (s *DiffViewState) MaxScrollY() int {
+	if s == nil || s.viewportHeight <= 0 {
+		return 0
+	}
+	rendered := s.Rendered.Peek()
+	if rendered == nil {
+		return 0
+	}
+	maxScroll := len(rendered.Lines) - s.viewportHeight
+	if maxScroll < 0 {
+		return 0
+	}
+	return maxScroll
+}
+
+func (s *DiffViewState) MaxScrollX(gutterWidth int) int {
+	if s == nil || s.viewportWidth <= 0 {
+		return 0
+	}
+	rendered := s.Rendered.Peek()
+	if rendered == nil {
+		return 0
+	}
+	codeWidth := s.viewportWidth - gutterWidth
+	if codeWidth < 0 {
+		codeWidth = 0
+	}
+	maxScroll := rendered.MaxContentWidth - codeWidth
+	if maxScroll < 0 {
+		return 0
+	}
+	return maxScroll
+}
+
+func (s *DiffViewState) pageStep() int {
+	if s == nil || s.viewportHeight <= 1 {
+		return 1
+	}
+	return s.viewportHeight - 1
+}
+
+func (s *DiffViewState) halfPageStep() int {
+	if s == nil || s.viewportHeight <= 1 {
+		return 1
+	}
+	half := s.viewportHeight / 2
+	if half <= 0 {
+		return 1
+	}
+	return half
+}

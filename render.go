@@ -173,10 +173,10 @@ func (ctx *RenderContext) OverflowSubContext(xOffset, yOffset, width, height int
 	}
 }
 
-// ScrolledSubContext creates a child context with scroll offset applied.
+// ScrolledSubContext creates a child context with scroll offsets applied.
 // The clip rect remains the viewport bounds, but content positions are offset.
-// scrollY is how much the content has been scrolled (content moves up).
-func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, scrollY int) *RenderContext {
+// scrollX shifts content left and scrollY shifts content up.
+func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, scrollX, scrollY int) *RenderContext {
 	// Ensure non-negative dimensions
 	if width < 0 {
 		width = 0
@@ -195,14 +195,14 @@ func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, sc
 	// Clip rect = intersection of parent clip and viewport bounds
 	newClip := ctx.clip.Intersect(viewportBounds)
 
-	// Content position is shifted up by scroll offset
-	// When scrollY=0, content starts at viewportY
-	// When scrollY=10, content is shifted up by 10 (virtual position 10 appears at viewport top)
+	// Content position is shifted by scroll offsets.
+	// When scroll offsets are zero, content starts at the viewport origin.
+	contentX := viewportX - scrollX
 	contentY := viewportY - scrollY
 
 	return &RenderContext{
 		terminal:       ctx.terminal,
-		X:              viewportX,
+		X:              contentX,
 		Y:              contentY,
 		Width:          width,
 		Height:         height,
@@ -1136,10 +1136,17 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 		if isStack {
 			// Stack: children positioned relative to border-box, can overflow
 			childClipCtx = ctx.OverflowSubContext(absBorderX, absBorderY, box.Width, box.Height)
-		} else if box.IsScrollableY() {
-			// Scrollable: apply scroll offset so content is shifted up
+		} else if box.IsScrollableX() || box.IsScrollableY() {
+			// Scrollable: apply scroll offsets so content is shifted within viewport.
 			usableBox := box.UsableContentBox()
-			childClipCtx = ctx.ScrolledSubContext(absContentX, absContentY, usableBox.Width, usableBox.Height, box.ScrollOffsetY)
+			childClipCtx = ctx.ScrolledSubContext(
+				absContentX,
+				absContentY,
+				usableBox.Width,
+				usableBox.Height,
+				box.ScrollOffsetX,
+				box.ScrollOffsetY,
+			)
 		} else {
 			// Standard containers: children positioned relative to content area
 			// Use SubContext which clips children to the container bounds
@@ -1188,6 +1195,7 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 		// This enables keyboard scrolling to work correctly
 		if scrollable.State != nil {
 			usableBox := box.UsableContentBox()
+			scrollable.State.updateHorizontalLayout(usableBox.Width, box.VirtualWidth)
 			scrollable.State.updateLayout(usableBox.Height, box.VirtualHeight)
 		}
 
