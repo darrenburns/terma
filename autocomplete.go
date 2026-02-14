@@ -750,10 +750,26 @@ func (a Autocomplete) selectSuggestion(suggestion Suggestion) {
 
 	newText, newCursor := strategy(text, cursor, suggestion, triggerPos)
 	a.setChildTextAndCursor(newText, newCursor)
+	a.callChildOnChange(newText)
 	a.dismiss()
 
 	if a.OnSelect != nil {
 		a.OnSelect(suggestion)
+	}
+}
+
+// callChildOnChange invokes the wrapped child's OnChange callback, if present.
+// This ensures consumers react immediately when a suggestion updates input text.
+func (a Autocomplete) callChildOnChange(text string) {
+	switch child := a.Child.(type) {
+	case TextInput:
+		if child.OnChange != nil {
+			child.OnChange(text)
+		}
+	case TextArea:
+		if child.OnChange != nil {
+			child.OnChange(text)
+		}
 	}
 }
 
