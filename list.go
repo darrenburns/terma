@@ -636,16 +636,10 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 		Selection = l.State.Selection.Get()
 	}
 
-	// Clamp cursor to valid bounds for source items
-	clamped := clampInt(cursorIdx, 0, len(items)-1)
-	if clamped != cursorIdx {
-		l.State.CursorIndex.Set(clamped)
-		cursorIdx = clamped
-	}
-
+	// Clamp cursor for rendering only; interaction handlers normalize state.
+	cursorIdx = clampInt(cursorIdx, 0, len(items)-1)
 	if _, ok := l.State.viewIndexForSource(cursorIdx); !ok {
 		cursorIdx = filtered.Indices[0]
-		l.State.CursorIndex.Set(cursorIdx)
 	}
 
 	// Register scroll callbacks for mouse wheel support
@@ -792,6 +786,7 @@ func (l List[T]) Keybinds() []Keybind {
 }
 
 func (l List[T]) selectItem() {
+	l.normalizeCursorForInteraction()
 	if l.OnSelect != nil {
 		if item, ok := l.State.SelectedItem(); ok {
 			l.OnSelect(item)
@@ -800,12 +795,7 @@ func (l List[T]) selectItem() {
 }
 
 func (l List[T]) keyCursorUp() {
-	view := l.viewIndices()
-	if len(view) == 0 {
-		return
-	}
-	cursorIdx := l.State.CursorIndex.Peek()
-	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
+	_, cursorViewIdx, ok := l.normalizeCursorForInteraction()
 	if !ok {
 		return
 	}
@@ -822,12 +812,7 @@ func (l List[T]) keyCursorUp() {
 }
 
 func (l List[T]) keyCursorDown() {
-	view := l.viewIndices()
-	if len(view) == 0 {
-		return
-	}
-	cursorIdx := l.State.CursorIndex.Peek()
-	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
+	view, cursorViewIdx, ok := l.normalizeCursorForInteraction()
 	if !ok {
 		return
 	}
@@ -868,14 +853,9 @@ func (l List[T]) keyCursorToLast() {
 }
 
 func (l List[T]) pageUp() {
-	view := l.viewIndices()
-	if len(view) == 0 {
-		return
-	}
-	cursorIdx := l.State.CursorIndex.Peek()
-	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
+	_, cursorViewIdx, ok := l.normalizeCursorForInteraction()
 	if !ok {
-		cursorViewIdx = 0
+		return
 	}
 	if l.MultiSelect {
 		l.State.ClearSelection()
@@ -887,14 +867,9 @@ func (l List[T]) pageUp() {
 }
 
 func (l List[T]) pageDown() {
-	view := l.viewIndices()
-	if len(view) == 0 {
-		return
-	}
-	cursorIdx := l.State.CursorIndex.Peek()
-	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
+	_, cursorViewIdx, ok := l.normalizeCursorForInteraction()
 	if !ok {
-		cursorViewIdx = 0
+		return
 	}
 	if l.MultiSelect {
 		l.State.ClearSelection()
@@ -989,6 +964,39 @@ func (l List[T]) setCursorToViewIndex(viewIdx int) {
 	}
 	viewIdx = clampInt(viewIdx, 0, len(view)-1)
 	l.State.SelectIndex(view[viewIdx])
+}
+
+// normalizeCursorForInteraction clamps source cursor to items bounds and ensures
+// it points at a visible view item when filtering is active.
+func (l List[T]) normalizeCursorForInteraction() (view []int, cursorViewIdx int, ok bool) {
+	if l.State == nil {
+		return nil, 0, false
+	}
+
+	view = l.viewIndices()
+	if len(view) == 0 {
+		return nil, 0, false
+	}
+
+	items := l.State.Items.Peek()
+	if len(items) == 0 {
+		return nil, 0, false
+	}
+
+	cursorIdx := l.State.CursorIndex.Peek()
+	clamped := clampInt(cursorIdx, 0, len(items)-1)
+	if clamped != cursorIdx {
+		cursorIdx = clamped
+		l.State.CursorIndex.Set(cursorIdx)
+	}
+
+	cursorViewIdx, ok = l.viewIndexForSource(cursorIdx)
+	if ok {
+		return view, cursorViewIdx, true
+	}
+
+	l.State.CursorIndex.Set(view[0])
+	return view, 0, true
 }
 
 func (l List[T]) selectViewRange(anchorSource, cursorSource int) {
