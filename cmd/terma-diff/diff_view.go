@@ -14,6 +14,7 @@ type DiffView struct {
 	DisableFocus   bool
 	State          *DiffViewState
 	VerticalScroll *t.ScrollState
+	HardWrap       bool
 	Palette        ThemePalette
 	Width          t.Dimension
 	Height         t.Dimension
@@ -100,10 +101,11 @@ func (d DiffView) Layout(ctx t.BuildContext, constraints t.Constraints) t.Size {
 		heightDim = d.Height
 	}
 
+	gutterWidth := renderedGutterWidth(rendered)
 	contentWidth := 1
 	contentHeight := 1
 	if rendered != nil {
-		contentWidth = max(1, renderedGutterWidth(rendered)+rendered.MaxContentWidth)
+		contentWidth = max(1, gutterWidth+rendered.MaxContentWidth)
 		contentHeight = max(1, len(rendered.Lines))
 	}
 
@@ -115,6 +117,13 @@ func (d DiffView) Layout(ctx t.BuildContext, constraints t.Constraints) t.Size {
 		width = constraints.MaxWidth
 	}
 
+	width = clampInt(width, constraints.MinWidth, constraints.MaxWidth)
+
+	if d.HardWrap && rendered != nil {
+		wrapWidth := max(1, width-gutterWidth)
+		contentHeight = wrappedContentHeight(rendered.Lines, wrapWidth)
+	}
+
 	height := contentHeight
 	switch {
 	case heightDim.IsCells():
@@ -123,7 +132,6 @@ func (d DiffView) Layout(ctx t.BuildContext, constraints t.Constraints) t.Size {
 		height = constraints.MaxHeight
 	}
 
-	width = clampInt(width, constraints.MinWidth, constraints.MaxWidth)
 	height = clampInt(height, constraints.MinHeight, constraints.MaxHeight)
 
 	return t.Size{Width: width, Height: height}
@@ -168,6 +176,12 @@ func (d DiffView) Render(ctx *t.RenderContext) {
 		d.State.ScrollY.Set(scrollY)
 	}
 	scrollX := d.State.ScrollX.Get()
+	if d.HardWrap {
+		scrollX = 0
+		if d.State.ScrollX.Peek() != 0 {
+			d.State.ScrollX.Set(0)
+		}
+	}
 	if scrollY < 0 {
 		scrollY = 0
 	}
@@ -175,21 +189,44 @@ func (d DiffView) Render(ctx *t.RenderContext) {
 		scrollX = 0
 	}
 
+	wrapWidth := max(1, ctx.Width-gutterWidth)
 	for row := visibleStart; row < visibleEnd; row++ {
-		lineIdx := row
+		contentRow := row
 		if d.VerticalScroll == nil {
-			lineIdx = scrollY + row
+			contentRow = scrollY + row
 		}
-		if lineIdx < 0 || lineIdx >= len(rendered.Lines) {
-			continue
+
+		var line RenderedDiffLine
+		contentScrollX := scrollX
+		continuation := false
+		if d.HardWrap {
+			var wrapRow int
+			var ok bool
+			line, wrapRow, ok = wrappedLineAtRow(rendered.Lines, wrapWidth, contentRow)
+			if !ok {
+				continue
+			}
+			contentScrollX = wrapRow * wrapWidth
+			continuation = wrapRow > 0
+		} else {
+			if contentRow < 0 || contentRow >= len(rendered.Lines) {
+				continue
+			}
+			line = rendered.Lines[contentRow]
 		}
-		line := rendered.Lines[lineIdx]
+
 		if lineStyle, ok := d.Palette.LineStyleForKind(line.Kind); ok && lineStyle.BackgroundColor != nil && lineStyle.BackgroundColor.IsSet() {
 			bg := lineStyle.BackgroundColor.ColorAt(ctx.Width, 1, 0, 0)
 			ctx.FillRect(0, row, ctx.Width, 1, bg)
 		}
-		d.renderGutterLine(ctx, rendered, row, line)
-		d.renderContentLine(ctx, row, gutterWidth, line, scrollX)
+		gutterLine := line
+		if continuation {
+			gutterLine.OldLine = 0
+			gutterLine.NewLine = 0
+			gutterLine.Prefix = " "
+		}
+		d.renderGutterLine(ctx, rendered, row, gutterLine)
+		d.renderContentLine(ctx, row, gutterWidth, line, contentScrollX)
 	}
 }
 
@@ -350,6 +387,49 @@ func renderedGutterWidth(rendered *RenderedFile) int {
 		newWidth = 1
 	}
 	return oldWidth + 1 + newWidth + 1 + 1 + 1
+}
+
+func wrappedContentHeight(lines []RenderedDiffLine, wrapWidth int) int {
+	if len(lines) == 0 {
+		return 1
+	}
+	total := 0
+	for _, line := range lines {
+		total += wrappedLineRowCount(line, wrapWidth)
+	}
+	if total <= 0 {
+		return 1
+	}
+	return total
+}
+
+func wrappedLineAtRow(lines []RenderedDiffLine, wrapWidth int, rowIdx int) (RenderedDiffLine, int, bool) {
+	if rowIdx < 0 {
+		return RenderedDiffLine{}, 0, false
+	}
+	remaining := rowIdx
+	for _, line := range lines {
+		rows := wrappedLineRowCount(line, wrapWidth)
+		if remaining < rows {
+			return line, remaining, true
+		}
+		remaining -= rows
+	}
+	return RenderedDiffLine{}, 0, false
+}
+
+func wrappedLineRowCount(line RenderedDiffLine, wrapWidth int) int {
+	if wrapWidth <= 0 {
+		return 1
+	}
+	if line.ContentWidth <= 0 {
+		return 1
+	}
+	rows := (line.ContentWidth + wrapWidth - 1) / wrapWidth
+	if rows <= 0 {
+		return 1
+	}
+	return rows
 }
 
 func toLayoutInsets(in t.EdgeInsets) layout.EdgeInsets {

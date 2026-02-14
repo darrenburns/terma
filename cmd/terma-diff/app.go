@@ -25,6 +25,7 @@ type DiffApp struct {
 	staged   bool
 
 	repoRoot string
+	branch   string
 	loadErr  string
 	files    []*DiffFile
 
@@ -32,6 +33,7 @@ type DiffApp struct {
 	activeIsDir bool
 
 	renderedByPath     map[string]*RenderedFile
+	fileByPath         map[string]*DiffFile
 	filePathToTreePath map[string][]int
 	orderedFilePaths   []string
 
@@ -44,13 +46,18 @@ type DiffApp struct {
 	splitState      *t.SplitPaneState
 	commandPalette  *t.CommandPaletteState
 
-	treeFilterVisible bool
-	focusedWidgetID   string
+	treeFilterVisible   bool
+	treeFilterNoMatches bool
+	diffHardWrap        bool
+	focusedWidgetID     string
+	sidebarVisible      bool
 
 	dividerFocused        bool
 	dividerFocusRequested bool
 	lastNonDividerFocus   string
 	focusReturnID         string
+	themeCursorSynced     bool
+	themePreviewBase      string
 }
 
 func NewDiffApp(provider DiffProvider, staged bool) *DiffApp {
@@ -58,6 +65,7 @@ func NewDiffApp(provider DiffProvider, staged bool) *DiffApp {
 		provider:            provider,
 		staged:              staged,
 		renderedByPath:      map[string]*RenderedFile{},
+		fileByPath:          map[string]*DiffFile{},
 		filePathToTreePath:  map[string][]int{},
 		orderedFilePaths:    []string{},
 		treeState:           t.NewTreeState([]t.TreeNode[DiffTreeNodeData]{}),
@@ -67,6 +75,7 @@ func NewDiffApp(provider DiffProvider, staged bool) *DiffApp {
 		diffScrollState:     t.NewScrollState(),
 		diffViewState:       NewDiffViewState(buildMetaRenderedFile("Diff", []string{"Loading diff..."})),
 		splitState:          t.NewSplitPaneState(0.30),
+		sidebarVisible:      true,
 		lastNonDividerFocus: diffViewerScrollID,
 		focusReturnID:       diffViewerScrollID,
 	}
@@ -77,15 +86,18 @@ func NewDiffApp(provider DiffProvider, staged bool) *DiffApp {
 }
 
 func (a *DiffApp) Keybinds() []t.Keybind {
+	showFilterFiles := a.focusedWidgetID == diffFilesTreeID
 	return []t.Keybind{
 		{Key: "n", Name: "Next file", Action: func() { a.moveFileCursor(1) }},
 		{Key: "]", Name: "Next file", Action: func() { a.moveFileCursor(1) }},
 		{Key: "p", Name: "Prev file", Action: func() { a.moveFileCursor(-1) }},
 		{Key: "[", Name: "Prev file", Action: func() { a.moveFileCursor(-1) }},
-		{Key: "/", Name: "Filter files", Action: a.openTreeFilter},
+		{Key: "/", Name: "Filter files", Action: a.openTreeFilter, Hidden: !showFilterFiles},
+		{Key: "ctrl+b", Name: "Toggle sidebar", Action: a.toggleSidebar, Hidden: true},
 		{Key: "escape", Name: "Clear filter", Action: a.handleEscape, Hidden: true},
 		{Key: "r", Name: "Refresh", Action: a.refreshDiff, Hidden: true},
 		{Key: "s", Name: "Toggle staged", Action: a.toggleMode, Hidden: true},
+		{Key: "w", Name: "Toggle line wrap", Action: a.toggleDiffWrap, Hidden: true},
 		{Key: "d", Name: "Focus divider", Action: a.focusDivider, Hidden: true},
 		{Key: "ctrl+p", Name: "Command palette", Action: a.togglePalette},
 		{Key: "q", Name: "Quit", Action: t.Quit},
@@ -95,27 +107,30 @@ func (a *DiffApp) Keybinds() []t.Keybind {
 func (a *DiffApp) Build(ctx t.BuildContext) t.Widget {
 	a.syncFocusState(ctx)
 	theme := ctx.Theme()
-	splitPane := FocusAwareSplitPane{
-		SplitPane: t.SplitPane{
-			ID:                     diffSplitPaneID,
-			State:                  a.splitState,
-			Orientation:            t.SplitHorizontal,
-			DividerSize:            1,
-			MinPaneSize:            20,
-			DividerBackground:      theme.Background,
-			DividerForeground:      dividerForeground(theme),
-			DividerFocusForeground: dividerFocusForeground(theme),
-			OnExitFocus:            a.exitDividerFocus,
-			Style: t.Style{
-				Width:           t.Flex(1),
-				Height:          t.Flex(1),
-				BackgroundColor: theme.Background,
+	body := a.buildRightPane(theme)
+	if a.sidebarVisible {
+		body = FocusAwareSplitPane{
+			SplitPane: t.SplitPane{
+				ID:                     diffSplitPaneID,
+				State:                  a.splitState,
+				Orientation:            t.SplitHorizontal,
+				DividerSize:            1,
+				MinPaneSize:            20,
+				DividerBackground:      theme.Background,
+				DividerForeground:      dividerForeground(theme),
+				DividerFocusForeground: dividerFocusForeground(theme),
+				OnExitFocus:            a.exitDividerFocus,
+				Style: t.Style{
+					Width:           t.Flex(1),
+					Height:          t.Flex(1),
+					BackgroundColor: theme.Background,
+				},
+				First:  a.buildLeftPane(ctx, theme),
+				Second: a.buildRightPane(theme),
 			},
-			First:  a.buildLeftPane(ctx, theme),
-			Second: a.buildRightPane(theme),
-		},
-		AllowFocus:     a.dividerFocused || a.dividerFocusRequested,
-		EnableKeybinds: a.dividerFocused,
+			AllowFocus:     a.dividerFocused || a.dividerFocusRequested,
+			EnableKeybinds: a.dividerFocused,
+		}
 	}
 
 	return t.Stack{
@@ -131,14 +146,25 @@ func (a *DiffApp) Build(ctx t.BuildContext) t.Widget {
 				},
 				Top: []t.Widget{a.buildHeader(theme)},
 				Bottom: []t.Widget{
-					t.KeybindBar{
+					t.Row{
 						Style: t.Style{
-							BackgroundColor: theme.Surface,
-							Padding:         t.EdgeInsetsXY(1, 0),
+							Width:           t.Flex(1),
+							BackgroundColor: theme.Background,
+						},
+						Children: []t.Widget{
+							t.Spacer{Width: t.Flex(1)},
+							t.KeybindBar{
+								Style: t.Style{
+									Width:           t.Auto,
+									BackgroundColor: theme.Background,
+									Padding:         t.EdgeInsetsXY(1, 0),
+								},
+							},
+							t.Spacer{Width: t.Flex(1)},
 						},
 					},
 				},
-				Body: splitPane,
+				Body: body,
 			},
 			t.CommandPalette{
 				ID:             diffCommandPaletteID,
@@ -147,6 +173,7 @@ func (a *DiffApp) Build(ctx t.BuildContext) t.Widget {
 				Offset:         t.Offset{Y: 1},
 				BackdropColor:  t.Black.WithAlpha(0.05),
 				OnCursorChange: a.handlePaletteCursorChange,
+				OnDismiss:      a.handlePaletteDismiss,
 			},
 		},
 	}
@@ -158,13 +185,30 @@ func (a *DiffApp) buildHeader(theme t.ThemeData) t.Widget {
 		repoName = filepath.Base(a.repoRoot)
 	}
 
-	rightWidget := t.Label(themeDisplayName(t.CurrentThemeName()), t.LabelSecondary, theme)
+	rightWidget := t.Text{
+		Content: themeDisplayName(t.CurrentThemeName()),
+		Style: t.Style{
+			Padding:         t.EdgeInsetsXY(1, 0),
+			ForegroundColor: theme.SecondaryText,
+		},
+	}
 	if a.loadErr != "" {
 		rightWidget = t.Label("Error loading diff", t.LabelError, theme)
 	}
 
 	children := []t.Widget{
 		t.Label(repoName, t.LabelPrimary, theme),
+	}
+	if a.branch != "" {
+		children = append(children,
+			t.Spacer{Width: t.Cells(1)},
+			t.Text{
+				Content: a.branch,
+				Style: t.Style{
+					ForegroundColor: theme.Accent,
+				},
+			},
+		)
 	}
 	if a.loadErr != "" {
 		children = append(children,
@@ -179,9 +223,16 @@ func (a *DiffApp) buildHeader(theme t.ThemeData) t.Widget {
 
 	return t.Row{
 		Style: t.Style{
-			Width:           t.Flex(1),
-			Padding:         t.EdgeInsetsXY(1, 0),
-			BackgroundColor: theme.Surface,
+			Width:   t.Flex(1),
+			Padding: t.EdgeInsetsXY(1, 0),
+			BackgroundColor: t.NewGradient(
+				theme.Surface,
+				theme.Surface,
+				theme.Background,
+				theme.Background,
+				theme.Background,
+				theme.SecondaryBg,
+			).WithAngle(90),
 		},
 		Children: children,
 	}
@@ -190,11 +241,14 @@ func (a *DiffApp) buildHeader(theme t.ThemeData) t.Widget {
 func (a *DiffApp) buildLeftPane(ctx t.BuildContext, theme t.ThemeData) t.Widget {
 	treeWidget := SplitFriendlyTree{
 		Tree: t.Tree[DiffTreeNodeData]{
-			ID:          diffFilesTreeID,
-			State:       a.treeState,
-			Filter:      a.treeFilterState,
-			ScrollState: a.treeScrollState,
-			Style:       t.Style{Width: t.Flex(1)},
+			ID:                diffFilesTreeID,
+			State:             a.treeState,
+			Filter:            a.treeFilterState,
+			ScrollState:       a.treeScrollState,
+			Style:             t.Style{Width: t.Flex(1), Padding: t.EdgeInsets{Left: 1}},
+			ExpandIndicator:   "▼ ",
+			CollapseIndicator: "▶ ",
+			LeafIndicator:     " ",
 			NodeID: func(node DiffTreeNodeData) string {
 				return node.Path
 			},
@@ -212,13 +266,16 @@ func (a *DiffApp) buildLeftPane(ctx t.BuildContext, theme t.ThemeData) t.Widget 
 	treeWidget.RenderNodeWithMatch = a.renderTreeNode(theme, sidebarFocused)
 
 	children := []t.Widget{
-		t.Text{
-			Content: a.sidebarSummaryLabel(),
+		t.Row{
 			Style: t.Style{
+				Width:           t.Flex(1),
 				Padding:         t.EdgeInsetsXY(1, 0),
 				BackgroundColor: theme.Background,
-				ForegroundColor: theme.TextMuted,
-				Bold:            true,
+			},
+			Children: []t.Widget{
+				t.Text{Spans: a.sidebarHeadingSpans(theme)},
+				t.Spacer{Width: t.Flex(1)},
+				t.Text{Spans: a.sidebarTotalsSpans(theme)},
 			},
 		},
 	}
@@ -238,6 +295,11 @@ func (a *DiffApp) buildLeftPane(ctx t.BuildContext, theme t.ThemeData) t.Widget 
 		})
 	}
 
+	treeContent := t.Widget(treeWidget)
+	if a.treeFilterNoMatches {
+		treeContent = a.buildTreeFilterEmptyState(theme)
+	}
+
 	children = append(children, t.Scrollable{
 		ID:    diffFilesScrollID,
 		State: a.treeScrollState,
@@ -246,14 +308,13 @@ func (a *DiffApp) buildLeftPane(ctx t.BuildContext, theme t.ThemeData) t.Widget 
 			Height:          t.Flex(1),
 			BackgroundColor: theme.Background,
 		},
-		Child: treeWidget,
+		Child: treeContent,
 	})
 
 	return t.Column{
 		Height: t.Flex(1),
 		Style: t.Style{
 			BackgroundColor: theme.Background,
-			Padding:         t.EdgeInsetsXY(1, 0),
 		},
 		Children: children,
 	}
@@ -264,12 +325,11 @@ func (a *DiffApp) renderTreeNode(theme t.ThemeData, widgetFocused bool) func(nod
 	return func(node DiffTreeNodeData, nodeCtx t.TreeNodeContext, match t.MatchResult) t.Widget {
 		rowStyle := t.Style{
 			Width:   t.Flex(1),
-			Padding: t.EdgeInsetsXY(1, 0),
+			Padding: t.EdgeInsets{Right: 1},
 		}
 		labelStyle := t.Style{ForegroundColor: theme.Text}
 		addStyle := t.Style{ForegroundColor: theme.Success}
 		delStyle := t.Style{ForegroundColor: theme.Error}
-		metaStyle := t.Style{ForegroundColor: theme.TextMuted}
 
 		if nodeCtx.FilteredAncestor {
 			labelStyle.ForegroundColor = theme.TextMuted
@@ -281,17 +341,14 @@ func (a *DiffApp) renderTreeNode(theme t.ThemeData, widgetFocused bool) func(nod
 				labelStyle.ForegroundColor = theme.SelectionText
 				addStyle.ForegroundColor = theme.SelectionText
 				delStyle.ForegroundColor = theme.SelectionText
-				metaStyle.ForegroundColor = theme.SelectionText
 			} else {
 				rowStyle.BackgroundColor = unfocusedTreeCursorColor(theme)
 			}
 		}
 
 		label := node.Name
-		meta := ""
 		if node.IsDir {
 			label += "/"
-			meta = fmt.Sprintf("%d files", node.TouchedFiles)
 		}
 
 		labelWidget := t.Text{Content: label, Style: labelStyle}
@@ -309,15 +366,18 @@ func (a *DiffApp) renderTreeNode(theme t.ThemeData, widgetFocused bool) func(nod
 		children := []t.Widget{
 			labelWidget,
 		}
-		if meta != "" {
-			children = append(children, t.Text{Content: " " + meta, Style: metaStyle})
+		children = append(children, t.Spacer{Width: t.Flex(1)})
+		if addText, delText := nonZeroChangeTexts(node.Additions, node.Deletions); addText != "" || delText != "" {
+			if addText != "" {
+				children = append(children, t.Text{Content: addText, Style: addStyle})
+			}
+			if delText != "" {
+				if addText != "" {
+					children = append(children, t.Text{Content: " "})
+				}
+				children = append(children, t.Text{Content: delText, Style: delStyle})
+			}
 		}
-		children = append(children,
-			t.Spacer{Width: t.Flex(1)},
-			t.Text{Content: fmt.Sprintf("+%d", node.Additions), Style: addStyle},
-			t.Text{Content: " "},
-			t.Text{Content: fmt.Sprintf("-%d", node.Deletions), Style: delStyle},
-		)
 
 		return t.Row{
 			Style:    rowStyle,
@@ -332,6 +392,7 @@ func (a *DiffApp) buildRightPane(theme t.ThemeData) t.Widget {
 		DisableFocus:   true,
 		State:          a.diffViewState,
 		VerticalScroll: a.diffScrollState,
+		HardWrap:       a.diffHardWrap,
 		Palette:        NewThemePalette(theme),
 		Style: t.Style{
 			Width:           t.Flex(1),
@@ -344,18 +405,9 @@ func (a *DiffApp) buildRightPane(theme t.ThemeData) t.Widget {
 		Height: t.Flex(1),
 		Style: t.Style{
 			BackgroundColor: theme.Background,
-			Padding:         t.EdgeInsetsXY(1, 0),
 		},
 		Children: []t.Widget{
-			t.Text{
-				Content: a.viewerTitle(),
-				Style: t.Style{
-					Padding:         t.EdgeInsetsXY(1, 0),
-					BackgroundColor: theme.Background,
-					ForegroundColor: theme.Text,
-					Bold:            true,
-				},
-			},
+			a.buildViewerTitle(theme),
 			t.Scrollable{
 				ID:        diffViewerScrollID,
 				State:     a.diffScrollState,
@@ -363,7 +415,6 @@ func (a *DiffApp) buildRightPane(theme t.ThemeData) t.Widget {
 				Style: t.Style{
 					Width:           t.Flex(1),
 					Height:          t.Flex(1),
-					Padding:         t.EdgeInsetsXY(1, 0),
 					BackgroundColor: theme.Background,
 				},
 				Child: viewer,
@@ -372,9 +423,45 @@ func (a *DiffApp) buildRightPane(theme t.ThemeData) t.Widget {
 	}
 }
 
+func (a *DiffApp) buildViewerTitle(theme t.ThemeData) t.Widget {
+	style := t.Style{
+		Padding:         t.EdgeInsetsXY(1, 0),
+		BackgroundColor: theme.Background,
+		ForegroundColor: theme.Text,
+		Bold:            true,
+	}
+
+	title := a.viewerTitle()
+	if a.activePath == "" || a.activeIsDir {
+		return t.Text{
+			Content: title,
+			Style:   style,
+		}
+	}
+
+	file, ok := a.fileByPath[a.activePath]
+	if !ok || file == nil {
+		return t.Text{
+			Content: title,
+			Style:   style,
+		}
+	}
+
+	spans := []t.Span{t.BoldSpan(title)}
+	if statSpans := nonZeroChangeStatSpans(file.Additions, file.Deletions, theme, true); len(statSpans) > 0 {
+		spans = append(spans, t.BoldSpan(" "))
+		spans = append(spans, statSpans...)
+	}
+
+	return t.Text{Spans: spans, Style: style}
+}
+
 func (a *DiffApp) refreshDiff() {
 	if repoRoot, err := a.provider.RepoRoot(); err == nil {
 		a.repoRoot = repoRoot
+	}
+	if branch, err := a.provider.CurrentBranch(); err == nil {
+		a.branch = branch
 	}
 
 	previousActiveFile := ""
@@ -389,11 +476,13 @@ func (a *DiffApp) refreshDiff() {
 		a.activePath = ""
 		a.activeIsDir = false
 		a.renderedByPath = map[string]*RenderedFile{}
+		a.fileByPath = map[string]*DiffFile{}
 		a.filePathToTreePath = map[string][]int{}
 		a.orderedFilePaths = nil
 		a.treeState.Nodes.Set([]t.TreeNode[DiffTreeNodeData]{})
 		a.treeState.CursorPath.Set(nil)
 		a.treeState.Collapsed.Set(map[string]bool{})
+		a.treeFilterNoMatches = false
 		a.diffViewState.SetRendered(messageToRendered("Error", a.errorMessage()))
 		a.diffScrollState.SetOffset(0)
 		return
@@ -406,11 +495,13 @@ func (a *DiffApp) refreshDiff() {
 		a.activePath = ""
 		a.activeIsDir = false
 		a.renderedByPath = map[string]*RenderedFile{}
+		a.fileByPath = map[string]*DiffFile{}
 		a.filePathToTreePath = map[string][]int{}
 		a.orderedFilePaths = nil
 		a.treeState.Nodes.Set([]t.TreeNode[DiffTreeNodeData]{})
 		a.treeState.CursorPath.Set(nil)
 		a.treeState.Collapsed.Set(map[string]bool{})
+		a.treeFilterNoMatches = false
 		a.diffViewState.SetRendered(messageToRendered("Error", a.errorMessage()))
 		a.diffScrollState.SetOffset(0)
 		return
@@ -419,10 +510,12 @@ func (a *DiffApp) refreshDiff() {
 	a.loadErr = ""
 	a.files = doc.Files
 	a.renderedByPath = make(map[string]*RenderedFile, len(a.files))
+	a.fileByPath = make(map[string]*DiffFile, len(a.files))
 	for _, file := range a.files {
 		if file == nil {
 			continue
 		}
+		a.fileByPath[file.DisplayPath] = file
 		a.renderedByPath[file.DisplayPath] = buildRenderedFile(file)
 	}
 
@@ -436,6 +529,7 @@ func (a *DiffApp) refreshDiff() {
 		a.activePath = ""
 		a.activeIsDir = false
 		a.treeState.CursorPath.Set(nil)
+		a.treeFilterNoMatches = false
 		a.diffViewState.SetRendered(messageToRendered("Diff", a.emptyMessage()))
 		a.diffScrollState.SetOffset(0)
 		return
@@ -448,6 +542,7 @@ func (a *DiffApp) refreshDiff() {
 	if !a.selectFilePath(targetPath) {
 		a.selectFilePath(a.orderedFilePaths[0])
 	}
+	a.syncTreeFilterSelection()
 }
 
 func (a *DiffApp) moveFileCursor(delta int) {
@@ -534,6 +629,28 @@ func (a *DiffApp) toggleMode() {
 	a.refreshDiff()
 }
 
+func (a *DiffApp) toggleDiffWrap() {
+	a.diffHardWrap = !a.diffHardWrap
+	if a.diffViewState != nil {
+		a.diffViewState.ScrollX.Set(0)
+	}
+}
+
+func (a *DiffApp) toggleSidebar() {
+	a.sidebarVisible = !a.sidebarVisible
+	if a.sidebarVisible {
+		return
+	}
+
+	a.dividerFocusRequested = false
+	a.dividerFocused = false
+
+	switch a.focusedWidgetID {
+	case diffSplitPaneID, diffFilesTreeID, diffFilesFilterID, diffFilesScrollID:
+		t.RequestFocus(diffViewerScrollID)
+	}
+}
+
 func (a *DiffApp) openTreeFilter() {
 	if a.focusedWidgetID != diffFilesTreeID {
 		return
@@ -561,6 +678,7 @@ func (a *DiffApp) onTreeFilterChange(text string) {
 	if a.treeFilterState != nil {
 		a.treeFilterState.Query.Set(text)
 	}
+	a.syncTreeFilterSelection()
 }
 
 func (a *DiffApp) clearTreeFilter() bool {
@@ -575,6 +693,7 @@ func (a *DiffApp) clearTreeFilter() bool {
 	}
 	a.treeFilterState.Query.Set("")
 	a.treeFilterVisible = false
+	a.syncTreeFilterSelection()
 	t.RequestFocus(diffFilesTreeID)
 	return true
 }
@@ -592,7 +711,92 @@ func (a *DiffApp) shouldShowTreeFilterInput() bool {
 	return a.treeFilterState.PeekQuery() != ""
 }
 
+func (a *DiffApp) syncTreeFilterSelection() {
+	query := ""
+	options := t.FilterOptions{}
+	if a.treeFilterState != nil {
+		query = a.treeFilterState.PeekQuery()
+		options = a.treeFilterState.PeekOptions()
+	}
+	if query == "" {
+		a.treeFilterNoMatches = false
+		if a.activePath == "" && !a.activeIsDir && len(a.orderedFilePaths) > 0 {
+			a.selectFilePath(a.orderedFilePaths[0])
+		}
+		return
+	}
+
+	path, node, ok := findFirstTreeFilterMatch(a.treeState.Nodes.Peek(), nil, query, options)
+	if !ok {
+		a.setTreeFilterNoMatches(query)
+		return
+	}
+
+	a.treeFilterNoMatches = false
+	if a.activePath != "" || a.activeIsDir {
+		return
+	}
+	a.treeState.CursorPath.Set(clonePath(path))
+	a.onTreeCursorChange(node)
+}
+
+func (a *DiffApp) setTreeFilterNoMatches(query string) {
+	a.treeFilterNoMatches = true
+	a.treeState.CursorPath.Set(nil)
+	a.activePath = ""
+	a.activeIsDir = false
+	a.diffViewState.SetRendered(messageToRendered("No matches", a.noFilterMatchesMessage(query)))
+	a.diffScrollState.SetOffset(0)
+}
+
+func (a *DiffApp) noFilterMatchesMessage(query string) string {
+	if query == "" {
+		return "No files match the current filter.\n\nPress escape to clear the filter."
+	}
+	return fmt.Sprintf("No files match %q.\n\nPress escape to clear the filter.", query)
+}
+
+func (a *DiffApp) buildTreeFilterEmptyState(theme t.ThemeData) t.Widget {
+	query := ""
+	if a.treeFilterState != nil {
+		query = a.treeFilterState.PeekQuery()
+	}
+
+	message := "No files match the current filter."
+	if query != "" {
+		message = fmt.Sprintf("No files match %q.", query)
+	}
+
+	return t.Column{
+		Style: t.Style{
+			Width:           t.Flex(1),
+			Padding:         t.EdgeInsets{Top: 1, Left: 1, Right: 1},
+			BackgroundColor: theme.Background,
+		},
+		Children: []t.Widget{
+			t.Text{
+				Content: message,
+				Wrap:    t.WrapSoft,
+				Style: t.Style{
+					ForegroundColor: theme.TextMuted,
+					Bold:            true,
+				},
+			},
+			t.Text{
+				Content: "Press escape to clear the filter.",
+				Wrap:    t.WrapSoft,
+				Style: t.Style{
+					ForegroundColor: theme.TextMuted,
+				},
+			},
+		},
+	}
+}
+
 func (a *DiffApp) focusDivider() {
+	if !a.sidebarVisible {
+		return
+	}
 	target := a.dividerReturnTarget()
 	a.dividerFocusRequested = true
 	a.focusReturnID = target
@@ -600,9 +804,13 @@ func (a *DiffApp) focusDivider() {
 }
 
 func (a *DiffApp) focusDividerFromPalette() {
+	if !a.sidebarVisible {
+		return
+	}
 	a.dividerFocusRequested = true
 	a.focusReturnID = a.dividerReturnTarget()
 	if a.commandPalette != nil {
+		a.cancelThemePreview()
 		a.commandPalette.SetNextFocusIDOnClose(diffSplitPaneID)
 		a.commandPalette.Close(false)
 	}
@@ -622,9 +830,12 @@ func (a *DiffApp) togglePalette() {
 		return
 	}
 	if a.commandPalette.Visible.Peek() {
+		a.cancelThemePreview()
 		a.commandPalette.Close(false)
 		return
 	}
+	a.themePreviewBase = ""
+	a.themeCursorSynced = false
 	a.commandPalette.Open()
 }
 
@@ -632,8 +843,11 @@ func (a *DiffApp) syncFocusState(ctx t.BuildContext) {
 	wasDividerFocused := a.dividerFocused
 	focusedID := focusedWidgetID(ctx)
 	a.focusedWidgetID = focusedID
-	a.dividerFocused = focusedID == diffSplitPaneID
+	a.dividerFocused = a.sidebarVisible && focusedID == diffSplitPaneID
 	if wasDividerFocused && !a.dividerFocused {
+		a.dividerFocusRequested = false
+	}
+	if !a.sidebarVisible {
 		a.dividerFocusRequested = false
 	}
 	if focusedID != "" && focusedID != diffSplitPaneID {
@@ -701,6 +915,13 @@ func (a *DiffApp) newCommandPalette() *t.CommandPaletteState {
 			Hint:       "[r]",
 			Action:     a.paletteAction(a.refreshDiff),
 		},
+		{Divider: "Layout"},
+		{
+			Label:      "Toggle sidebar",
+			FilterText: "Toggle sidebar layout panel",
+			Hint:       "[ctrl+b]",
+			Action:     a.paletteAction(a.toggleSidebar),
+		},
 		{
 			Label:      "Focus divider",
 			FilterText: "Focus divider split resize",
@@ -708,6 +929,12 @@ func (a *DiffApp) newCommandPalette() *t.CommandPaletteState {
 			Action:     a.focusDividerFromPalette,
 		},
 		{Divider: "Appearance"},
+		{
+			Label:      "Toggle line wrap",
+			FilterText: "Toggle line wrap hard wrap soft wrap",
+			Hint:       "[w]",
+			Action:     a.paletteAction(a.toggleDiffWrap),
+		},
 		{
 			Label:         "Theme",
 			ChildrenTitle: diffThemesPalette,
@@ -749,6 +976,7 @@ func (a *DiffApp) themeItems() []t.CommandPaletteItem {
 func (a *DiffApp) setThemeAction(themeName string) func() {
 	return func() {
 		t.SetTheme(themeName)
+		a.commitThemePreview()
 		if a.commandPalette != nil {
 			a.commandPalette.Close(false)
 		}
@@ -760,6 +988,7 @@ func (a *DiffApp) paletteAction(action func()) func() {
 		if action != nil {
 			action()
 		}
+		a.cancelThemePreview()
 		if a.commandPalette != nil {
 			a.commandPalette.Close(false)
 		}
@@ -772,13 +1001,67 @@ func (a *DiffApp) handlePaletteCursorChange(item t.CommandPaletteItem) {
 	}
 	level := a.commandPalette.CurrentLevel()
 	if level == nil || level.Title != diffThemesPalette {
+		a.cancelThemePreview()
 		return
+	}
+	if a.themePreviewBase == "" {
+		a.themePreviewBase = t.CurrentThemeName()
 	}
 	themeName, ok := item.Data.(string)
 	if !ok || themeName == "" {
 		return
 	}
+	if !a.themeCursorSynced {
+		currentItem, hasCurrent := a.commandPalette.CurrentItem()
+		if hasCurrent {
+			currentThemeName, _ := currentItem.Data.(string)
+			if currentThemeName == themeName {
+				a.themeCursorSynced = true
+				if selectPaletteTheme(level, t.CurrentThemeName()) {
+					return
+				}
+			}
+		}
+	}
 	t.SetTheme(themeName)
+}
+
+func (a *DiffApp) handlePaletteDismiss() {
+	a.cancelThemePreview()
+}
+
+func (a *DiffApp) commitThemePreview() {
+	a.finishThemePreview(true)
+}
+
+func (a *DiffApp) cancelThemePreview() {
+	a.finishThemePreview(false)
+}
+
+func (a *DiffApp) finishThemePreview(commit bool) {
+	if !commit && a.themePreviewBase != "" && t.CurrentThemeName() != a.themePreviewBase {
+		t.SetTheme(a.themePreviewBase)
+	}
+	a.themePreviewBase = ""
+	a.themeCursorSynced = false
+}
+
+func selectPaletteTheme(level *t.CommandPaletteLevel, themeName string) bool {
+	if level == nil || level.ListState == nil || themeName == "" {
+		return false
+	}
+	for idx, item := range level.Items {
+		name, ok := item.Data.(string)
+		if !ok || name != themeName {
+			continue
+		}
+		if level.ListState.CursorIndex.Peek() == idx {
+			return false
+		}
+		level.ListState.SelectIndex(idx)
+		return true
+	}
+	return false
 }
 
 func themeDisplayName(name string) string {
@@ -800,13 +1083,61 @@ func (a *DiffApp) modeLabel() string {
 }
 
 func (a *DiffApp) sidebarSummaryLabel() string {
-	return fmt.Sprintf("%d %s", len(a.orderedFilePaths), a.modeLabel())
+	return fmt.Sprintf("%s %s", a.sidebarSummaryCountLabel(), a.modeLabel())
+}
+
+func (a *DiffApp) sidebarSummaryCountLabel() string {
+	if a.treeFilterNoMatches {
+		return fmt.Sprintf("0/%d", len(a.orderedFilePaths))
+	}
+	return fmt.Sprintf("%d", len(a.orderedFilePaths))
+}
+
+func (a *DiffApp) sidebarHeadingSpans(theme t.ThemeData) []t.Span {
+	modeColor := theme.Error
+	if a.staged {
+		modeColor = theme.Success
+	}
+	modeStyle := t.SpanStyle{
+		Foreground: modeColor,
+		Bold:       true,
+	}
+
+	return []t.Span{
+		t.StyledSpan(a.sidebarSummaryCountLabel(), modeStyle),
+		t.StyledSpan(" ", modeStyle),
+		t.StyledSpan(a.modeLabel(), modeStyle),
+		t.BoldSpan(" ", theme.TextMuted),
+		t.StyledSpan("[s]", t.SpanStyle{
+			Foreground: theme.TextMuted,
+			Faint:      true,
+		}),
+	}
+}
+
+func (a *DiffApp) sidebarTotals() (additions int, deletions int) {
+	for _, file := range a.files {
+		if file == nil {
+			continue
+		}
+		additions += file.Additions
+		deletions += file.Deletions
+	}
+	return additions, deletions
+}
+
+func (a *DiffApp) sidebarTotalsSpans(theme t.ThemeData) []t.Span {
+	additions, deletions := a.sidebarTotals()
+	return nonZeroChangeStatSpans(additions, deletions, theme, true)
 }
 
 func (a *DiffApp) viewerTitle() string {
 	if a.activePath == "" {
 		if a.loadErr != "" {
 			return "Error"
+		}
+		if a.treeFilterNoMatches {
+			return "No matches"
 		}
 		return "Diff"
 	}
@@ -864,4 +1195,54 @@ func buildDirectorySummaryRenderedFile(node DiffTreeNodeData) *RenderedFile {
 		"",
 		"Use n/p to jump between changed files.",
 	})
+}
+
+func findFirstTreeFilterMatch(nodes []t.TreeNode[DiffTreeNodeData], parentPath []int, query string, options t.FilterOptions) ([]int, DiffTreeNodeData, bool) {
+	for idx, node := range nodes {
+		path := append(clonePath(parentPath), idx)
+		if t.MatchString(node.Data.Name, query, options).Matched {
+			return path, node.Data, true
+		}
+		if _, _, ok := findFirstTreeFilterMatch(node.Children, path, query, options); ok {
+			return path, node.Data, true
+		}
+	}
+	return nil, DiffTreeNodeData{}, false
+}
+
+func nonZeroChangeTexts(additions int, deletions int) (addText string, delText string) {
+	if additions > 0 {
+		addText = fmt.Sprintf("+%d", additions)
+	}
+	if deletions > 0 {
+		delText = fmt.Sprintf("-%d", deletions)
+	}
+	return addText, delText
+}
+
+func nonZeroChangeStatSpans(additions int, deletions int, theme t.ThemeData, bold bool) []t.Span {
+	addText, delText := nonZeroChangeTexts(additions, deletions)
+	if addText == "" && delText == "" {
+		return nil
+	}
+
+	spans := make([]t.Span, 0, 3)
+	if addText != "" {
+		if bold {
+			spans = append(spans, t.BoldSpan(addText, theme.Success))
+		} else {
+			spans = append(spans, t.ColorSpan(addText, theme.Success))
+		}
+	}
+	if delText != "" {
+		if len(spans) > 0 {
+			spans = append(spans, t.PlainSpan(" "))
+		}
+		if bold {
+			spans = append(spans, t.BoldSpan(delText, theme.Error))
+		} else {
+			spans = append(spans, t.ColorSpan(delText, theme.Error))
+		}
+	}
+	return spans
 }

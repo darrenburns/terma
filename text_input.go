@@ -527,7 +527,7 @@ func (t TextInput) Keybinds() []Keybind {
 	// Editing keybinds are only available when not read-only
 	if t.canEdit() {
 		keybinds = append(keybinds,
-			Keybind{Key: "enter", Name: "Submit", Action: t.submit},
+			Keybind{Key: "enter", Name: "Submit", Action: t.submit, Hidden: true},
 			Keybind{Key: "backspace", Action: t.deleteBackward, Hidden: true},
 			Keybind{Key: "delete", Action: t.deleteForward, Hidden: true},
 			Keybind{Key: "ctrl+d", Action: t.deleteForward, Hidden: true},

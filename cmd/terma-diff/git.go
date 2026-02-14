@@ -11,6 +11,7 @@ import (
 type DiffProvider interface {
 	LoadDiff(staged bool) (string, error)
 	RepoRoot() (string, error)
+	CurrentBranch() (string, error)
 }
 
 // GitDiffProvider loads diff data by shelling out to git.
@@ -31,6 +32,14 @@ func (p GitDiffProvider) RepoRoot() (string, error) {
 	stdout, stderr, err := runGit(p.WorkDir, []string{"rev-parse", "--show-toplevel"})
 	if err != nil {
 		return "", fmt.Errorf("git rev-parse --show-toplevel failed: %w: %s", err, strings.TrimSpace(stderr))
+	}
+	return strings.TrimSpace(stdout), nil
+}
+
+func (p GitDiffProvider) CurrentBranch() (string, error) {
+	stdout, stderr, err := runGit(p.WorkDir, []string{"branch", "--show-current"})
+	if err != nil {
+		return "", fmt.Errorf("git branch --show-current failed: %w: %s", err, strings.TrimSpace(stderr))
 	}
 	return strings.TrimSpace(stdout), nil
 }

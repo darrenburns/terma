@@ -11,7 +11,8 @@ type ThemePalette struct {
 func NewThemePalette(theme t.ThemeData) ThemePalette {
 	addBg := theme.Background.Blend(theme.Success, 0.14)
 	removeBg := theme.Background.Blend(theme.Error, 0.14)
-	hunkBg := theme.Background.Blend(theme.Info, 0.13)
+	hunkBg := theme.Background.Blend(theme.Info, 0.1)
+	hunkFg := theme.TextMuted.Blend(theme.InfoText, 0.3)
 	headerBg := theme.Background.Blend(theme.Primary, 0.11)
 
 	return ThemePalette{
@@ -23,9 +24,9 @@ func NewThemePalette(theme t.ThemeData) ThemePalette {
 			TokenRoleDiffPrefixAdd:     {Foreground: theme.Success, Bold: true},
 			TokenRoleDiffPrefixRemove:  {Foreground: theme.Error, Bold: true},
 			TokenRoleDiffPrefixContext: {Foreground: theme.TextMuted},
-			TokenRoleDiffFileHeader:    {Foreground: theme.Primary, Bold: true},
-			TokenRoleDiffHunkHeader:    {Foreground: theme.Info, Bold: true},
-			TokenRoleDiffMeta:          {Foreground: theme.Warning, Italic: true},
+			TokenRoleDiffFileHeader:    {Foreground: theme.PrimaryText, Bold: true},
+			TokenRoleDiffHunkHeader:    {Foreground: hunkFg},
+			TokenRoleDiffMeta:          {Foreground: theme.WarningText, Italic: true},
 			TokenRoleSyntaxPlain:       {Foreground: theme.Text},
 			TokenRoleSyntaxKeyword:     {Foreground: theme.Accent, Bold: true},
 			TokenRoleSyntaxType:        {Foreground: theme.Primary},
