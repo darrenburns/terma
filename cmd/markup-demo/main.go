@@ -6,7 +6,6 @@ import (
 	t "terma"
 )
 
-
 type App struct {
 	themeIndex  t.Signal[int]
 	themeNames  []string
@@ -145,6 +144,7 @@ func main() {
 	themeNames := []string{
 		t.ThemeNameRosePine,
 		t.ThemeNameDracula,
+		t.ThemeNameGalaxy,
 		t.ThemeNameTokyoNight,
 		t.ThemeNameCatppuccin,
 		t.ThemeNameGruvbox,

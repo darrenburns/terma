@@ -229,6 +229,7 @@ func main() {
 		// Dark themes
 		t.ThemeNameRosePine,
 		t.ThemeNameDracula,
+		t.ThemeNameGalaxy,
 		t.ThemeNameTokyoNight,
 		t.ThemeNameCatppuccin,
 		t.ThemeNameGruvbox,

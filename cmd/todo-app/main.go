@@ -20,6 +20,7 @@ var tagPattern = regexp.MustCompile(`#[a-zA-Z0-9_-]+`)
 var darkThemeNames = []string{
 	t.ThemeNameKanagawa,
 	t.ThemeNameRosePine,
+	t.ThemeNameGalaxy,
 	t.ThemeNameCatppuccin,
 	t.ThemeNameDracula,
 	t.ThemeNameGruvbox,

@@ -14,6 +14,7 @@ const (
 	ThemeNameSolarized  = "solarized"
 	ThemeNameKanagawa   = "kanagawa"
 	ThemeNameMonokai    = "monokai"
+	ThemeNameGalaxy     = "galaxy"
 
 	// Light themes
 	ThemeNameRosePineDawn    = "rose-pine-dawn"
@@ -595,6 +596,55 @@ var monokaiThemeData = ThemeData{
 	Link: Hex("#66d9ef"), // Cyan
 }
 
+// galaxyThemeData - Vibrant neon palette on deep space surfaces
+var galaxyThemeData = ThemeData{
+	Name: ThemeNameGalaxy,
+
+	Primary:   Hex("#C45AFF"),
+	Secondary: Hex("#A684E8"),
+	Accent:    Hex("#FF69B4"),
+
+	Background:   Hex("#0F0F1F"),
+	Surface:      Hex("#1E1E3F"),
+	SurfaceHover: Hex("#2D2B55"), // Panel
+	Surface2:     Hex("#393567"),
+	Surface3:     Hex("#45407A"),
+
+	Text:            Hex("#0F0F1F").AutoText(),
+	TextMuted:       Hex("#9A96BE"),
+	TextOnPrimary:   Hex("#0F0F1F"),
+	TextOnSecondary: Hex("#0F0F1F"),
+	TextOnAccent:    Hex("#0F0F1F"),
+	TextDisabled:    Hex("#706B91"),
+
+	Border:    Hex("#45407A"),
+	FocusRing: Hex("#C45AFF"),
+
+	Error:   Hex("#FF4500"),
+	Warning: Hex("#FFD700"),
+	Success: Hex("#00FA9A"),
+	Info:    Hex("#A684E8"),
+
+	TextOnError:   Hex("#0F0F1F"),
+	TextOnWarning: Hex("#0F0F1F"),
+	TextOnSuccess: Hex("#0F0F1F"),
+	TextOnInfo:    Hex("#0F0F1F"),
+
+	ActiveCursor:  Hex("#FF69B4"),
+	Selection:     Hex("#FF69B4").WithAlpha(DefaultSelectionAlpha),
+	SelectionText: Hex("#0F0F1F"),
+
+	ScrollbarTrack: Hex("#1E1E3F"),
+	ScrollbarThumb: Hex("#45407A"),
+
+	Overlay: Hex("#0F0F1F").WithAlpha(0.8),
+
+	Placeholder: Hex("#706B91"),
+	Cursor:      Hex("#0F0F1F").AutoText(),
+
+	Link: Hex("#C45AFF"),
+}
+
 // ============================================================================
 // Light Theme Definitions
 // ============================================================================
@@ -1068,6 +1118,7 @@ var themeRegistry = map[string]ThemeData{
 	ThemeNameSolarized:  solarizedThemeData,
 	ThemeNameKanagawa:   kanagawaThemeData,
 	ThemeNameMonokai:    monokaiThemeData,
+	ThemeNameGalaxy:     galaxyThemeData,
 	// Light themes
 	ThemeNameRosePineDawn:    rosePineDawnThemeData,
 	ThemeNameDraculaLight:    draculaLightThemeData,
