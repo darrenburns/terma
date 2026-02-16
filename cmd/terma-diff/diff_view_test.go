@@ -109,3 +109,72 @@ func TestWrappedContentHeight(tt *testing.T) {
 	require.Equal(tt, 2, wrappedContentHeight(lines, 10))
 	require.Equal(tt, 1, wrappedContentHeight(nil, 4))
 }
+
+func TestSideBySidePaneLayout(tt *testing.T) {
+	side := &SideBySideRenderedFile{
+		LeftNumWidth:  3,
+		RightNumWidth: 2,
+	}
+
+	layout := sideBySidePaneLayout(80, side, false)
+	require.Equal(tt, 0, layout.LeftPaneX)
+	require.Equal(tt, 40, layout.LeftPaneWidth)
+	require.Equal(tt, 0, layout.DividerWidth)
+	require.Equal(tt, 40, layout.DividerX)
+	require.Equal(tt, 40, layout.RightPaneX)
+	require.Equal(tt, 40, layout.RightPaneWidth)
+	require.Equal(tt, sideLineGutterWidth(3, false), layout.LeftGutterWidth)
+	require.Equal(tt, sideLineGutterWidth(2, false), layout.RightGutterWidth)
+	require.Equal(tt, layout.LeftPaneWidth-layout.LeftGutterWidth, layout.LeftContentWidth)
+	require.Equal(tt, layout.RightPaneWidth-layout.RightGutterWidth, layout.RightContentWidth)
+}
+
+func TestWrappedSideContentHeight_UsesMaxWrappedRowsPerPair(tt *testing.T) {
+	rows := []SideBySideRenderedRow{
+		{
+			Left: &RenderedSideCell{
+				Kind:         RenderedLineContext,
+				LineNumber:   1,
+				Prefix:       " ",
+				Segments:     []RenderedSegment{{Text: "abcdefgh", Role: TokenRoleSyntaxPlain}},
+				ContentWidth: 8,
+			},
+			Right: &RenderedSideCell{
+				Kind:         RenderedLineContext,
+				LineNumber:   1,
+				Prefix:       " ",
+				Segments:     []RenderedSegment{{Text: "abc", Role: TokenRoleSyntaxPlain}},
+				ContentWidth: 3,
+			},
+		},
+		{
+			Shared: &RenderedDiffLine{
+				Kind:         RenderedLineMeta,
+				Segments:     []RenderedSegment{{Text: "meta", Role: TokenRoleDiffMeta}},
+				ContentWidth: 4,
+			},
+		},
+	}
+	panes := sidePaneLayout{
+		LeftContentWidth:  4,
+		RightContentWidth: 4,
+	}
+	require.Equal(tt, 3, wrappedSideContentHeight(rows, panes, 4))
+}
+
+func TestSideBySideMaxScrollX(tt *testing.T) {
+	side := &SideBySideRenderedFile{
+		LeftNumWidth:         2,
+		RightNumWidth:        2,
+		LeftMaxContentWidth:  80,
+		RightMaxContentWidth: 50,
+	}
+
+	maxScroll := sideBySideMaxScrollX(side, false, 60)
+	panes := sideBySidePaneLayout(60, side, false)
+	expected := max(80-panes.LeftContentWidth, 50-panes.RightContentWidth)
+	if expected < 0 {
+		expected = 0
+	}
+	require.Equal(tt, expected, maxScroll)
+}

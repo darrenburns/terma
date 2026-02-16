@@ -155,6 +155,10 @@ func TestDiffApp_CommandPaletteIncludesCommonActions(tt *testing.T) {
 	require.True(tt, wrap.IsSelectable())
 	require.Equal(tt, "[w]", wrap.Hint)
 
+	layoutMode := findPaletteItemByLabel(level.Items, "Toggle side-by-side mode")
+	require.True(tt, layoutMode.IsSelectable())
+	require.Equal(tt, "[v]", layoutMode.Hint)
+
 	signs := findPaletteItemByLabel(level.Items, "Toggle +/- symbols")
 	require.True(tt, signs.IsSelectable())
 
@@ -173,6 +177,7 @@ func TestDiffApp_CommandPaletteUsesLayoutAndAppearanceSections(tt *testing.T) {
 	sidebarIdx := -1
 	dividerIdx := -1
 	wrapIdx := -1
+	layoutModeIdx := -1
 	signsIdx := -1
 	themeIdx := -1
 
@@ -188,6 +193,8 @@ func TestDiffApp_CommandPaletteUsesLayoutAndAppearanceSections(tt *testing.T) {
 			dividerIdx = idx
 		case item.Label == "Toggle line wrap":
 			wrapIdx = idx
+		case item.Label == "Toggle side-by-side mode":
+			layoutModeIdx = idx
 		case item.Label == "Toggle +/- symbols":
 			signsIdx = idx
 		case item.Label == "Theme":
@@ -201,7 +208,8 @@ func TestDiffApp_CommandPaletteUsesLayoutAndAppearanceSections(tt *testing.T) {
 	require.Greater(tt, dividerIdx, layoutDivider)
 	require.Greater(tt, appearanceDivider, dividerIdx)
 	require.Greater(tt, wrapIdx, appearanceDivider)
-	require.Greater(tt, signsIdx, wrapIdx)
+	require.Greater(tt, layoutModeIdx, wrapIdx)
+	require.Greater(tt, signsIdx, layoutModeIdx)
 	require.Greater(tt, themeIdx, signsIdx)
 }
 
@@ -213,6 +221,7 @@ func TestDiffApp_KeybindsHideCommandsExposedInPalette(tt *testing.T) {
 	require.True(tt, keybindIsHidden(keybinds, "r"))
 	require.True(tt, keybindIsHidden(keybinds, "d"))
 	require.True(tt, keybindIsHidden(keybinds, "w"))
+	require.True(tt, keybindIsHidden(keybinds, "v"))
 	require.True(tt, keybindIsHidden(keybinds, "ctrl+b"))
 	require.False(tt, keybindIsHidden(keybinds, "ctrl+p"))
 	require.True(tt, keybindIsHidden(keybinds, "ctrl+t"))
@@ -231,6 +240,14 @@ func TestDiffApp_KeybindsIncludeWrapToggle(tt *testing.T) {
 	keybind, ok := findKeybindByKey(app.Keybinds(), "w")
 	require.True(tt, ok)
 	require.Equal(tt, "Toggle line wrap", keybind.Name)
+	require.True(tt, keybind.Hidden)
+}
+
+func TestDiffApp_KeybindsIncludeSideBySideToggle(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+	keybind, ok := findKeybindByKey(app.Keybinds(), "v")
+	require.True(tt, ok)
+	require.Equal(tt, "Toggle side-by-side", keybind.Name)
 	require.True(tt, keybind.Hidden)
 }
 
@@ -838,6 +855,28 @@ func TestDiffApp_ToggleDiffWrap(tt *testing.T) {
 	require.False(tt, app.diffHardWrap)
 }
 
+func TestDiffApp_ToggleDiffLayoutModePreservesSelection(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("a.txt", "b.txt")}}, false)
+	require.True(tt, app.selectFilePath("b.txt"))
+	require.Equal(tt, DiffLayoutUnified, app.diffLayoutMode)
+
+	activePath := app.activePath
+	activeIsDir := app.activeIsDir
+	cursorPath := clonePath(app.treeState.CursorPath.Peek())
+
+	app.toggleDiffLayoutMode()
+	require.Equal(tt, DiffLayoutSideBySide, app.diffLayoutMode)
+	require.Equal(tt, activePath, app.activePath)
+	require.Equal(tt, activeIsDir, app.activeIsDir)
+	require.Equal(tt, cursorPath, app.treeState.CursorPath.Peek())
+
+	app.toggleDiffLayoutMode()
+	require.Equal(tt, DiffLayoutUnified, app.diffLayoutMode)
+	require.Equal(tt, activePath, app.activePath)
+	require.Equal(tt, activeIsDir, app.activeIsDir)
+	require.Equal(tt, cursorPath, app.treeState.CursorPath.Peek())
+}
+
 func TestDiffApp_DiffScrollStateHorizontalCallbacksMoveAndClamp(tt *testing.T) {
 	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
 
@@ -874,15 +913,70 @@ func TestDiffApp_DiffScrollStateHorizontalCallbacksNoopWhenWrapped(tt *testing.T
 	require.Equal(tt, 9, app.diffViewState.ScrollX.Peek())
 }
 
+func TestDiffApp_DiffScrollStateHorizontalCallbacksMoveAndClampInSideBySideMode(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+	app.diffLayoutMode = DiffLayoutSideBySide
+
+	rendered := buildTestRenderedFile(20, 120)
+	side := &SideBySideRenderedFile{
+		Title:                "test",
+		Rows:                 []SideBySideRenderedRow{{Left: &RenderedSideCell{Kind: RenderedLineContext, LineNumber: 1, Prefix: " ", ContentWidth: 120}, Right: &RenderedSideCell{Kind: RenderedLineContext, LineNumber: 1, Prefix: " ", ContentWidth: 96}}},
+		LeftNumWidth:         2,
+		RightNumWidth:        2,
+		LeftMaxContentWidth:  120,
+		RightMaxContentWidth: 96,
+	}
+	app.diffViewState.SetRenderedPair(rendered, side)
+	gutterWidth := sideBySideStateGutterWidth(rendered, side, app.diffHideChangeSigns, 60)
+	app.diffViewState.SetViewport(60, 10, gutterWidth)
+
+	require.NotNil(tt, app.diffScrollState.OnScrollRight)
+	require.NotNil(tt, app.diffScrollState.OnScrollLeft)
+
+	handled := app.diffScrollState.ScrollRight(7)
+	require.True(tt, handled)
+	require.Equal(tt, 7, app.diffViewState.ScrollX.Peek())
+
+	handled = app.diffScrollState.ScrollRight(1000)
+	require.True(tt, handled)
+	require.Equal(tt, sideBySideMaxScrollX(side, app.diffHideChangeSigns, 60), app.diffViewState.ScrollX.Peek())
+
+	handled = app.diffScrollState.ScrollLeft(1000)
+	require.True(tt, handled)
+	require.Equal(tt, 0, app.diffViewState.ScrollX.Peek())
+}
+
+func TestDiffApp_DiffScrollStateHorizontalCallbacksNoopWhenWrappedInSideBySideMode(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+	app.diffLayoutMode = DiffLayoutSideBySide
+
+	rendered := buildTestRenderedFile(20, 120)
+	side := &SideBySideRenderedFile{
+		Title:                "test",
+		Rows:                 []SideBySideRenderedRow{{Left: &RenderedSideCell{Kind: RenderedLineContext, LineNumber: 1, Prefix: " ", ContentWidth: 120}, Right: &RenderedSideCell{Kind: RenderedLineContext, LineNumber: 1, Prefix: " ", ContentWidth: 96}}},
+		LeftNumWidth:         2,
+		RightNumWidth:        2,
+		LeftMaxContentWidth:  120,
+		RightMaxContentWidth: 96,
+	}
+	app.diffViewState.SetRenderedPair(rendered, side)
+	app.diffViewState.ScrollX.Set(9)
+
+	app.diffHardWrap = true
+	handled := app.diffScrollState.ScrollRight(1)
+	require.False(tt, handled)
+	require.Equal(tt, 9, app.diffViewState.ScrollX.Peek())
+}
+
 func TestDiffApp_ToggleDiffChangeSigns(tt *testing.T) {
 	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("a.txt")}}, false)
-	require.False(tt, app.diffHideChangeSigns)
-
-	app.toggleDiffChangeSigns()
 	require.True(tt, app.diffHideChangeSigns)
 
 	app.toggleDiffChangeSigns()
 	require.False(tt, app.diffHideChangeSigns)
+
+	app.toggleDiffChangeSigns()
+	require.True(tt, app.diffHideChangeSigns)
 }
 
 func TestDiffApp_FocusDividerNoopWhenSidebarHidden(tt *testing.T) {
@@ -905,6 +999,64 @@ func TestDiffApp_RefreshLoadsCurrentBranch(tt *testing.T) {
 	}, false)
 
 	require.Equal(tt, "feature/header-branch", app.branch)
+}
+
+func TestDiffApp_HeaderShowsLayoutModeAndToggleHint(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{
+		repoRoot: "/tmp/repo",
+		branch:   "feature/layout-mode",
+		diffs:    []string{diffForPaths("a.txt")},
+	}, false)
+	theme, ok := t.GetTheme(t.CurrentThemeName())
+	require.True(tt, ok)
+
+	header := app.buildHeader(theme)
+	row, ok := header.(t.Row)
+	require.True(tt, ok)
+	texts := rowTextContents(row)
+	text := strings.Join(texts, " ")
+	require.NotContains(tt, text, "Mode:")
+	require.Contains(tt, text, "[^t]")
+	require.Contains(tt, text, "unified [v]")
+	branchIdx := indexOfTextContaining(texts, "feature/layout-mode")
+	themeIdx := indexOfTextContaining(texts, "[^t]")
+	modeIdx := indexOfTextContaining(texts, "unified [v]")
+	require.GreaterOrEqual(tt, branchIdx, 0)
+	require.GreaterOrEqual(tt, themeIdx, 0)
+	require.Greater(tt, modeIdx, branchIdx)
+	require.Greater(tt, themeIdx, modeIdx)
+
+	app.toggleDiffLayoutMode()
+	header = app.buildHeader(theme)
+	row, ok = header.(t.Row)
+	require.True(tt, ok)
+	texts = rowTextContents(row)
+	text = strings.Join(texts, " ")
+	require.Contains(tt, text, "side-by-side [v]")
+	branchIdx = indexOfTextContaining(texts, "feature/layout-mode")
+	themeIdx = indexOfTextContaining(texts, "[^t]")
+	modeIdx = indexOfTextContaining(texts, "side-by-side [v]")
+	require.GreaterOrEqual(tt, branchIdx, 0)
+	require.GreaterOrEqual(tt, themeIdx, 0)
+	require.Greater(tt, modeIdx, branchIdx)
+	require.Greater(tt, themeIdx, modeIdx)
+}
+
+func TestDiffApp_ViewerTitleDoesNotIncludeLayoutMode(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{
+		repoRoot: "/tmp/repo",
+		diffs:    []string{diffForPaths("a.txt")},
+	}, false)
+	theme, ok := t.GetTheme(t.CurrentThemeName())
+	require.True(tt, ok)
+
+	app.diffLayoutMode = DiffLayoutSideBySide
+	widget := app.buildViewerTitle(theme)
+	text, ok := widget.(t.Text)
+	require.True(tt, ok)
+	joined := strings.Join(spanTexts(text.Spans), "")
+	require.NotContains(tt, joined, "side-by-side")
+	require.NotContains(tt, joined, "unified")
 }
 
 type scriptedDiffProvider struct {
@@ -1072,4 +1224,13 @@ func rowTextContents(row t.Row) []string {
 		texts = append(texts, text.Content)
 	}
 	return texts
+}
+
+func indexOfTextContaining(texts []string, needle string) int {
+	for idx, text := range texts {
+		if strings.Contains(text, needle) {
+			return idx
+		}
+	}
+	return -1
 }

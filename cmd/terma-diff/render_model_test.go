@@ -90,3 +90,87 @@ func TestBuildMetaRenderedFile_ProducesMetaLines(t *testing.T) {
 	require.Equal(t, "Line one", lineText(rendered.Lines[0]))
 	require.Equal(t, "Line two", lineText(rendered.Lines[1]))
 }
+
+func TestBuildSideBySideRenderedFile_RunPairingAndSharedRows(t *testing.T) {
+	file := &DiffFile{
+		DisplayPath: "main.go",
+		Hunks: []DiffHunk{
+			{
+				Header: "@@ -1,4 +1,4 @@",
+				Lines: []DiffLine{
+					{Kind: DiffLineRemove, Content: "old first", OldLine: 1},
+					{Kind: DiffLineRemove, Content: "old second", OldLine: 2},
+					{Kind: DiffLineAdd, Content: "new first", NewLine: 1},
+					{Kind: DiffLineContext, Content: "same", OldLine: 3, NewLine: 2},
+					{Kind: DiffLineMeta, Content: `\\ No newline at end of file`},
+					{Kind: DiffLineAdd, Content: "tail", NewLine: 3},
+				},
+			},
+		},
+	}
+
+	side := buildSideBySideRenderedFile(file)
+	require.NotNil(t, side)
+	require.Equal(t, "main.go", side.Title)
+	require.Len(t, side.Rows, 6)
+
+	require.NotNil(t, side.Rows[0].Shared)
+	require.Equal(t, RenderedLineHunkHeader, side.Rows[0].Shared.Kind)
+	require.Equal(t, "@@ -1,4 +1,4 @@", lineText(*side.Rows[0].Shared))
+
+	require.NotNil(t, side.Rows[1].Left)
+	require.NotNil(t, side.Rows[1].Right)
+	require.Equal(t, RenderedLineRemove, side.Rows[1].Left.Kind)
+	require.Equal(t, RenderedLineAdd, side.Rows[1].Right.Kind)
+	require.Equal(t, "old first", sideCellText(side.Rows[1].Left))
+	require.Equal(t, "new first", sideCellText(side.Rows[1].Right))
+
+	require.NotNil(t, side.Rows[2].Left)
+	require.Nil(t, side.Rows[2].Right)
+	require.Equal(t, "old second", sideCellText(side.Rows[2].Left))
+
+	require.NotNil(t, side.Rows[3].Left)
+	require.NotNil(t, side.Rows[3].Right)
+	require.Equal(t, RenderedLineContext, side.Rows[3].Left.Kind)
+	require.Equal(t, RenderedLineContext, side.Rows[3].Right.Kind)
+
+	require.NotNil(t, side.Rows[4].Shared)
+	require.Equal(t, RenderedLineMeta, side.Rows[4].Shared.Kind)
+	require.Equal(t, `\\ No newline at end of file`, lineText(*side.Rows[4].Shared))
+
+	require.Nil(t, side.Rows[5].Left)
+	require.NotNil(t, side.Rows[5].Right)
+	require.Equal(t, "tail", sideCellText(side.Rows[5].Right))
+	require.GreaterOrEqual(t, side.LeftNumWidth, 1)
+	require.GreaterOrEqual(t, side.RightNumWidth, 1)
+	require.GreaterOrEqual(t, side.LeftMaxContentWidth, len("old second"))
+	require.GreaterOrEqual(t, side.RightMaxContentWidth, len("new first"))
+}
+
+func TestBuildSideBySideFromRendered_UsesSharedRows(t *testing.T) {
+	rendered := buildMetaRenderedFile("Summary", []string{"line one", "line two"})
+
+	side := buildSideBySideFromRendered(rendered)
+	require.NotNil(t, side)
+	require.Equal(t, "Summary", side.Title)
+	require.Len(t, side.Rows, 2)
+	require.NotNil(t, side.Rows[0].Shared)
+	require.NotNil(t, side.Rows[1].Shared)
+	require.Equal(t, "line one", lineText(*side.Rows[0].Shared))
+	require.Equal(t, "line two", lineText(*side.Rows[1].Shared))
+	require.Equal(t, rendered.OldNumWidth, side.LeftNumWidth)
+	require.Equal(t, rendered.NewNumWidth, side.RightNumWidth)
+	require.GreaterOrEqual(t, side.LeftMaxContentWidth, rendered.MaxContentWidth)
+	require.GreaterOrEqual(t, side.RightMaxContentWidth, rendered.MaxContentWidth)
+}
+
+func sideCellText(cell *RenderedSideCell) string {
+	if cell == nil || len(cell.Segments) == 0 {
+		return ""
+	}
+	var out string
+	for _, segment := range cell.Segments {
+		out += segment.Text
+	}
+	return out
+}

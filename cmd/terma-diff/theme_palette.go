@@ -14,14 +14,17 @@ func NewThemePalette(theme t.ThemeData) ThemePalette {
 
 	addBg := theme.Background.Blend(theme.Success, 0.14)
 	removeBg := theme.Background.Blend(theme.Error, 0.14)
+	contextGutterBg := theme.Background.Darken(gutterDarkenAmount)
 	hunkBg := theme.Background.Blend(theme.Info, 0.1)
 	hunkFg := theme.TextMuted.Blend(theme.InfoText, 0.35)
 	headerBg := theme.Background.Blend(theme.Primary, 0.11)
+	lineNumberFg := theme.TextMuted.Blend(theme.TextDisabled, 0.35)
+	hatchFg := theme.Background.Blend(theme.TextDisabled, 0.26)
 
 	return ThemePalette{
 		roleStyles: map[TokenRole]t.SpanStyle{
-			TokenRoleOldLineNumber:     {Foreground: theme.TextMuted},
-			TokenRoleNewLineNumber:     {Foreground: theme.TextMuted},
+			TokenRoleOldLineNumber:     {Foreground: lineNumberFg},
+			TokenRoleNewLineNumber:     {Foreground: lineNumberFg},
 			TokenRoleLineNumberAdd:     {Foreground: theme.Success},
 			TokenRoleLineNumberRemove:  {Foreground: theme.Error},
 			TokenRoleDiffPrefixAdd:     {Foreground: theme.Success},
@@ -30,6 +33,7 @@ func NewThemePalette(theme t.ThemeData) ThemePalette {
 			TokenRoleDiffFileHeader:    {Foreground: theme.PrimaryText, Bold: true},
 			TokenRoleDiffHunkHeader:    {Foreground: hunkFg},
 			TokenRoleDiffMeta:          {Foreground: theme.WarningText, Italic: true},
+			TokenRoleDiffHatch:         {Foreground: hatchFg},
 			TokenRoleSyntaxPlain:       {Foreground: theme.Text},
 			TokenRoleSyntaxKeyword:     {Foreground: theme.Accent, Bold: true},
 			TokenRoleSyntaxType:        {Foreground: theme.Primary},
@@ -46,8 +50,9 @@ func NewThemePalette(theme t.ThemeData) ThemePalette {
 			RenderedLineRemove:     {BackgroundColor: removeBg},
 		},
 		gutterStyles: map[RenderedLineKind]t.Style{
-			RenderedLineAdd:    {BackgroundColor: addBg.Darken(gutterDarkenAmount)},
-			RenderedLineRemove: {BackgroundColor: removeBg.Darken(gutterDarkenAmount)},
+			RenderedLineContext: {BackgroundColor: contextGutterBg},
+			RenderedLineAdd:     {BackgroundColor: addBg.Darken(gutterDarkenAmount)},
+			RenderedLineRemove:  {BackgroundColor: removeBg.Darken(gutterDarkenAmount)},
 		},
 	}
 }

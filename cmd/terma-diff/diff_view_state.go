@@ -4,9 +4,10 @@ import t "terma"
 
 // DiffViewState tracks scroll state and rendered diff content for DiffView.
 type DiffViewState struct {
-	ScrollY  t.Signal[int]
-	ScrollX  t.Signal[int]
-	Rendered t.AnySignal[*RenderedFile]
+	ScrollY    t.Signal[int]
+	ScrollX    t.Signal[int]
+	Rendered   t.AnySignal[*RenderedFile]
+	SideBySide t.AnySignal[*SideBySideRenderedFile]
 
 	viewportWidth  int
 	viewportHeight int
@@ -14,17 +15,23 @@ type DiffViewState struct {
 
 func NewDiffViewState(rendered *RenderedFile) *DiffViewState {
 	return &DiffViewState{
-		ScrollY:  t.NewSignal(0),
-		ScrollX:  t.NewSignal(0),
-		Rendered: t.NewAnySignal(rendered),
+		ScrollY:    t.NewSignal(0),
+		ScrollX:    t.NewSignal(0),
+		Rendered:   t.NewAnySignal(rendered),
+		SideBySide: t.NewAnySignal(buildSideBySideFromRendered(rendered)),
 	}
 }
 
 func (s *DiffViewState) SetRendered(rendered *RenderedFile) {
+	s.SetRenderedPair(rendered, buildSideBySideFromRendered(rendered))
+}
+
+func (s *DiffViewState) SetRenderedPair(rendered *RenderedFile, sideBySide *SideBySideRenderedFile) {
 	if s == nil {
 		return
 	}
 	s.Rendered.Set(rendered)
+	s.SideBySide.Set(sideBySide)
 	s.ScrollY.Set(0)
 	s.ScrollX.Set(0)
 	s.Clamp(0)
@@ -177,19 +184,33 @@ func (s *DiffViewState) MaxScrollX(gutterWidth int) int {
 	if s == nil || s.viewportWidth <= 0 {
 		return 0
 	}
-	rendered := s.Rendered.Peek()
-	if rendered == nil {
+	maxContent := renderedMaxContentWidth(s.Rendered.Peek(), s.SideBySide.Peek())
+	if maxContent <= 0 {
 		return 0
 	}
 	codeWidth := s.viewportWidth - gutterWidth
 	if codeWidth < 0 {
 		codeWidth = 0
 	}
-	maxScroll := rendered.MaxContentWidth - codeWidth
+	maxScroll := maxContent - codeWidth
 	if maxScroll < 0 {
 		return 0
 	}
 	return maxScroll
+}
+
+func (s *DiffViewState) ViewportWidth() int {
+	if s == nil {
+		return 0
+	}
+	return s.viewportWidth
+}
+
+func (s *DiffViewState) ViewportHeight() int {
+	if s == nil {
+		return 0
+	}
+	return s.viewportHeight
 }
 
 func (s *DiffViewState) pageStep() int {

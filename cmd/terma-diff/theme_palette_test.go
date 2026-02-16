@@ -22,6 +22,8 @@ func TestThemePalette_UsesTextVariantsForSemanticRoles(tt *testing.T) {
 	assertRoleColor(tt, palette, TokenRoleDiffFileHeader, theme.PrimaryText)
 	assertRoleColor(tt, palette, TokenRoleDiffHunkHeader, theme.TextMuted.Blend(theme.InfoText, 0.35))
 	assertRoleColor(tt, palette, TokenRoleDiffMeta, theme.WarningText)
+	assertRoleColor(tt, palette, TokenRoleOldLineNumber, theme.TextMuted.Blend(theme.TextDisabled, 0.35))
+	assertRoleColor(tt, palette, TokenRoleNewLineNumber, theme.TextMuted.Blend(theme.TextDisabled, 0.35))
 	assertRoleColor(tt, palette, TokenRoleSyntaxKeyword, theme.AccentText)
 	assertRoleColor(tt, palette, TokenRoleSyntaxType, theme.PrimaryText)
 	assertRoleColor(tt, palette, TokenRoleSyntaxFunction, theme.SecondaryText)
@@ -73,4 +75,10 @@ func TestThemePalette_GutterTintIsDarkerForAddAndRemove(tt *testing.T) {
 	removeLineBg := removeLineStyle.BackgroundColor.ColorAt(1, 1, 0, 0)
 	removeGutterBg := removeGutterStyle.BackgroundColor.ColorAt(1, 1, 0, 0)
 	require.Less(tt, removeGutterBg.Luminance(), removeLineBg.Luminance())
+
+	contextGutterStyle, ok := palette.GutterStyleForKind(RenderedLineContext)
+	require.True(tt, ok)
+	require.NotNil(tt, contextGutterStyle.BackgroundColor)
+	contextGutterBg := contextGutterStyle.BackgroundColor.ColorAt(1, 1, 0, 0)
+	require.Less(tt, contextGutterBg.Luminance(), theme.Background.Luminance())
 }

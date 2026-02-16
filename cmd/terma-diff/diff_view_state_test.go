@@ -55,6 +55,30 @@ func TestDiffViewState_GoTopAndGoBottom(t *testing.T) {
 	require.Equal(t, 0, state.ScrollY.Peek())
 }
 
+func TestDiffViewState_SetRenderedPairResetsScrollAndStoresBothModels(t *testing.T) {
+	initial := buildTestRenderedFile(10, 40)
+	state := NewDiffViewState(initial)
+	state.ScrollY.Set(4)
+	state.ScrollX.Set(7)
+
+	nextRendered := buildTestRenderedFile(20, 90)
+	nextSide := &SideBySideRenderedFile{
+		Title:                "test",
+		Rows:                 []SideBySideRenderedRow{{Shared: &RenderedDiffLine{Kind: RenderedLineMeta, Segments: []RenderedSegment{{Text: "line", Role: TokenRoleDiffMeta}}, ContentWidth: 4}}},
+		LeftNumWidth:         1,
+		RightNumWidth:        1,
+		LeftMaxContentWidth:  4,
+		RightMaxContentWidth: 4,
+	}
+
+	state.SetRenderedPair(nextRendered, nextSide)
+
+	require.Equal(t, 0, state.ScrollY.Peek())
+	require.Equal(t, 0, state.ScrollX.Peek())
+	require.Same(t, nextRendered, state.Rendered.Peek())
+	require.Same(t, nextSide, state.SideBySide.Peek())
+}
+
 func buildTestRenderedFile(lineCount int, contentWidth int) *RenderedFile {
 	lines := make([]RenderedDiffLine, 0, lineCount)
 	for i := 0; i < lineCount; i++ {

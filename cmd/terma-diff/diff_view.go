@@ -14,6 +14,7 @@ type DiffView struct {
 	DisableFocus    bool
 	State           *DiffViewState
 	VerticalScroll  *t.ScrollState
+	LayoutMode      DiffLayoutMode
 	HardWrap        bool
 	HideChangeSigns bool
 	Palette         ThemePalette
@@ -91,6 +92,7 @@ func (d DiffView) BuildLayoutNode(ctx t.BuildContext) layout.LayoutNode {
 
 func (d DiffView) Layout(ctx t.BuildContext, constraints t.Constraints) t.Size {
 	rendered := d.currentRendered()
+	sideBySide := d.currentSideBySide()
 
 	dims := d.Style.GetDimensions()
 	widthDim := dims.Width
@@ -100,6 +102,10 @@ func (d DiffView) Layout(ctx t.BuildContext, constraints t.Constraints) t.Size {
 	}
 	if heightDim.IsUnset() {
 		heightDim = d.Height
+	}
+
+	if d.LayoutMode == DiffLayoutSideBySide {
+		return d.layoutSideBySide(constraints, widthDim, heightDim, sideBySide)
 	}
 
 	gutterWidth := renderedGutterWidth(rendered, d.HideChangeSigns)
@@ -138,6 +144,223 @@ func (d DiffView) Layout(ctx t.BuildContext, constraints t.Constraints) t.Size {
 	return t.Size{Width: width, Height: height}
 }
 
+type sidePaneLayout struct {
+	LeftPaneX         int
+	LeftPaneWidth     int
+	LeftGutterWidth   int
+	LeftContentWidth  int
+	DividerX          int
+	DividerWidth      int
+	RightPaneX        int
+	RightPaneWidth    int
+	RightGutterWidth  int
+	RightContentWidth int
+}
+
+const sideEmptyHatchRune = "╱"
+
+func (d DiffView) layoutSideBySide(constraints t.Constraints, widthDim t.Dimension, heightDim t.Dimension, sideBySide *SideBySideRenderedFile) t.Size {
+	contentWidth := sideBySideNaturalWidth(sideBySide, d.HideChangeSigns)
+	contentHeight := 1
+	if sideBySide != nil {
+		contentHeight = max(1, len(sideBySide.Rows))
+	}
+
+	width := contentWidth
+	switch {
+	case widthDim.IsCells():
+		width = widthDim.CellsValue()
+	case widthDim.IsFlex(), widthDim.IsPercent():
+		width = constraints.MaxWidth
+	}
+	width = clampInt(width, constraints.MinWidth, constraints.MaxWidth)
+
+	if d.HardWrap && sideBySide != nil {
+		panes := sideBySidePaneLayout(width, sideBySide, d.HideChangeSigns)
+		contentHeight = wrappedSideContentHeight(sideBySide.Rows, panes, width)
+	}
+
+	height := contentHeight
+	switch {
+	case heightDim.IsCells():
+		height = heightDim.CellsValue()
+	case heightDim.IsFlex(), heightDim.IsPercent():
+		height = constraints.MaxHeight
+	}
+	height = clampInt(height, constraints.MinHeight, constraints.MaxHeight)
+
+	return t.Size{Width: width, Height: height}
+}
+
+func sideBySideNaturalWidth(sideBySide *SideBySideRenderedFile, hideSigns bool) int {
+	if sideBySide == nil {
+		return 1
+	}
+	leftGutter := sideLineGutterWidth(sideBySide.LeftNumWidth, hideSigns)
+	rightGutter := sideLineGutterWidth(sideBySide.RightNumWidth, hideSigns)
+
+	width := leftGutter + max(1, sideBySide.LeftMaxContentWidth) + rightGutter + max(1, sideBySide.RightMaxContentWidth)
+	shared := max(sideBySide.LeftMaxContentWidth, sideBySide.RightMaxContentWidth)
+	if shared > width {
+		width = shared
+	}
+	if width <= 0 {
+		return 1
+	}
+	return width
+}
+
+func sideLineGutterWidth(numWidth int, hideSigns bool) int {
+	if numWidth <= 0 {
+		numWidth = 1
+	}
+	width := numWidth + 1
+	if !hideSigns {
+		width += 2
+	}
+	return width
+}
+
+func sideBySidePaneLayout(totalWidth int, sideBySide *SideBySideRenderedFile, hideSigns bool) sidePaneLayout {
+	layout := sidePaneLayout{}
+	if totalWidth <= 0 {
+		return layout
+	}
+
+	leftNumWidth := 1
+	rightNumWidth := 1
+	if sideBySide != nil {
+		if sideBySide.LeftNumWidth > 0 {
+			leftNumWidth = sideBySide.LeftNumWidth
+		}
+		if sideBySide.RightNumWidth > 0 {
+			rightNumWidth = sideBySide.RightNumWidth
+		}
+	}
+
+	layout.LeftPaneX = 0
+	layout.LeftGutterWidth = sideLineGutterWidth(leftNumWidth, hideSigns)
+	layout.RightGutterWidth = sideLineGutterWidth(rightNumWidth, hideSigns)
+
+	dividerWidth := 0
+	layout.DividerWidth = dividerWidth
+
+	available := totalWidth - dividerWidth
+	if available < 0 {
+		available = 0
+	}
+	layout.LeftPaneWidth = available / 2
+	layout.RightPaneWidth = available - layout.LeftPaneWidth
+	layout.DividerX = layout.LeftPaneWidth
+	layout.RightPaneX = layout.DividerX + dividerWidth
+
+	layout.LeftContentWidth = layout.LeftPaneWidth - layout.LeftGutterWidth
+	layout.RightContentWidth = layout.RightPaneWidth - layout.RightGutterWidth
+	if layout.LeftPaneWidth <= 0 {
+		layout.LeftContentWidth = 0
+	} else if layout.LeftContentWidth <= 0 {
+		layout.LeftContentWidth = 1
+	}
+	if layout.RightPaneWidth <= 0 {
+		layout.RightContentWidth = 0
+	} else if layout.RightContentWidth <= 0 {
+		layout.RightContentWidth = 1
+	}
+	return layout
+}
+
+func sideBySideMaxScrollX(sideBySide *SideBySideRenderedFile, hideSigns bool, viewportWidth int) int {
+	if sideBySide == nil || viewportWidth <= 0 {
+		return 0
+	}
+	panes := sideBySidePaneLayout(viewportWidth, sideBySide, hideSigns)
+
+	leftVisible := panes.LeftContentWidth
+	rightVisible := panes.RightContentWidth
+	leftMax := max(1, sideBySide.LeftMaxContentWidth)
+	rightMax := max(1, sideBySide.RightMaxContentWidth)
+
+	leftScroll := leftMax - leftVisible
+	if leftScroll < 0 {
+		leftScroll = 0
+	}
+	rightScroll := rightMax - rightVisible
+	if rightScroll < 0 {
+		rightScroll = 0
+	}
+	return max(leftScroll, rightScroll)
+}
+
+func sideBySideStateGutterWidth(rendered *RenderedFile, sideBySide *SideBySideRenderedFile, hideSigns bool, viewportWidth int) int {
+	if viewportWidth <= 0 {
+		return 0
+	}
+
+	maxContent := renderedMaxContentWidth(rendered, sideBySide)
+	maxScrollX := sideBySideMaxScrollX(sideBySide, hideSigns, viewportWidth)
+	visibleContent := maxContent - maxScrollX
+	if visibleContent < 0 {
+		visibleContent = 0
+	}
+	if visibleContent > viewportWidth {
+		visibleContent = viewportWidth
+	}
+	gutterWidth := viewportWidth - visibleContent
+	if gutterWidth < 0 {
+		return 0
+	}
+	return gutterWidth
+}
+
+func wrappedSideContentHeight(rows []SideBySideRenderedRow, panes sidePaneLayout, fullWidth int) int {
+	if len(rows) == 0 {
+		return 1
+	}
+	total := 0
+	for _, row := range rows {
+		total += wrappedSideRowCount(row, panes, fullWidth)
+	}
+	if total <= 0 {
+		return 1
+	}
+	return total
+}
+
+func wrappedSideRowAtRow(rows []SideBySideRenderedRow, panes sidePaneLayout, fullWidth int, rowIdx int) (SideBySideRenderedRow, int, bool) {
+	if rowIdx < 0 {
+		return SideBySideRenderedRow{}, 0, false
+	}
+	remaining := rowIdx
+	for _, row := range rows {
+		rowsForItem := wrappedSideRowCount(row, panes, fullWidth)
+		if remaining < rowsForItem {
+			return row, remaining, true
+		}
+		remaining -= rowsForItem
+	}
+	return SideBySideRenderedRow{}, 0, false
+}
+
+func wrappedSideRowCount(row SideBySideRenderedRow, panes sidePaneLayout, fullWidth int) int {
+	if row.Shared != nil {
+		return wrappedLineRowCount(*row.Shared, max(1, fullWidth))
+	}
+	leftRows := wrappedSideCellRowCount(row.Left, max(1, panes.LeftContentWidth))
+	rightRows := wrappedSideCellRowCount(row.Right, max(1, panes.RightContentWidth))
+	return max(leftRows, rightRows)
+}
+
+func wrappedSideCellRowCount(cell *RenderedSideCell, wrapWidth int) int {
+	if cell == nil || wrapWidth <= 0 || cell.ContentWidth <= 0 {
+		return 1
+	}
+	rows := (cell.ContentWidth + wrapWidth - 1) / wrapWidth
+	if rows <= 0 {
+		return 1
+	}
+	return rows
+}
+
 func (d DiffView) Render(ctx *t.RenderContext) {
 	if ctx.Width <= 0 || ctx.Height <= 0 || d.State == nil {
 		return
@@ -146,6 +369,10 @@ func (d DiffView) Render(ctx *t.RenderContext) {
 	rendered := d.State.Rendered.Get()
 	if rendered == nil {
 		rendered = buildMetaRenderedFile("Diff", []string{"No diff content to display."})
+	}
+	sideBySide := d.State.SideBySide.Get()
+	if sideBySide == nil {
+		sideBySide = buildSideBySideFromRendered(rendered)
 	}
 
 	clip := ctx.ClipBounds()
@@ -169,6 +396,9 @@ func (d DiffView) Render(ctx *t.RenderContext) {
 	}
 
 	gutterWidth := renderedGutterWidth(rendered, d.HideChangeSigns)
+	if d.LayoutMode == DiffLayoutSideBySide {
+		gutterWidth = sideBySideStateGutterWidth(rendered, sideBySide, d.HideChangeSigns, ctx.Width)
+	}
 	d.State.SetViewport(ctx.Width, visibleEnd-visibleStart, gutterWidth)
 
 	scrollY := d.State.ScrollY.Get()
@@ -188,6 +418,11 @@ func (d DiffView) Render(ctx *t.RenderContext) {
 	}
 	if scrollX < 0 {
 		scrollX = 0
+	}
+
+	if d.LayoutMode == DiffLayoutSideBySide {
+		d.renderSideBySide(ctx, sideBySide, visibleStart, visibleEnd, scrollY, scrollX)
+		return
 	}
 
 	wrapWidth := max(1, ctx.Width-gutterWidth)
@@ -239,6 +474,196 @@ func (d DiffView) Render(ctx *t.RenderContext) {
 		d.renderGutterLine(ctx, rendered, row, gutterLine)
 		d.renderContentLine(ctx, row, gutterWidth, line, contentScrollX)
 	}
+}
+
+func (d DiffView) renderSideBySide(ctx *t.RenderContext, sideBySide *SideBySideRenderedFile, visibleStart int, visibleEnd int, scrollY int, scrollX int) {
+	if sideBySide == nil {
+		return
+	}
+
+	panes := sideBySidePaneLayout(ctx.Width, sideBySide, d.HideChangeSigns)
+	for row := visibleStart; row < visibleEnd; row++ {
+		contentRow := row
+		if d.VerticalScroll == nil {
+			contentRow = scrollY + row
+		}
+
+		var line SideBySideRenderedRow
+		wrapRow := 0
+		ok := false
+		if d.HardWrap {
+			line, wrapRow, ok = wrappedSideRowAtRow(sideBySide.Rows, panes, ctx.Width, contentRow)
+		} else if contentRow >= 0 && contentRow < len(sideBySide.Rows) {
+			line = sideBySide.Rows[contentRow]
+			ok = true
+		}
+		if !ok {
+			continue
+		}
+
+		if line.Shared != nil {
+			d.renderSideSharedRow(ctx, row, *line.Shared, wrapRow, scrollX)
+			continue
+		}
+
+		d.renderSidePairedRow(ctx, row, panes, sideBySide, line, wrapRow, scrollX)
+	}
+}
+
+func (d DiffView) renderSideSharedRow(ctx *t.RenderContext, row int, line RenderedDiffLine, wrapRow int, scrollX int) {
+	if lineStyle, ok := d.Palette.LineStyleForKind(line.Kind); ok && lineStyle.BackgroundColor != nil && lineStyle.BackgroundColor.IsSet() {
+		bg := lineStyle.BackgroundColor.ColorAt(ctx.Width, 1, 0, 0)
+		ctx.FillRect(0, row, ctx.Width, 1, bg)
+	}
+
+	contentScrollX := scrollX
+	if d.HardWrap {
+		contentScrollX = wrapRow * max(1, ctx.Width)
+	}
+	d.renderSegments(ctx, row, 0, ctx.Width, line.Segments, contentScrollX)
+}
+
+func (d DiffView) renderSidePairedRow(ctx *t.RenderContext, row int, panes sidePaneLayout, sideBySide *SideBySideRenderedFile, line SideBySideRenderedRow, wrapRow int, scrollX int) {
+	d.renderSideCell(
+		ctx,
+		row,
+		panes.LeftPaneX,
+		panes.LeftPaneWidth,
+		panes.LeftGutterWidth,
+		max(1, sideNumWidthForPane(true, sideBySide)),
+		line.Left,
+		true,
+		wrapRow,
+		scrollX,
+	)
+	d.renderSideCell(
+		ctx,
+		row,
+		panes.RightPaneX,
+		panes.RightPaneWidth,
+		panes.RightGutterWidth,
+		max(1, sideNumWidthForPane(false, sideBySide)),
+		line.Right,
+		false,
+		wrapRow,
+		scrollX,
+	)
+}
+
+func (d DiffView) renderSideCell(ctx *t.RenderContext, row int, paneX int, paneWidth int, gutterWidth int, numWidth int, cell *RenderedSideCell, isLeft bool, wrapRow int, scrollX int) {
+	if paneWidth <= 0 {
+		return
+	}
+
+	if cell != nil {
+		if lineStyle, ok := d.Palette.LineStyleForKind(cell.Kind); ok && lineStyle.BackgroundColor != nil && lineStyle.BackgroundColor.IsSet() {
+			bg := lineStyle.BackgroundColor.ColorAt(paneWidth, 1, 0, 0)
+			ctx.FillRect(paneX, row, paneWidth, 1, bg)
+		}
+	}
+
+	gutterCols := gutterWidth
+	if gutterCols > paneWidth {
+		gutterCols = paneWidth
+	}
+	if gutterCols > 0 && cell != nil {
+		if gutterStyle, ok := d.Palette.GutterStyleForKind(cell.Kind); ok && gutterStyle.BackgroundColor != nil && gutterStyle.BackgroundColor.IsSet() {
+			gutterBg := gutterStyle.BackgroundColor.ColorAt(gutterCols, 1, 0, 0)
+			ctx.FillRect(paneX, row, gutterCols, 1, gutterBg)
+		}
+	}
+
+	if cell == nil {
+		d.renderSideEmptyCellHatch(ctx, row, paneX, paneWidth)
+		return
+	}
+
+	visibleWidth := paneWidth - gutterWidth
+	if visibleWidth <= 0 {
+		visibleWidth = 1
+	}
+	cellRows := 1
+	if d.HardWrap {
+		cellRows = wrappedSideCellRowCount(cell, visibleWidth)
+	}
+	if wrapRow >= cellRows {
+		return
+	}
+
+	continuation := wrapRow > 0
+	number := cell.LineNumber
+	prefix := cell.Prefix
+	if continuation {
+		number = 0
+		prefix = " "
+	}
+
+	x := paneX
+	if x < paneX+paneWidth {
+		d.drawText(ctx, x, row, lineNumberText(number, numWidth), sideLineNumberRole(cell.Kind, isLeft))
+	}
+	x += numWidth
+	if x < paneX+paneWidth {
+		ctx.DrawText(x, row, " ")
+	}
+	x++
+	if !d.HideChangeSigns {
+		if x < paneX+paneWidth {
+			role := TokenRoleDiffPrefixContext
+			if prefixRole, ok := prefixRoleForLine(cell.Kind); ok {
+				role = prefixRole
+			}
+			d.drawText(ctx, x, row, displayLinePrefix(RenderedDiffLine{Kind: cell.Kind, Prefix: prefix}, d.HideChangeSigns), role)
+		}
+		x++
+		if x < paneX+paneWidth {
+			ctx.DrawText(x, row, " ")
+		}
+	}
+
+	contentScrollX := scrollX
+	if d.HardWrap {
+		contentScrollX = wrapRow * visibleWidth
+	}
+	d.renderSegments(ctx, row, paneX+gutterWidth, paneWidth-gutterWidth, cell.Segments, contentScrollX)
+}
+
+func (d DiffView) renderSideEmptyCellHatch(ctx *t.RenderContext, row int, startX int, width int) {
+	if width <= 0 {
+		return
+	}
+	style := d.styleForRole(TokenRoleDiffHatch)
+	for col := 0; col < width; col++ {
+		x := startX + col
+		if x < 0 || x >= ctx.Width {
+			continue
+		}
+		ctx.DrawStyledText(x, row, sideEmptyHatchRune, style)
+	}
+}
+
+func sideLineNumberRole(kind RenderedLineKind, isLeft bool) TokenRole {
+	switch kind {
+	case RenderedLineAdd:
+		return TokenRoleLineNumberAdd
+	case RenderedLineRemove:
+		return TokenRoleLineNumberRemove
+	default:
+		if isLeft {
+			return TokenRoleOldLineNumber
+		}
+		return TokenRoleNewLineNumber
+	}
+}
+
+func sideNumWidthForPane(left bool, sideBySide *SideBySideRenderedFile) int {
+	if sideBySide == nil {
+		return 1
+	}
+	if left {
+		return sideBySide.LeftNumWidth
+	}
+	return sideBySide.RightNumWidth
 }
 
 func (d DiffView) renderGutterLine(ctx *t.RenderContext, rendered *RenderedFile, row int, line RenderedDiffLine) {
@@ -317,8 +742,16 @@ func (d DiffView) renderContentLine(ctx *t.RenderContext, row int, gutterWidth i
 		return
 	}
 
+	d.renderSegments(ctx, row, gutterWidth, visibleWidth, line.Segments, scrollX)
+}
+
+func (d DiffView) renderSegments(ctx *t.RenderContext, row int, startX int, visibleWidth int, segments []RenderedSegment, scrollX int) {
+	if row < 0 || row >= ctx.Height || visibleWidth <= 0 {
+		return
+	}
+
 	contentCol := 0
-	for _, segment := range line.Segments {
+	for _, segment := range segments {
 		if segment.Text == "" {
 			continue
 		}
@@ -346,9 +779,9 @@ func (d DiffView) renderContentLine(ctx *t.RenderContext, row int, gutterWidth i
 				return
 			}
 
-			drawX := gutterWidth + (contentCol - scrollX)
-			if drawX >= gutterWidth && drawX < gutterWidth+visibleWidth {
-				if width == 1 || (drawX+width) <= gutterWidth+visibleWidth {
+			drawX := startX + (contentCol - scrollX)
+			if drawX >= startX && drawX < startX+visibleWidth {
+				if width == 1 || (drawX+width) <= startX+visibleWidth {
 					ctx.DrawStyledText(drawX, row, grapheme, style)
 				}
 			}
@@ -396,6 +829,13 @@ func (d DiffView) currentRendered() *RenderedFile {
 		return nil
 	}
 	return d.State.Rendered.Peek()
+}
+
+func (d DiffView) currentSideBySide() *SideBySideRenderedFile {
+	if d.State == nil {
+		return nil
+	}
+	return d.State.SideBySide.Peek()
 }
 
 func renderedGutterWidth(rendered *RenderedFile, hideChangeSigns bool) int {

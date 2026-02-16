@@ -19,6 +19,13 @@ const (
 	diffThemesPalette    = "Themes"
 )
 
+type DiffLayoutMode int
+
+const (
+	DiffLayoutUnified DiffLayoutMode = iota
+	DiffLayoutSideBySide
+)
+
 // DiffApp is a read-only, syntax-highlighted git diff viewer.
 type DiffApp struct {
 	provider DiffProvider
@@ -33,6 +40,7 @@ type DiffApp struct {
 	activeIsDir bool
 
 	renderedByPath     map[string]*RenderedFile
+	sideRenderedByPath map[string]*SideBySideRenderedFile
 	fileByPath         map[string]*DiffFile
 	filePathToTreePath map[string][]int
 	orderedFilePaths   []string
@@ -48,6 +56,7 @@ type DiffApp struct {
 
 	treeFilterVisible   bool
 	treeFilterNoMatches bool
+	diffLayoutMode      DiffLayoutMode
 	diffHardWrap        bool
 	diffHideChangeSigns bool
 	focusedWidgetID     string
@@ -68,6 +77,7 @@ func NewDiffApp(provider DiffProvider, staged bool) *DiffApp {
 		provider:            provider,
 		staged:              staged,
 		renderedByPath:      map[string]*RenderedFile{},
+		sideRenderedByPath:  map[string]*SideBySideRenderedFile{},
 		fileByPath:          map[string]*DiffFile{},
 		filePathToTreePath:  map[string][]int{},
 		orderedFilePaths:    []string{},
@@ -79,6 +89,8 @@ func NewDiffApp(provider DiffProvider, staged bool) *DiffApp {
 		diffViewState:       NewDiffViewState(buildMetaRenderedFile("Diff", []string{"Loading diff..."})),
 		splitState:          t.NewSplitPaneState(0.30),
 		sidebarVisible:      true,
+		diffLayoutMode:      DiffLayoutUnified,
+		diffHideChangeSigns: true,
 		lastNonDividerFocus: diffViewerScrollID,
 		focusReturnID:       diffViewerScrollID,
 	}
@@ -102,6 +114,7 @@ func (a *DiffApp) Keybinds() []t.Keybind {
 		{Key: "r", Name: "Refresh", Action: a.refreshDiff, Hidden: true},
 		{Key: "s", Name: "Toggle staged", Action: a.toggleMode, Hidden: true},
 		{Key: "w", Name: "Toggle line wrap", Action: a.toggleDiffWrap, Hidden: true},
+		{Key: "v", Name: "Toggle side-by-side", Action: a.toggleDiffLayoutMode, Hidden: true},
 		{Key: "d", Name: "Focus divider", Action: a.focusDivider, Hidden: true},
 		{Key: "ctrl+p", Name: "Command palette", Action: a.togglePalette},
 		{Key: "ctrl+t", Name: "Theme menu", Action: a.openThemePalette, Hidden: true},
@@ -191,7 +204,7 @@ func (a *DiffApp) buildHeader(theme t.ThemeData) t.Widget {
 	}
 
 	rightWidget := t.Text{
-		Content: themeDisplayName(t.CurrentThemeName()),
+		Content: themeDisplayName(t.CurrentThemeName()) + " [^t]",
 		Style: t.Style{
 			Padding:         t.EdgeInsetsXY(1, 0),
 			ForegroundColor: theme.SecondaryText,
@@ -223,6 +236,8 @@ func (a *DiffApp) buildHeader(theme t.ThemeData) t.Widget {
 	}
 	children = append(children,
 		t.Spacer{Width: t.Flex(1)},
+		a.buildHeaderModeIndicator(theme),
+		t.Spacer{Width: t.Cells(1)},
 		rightWidget,
 	)
 
@@ -397,6 +412,7 @@ func (a *DiffApp) buildRightPane(theme t.ThemeData) t.Widget {
 		DisableFocus:    true,
 		State:           a.diffViewState,
 		VerticalScroll:  a.diffScrollState,
+		LayoutMode:      a.diffLayoutMode,
 		HardWrap:        a.diffHardWrap,
 		HideChangeSigns: a.diffHideChangeSigns,
 		Palette:         NewThemePalette(theme),
@@ -504,6 +520,27 @@ func (a *DiffApp) buildViewerTitle(theme t.ThemeData) t.Widget {
 	return t.Text{Spans: spans, Style: style}
 }
 
+func (a *DiffApp) buildHeaderModeIndicator(theme t.ThemeData) t.Widget {
+	return t.Text{
+		Spans: []t.Span{
+			t.StyledSpan(a.diffLayoutModeLabel(), t.SpanStyle{
+				Foreground: theme.Text,
+			}),
+			t.PlainSpan(" "),
+			t.StyledSpan("[v]", t.SpanStyle{
+				Foreground: theme.Text,
+			}),
+		},
+	}
+}
+
+func (a *DiffApp) diffLayoutModeLabel() string {
+	if a.diffLayoutMode == DiffLayoutSideBySide {
+		return "side-by-side"
+	}
+	return "unified"
+}
+
 func (a *DiffApp) refreshDiff() {
 	if repoRoot, err := a.provider.RepoRoot(); err == nil {
 		a.repoRoot = repoRoot
@@ -524,6 +561,7 @@ func (a *DiffApp) refreshDiff() {
 		a.activePath = ""
 		a.activeIsDir = false
 		a.renderedByPath = map[string]*RenderedFile{}
+		a.sideRenderedByPath = map[string]*SideBySideRenderedFile{}
 		a.fileByPath = map[string]*DiffFile{}
 		a.filePathToTreePath = map[string][]int{}
 		a.orderedFilePaths = nil
@@ -543,6 +581,7 @@ func (a *DiffApp) refreshDiff() {
 		a.activePath = ""
 		a.activeIsDir = false
 		a.renderedByPath = map[string]*RenderedFile{}
+		a.sideRenderedByPath = map[string]*SideBySideRenderedFile{}
 		a.fileByPath = map[string]*DiffFile{}
 		a.filePathToTreePath = map[string][]int{}
 		a.orderedFilePaths = nil
@@ -558,6 +597,7 @@ func (a *DiffApp) refreshDiff() {
 	a.loadErr = ""
 	a.files = doc.Files
 	a.renderedByPath = make(map[string]*RenderedFile, len(a.files))
+	a.sideRenderedByPath = make(map[string]*SideBySideRenderedFile, len(a.files))
 	a.fileByPath = make(map[string]*DiffFile, len(a.files))
 	for _, file := range a.files {
 		if file == nil {
@@ -565,6 +605,7 @@ func (a *DiffApp) refreshDiff() {
 		}
 		a.fileByPath[file.DisplayPath] = file
 		a.renderedByPath[file.DisplayPath] = buildRenderedFile(file)
+		a.sideRenderedByPath[file.DisplayPath] = buildSideBySideRenderedFile(file)
 	}
 
 	roots, filePathToTreePath, orderedFilePaths := buildDiffTree(a.files)
@@ -646,7 +687,11 @@ func (a *DiffApp) onTreeCursorChange(node DiffTreeNodeData) {
 	if rendered, ok := a.renderedByPath[node.Path]; ok {
 		a.activePath = node.Path
 		a.activeIsDir = false
-		a.diffViewState.SetRendered(rendered)
+		sideRendered := a.sideRenderedByPath[node.Path]
+		if sideRendered == nil {
+			sideRendered = buildSideBySideFromRendered(rendered)
+		}
+		a.diffViewState.SetRenderedPair(rendered, sideRendered)
 		a.diffScrollState.SetOffset(0)
 	}
 }
@@ -662,7 +707,12 @@ func (a *DiffApp) setActiveFile(file *DiffFile) {
 		rendered = buildRenderedFile(file)
 		a.renderedByPath[file.DisplayPath] = rendered
 	}
-	a.diffViewState.SetRendered(rendered)
+	sideRendered, ok := a.sideRenderedByPath[file.DisplayPath]
+	if !ok {
+		sideRendered = buildSideBySideRenderedFile(file)
+		a.sideRenderedByPath[file.DisplayPath] = sideRendered
+	}
+	a.diffViewState.SetRenderedPair(rendered, sideRendered)
 	a.diffScrollState.SetOffset(0)
 }
 
@@ -685,6 +735,15 @@ func (a *DiffApp) toggleDiffWrap() {
 	}
 }
 
+func (a *DiffApp) toggleDiffLayoutMode() {
+	if a.diffLayoutMode == DiffLayoutSideBySide {
+		a.diffLayoutMode = DiffLayoutUnified
+	} else {
+		a.diffLayoutMode = DiffLayoutSideBySide
+	}
+	a.clampDiffHorizontalScroll()
+}
+
 func (a *DiffApp) configureDiffHorizontalScroll() {
 	if a.diffScrollState == nil {
 		return
@@ -701,7 +760,7 @@ func (a *DiffApp) scrollDiffHorizontal(delta int) bool {
 	if delta == 0 || a.diffHardWrap || a.diffViewState == nil {
 		return false
 	}
-	gutterWidth := renderedGutterWidth(a.diffViewState.Rendered.Peek(), a.diffHideChangeSigns)
+	gutterWidth := a.diffScrollGutterWidth()
 	before := a.diffViewState.ScrollX.Peek()
 	a.diffViewState.MoveX(delta, gutterWidth)
 	return a.diffViewState.ScrollX.Peek() != before
@@ -709,11 +768,29 @@ func (a *DiffApp) scrollDiffHorizontal(delta int) bool {
 
 func (a *DiffApp) toggleDiffChangeSigns() {
 	a.diffHideChangeSigns = !a.diffHideChangeSigns
+	a.clampDiffHorizontalScroll()
+}
+
+func (a *DiffApp) clampDiffHorizontalScroll() {
 	if a.diffViewState == nil {
 		return
 	}
-	gutterWidth := renderedGutterWidth(a.diffViewState.Rendered.Peek(), a.diffHideChangeSigns)
-	a.diffViewState.Clamp(gutterWidth)
+	a.diffViewState.Clamp(a.diffScrollGutterWidth())
+}
+
+func (a *DiffApp) diffScrollGutterWidth() int {
+	if a.diffViewState == nil {
+		return 0
+	}
+	if a.diffLayoutMode == DiffLayoutSideBySide {
+		return sideBySideStateGutterWidth(
+			a.diffViewState.Rendered.Peek(),
+			a.diffViewState.SideBySide.Peek(),
+			a.diffHideChangeSigns,
+			a.diffViewState.ViewportWidth(),
+		)
+	}
+	return renderedGutterWidth(a.diffViewState.Rendered.Peek(), a.diffHideChangeSigns)
 }
 
 func (a *DiffApp) toggleSidebar() {
@@ -1030,6 +1107,12 @@ func (a *DiffApp) newCommandPalette() *t.CommandPaletteState {
 			FilterText: "Toggle line wrap hard wrap soft wrap",
 			Hint:       "[w]",
 			Action:     a.paletteAction(a.toggleDiffWrap),
+		},
+		{
+			Label:      "Toggle side-by-side mode",
+			FilterText: "Toggle side by side mode split unified layout view",
+			Hint:       "[v]",
+			Action:     a.paletteAction(a.toggleDiffLayoutMode),
 		},
 		{
 			Label:      "Toggle +/- symbols",
