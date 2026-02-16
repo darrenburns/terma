@@ -104,6 +104,7 @@ func (a *DiffApp) Keybinds() []t.Keybind {
 		{Key: "w", Name: "Toggle line wrap", Action: a.toggleDiffWrap, Hidden: true},
 		{Key: "d", Name: "Focus divider", Action: a.focusDivider, Hidden: true},
 		{Key: "ctrl+p", Name: "Command palette", Action: a.togglePalette},
+		{Key: "ctrl+t", Name: "Theme menu", Action: a.openThemePalette, Hidden: true},
 		{Key: "q", Name: "Quit", Action: t.Quit},
 	}
 }
@@ -916,6 +917,22 @@ func (a *DiffApp) togglePalette() {
 	a.themePreviewBase = ""
 	a.themeCursorSynced = false
 	a.commandPalette.Open()
+}
+
+func (a *DiffApp) openThemePalette() {
+	if a.commandPalette == nil {
+		return
+	}
+
+	a.cancelThemePreview()
+	a.commandPalette.Close(false)
+	a.themePreviewBase = ""
+	a.themeCursorSynced = false
+	a.commandPalette.Open()
+	a.commandPalette.PushLevel(diffThemesPalette, a.themeItems())
+	if item, ok := a.commandPalette.CurrentItem(); ok {
+		a.handlePaletteCursorChange(item)
+	}
 }
 
 func (a *DiffApp) syncFocusState(ctx t.BuildContext) {

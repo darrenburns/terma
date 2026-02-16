@@ -215,6 +215,7 @@ func TestDiffApp_KeybindsHideCommandsExposedInPalette(tt *testing.T) {
 	require.True(tt, keybindIsHidden(keybinds, "w"))
 	require.True(tt, keybindIsHidden(keybinds, "ctrl+b"))
 	require.False(tt, keybindIsHidden(keybinds, "ctrl+p"))
+	require.True(tt, keybindIsHidden(keybinds, "ctrl+t"))
 }
 
 func TestDiffApp_KeybindsIncludeSidebarToggle(tt *testing.T) {
@@ -230,6 +231,14 @@ func TestDiffApp_KeybindsIncludeWrapToggle(tt *testing.T) {
 	keybind, ok := findKeybindByKey(app.Keybinds(), "w")
 	require.True(tt, ok)
 	require.Equal(tt, "Toggle line wrap", keybind.Name)
+	require.True(tt, keybind.Hidden)
+}
+
+func TestDiffApp_KeybindsIncludeThemeMenuShortcut(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+	keybind, ok := findKeybindByKey(app.Keybinds(), "ctrl+t")
+	require.True(tt, ok)
+	require.Equal(tt, "Theme menu", keybind.Name)
 	require.True(tt, keybind.Hidden)
 }
 
@@ -250,6 +259,40 @@ func TestDiffApp_FilterFilesKeybindVisibleOnlyWhenTreeFocused(tt *testing.T) {
 	keybind, ok = findKeybindByKey(app.Keybinds(), "/")
 	require.True(tt, ok)
 	require.True(tt, keybind.Hidden)
+}
+
+func TestDiffApp_ThemeMenuShortcutOpensThemesSubmenu(tt *testing.T) {
+	originalTheme := t.CurrentThemeName()
+	defer t.SetTheme(originalTheme)
+
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+	app.togglePalette()
+	app.commandPalette.PushLevel("Nested", []t.CommandPaletteItem{
+		{Label: "Nested action", Action: func() {}},
+	})
+
+	keybind, ok := findKeybindByKey(app.Keybinds(), "ctrl+t")
+	require.True(tt, ok)
+	require.NotNil(tt, keybind.Action)
+	keybind.Action()
+
+	require.True(tt, app.commandPalette.Visible.Peek())
+
+	level := app.commandPalette.CurrentLevel()
+	require.NotNil(tt, level)
+	require.Equal(tt, diffThemesPalette, level.Title)
+
+	currentItem, ok := app.commandPalette.CurrentItem()
+	require.True(tt, ok)
+	selectedTheme, ok := currentItem.Data.(string)
+	require.True(tt, ok)
+	require.Equal(tt, t.CurrentThemeName(), selectedTheme)
+
+	require.True(tt, app.commandPalette.PopLevel())
+	level = app.commandPalette.CurrentLevel()
+	require.NotNil(tt, level)
+	require.Equal(tt, "Commands", level.Title)
+	require.False(tt, app.commandPalette.PopLevel())
 }
 
 func TestDiffApp_ThemePreviewOnCursorChange(tt *testing.T) {

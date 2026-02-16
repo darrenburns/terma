@@ -22,8 +22,10 @@ func (s FocusAwareSplitPane) Keybinds() []t.Keybind {
 		switch keybinds[i].Key {
 		case "left", "h":
 			keybinds[i].Name = "Shrink sidebar"
+			keybinds[i].Hidden = true
 		case "right", "l":
 			keybinds[i].Name = "Grow sidebar"
+			keybinds[i].Hidden = true
 		}
 	}
 	return keybinds
