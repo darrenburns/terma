@@ -1,4 +1,57 @@
+# Logs
 **/*/terma.log
 terma.log
+layout/layout_debug.log
+
+# OS
 .DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# Profiling
 cpu.prof
+
+# Built binaries
+# Binaries from cmd/ examples end up in repo root or current dir
+01-hello-world
+02-counter
+03-progress-bar
+04-animation
+05a-todo-list
+05b-todo-scrollable
+05c-todo-empty-state
+05d-todo-multiselect
+api-client-example
+auto-dimension-demo
+autocomplete-example
+color-demo
+dialog-example
+disabled-button-demo
+dock-layout-demo
+fg-gradient-test
+file-search-demo
+floating-example
+focus-trap-demo
+gradient-demo
+layout-test
+nested-spacing
+percent-demo
+print-example
+scroll-overflow-test
+simple-tree-example
+sparkline-demo
+stack-example
+tab-example
+table-column-width-demo
+table-demo
+table-widgets-demo
+tabs-basic
+text-input-example
+ticker-example
+todo-app
+tooltip-demo
+tree-example
+widget-showcase
