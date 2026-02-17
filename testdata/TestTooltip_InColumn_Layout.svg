@@ -19,9 +19,9 @@
   <rect x="66.8" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="75.2" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="83.6" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <text x="8.0" y="27.6" fill="#3B394B">[</text>
+  <text x="8.0" y="27.6" fill="#3C3A4C">[</text>
   <text x="16.4" y="27.6" fill="#E0DEF4">Click</text>
   <text x="66.8" y="27.6" fill="#E0DEF4">me</text>
-  <text x="83.6" y="27.6" fill="#3B394B">]</text>
+  <text x="83.6" y="27.6" fill="#3C3A4C">]</text>
   <text x="8.0" y="47.2" fill="#E0DEF4">Footer</text>
 </svg>

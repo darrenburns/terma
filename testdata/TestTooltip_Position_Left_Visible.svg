@@ -23,7 +23,7 @@
   <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <text x="50.0" y="8.0" fill="#E0DEF4">Help</text>
-  <text x="92.0" y="8.0" fill="#757387">[</text>
+  <text x="92.0" y="8.0" fill="#767487">[</text>
   <text x="100.4" y="8.0" fill="#E0DEF4">Target</text>
-  <text x="150.8" y="8.0" fill="#757387">]</text>
+  <text x="150.8" y="8.0" fill="#767487">]</text>
 </svg>

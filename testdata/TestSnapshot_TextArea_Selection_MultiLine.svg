@@ -14,10 +14,10 @@
   <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#544640"/>
-  <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#544640"/>
-  <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#544640"/>
-  <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#544640"/>
+  <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#554640"/>
+  <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#554640"/>
+  <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#554640"/>
+  <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#554640"/>
   <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="108.8" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
@@ -25,13 +25,13 @@
   <rect x="125.6" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <text x="8.0" y="8.0" fill="#E0DEF4">first</text>
   <text x="58.4" y="8.0" fill="#E0DEF4">line</text>
-  <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#544640"/>
-  <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#544640"/>
-  <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#544640"/>
-  <rect x="33.2" y="27.6" width="8.4" height="19.6" fill="#544640"/>
-  <rect x="41.6" y="27.6" width="8.4" height="19.6" fill="#544640"/>
-  <rect x="50.0" y="27.6" width="8.4" height="19.6" fill="#544640"/>
-  <rect x="58.4" y="27.6" width="8.4" height="19.6" fill="#544640"/>
+  <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#554640"/>
+  <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#554640"/>
+  <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#554640"/>
+  <rect x="33.2" y="27.6" width="8.4" height="19.6" fill="#554640"/>
+  <rect x="41.6" y="27.6" width="8.4" height="19.6" fill="#554640"/>
+  <rect x="50.0" y="27.6" width="8.4" height="19.6" fill="#554640"/>
+  <rect x="58.4" y="27.6" width="8.4" height="19.6" fill="#554640"/>
   <rect x="75.2" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="83.6" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>

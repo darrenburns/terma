@@ -284,9 +284,9 @@ func (c Color) Blend(other Color, ratio float64) Color {
 	ratio = clamp01(ratio)
 	invRatio := 1 - ratio
 
-	r := uint8(float64(c.r)*invRatio + float64(other.r)*ratio)
-	g := uint8(float64(c.g)*invRatio + float64(other.g)*ratio)
-	b := uint8(float64(c.b)*invRatio + float64(other.b)*ratio)
+	r := uint8(math.Round(float64(c.r)*invRatio + float64(other.r)*ratio))
+	g := uint8(math.Round(float64(c.g)*invRatio + float64(other.g)*ratio))
+	b := uint8(math.Round(float64(c.b)*invRatio + float64(other.b)*ratio))
 	a := c.a*invRatio + other.a*ratio
 
 	return RGBA(r, g, b, a)
@@ -313,9 +313,9 @@ func (c Color) BlendOver(bg Color) Color {
 
 	invAlpha := 1 - c.a
 
-	r := uint8(float64(c.r)*c.a + float64(bg.r)*invAlpha)
-	g := uint8(float64(c.g)*c.a + float64(bg.g)*invAlpha)
-	b := uint8(float64(c.b)*c.a + float64(bg.b)*invAlpha)
+	r := uint8(math.Round(float64(c.r)*c.a + float64(bg.r)*invAlpha))
+	g := uint8(math.Round(float64(c.g)*c.a + float64(bg.g)*invAlpha))
+	b := uint8(math.Round(float64(c.b)*c.a + float64(bg.b)*invAlpha))
 
 	return RGB(r, g, b)
 }
