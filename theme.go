@@ -5,16 +5,19 @@ import "sort"
 // Theme name constants for built-in themes
 const (
 	// Dark themes
-	ThemeNameRosePine   = "rose-pine"
-	ThemeNameDracula    = "dracula"
-	ThemeNameTokyoNight = "tokyo-night"
-	ThemeNameCatppuccin = "catppuccin"
-	ThemeNameGruvbox    = "gruvbox"
-	ThemeNameNord       = "nord"
-	ThemeNameSolarized  = "solarized"
-	ThemeNameKanagawa   = "kanagawa"
-	ThemeNameMonokai    = "monokai"
-	ThemeNameGalaxy     = "galaxy"
+	ThemeNameRosePine      = "rose-pine"
+	ThemeNameDracula       = "dracula"
+	ThemeNameTokyoNight    = "tokyo-night"
+	ThemeNameCatppuccin    = "catppuccin"
+	ThemeNameGruvbox       = "gruvbox"
+	ThemeNameNord          = "nord"
+	ThemeNameSolarized     = "solarized"
+	ThemeNameKanagawa      = "kanagawa"
+	ThemeNameMonokai       = "monokai"
+	ThemeNameGalaxy        = "galaxy"
+	ThemeNameAurora        = "aurora"
+	ThemeNameObsidianTide  = "obsidian-tide"
+	ThemeNameMidnightEmber = "midnight-ember"
 
 	// Light themes
 	ThemeNameRosePineDawn    = "rose-pine-dawn"
@@ -645,6 +648,153 @@ var galaxyThemeData = ThemeData{
 	Link: Hex("#C45AFF"),
 }
 
+// auroraThemeData - Cool aurora greens with violet accents
+var auroraThemeData = ThemeData{
+	Name: ThemeNameAurora,
+
+	Primary:   Hex("#45FFB3"),
+	Secondary: Hex("#A1FCDF"),
+	Accent:    Hex("#DF7BFF"),
+
+	Background:   Hex("#0A1A2F"),
+	Surface:      Hex("#142942"),
+	SurfaceHover: Hex("#1E3655"), // Panel
+	Surface2:     Hex("#28466A"),
+	Surface3:     Hex("#32577F"),
+
+	Text:            Hex("#0A1A2F").AutoText(),
+	TextMuted:       Hex("#8AA6C8"),
+	TextOnPrimary:   Hex("#0A1A2F"), // button-color-foreground
+	TextOnSecondary: Hex("#0A1A2F"),
+	TextOnAccent:    Hex("#0A1A2F"),
+	TextDisabled:    Hex("#5E7A9D"),
+
+	Border:    Hex("#32577F"),
+	FocusRing: Hex("#45FFB3"),
+
+	Error:   Hex("#FF6B6B"),
+	Warning: Hex("#FFE156"),
+	Success: Hex("#64FFDA"),
+	Info:    Hex("#DF7BFF"),
+
+	TextOnError:   Hex("#0A1A2F"),
+	TextOnWarning: Hex("#0A1A2F"),
+	TextOnSuccess: Hex("#0A1A2F"),
+	TextOnInfo:    Hex("#0A1A2F"),
+
+	ActiveCursor:  Hex("#45FFB3"), // input-cursor-background
+	Selection:     Hex("#45FFB3").WithAlpha(0.35),
+	SelectionText: Hex("#0A1A2F"),
+
+	ScrollbarTrack: Hex("#142942"),
+	ScrollbarThumb: Hex("#32577F"),
+
+	Overlay: Hex("#0A1A2F").WithAlpha(0.8), // footer-background is transparent
+
+	Placeholder: Hex("#5E7A9D"),
+	Cursor:      Hex("#45FFB3"),
+
+	Link: Hex("#DF7BFF"), // method-post
+}
+
+// obsidianTideThemeData - Sleek blue-gray base with cyan and mint highlights
+var obsidianTideThemeData = ThemeData{
+	Name: ThemeNameObsidianTide,
+
+	Primary:   Hex("#5CC8FF"),
+	Secondary: Hex("#8FA7FF"),
+	Accent:    Hex("#49F2C2"),
+
+	Background:   Hex("#0B111A"),
+	Surface:      Hex("#131C2A"),
+	SurfaceHover: Hex("#1B2738"),
+	Surface2:     Hex("#24364A"),
+	Surface3:     Hex("#2E445C"),
+
+	Text:            Hex("#0B111A").AutoText(),
+	TextMuted:       Hex("#8EA2BA"),
+	TextOnPrimary:   Hex("#0B111A"),
+	TextOnSecondary: Hex("#0B111A"),
+	TextOnAccent:    Hex("#0B111A"),
+	TextDisabled:    Hex("#5D738C"),
+
+	Border:    Hex("#2E445C"),
+	FocusRing: Hex("#5CC8FF"),
+
+	Error:   Hex("#FF647C"),
+	Warning: Hex("#FFD166"),
+	Success: Hex("#43E6B0"),
+	Info:    Hex("#7AC7FF"),
+
+	TextOnError:   Hex("#0B111A"),
+	TextOnWarning: Hex("#0B111A"),
+	TextOnSuccess: Hex("#0B111A"),
+	TextOnInfo:    Hex("#0B111A"),
+
+	ActiveCursor:  Hex("#5CC8FF"),
+	Selection:     Hex("#5CC8FF").WithAlpha(0.30),
+	SelectionText: Hex("#0B111A"),
+
+	ScrollbarTrack: Hex("#131C2A"),
+	ScrollbarThumb: Hex("#2E445C"),
+
+	Overlay: Hex("#0B111A").WithAlpha(0.8),
+
+	Placeholder: Hex("#5D738C"),
+	Cursor:      Hex("#5CC8FF"),
+
+	Link: Hex("#8FA7FF"),
+}
+
+// midnightEmberThemeData - Charcoal/navy surfaces with ember-orange highlights
+var midnightEmberThemeData = ThemeData{
+	Name: ThemeNameMidnightEmber,
+
+	Primary:   Hex("#FF9A5C"),
+	Secondary: Hex("#FFB87A"),
+	Accent:    Hex("#FF6B9E"),
+
+	Background:   Hex("#0F1016"),
+	Surface:      Hex("#171A24"),
+	SurfaceHover: Hex("#202636"),
+	Surface2:     Hex("#2A3246"),
+	Surface3:     Hex("#36415A"),
+
+	Text:            Hex("#0F1016").AutoText(),
+	TextMuted:       Hex("#9EA7BF"),
+	TextOnPrimary:   Hex("#0F1016"),
+	TextOnSecondary: Hex("#0F1016"),
+	TextOnAccent:    Hex("#0F1016"),
+	TextDisabled:    Hex("#646E86"),
+
+	Border:    Hex("#36415A"),
+	FocusRing: Hex("#FF9A5C"),
+
+	Error:   Hex("#FF7070"),
+	Warning: Hex("#FFC861"),
+	Success: Hex("#67E4AE"),
+	Info:    Hex("#79B9FF"),
+
+	TextOnError:   Hex("#0F1016"),
+	TextOnWarning: Hex("#0F1016"),
+	TextOnSuccess: Hex("#0F1016"),
+	TextOnInfo:    Hex("#0F1016"),
+
+	ActiveCursor:  Hex("#FF9A5C"),
+	Selection:     Hex("#FF9A5C").WithAlpha(0.26),
+	SelectionText: Hex("#0F1016"),
+
+	ScrollbarTrack: Hex("#171A24"),
+	ScrollbarThumb: Hex("#36415A"),
+
+	Overlay: Hex("#0F1016").WithAlpha(0.8),
+
+	Placeholder: Hex("#646E86"),
+	Cursor:      Hex("#FF9A5C"),
+
+	Link: Hex("#FFB87A"),
+}
+
 // ============================================================================
 // Light Theme Definitions
 // ============================================================================
@@ -1109,16 +1259,19 @@ var monokaiLightThemeData = ThemeData{
 // themeRegistry holds all registered themes
 var themeRegistry = map[string]ThemeData{
 	// Dark themes
-	ThemeNameRosePine:   rosePineThemeData,
-	ThemeNameDracula:    draculaThemeData,
-	ThemeNameTokyoNight: tokyoNightThemeData,
-	ThemeNameCatppuccin: catppuccinThemeData,
-	ThemeNameGruvbox:    gruvboxThemeData,
-	ThemeNameNord:       nordThemeData,
-	ThemeNameSolarized:  solarizedThemeData,
-	ThemeNameKanagawa:   kanagawaThemeData,
-	ThemeNameMonokai:    monokaiThemeData,
-	ThemeNameGalaxy:     galaxyThemeData,
+	ThemeNameRosePine:      rosePineThemeData,
+	ThemeNameDracula:       draculaThemeData,
+	ThemeNameTokyoNight:    tokyoNightThemeData,
+	ThemeNameCatppuccin:    catppuccinThemeData,
+	ThemeNameGruvbox:       gruvboxThemeData,
+	ThemeNameNord:          nordThemeData,
+	ThemeNameSolarized:     solarizedThemeData,
+	ThemeNameKanagawa:      kanagawaThemeData,
+	ThemeNameMonokai:       monokaiThemeData,
+	ThemeNameGalaxy:        galaxyThemeData,
+	ThemeNameAurora:        auroraThemeData,
+	ThemeNameObsidianTide:  obsidianTideThemeData,
+	ThemeNameMidnightEmber: midnightEmberThemeData,
 	// Light themes
 	ThemeNameRosePineDawn:    rosePineDawnThemeData,
 	ThemeNameDraculaLight:    draculaLightThemeData,

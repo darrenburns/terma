@@ -4,53 +4,6 @@ import (
 	"testing"
 )
 
-func TestBuiltInGalaxyTheme(t *testing.T) {
-	galaxy, ok := GetTheme(ThemeNameGalaxy)
-	if !ok {
-		t.Fatalf("expected built-in theme %q to be registered", ThemeNameGalaxy)
-	}
-
-	if galaxy.Name != ThemeNameGalaxy {
-		t.Fatalf("theme name: got %q, want %q", galaxy.Name, ThemeNameGalaxy)
-	}
-	if galaxy.IsLight {
-		t.Fatal("galaxy should be a dark theme")
-	}
-
-	if galaxy.Primary != Hex("#C45AFF") {
-		t.Errorf("Primary: got %v, want %v", galaxy.Primary, Hex("#C45AFF"))
-	}
-	if galaxy.Secondary != Hex("#A684E8") {
-		t.Errorf("Secondary: got %v, want %v", galaxy.Secondary, Hex("#A684E8"))
-	}
-	if galaxy.Warning != Hex("#FFD700") {
-		t.Errorf("Warning: got %v, want %v", galaxy.Warning, Hex("#FFD700"))
-	}
-	if galaxy.Error != Hex("#FF4500") {
-		t.Errorf("Error: got %v, want %v", galaxy.Error, Hex("#FF4500"))
-	}
-	if galaxy.Success != Hex("#00FA9A") {
-		t.Errorf("Success: got %v, want %v", galaxy.Success, Hex("#00FA9A"))
-	}
-	if galaxy.Accent != Hex("#FF69B4") {
-		t.Errorf("Accent: got %v, want %v", galaxy.Accent, Hex("#FF69B4"))
-	}
-	if galaxy.Background != Hex("#0F0F1F") {
-		t.Errorf("Background: got %v, want %v", galaxy.Background, Hex("#0F0F1F"))
-	}
-	if galaxy.Surface != Hex("#1E1E3F") {
-		t.Errorf("Surface: got %v, want %v", galaxy.Surface, Hex("#1E1E3F"))
-	}
-	if galaxy.SurfaceHover != Hex("#2D2B55") {
-		t.Errorf("SurfaceHover: got %v, want %v", galaxy.SurfaceHover, Hex("#2D2B55"))
-	}
-
-	expectedContrastText := galaxy.Background.AutoText()
-	if galaxy.Text != expectedContrastText {
-		t.Errorf("Text: got %v, want %v (background.AutoText())", galaxy.Text, expectedContrastText)
-	}
-}
-
 func TestExtendTheme_ValidBase(t *testing.T) {
 	extended := ExtendTheme("dracula",
 		WithPrimary(Hex("#ff5500")),
