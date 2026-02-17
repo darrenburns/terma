@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	t "github.com/darrenburns/terma"
@@ -226,7 +227,7 @@ func (a *SlackApp) Keybinds() []t.Keybind {
 }
 
 func main() {
-	t.InitLogger()
+	_ = t.InitLogger()
 
 	channels := []Channel{
 		{Name: "general", Unread: 3},
@@ -255,5 +256,7 @@ func main() {
 		activeChannel: t.NewSignal("general"),
 	}
 
-	t.Run(app)
+	if err := t.Run(app); err != nil {
+		log.Fatal(err)
+	}
 }

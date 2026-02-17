@@ -1954,19 +1954,8 @@ func themeDisplayName(name string) string {
 	return strings.Join(parts, " ")
 }
 
-func (a *DiffApp) modeLabel() string {
-	if a.activeSection == DiffSectionStaged {
-		return "staged"
-	}
-	return "unstaged"
-}
-
 func (a *DiffApp) sidebarSummaryLabel() string {
 	return fmt.Sprintf("Unstaged: %d Staged: %d", a.sectionFileCount(DiffSectionUnstaged), a.sectionFileCount(DiffSectionStaged))
-}
-
-func (a *DiffApp) sidebarSummaryCountLabel() string {
-	return fmt.Sprintf("%d", a.sectionFileCount(a.activeSection))
 }
 
 func (a *DiffApp) sidebarHeadingSpans(theme t.ThemeData) []t.Span {
@@ -2128,19 +2117,6 @@ func buildDirectorySummaryRenderedFile(node DiffTreeNodeData) *RenderedFile {
 		"",
 		"Use n/p to jump between changed files.",
 	})
-}
-
-func findFirstTreeFilterMatch(nodes []t.TreeNode[DiffTreeNodeData], parentPath []int, query string, options t.FilterOptions) ([]int, DiffTreeNodeData, bool) {
-	for idx, node := range nodes {
-		path := append(clonePath(parentPath), idx)
-		if t.MatchString(node.Data.Name, query, options).Matched {
-			return path, node.Data, true
-		}
-		if _, _, ok := findFirstTreeFilterMatch(node.Children, path, query, options); ok {
-			return path, node.Data, true
-		}
-	}
-	return nil, DiffTreeNodeData{}, false
 }
 
 func collectFilteredTreeFilePaths(nodes []t.TreeNode[DiffTreeNodeData], query string, options t.FilterOptions) []string {

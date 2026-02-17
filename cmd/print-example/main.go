@@ -32,7 +32,7 @@ func main() {
 
 	// Example 2: Styled text with colors
 	fmt.Println("=== Example 2: Styled Text ===")
-	terma.PrintWithSize(
+	_ = terma.PrintWithSize(
 		terma.Text{
 			Content: "Colored text with style",
 			Style: terma.Style{
@@ -46,7 +46,7 @@ func main() {
 
 	// Example 3: Column layout
 	fmt.Println("=== Example 3: Column Layout ===")
-	terma.PrintWithSize(
+	_ = terma.PrintWithSize(
 		terma.Column{
 			Children: []terma.Widget{
 				terma.Text{
@@ -67,7 +67,7 @@ func main() {
 
 	// Example 4: Row layout with spacing
 	fmt.Println("=== Example 4: Row Layout ===")
-	terma.PrintWithSize(
+	_ = terma.PrintWithSize(
 		terma.Row{
 			Spacing: 2,
 			Children: []terma.Widget{
@@ -84,7 +84,7 @@ func main() {
 
 	// Example 5: Widget with border and padding
 	fmt.Println("=== Example 5: Bordered Widget ===")
-	terma.PrintWithSize(
+	_ = terma.PrintWithSize(
 		terma.Column{
 			Style: terma.Style{
 				Border:          terma.RoundedBorder(terma.Hex("#5588FF")),
@@ -125,7 +125,7 @@ func main() {
 
 	// Example 7: Complex nested layout
 	fmt.Println("=== Example 7: Complex Layout ===")
-	terma.PrintWithSize(
+	_ = terma.PrintWithSize(
 		terma.Column{
 			Style: terma.Style{
 				Border:          terma.RoundedBorder(terma.Hex("#888888")),
@@ -207,7 +207,7 @@ func main() {
 
 	// Example 8: PrintWithOptions for full control
 	fmt.Println("=== Example 8: PrintWithOptions ===")
-	terma.PrintWithOptions(
+	_ = terma.PrintWithOptions(
 		terma.Text{
 			Content: "Custom options: no trailing newline ->",
 			Style:   terma.Style{ForegroundColor: terma.Hex("#FF88FF")},
@@ -224,7 +224,7 @@ func main() {
 
 	// Example 9: Plain text (no ANSI)
 	fmt.Println("=== Example 9: Plain Text Mode ===")
-	terma.PrintWithOptions(
+	_ = terma.PrintWithOptions(
 		terma.Text{
 			Content: "This has no ANSI codes (NoColor: true)",
 			Style:   terma.Style{ForegroundColor: terma.Hex("#FF0000")}, // Color ignored

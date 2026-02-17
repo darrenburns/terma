@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/darrenburns/terma"
 )
@@ -190,5 +191,7 @@ func main() {
 		autoSave:        terma.NewCheckboxState(false),
 		lastChanged:     terma.NewSignal("(none)"),
 	}
-	terma.Run(app)
+	if err := terma.Run(app); err != nil {
+		log.Fatal(err)
+	}
 }

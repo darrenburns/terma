@@ -833,13 +833,6 @@ func (a Autocomplete) textAreaState() *TextAreaState {
 	return nil
 }
 
-// textInputState returns the TextInput state if child is a TextInput.
-func (a Autocomplete) textInputState() *TextInputState {
-	if ti, ok := a.Child.(TextInput); ok {
-		return ti.State
-	}
-	return nil
-}
 
 // scrollCursorIntoView ensures the selected item is visible.
 func (a Autocomplete) scrollCursorIntoView() {

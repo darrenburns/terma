@@ -1707,48 +1707,6 @@ func (a *TodoApp) getFilteredTasks() []Task {
 	return filtered
 }
 
-// highlightMatches creates spans with highlighted matching substrings.
-func (a *TodoApp) highlightMatches(title string, baseStyle t.Style, highlightColor t.Color, highlightBackgroundColor t.Color) []t.Span {
-	filterText := a.getFilterText()
-	if filterText == "" {
-		return []t.Span{{Text: title, Style: styleToSpanStyle(baseStyle)}}
-	}
-
-	var spans []t.Span
-	titleLower := strings.ToLower(title)
-	pos := 0
-
-	for pos < len(title) {
-		// Find next match
-		matchIdx := strings.Index(titleLower[pos:], filterText)
-		if matchIdx == -1 {
-			// No more matches, add remaining text
-			if pos < len(title) {
-				spans = append(spans, t.Span{Text: title[pos:], Style: styleToSpanStyle(baseStyle)})
-			}
-			break
-		}
-
-		// Add text before match
-		matchStart := pos + matchIdx
-		if matchStart > pos {
-			spans = append(spans, t.Span{Text: title[pos:matchStart], Style: styleToSpanStyle(baseStyle)})
-		}
-
-		// Add highlighted match
-		matchEnd := matchStart + len(filterText)
-		highlightStyle := styleToSpanStyle(baseStyle)
-		highlightStyle.Underline = t.UnderlineSingle
-		highlightStyle.UnderlineColor = highlightColor
-		highlightStyle.Background = highlightBackgroundColor
-		spans = append(spans, t.Span{Text: title[matchStart:matchEnd], Style: highlightStyle})
-
-		pos = matchEnd
-	}
-
-	return spans
-}
-
 // styleToSpanStyle converts a Style to a SpanStyle.
 func styleToSpanStyle(s t.Style) t.SpanStyle {
 	return t.SpanStyle{

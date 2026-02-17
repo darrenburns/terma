@@ -269,7 +269,7 @@ func (a *App) Keybinds() []t.Keybind {
 }
 
 func main() {
-	t.InitLogger()
+	_ = t.InitLogger()
 	if err := t.Run(NewApp()); err != nil {
 		log.Fatal(err)
 	}

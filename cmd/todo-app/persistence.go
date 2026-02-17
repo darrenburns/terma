@@ -218,12 +218,7 @@ func (a *TodoApp) toPersistentState() *todoStateV1 {
 		tasks := list.Tasks.GetItems()
 		persistedTasks := make([]persistedTask, 0, len(tasks))
 		for _, task := range tasks {
-			persistedTasks = append(persistedTasks, persistedTask{
-				ID:        task.ID,
-				Title:     task.Title,
-				Completed: task.Completed,
-				CreatedAt: task.CreatedAt,
-			})
+			persistedTasks = append(persistedTasks, persistedTask(task))
 		}
 
 		state.Lists = append(state.Lists, persistedList{
@@ -247,12 +242,7 @@ func (a *TodoApp) applyPersistentState(state *todoStateV1) {
 	for i, list := range state.Lists {
 		tasks := make([]Task, 0, len(list.Tasks))
 		for _, task := range list.Tasks {
-			tasks = append(tasks, Task{
-				ID:        task.ID,
-				Title:     task.Title,
-				Completed: task.Completed,
-				CreatedAt: task.CreatedAt,
-			})
+			tasks = append(tasks, Task(task))
 		}
 
 		taskLists = append(taskLists, &TaskList{

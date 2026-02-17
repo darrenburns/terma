@@ -210,7 +210,7 @@ func defaultRows() []TableRow {
 func (d *TableDemo) buildSelectionSummary(theme t.ThemeData, mode t.TableSelectionMode, columnCount int) t.Widget {
 	selection := d.tableState.Selection.Get()
 	if len(selection) == 0 {
-		emptyLabel := "No selection"
+		var emptyLabel string
 		switch mode {
 		case t.TableSelectionColumn:
 			emptyLabel = "No columns selected"

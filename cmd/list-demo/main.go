@@ -252,7 +252,9 @@ func main() {
 		log.Fatal(err)
 	}
 	defer f.Close()
-	pprof.StartCPUProfile(f)
+	if err := pprof.StartCPUProfile(f); err != nil {
+		log.Fatal(err)
+	}
 	defer pprof.StopCPUProfile()
 
 	t.SetTheme(themeNames[0])

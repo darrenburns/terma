@@ -6,10 +6,11 @@ layout/layout_debug.log
 # OS
 .DS_Store
 
-# IDE
+# IDE / tools
 .idea/
 .vscode/
 *.code-workspace
+.claude/
 
 # Profiling
 cpu.prof

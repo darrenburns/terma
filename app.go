@@ -365,7 +365,6 @@ func Run(root Widget) (runErr error) {
 		textWidth := ansi.StringWidth(text)
 		if textWidth < lastOverlayWidth {
 			text += strings.Repeat(" ", lastOverlayWidth-textWidth)
-			textWidth = lastOverlayWidth
 		} else {
 			lastOverlayWidth = textWidth
 		}
@@ -378,7 +377,6 @@ func Run(root Widget) (runErr error) {
 		causeWidth := ansi.StringWidth(causeText)
 		if causeWidth < lastCauseOverlayWidth {
 			causeText += strings.Repeat(" ", lastCauseOverlayWidth-causeWidth)
-			causeWidth = lastCauseOverlayWidth
 		} else {
 			lastCauseOverlayWidth = causeWidth
 		}

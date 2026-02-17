@@ -58,17 +58,6 @@ func toLayoutCrossAlign(a CrossAxisAlign) layout.CrossAxisAlignment {
 	}
 }
 
-// dimensionToMinMax converts a terma Dimension to min/max constraints.
-// For Cells (fixed), both min and max are set to the value.
-// For Auto/Flex/Percent, returns 0,0 (no constraints from dimension).
-func dimensionToMinMax(d Dimension) (min, max int) {
-	if d.IsCells() {
-		v := d.CellsValue()
-		return v, v
-	}
-	return 0, 0
-}
-
 func dimensionToCells(d Dimension) int {
 	if d.IsCells() {
 		return d.CellsValue()

@@ -1566,7 +1566,7 @@ func (t Table[T]) hasHeader() bool {
 }
 
 func (t Table[T]) selectionMode() TableSelectionMode {
-	mode := TableSelectionCursor
+	var mode TableSelectionMode
 	switch t.SelectionMode {
 	case TableSelectionRow, TableSelectionColumn:
 		mode = t.SelectionMode

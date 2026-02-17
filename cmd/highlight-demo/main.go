@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"regexp"
 
 	"github.com/darrenburns/terma"
@@ -241,5 +242,7 @@ func main() {
 	app.areaState.CursorIndex.Set(0)
 	app.codeAreaState.CursorIndex.Set(0)
 
-	terma.Run(app)
+	if err := terma.Run(app); err != nil {
+		log.Fatal(err)
+	}
 }

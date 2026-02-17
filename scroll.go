@@ -215,11 +215,6 @@ func (s *ScrollState) maxOffsetX() int {
 	return max
 }
 
-// canScroll returns true if scrolling is possible (content exceeds viewport).
-func (s *ScrollState) canScroll() bool {
-	return s.canScrollY()
-}
-
 // canScrollY returns true if vertical scrolling is possible.
 func (s *ScrollState) canScrollY() bool {
 	return s.contentHeight > s.viewportHeight
@@ -554,13 +549,6 @@ func (s Scrollable) setScrollOffset(offset int) {
 	}
 }
 
-// setScrollOffsetX sets the horizontal scroll offset.
-func (s Scrollable) setScrollOffsetX(offset int) {
-	if s.State != nil {
-		s.State.SetOffsetX(offset)
-	}
-}
-
 // canScrollY returns true if vertical scrolling is possible.
 func (s Scrollable) canScrollY() bool {
 	if s.DisableScroll || s.State == nil {
@@ -588,14 +576,6 @@ func (s Scrollable) maxScrollOffset() int {
 		return 0
 	}
 	return s.State.maxOffset()
-}
-
-// maxScrollOffsetX returns the maximum valid horizontal scroll offset.
-func (s Scrollable) maxScrollOffsetX() int {
-	if s.State == nil {
-		return 0
-	}
-	return s.State.maxOffsetX()
 }
 
 // ScrollUp scrolls the content up by the given number of lines.

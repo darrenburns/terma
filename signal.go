@@ -227,15 +227,6 @@ func (s AnySignal[T]) Update(fn func(T) T) {
 	scheduleRender()
 }
 
-// unsubscribe removes a widget node from the listeners.
-// Called when a widget is unmounted.
-// Thread-safe.
-func (s AnySignal[T]) unsubscribe(node *widgetNode) {
-	s.core.mu.Lock()
-	defer s.core.mu.Unlock()
-	delete(s.core.listeners, node)
-}
-
 // IsValid returns true if the signal was properly initialized.
 // An uninitialized AnySignal (zero value) returns false.
 func (s AnySignal[T]) IsValid() bool {

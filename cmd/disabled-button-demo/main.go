@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/darrenburns/terma"
 )
@@ -197,9 +198,11 @@ func (a *App) Keybinds() []terma.Keybind {
 }
 
 func main() {
-	terma.Run(&App{
+	if err := terma.Run(&App{
 		formValid:   terma.NewSignal(true),
 		clickCount:  terma.NewSignal(0),
 		lastClicked: terma.NewSignal("(none)"),
-	})
+	}); err != nil {
+		log.Fatal(err)
+	}
 }

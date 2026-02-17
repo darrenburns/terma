@@ -563,7 +563,7 @@ func hexToColor(hex string) color.Color {
 	}
 	if len(hex) == 7 && hex[0] == '#' {
 		var r, g, b uint8
-		fmt.Sscanf(hex, "#%02x%02x%02x", &r, &g, &b)
+		_, _ = fmt.Sscanf(hex, "#%02x%02x%02x", &r, &g, &b)
 		return color.RGBA{R: r, G: g, B: b, A: 255}
 	}
 	return nil

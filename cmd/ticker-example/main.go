@@ -100,7 +100,7 @@ func (d *TickerDemo) Build(ctx t.BuildContext) t.Widget {
 }
 
 func main() {
-	t.InitLogger()
+	_ = t.InitLogger()
 	app := NewTickerDemo()
 	if err := t.Run(app); err != nil {
 		log.Fatal(err)

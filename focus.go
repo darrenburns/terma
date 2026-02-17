@@ -189,16 +189,6 @@ func (fm *FocusManager) SetFocusables(focusables []FocusableEntry) {
 	}
 }
 
-// focusedIndex returns the index of the focused widget (-1 if none).
-func (fm *FocusManager) focusedIndex() int {
-	for i, entry := range fm.focusables {
-		if entry.ID == fm.focusedID {
-			return i
-		}
-	}
-	return -1
-}
-
 // Focused returns the currently focused widget, or nil if none.
 func (fm *FocusManager) Focused() Focusable {
 	for _, entry := range fm.focusables {

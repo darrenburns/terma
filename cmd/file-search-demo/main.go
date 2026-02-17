@@ -50,7 +50,7 @@ func NewFileSearchDemo() *FileSearchDemo {
 func (a *FileSearchDemo) scanDirectory(root string, maxDepth int) []FileInfo {
 	var files []FileInfo
 
-	filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil // Skip files we can't access
 		}
