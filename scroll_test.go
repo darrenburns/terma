@@ -382,3 +382,79 @@ func TestScrollState_ScrollLeftRight_Callbacks(t *testing.T) {
 		t.Errorf("expected horizontal offset unchanged at 0, got %d", s.GetOffsetX())
 	}
 }
+
+func TestScrollable_DragScrollbarThumb(t *testing.T) {
+	state := NewScrollState()
+	state.updateLayout(5, 20) // max offset = 15
+	state.layoutCache = scrollableLayoutCache{
+		valid:         true,
+		contentWidth:  10,
+		contentHeight: 5,
+		scrollableY:   true,
+	}
+
+	scrollable := Scrollable{State: state}
+
+	scrollable.OnMouseDown(MouseEvent{LocalX: 9, LocalY: 0})
+	if !state.scrollbarDragging {
+		t.Fatal("expected dragging to start when mouse is down on thumb")
+	}
+
+	scrollable.OnMouseMove(MouseEvent{LocalX: 9, LocalY: 4})
+	if state.GetOffset() == 0 {
+		t.Fatalf("expected scroll offset to change while dragging, got %d", state.GetOffset())
+	}
+
+	scrollable.OnMouseUp(MouseEvent{})
+	if state.scrollbarDragging {
+		t.Fatal("expected dragging to stop on mouse up")
+	}
+}
+
+func TestScrollable_DragScrollbar_IgnoresClicksOutsideScrollbar(t *testing.T) {
+	state := NewScrollState()
+	state.updateLayout(5, 20)
+	state.layoutCache = scrollableLayoutCache{
+		valid:         true,
+		contentWidth:  10,
+		contentHeight: 5,
+		scrollableY:   true,
+	}
+
+	scrollable := Scrollable{State: state}
+
+	scrollable.OnMouseDown(MouseEvent{LocalX: 8, LocalY: 0}) // Not on scrollbar column
+	if state.scrollbarDragging {
+		t.Fatal("expected dragging to remain disabled when clicking outside scrollbar")
+	}
+
+	scrollable.OnMouseMove(MouseEvent{LocalX: 8, LocalY: 4})
+	if state.GetOffset() != 0 {
+		t.Fatalf("expected offset to remain unchanged, got %d", state.GetOffset())
+	}
+}
+
+func TestScrollable_DragScrollbar_UsesContentOffsets(t *testing.T) {
+	state := NewScrollState()
+	state.updateLayout(5, 20)
+	state.layoutCache = scrollableLayoutCache{
+		valid:          true,
+		contentWidth:   10,
+		contentHeight:  5,
+		contentOffsetX: 2,
+		contentOffsetY: 1,
+		scrollableY:    true,
+	}
+
+	scrollable := Scrollable{State: state}
+
+	scrollable.OnMouseDown(MouseEvent{LocalX: 9, LocalY: 1}) // Inside content but not scrollbar column
+	if state.scrollbarDragging {
+		t.Fatal("expected dragging to remain disabled when click is not on scrollbar column")
+	}
+
+	scrollable.OnMouseDown(MouseEvent{LocalX: 11, LocalY: 1}) // contentOffsetX + (contentWidth-1)
+	if !state.scrollbarDragging {
+		t.Fatal("expected dragging to start when clicking on offset scrollbar column")
+	}
+}

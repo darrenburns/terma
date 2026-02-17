@@ -30,6 +30,10 @@ type ScrollState struct {
 	contentWidth   int         // Set by Scrollable during layout
 	contentHeight  int         // Set by Scrollable during layout
 
+	scrollbarDragging   bool
+	scrollbarDragOffset float64
+	layoutCache         scrollableLayoutCache
+
 	// PinToBottom enables auto-scroll when content grows while at bottom.
 	// Scrolling up breaks the pin; scrolling to bottom re-engages it.
 	PinToBottom bool
@@ -52,6 +56,15 @@ type ScrollState struct {
 	// OnScrollRight is called when ScrollRight is invoked with the number of columns.
 	// If it returns true, the default viewport scrolling is suppressed.
 	OnScrollRight func(cols int) bool
+}
+
+type scrollableLayoutCache struct {
+	valid          bool
+	contentWidth   int
+	contentHeight  int
+	contentOffsetX int
+	contentOffsetY int
+	scrollableY    bool
 }
 
 // NewScrollState creates a new scroll state with initial offset of 0.
@@ -286,6 +299,7 @@ type Scrollable struct {
 	Click         func(MouseEvent) // Optional callback invoked when clicked
 	MouseDown     func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp       func(MouseEvent) // Optional callback invoked when mouse is released
+	MouseMove     func(MouseEvent) // Optional callback invoked when mouse is moved while dragging
 	Hover         func(bool)       // Optional callback invoked when hover state changes
 
 	// Scrollbar appearance customization
@@ -332,6 +346,52 @@ func (s Scrollable) OnMouseDown(event MouseEvent) {
 	if s.MouseDown != nil {
 		s.MouseDown(event)
 	}
+	if s.State == nil {
+		return
+	}
+
+	cache := s.State.layoutCache
+	if !cache.valid || !cache.scrollableY {
+		s.State.scrollbarDragging = false
+		return
+	}
+
+	localX, localY := s.contentCoords(event, cache)
+	if !s.isOnScrollbar(localX, localY, cache) {
+		s.State.scrollbarDragging = false
+		return
+	}
+
+	maxScroll := s.maxScrollOffset()
+	if maxScroll <= 0 {
+		s.State.scrollbarDragging = false
+		return
+	}
+
+	thumbPos, thumbSize := scrollbarThumbMetrics(
+		s.getScrollOffset(),
+		maxScroll,
+		cache.contentHeight,
+		s.State.contentHeight,
+	)
+	if thumbSize <= 0 {
+		s.State.scrollbarDragging = false
+		return
+	}
+
+	pointerY := float64(localY) + 0.5
+	thumbEnd := thumbPos + thumbSize
+	if pointerY >= thumbPos && pointerY < thumbEnd {
+		// Preserve the grab position within the thumb so drag feels natural.
+		s.State.scrollbarDragOffset = pointerY - thumbPos
+		s.State.scrollbarDragging = true
+		return
+	}
+
+	// Clicking the track moves the thumb toward the pointer and starts dragging.
+	s.State.scrollbarDragOffset = thumbSize / 2
+	s.State.scrollbarDragging = true
+	s.dragScrollbar(pointerY)
 }
 
 // OnMouseUp is called when the mouse is released on the widget.
@@ -339,6 +399,50 @@ func (s Scrollable) OnMouseDown(event MouseEvent) {
 func (s Scrollable) OnMouseUp(event MouseEvent) {
 	if s.MouseUp != nil {
 		s.MouseUp(event)
+	}
+	if s.State != nil {
+		s.State.scrollbarDragging = false
+	}
+}
+
+// OnMouseMove is called when the mouse is moved while dragging.
+// Implements the MouseMoveHandler interface.
+func (s Scrollable) OnMouseMove(event MouseEvent) {
+	if s.MouseMove != nil {
+		s.MouseMove(event)
+	}
+	if s.State == nil || !s.State.scrollbarDragging {
+		return
+	}
+	cache := s.State.layoutCache
+	if !cache.valid || !cache.scrollableY {
+		return
+	}
+
+	_, localY := s.contentCoords(event, cache)
+	pointerY := float64(localY) + 0.5
+	s.dragScrollbar(pointerY)
+}
+
+// OnLayout caches layout metrics for scrollbar hit-testing and dragging.
+func (s Scrollable) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
+	if s.State == nil {
+		return
+	}
+
+	box := metrics.Box()
+	cache := scrollableLayoutCache{
+		valid:          true,
+		contentWidth:   box.ContentWidth(),
+		contentHeight:  box.ContentHeight(),
+		contentOffsetX: box.Border.Left + box.Padding.Left,
+		contentOffsetY: box.Border.Top + box.Padding.Top,
+		scrollableY:    box.IsScrollableY() && !s.DisableScroll,
+	}
+
+	s.State.layoutCache = cache
+	if !cache.scrollableY {
+		s.State.scrollbarDragging = false
 	}
 }
 
@@ -528,6 +632,59 @@ func (s Scrollable) ScrollRight(cols int) bool {
 		return false
 	}
 	return s.State.ScrollRight(cols)
+}
+
+func (s Scrollable) contentCoords(event MouseEvent, cache scrollableLayoutCache) (x, y int) {
+	return event.LocalX - cache.contentOffsetX, event.LocalY - cache.contentOffsetY
+}
+
+func (s Scrollable) isOnScrollbar(localX, localY int, cache scrollableLayoutCache) bool {
+	if cache.contentWidth <= 0 || cache.contentHeight <= 0 {
+		return false
+	}
+	if localY < 0 || localY >= cache.contentHeight {
+		return false
+	}
+	return localX == cache.contentWidth-1
+}
+
+func (s Scrollable) dragScrollbar(pointerY float64) {
+	if s.State == nil {
+		return
+	}
+
+	cache := s.State.layoutCache
+	if !cache.valid || !cache.scrollableY || cache.contentHeight <= 0 {
+		return
+	}
+
+	maxScroll := s.maxScrollOffset()
+	if maxScroll <= 0 {
+		s.setScrollOffset(0)
+		return
+	}
+
+	_, thumbSize := scrollbarThumbMetrics(
+		s.getScrollOffset(),
+		maxScroll,
+		cache.contentHeight,
+		s.State.contentHeight,
+	)
+
+	availableTrack := float64(cache.contentHeight) - thumbSize
+	if availableTrack <= 0 {
+		s.setScrollOffset(0)
+		return
+	}
+
+	thumbPos := clampFloat(pointerY-s.State.scrollbarDragOffset, 0, availableTrack)
+	positionRatio := thumbPos / availableTrack
+	newOffset := int(positionRatio*float64(maxScroll) + 0.5)
+	s.setScrollOffset(newOffset)
+
+	if s.State.PinToBottom {
+		s.State.isPinned = s.State.IsAtBottom()
+	}
 }
 
 // Render draws the scrollable widget and its child.
