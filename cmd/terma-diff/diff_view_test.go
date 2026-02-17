@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	t "terma"
 )
 
 func TestLineNumberRolesForLine(tt *testing.T) {
@@ -18,6 +19,12 @@ func TestLineNumberRolesForLine(tt *testing.T) {
 	oldRole, newRole = lineNumberRolesForLine(RenderedLineRemove)
 	require.Equal(tt, TokenRoleLineNumberRemove, oldRole)
 	require.Equal(tt, TokenRoleLineNumberRemove, newRole)
+}
+
+func TestHorizontalScrollXForLine(tt *testing.T) {
+	require.Equal(tt, 0, horizontalScrollXForLine(RenderedLineHunkHeader, 17))
+	require.Equal(tt, 17, horizontalScrollXForLine(RenderedLineContext, 17))
+	require.Equal(tt, 17, horizontalScrollXForLine(RenderedLineAdd, 17))
 }
 
 func TestDisplayLinePrefix(tt *testing.T) {
@@ -118,15 +125,104 @@ func TestSideBySidePaneLayout(tt *testing.T) {
 
 	layout := sideBySidePaneLayout(80, side, false)
 	require.Equal(tt, 0, layout.LeftPaneX)
-	require.Equal(tt, 40, layout.LeftPaneWidth)
-	require.Equal(tt, 0, layout.DividerWidth)
-	require.Equal(tt, 40, layout.DividerX)
+	require.Equal(tt, 39, layout.LeftPaneWidth)
+	require.Equal(tt, 1, layout.DividerWidth)
+	require.Equal(tt, 39, layout.DividerX)
 	require.Equal(tt, 40, layout.RightPaneX)
 	require.Equal(tt, 40, layout.RightPaneWidth)
 	require.Equal(tt, sideLineGutterWidth(3, false), layout.LeftGutterWidth)
 	require.Equal(tt, sideLineGutterWidth(2, false), layout.RightGutterWidth)
 	require.Equal(tt, layout.LeftPaneWidth-layout.LeftGutterWidth, layout.LeftContentWidth)
 	require.Equal(tt, layout.RightPaneWidth-layout.RightGutterWidth, layout.RightContentWidth)
+}
+
+func TestSideDividerLineNumberRole(tt *testing.T) {
+	role, kind, ok := sideDividerLineNumberRole(SideBySideRenderedRow{
+		Left: &RenderedSideCell{Kind: RenderedLineRemove},
+		Right: &RenderedSideCell{
+			Kind: RenderedLineAdd,
+		},
+	})
+	require.True(tt, ok)
+	require.Equal(tt, TokenRoleLineNumberAdd, role)
+	require.Equal(tt, RenderedLineAdd, kind)
+
+	role, kind, ok = sideDividerLineNumberRole(SideBySideRenderedRow{
+		Right: &RenderedSideCell{Kind: RenderedLineAdd},
+	})
+	require.True(tt, ok)
+	require.Equal(tt, TokenRoleLineNumberAdd, role)
+	require.Equal(tt, RenderedLineAdd, kind)
+
+	_, _, ok = sideDividerLineNumberRole(SideBySideRenderedRow{})
+	require.False(tt, ok)
+}
+
+func TestSideDividerStyle_UsesHalfLineNumberAlpha(tt *testing.T) {
+	theme, ok := t.GetTheme(t.CurrentThemeName())
+	require.True(tt, ok)
+
+	view := DiffView{
+		Palette: NewThemePalette(theme),
+	}
+	line := SideBySideRenderedRow{
+		Left:  &RenderedSideCell{Kind: RenderedLineRemove},
+		Right: &RenderedSideCell{Kind: RenderedLineAdd},
+	}
+
+	style, ok := view.sideDividerStyle(line)
+	require.True(tt, ok)
+	require.NotNil(tt, style.ForegroundColor)
+	require.NotNil(tt, style.BackgroundColor)
+
+	fg, ok := style.ForegroundColor.(t.Color)
+	require.True(tt, ok)
+
+	numberStyle, ok := view.Palette.StyleForRole(TokenRoleLineNumberAdd)
+	require.True(tt, ok)
+	require.Equal(tt, numberStyle.Foreground.WithAlpha(numberStyle.Foreground.Alpha()*0.5), fg)
+
+	gutterStyle, ok := view.Palette.GutterStyleForKind(RenderedLineAdd)
+	require.True(tt, ok)
+	require.NotNil(tt, gutterStyle.BackgroundColor)
+	expectedBg := gutterStyle.BackgroundColor.ColorAt(1, 1, 0, 0)
+	actualBg := style.BackgroundColor.ColorAt(1, 1, 0, 0)
+	require.Equal(tt, expectedBg, actualBg)
+}
+
+func TestShouldRenderSideDivider(tt *testing.T) {
+	require.True(tt, shouldRenderSideDivider(SideBySideRenderedRow{
+		Right: &RenderedSideCell{Kind: RenderedLineContext},
+	}))
+	require.True(tt, shouldRenderSideDivider(SideBySideRenderedRow{
+		Left: &RenderedSideCell{Kind: RenderedLineRemove},
+	}))
+	require.False(tt, shouldRenderSideDivider(SideBySideRenderedRow{}))
+}
+
+func TestSideDividerStyle_UsesHatchStyleWhenRightIsEmpty(tt *testing.T) {
+	theme, ok := t.GetTheme(t.CurrentThemeName())
+	require.True(tt, ok)
+
+	view := DiffView{
+		Palette: NewThemePalette(theme),
+	}
+	line := SideBySideRenderedRow{
+		Left: &RenderedSideCell{Kind: RenderedLineRemove},
+	}
+
+	style, ok := view.sideDividerStyle(line)
+	require.True(tt, ok)
+
+	expectedHatch := view.styleForRole(TokenRoleDiffHatch)
+	if expectedHatch.ForegroundColor == nil || !expectedHatch.ForegroundColor.IsSet() {
+		require.Nil(tt, style.ForegroundColor)
+		return
+	}
+	require.NotNil(tt, style.ForegroundColor)
+	expectedFg := expectedHatch.ForegroundColor.ColorAt(1, 1, 0, 0)
+	actualFg := style.ForegroundColor.ColorAt(1, 1, 0, 0)
+	require.Equal(tt, expectedFg, actualFg)
 }
 
 func TestWrappedSideContentHeight_UsesMaxWrappedRowsPerPair(tt *testing.T) {

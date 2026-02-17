@@ -98,13 +98,13 @@ func TestDiffApp_NextPrevStartsAtFilteredSetWhenActiveFileExcluded(t *testing.T)
 
 	app.onTreeFilterChange(".go")
 	require.False(t, app.treeFilterNoMatches)
-	require.Equal(t, "c.txt", app.activePath)
-
-	app.moveFileCursor(1)
 	require.Equal(t, "a.go", app.activePath)
 
-	app.moveFileCursor(-1)
+	app.moveFileCursor(1)
 	require.Equal(t, "b.go", app.activePath)
+
+	app.moveFileCursor(-1)
+	require.Equal(t, "a.go", app.activePath)
 }
 
 func TestDiffApp_DirectoryCursorShowsSummaryInViewer(t *testing.T) {
@@ -130,8 +130,84 @@ func TestDiffApp_DirectoryCursorShowsSummaryInViewer(t *testing.T) {
 	rendered := app.diffViewState.Rendered.Peek()
 	require.NotNil(t, rendered)
 	require.GreaterOrEqual(t, len(rendered.Lines), 4)
-	require.True(t, strings.Contains(lineText(rendered.Lines[0]), "Directory: pkg"))
-	require.True(t, strings.Contains(lineText(rendered.Lines[1]), "Touched files: 2"))
+	require.True(t, strings.Contains(lineText(rendered.Lines[0]), "Section: Unstaged"))
+	require.True(t, strings.Contains(lineText(rendered.Lines[1]), "Directory: pkg"))
+	require.True(t, strings.Contains(lineText(rendered.Lines[2]), "Touched files: 2"))
+}
+
+func TestDiffApp_TreeAlwaysShowsUnstagedAndStagedSections(t *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{
+		repoRoot:      "/tmp/repo",
+		unstagedDiffs: []string{diffForPaths("unstaged.go")},
+		stagedDiffs:   []string{diffForPaths("staged.go")},
+	}, false)
+
+	roots := app.treeState.Nodes.Peek()
+	require.Len(t, roots, 2)
+	require.Equal(t, "Unstaged", roots[0].Data.Name)
+	require.Equal(t, DiffTreeNodeSection, roots[0].Data.NodeKind)
+	require.Equal(t, DiffSectionUnstaged, roots[0].Data.Section)
+	require.Equal(t, "Staged", roots[1].Data.Name)
+	require.Equal(t, DiffTreeNodeSection, roots[1].Data.NodeKind)
+	require.Equal(t, DiffSectionStaged, roots[1].Data.Section)
+}
+
+func TestDiffApp_SwitchSectionFocusSwitchesViewerSelection(t *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{
+		repoRoot:      "/tmp/repo",
+		unstagedDiffs: []string{diffForPaths("unstaged.go")},
+		stagedDiffs:   []string{diffForPaths("staged.go")},
+	}, false)
+
+	require.Equal(t, DiffSectionUnstaged, app.activeSection)
+	require.Equal(t, "unstaged.go", app.activePath)
+
+	app.switchSectionFocus()
+	require.Equal(t, DiffSectionStaged, app.activeSection)
+	require.Equal(t, "staged.go", app.activePath)
+
+	app.switchSectionFocus()
+	require.Equal(t, DiffSectionUnstaged, app.activeSection)
+	require.Equal(t, "unstaged.go", app.activePath)
+}
+
+func TestDiffApp_SwitchSectionFocusNoopWhenTargetSectionEmpty(t *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{
+		repoRoot: "/tmp/repo",
+		diffs:    []string{diffForPaths("only-unstaged.go")},
+	}, false)
+
+	require.Equal(t, DiffSectionUnstaged, app.activeSection)
+	require.Equal(t, "only-unstaged.go", app.activePath)
+
+	app.switchSectionFocus()
+
+	require.Equal(t, DiffSectionUnstaged, app.activeSection)
+	require.Equal(t, "only-unstaged.go", app.activePath)
+}
+
+func TestDiffApp_SamePathCanExistInBothSectionsWithDistinctSelection(t *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{
+		repoRoot:      "/tmp/repo",
+		unstagedDiffs: []string{diffForPathWithStats("same.go", 1, 0)},
+		stagedDiffs:   []string{diffForPathWithStats("same.go", 0, 2)},
+	}, false)
+
+	unstagedTreePath := app.sectionState(DiffSectionUnstaged).filePathToTreePath["same.go"]
+	stagedTreePath := app.sectionState(DiffSectionStaged).filePathToTreePath["same.go"]
+	require.NotEqual(t, unstagedTreePath, stagedTreePath)
+
+	require.Equal(t, DiffSectionUnstaged, app.activeSection)
+	require.Equal(t, "same.go", app.activePath)
+	require.Equal(t, 1, app.fileByPath["same.go"].Additions)
+	require.Equal(t, 0, app.fileByPath["same.go"].Deletions)
+
+	app.switchSectionFocus()
+
+	require.Equal(t, DiffSectionStaged, app.activeSection)
+	require.Equal(t, "same.go", app.activePath)
+	require.Equal(t, 0, app.fileByPath["same.go"].Additions)
+	require.Equal(t, 2, app.fileByPath["same.go"].Deletions)
 }
 
 func TestDiffApp_CommandPaletteIncludesCommonActions(tt *testing.T) {
@@ -139,7 +215,7 @@ func TestDiffApp_CommandPaletteIncludesCommonActions(tt *testing.T) {
 	level := app.commandPalette.CurrentLevel()
 	require.NotNil(tt, level)
 
-	toggle := findPaletteItemByLabel(level.Items, "Toggle staged mode")
+	toggle := findPaletteItemByLabel(level.Items, "Switch section")
 	require.True(tt, toggle.IsSelectable())
 	require.Equal(tt, "[s]", toggle.Hint)
 
@@ -510,7 +586,7 @@ func TestDiffApp_FilterNoMatchesSetsExplicitState(tt *testing.T) {
 	require.Equal(tt, "", app.activePath)
 	require.False(tt, app.activeIsDir)
 	require.Equal(tt, "No matches", app.viewerTitle())
-	require.Equal(tt, "0/2 unstaged", app.sidebarSummaryLabel())
+	require.Equal(tt, "Unstaged: 2 Staged: 0", app.sidebarSummaryLabel())
 
 	rendered := app.diffViewState.Rendered.Peek()
 	require.NotNil(tt, rendered)
@@ -599,6 +675,42 @@ func TestDiffApp_RenderTreeNodeOmitsZeroStats(tt *testing.T) {
 	require.NotContains(tt, delOnlyText, "+0")
 }
 
+func TestDiffApp_RenderTreeNodeSectionIgnoresFilterHighlightAndDimming(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("a.txt")}}, false)
+	theme, ok := t.GetTheme(t.CurrentThemeName())
+	require.True(tt, ok)
+
+	render := app.renderTreeNode(theme, false)
+	rowWidget := render(
+		DiffTreeNodeData{
+			Name:         "Unstaged",
+			Path:         "unstaged",
+			IsDir:        true,
+			Section:      DiffSectionUnstaged,
+			NodeKind:     DiffTreeNodeSection,
+			TouchedFiles: 2,
+		},
+		t.TreeNodeContext{
+			FilteredAncestor: true,
+		},
+		t.MatchResult{
+			Matched: true,
+			Ranges:  []t.MatchRange{{Start: 0, End: 3}},
+		},
+	)
+
+	row, ok := rowWidget.(t.Row)
+	require.True(tt, ok)
+	require.NotEmpty(tt, row.Children)
+
+	label, ok := row.Children[0].(t.Text)
+	require.True(tt, ok)
+	require.Equal(tt, "Unstaged (2)", label.Content)
+	require.Empty(tt, label.Spans)
+	require.Equal(tt, theme.Error, label.Style.ForegroundColor)
+	require.True(tt, label.Style.Bold)
+}
+
 func TestDiffApp_LeftPaneTreeHasOneCellLeftPadding(tt *testing.T) {
 	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("a.txt")}}, false)
 	theme, ok := t.GetTheme(t.CurrentThemeName())
@@ -656,43 +768,40 @@ func TestDiffApp_LeftPaneHeaderRightAlignsTotals(tt *testing.T) {
 	require.Equal(tt, "-2", right.Spans[2].Text)
 }
 
-func TestDiffApp_SidebarSummaryLabelIncludesMode(tt *testing.T) {
-	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("a.txt")}}, false)
-	require.Equal(tt, "1 unstaged", app.sidebarSummaryLabel())
+func TestDiffApp_SidebarSummaryLabelIncludesBothSections(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{
+		repoRoot:      "/tmp/repo",
+		unstagedDiffs: []string{diffForPaths("a.txt")},
+		stagedDiffs:   []string{diffForPaths("b.txt", "c.txt")},
+	}, false)
+	require.Equal(tt, "Unstaged: 1 Staged: 2", app.sidebarSummaryLabel())
 
 	app.toggleMode()
-	require.Equal(tt, "1 staged", app.sidebarSummaryLabel())
+	require.Equal(tt, "Unstaged: 1 Staged: 2", app.sidebarSummaryLabel())
 }
 
 func TestDiffApp_SidebarHeadingIncludesStagedHint(tt *testing.T) {
-	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("a.txt")}}, false)
+	app := NewDiffApp(&scriptedDiffProvider{
+		repoRoot:      "/tmp/repo",
+		unstagedDiffs: []string{diffForPaths("a.txt")},
+		stagedDiffs:   []string{diffForPaths("b.txt")},
+	}, false)
 	theme, ok := t.GetTheme(t.CurrentThemeName())
 	require.True(tt, ok)
 
 	spans := app.sidebarHeadingSpans(theme)
-	require.Len(tt, spans, 5)
-	require.Equal(tt, "1", spans[0].Text)
-	require.True(tt, spans[0].Style.Bold)
-	require.False(tt, spans[0].Style.Faint)
-	require.Equal(tt, theme.Error, spans[0].Style.Foreground)
-	require.Equal(tt, "unstaged", spans[2].Text)
-	require.True(tt, spans[2].Style.Bold)
-	require.False(tt, spans[2].Style.Faint)
-	require.Equal(tt, theme.Error, spans[2].Style.Foreground)
-	require.Equal(tt, "[s]", spans[4].Text)
-	require.True(tt, spans[4].Style.Faint)
-	require.Equal(tt, theme.TextMuted, spans[4].Style.Foreground)
-
-	app.toggleMode()
-	spans = app.sidebarHeadingSpans(theme)
-	require.Equal(tt, "1", spans[0].Text)
-	require.True(tt, spans[0].Style.Bold)
-	require.False(tt, spans[0].Style.Faint)
-	require.Equal(tt, theme.Success, spans[0].Style.Foreground)
-	require.Equal(tt, "staged", spans[2].Text)
-	require.True(tt, spans[2].Style.Bold)
-	require.False(tt, spans[2].Style.Faint)
-	require.Equal(tt, theme.Success, spans[2].Style.Foreground)
+	require.Len(tt, spans, 7)
+	require.Equal(tt, "Unstaged: ", spans[0].Text)
+	require.Equal(tt, "1", spans[1].Text)
+	require.True(tt, spans[1].Style.Bold)
+	require.Equal(tt, theme.Error, spans[1].Style.Foreground)
+	require.Equal(tt, "Staged: ", spans[3].Text)
+	require.Equal(tt, "1", spans[4].Text)
+	require.True(tt, spans[4].Style.Bold)
+	require.Equal(tt, theme.Success, spans[4].Style.Foreground)
+	require.Equal(tt, "[s]", spans[6].Text)
+	require.True(tt, spans[6].Style.Faint)
+	require.Equal(tt, theme.TextMuted, spans[6].Style.Foreground)
 }
 
 func TestDiffApp_SidebarTotalsSpansAggregatesAllFiles(tt *testing.T) {
@@ -812,12 +921,12 @@ func TestDiffApp_RightPaneUsesPaddedEmptyStateWhenNoDiffs(tt *testing.T) {
 
 	heading, ok := emptyState.Children[0].(t.Text)
 	require.True(tt, ok)
-	require.Equal(tt, "No unstaged changes.", heading.Content)
+	require.Equal(tt, "No staged or unstaged changes.", heading.Content)
 	require.True(tt, heading.Style.Bold)
 
 	details, ok := emptyState.Children[2].(t.Text)
 	require.True(tt, ok)
-	require.Equal(tt, "Make edits in this repo and press r to refresh.", details.Content)
+	require.Equal(tt, "Make edits or stage files, then press r to refresh.", details.Content)
 
 	app.toggleMode()
 	widget = app.buildRightPane(theme)
@@ -830,7 +939,7 @@ func TestDiffApp_RightPaneUsesPaddedEmptyStateWhenNoDiffs(tt *testing.T) {
 
 	heading, ok = emptyState.Children[0].(t.Text)
 	require.True(tt, ok)
-	require.Equal(tt, "No staged changes.", heading.Content)
+	require.Equal(tt, "No staged or unstaged changes.", heading.Content)
 }
 
 func TestDiffApp_ToggleSidebarVisibility(tt *testing.T) {
@@ -875,6 +984,38 @@ func TestDiffApp_ToggleDiffLayoutModePreservesSelection(tt *testing.T) {
 	require.Equal(tt, activePath, app.activePath)
 	require.Equal(tt, activeIsDir, app.activeIsDir)
 	require.Equal(tt, cursorPath, app.treeState.CursorPath.Peek())
+}
+
+func TestDiffApp_ToggleDiffLayoutModeMapsVerticalScrollBetweenLayouts(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("a.txt")}}, false)
+	require.Equal(tt, DiffLayoutUnified, app.diffLayoutMode)
+
+	// Unified rows for diffForPaths: hunk header, removed line, added line.
+	app.diffScrollState.SetOffset(2)
+	app.diffViewState.ScrollY.Set(2)
+
+	app.toggleDiffLayoutMode()
+	require.Equal(tt, DiffLayoutSideBySide, app.diffLayoutMode)
+	// Side-by-side rows collapse remove+add into one paired row.
+	require.Equal(tt, 1, app.diffViewState.ScrollY.Peek())
+}
+
+func TestDiffApp_ToggleDiffLayoutModeRoundTripRestoresExactVerticalScroll(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo", diffs: []string{diffForPaths("a.txt")}}, false)
+	require.Equal(tt, DiffLayoutUnified, app.diffLayoutMode)
+
+	// Start on the removed line row in unified mode.
+	app.diffScrollState.SetOffset(1)
+	app.diffViewState.ScrollY.Set(1)
+
+	app.toggleDiffLayoutMode()
+	require.Equal(tt, DiffLayoutSideBySide, app.diffLayoutMode)
+	require.Equal(tt, 1, app.diffViewState.ScrollY.Peek())
+
+	// Without scrolling in-between, toggling back should return to the exact same row.
+	app.toggleDiffLayoutMode()
+	require.Equal(tt, DiffLayoutUnified, app.diffLayoutMode)
+	require.Equal(tt, 1, app.diffViewState.ScrollY.Peek())
 }
 
 func TestDiffApp_DiffScrollStateHorizontalCallbacksMoveAndClamp(tt *testing.T) {
@@ -1060,14 +1201,42 @@ func TestDiffApp_ViewerTitleDoesNotIncludeLayoutMode(tt *testing.T) {
 }
 
 type scriptedDiffProvider struct {
-	repoRoot string
-	branch   string
-	diffs    []string
-	index    int
+	repoRoot      string
+	branch        string
+	diffs         []string
+	unstagedDiffs []string
+	stagedDiffs   []string
+	index         int
+	unstagedIndex int
+	stagedIndex   int
 }
 
 func (p *scriptedDiffProvider) LoadDiff(staged bool) (string, error) {
-	if len(p.diffs) == 0 {
+	if len(p.unstagedDiffs) > 0 || len(p.stagedDiffs) > 0 {
+		if staged {
+			if len(p.stagedDiffs) == 0 {
+				return "", nil
+			}
+			if p.stagedIndex >= len(p.stagedDiffs) {
+				return p.stagedDiffs[len(p.stagedDiffs)-1], nil
+			}
+			value := p.stagedDiffs[p.stagedIndex]
+			p.stagedIndex++
+			return value, nil
+		}
+		if len(p.unstagedDiffs) == 0 {
+			return "", nil
+		}
+		if p.unstagedIndex >= len(p.unstagedDiffs) {
+			return p.unstagedDiffs[len(p.unstagedDiffs)-1], nil
+		}
+		value := p.unstagedDiffs[p.unstagedIndex]
+		p.unstagedIndex++
+		return value, nil
+	}
+
+	// Legacy fixture path: `diffs` represent only unstaged changes.
+	if staged || len(p.diffs) == 0 {
 		return "", nil
 	}
 	if p.index >= len(p.diffs) {

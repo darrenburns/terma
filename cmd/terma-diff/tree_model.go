@@ -8,6 +8,16 @@ import (
 	t "terma"
 )
 
+// DiffTreeNodeKind describes what kind of sidebar node is being rendered.
+type DiffTreeNodeKind int
+
+const (
+	DiffTreeNodeUnknown DiffTreeNodeKind = iota
+	DiffTreeNodeSection
+	DiffTreeNodeDirectory
+	DiffTreeNodeFile
+)
+
 // DiffTreeNodeData is the tree sidebar model for diff files and directories.
 type DiffTreeNodeData struct {
 	Name         string
@@ -17,6 +27,9 @@ type DiffTreeNodeData struct {
 	Additions    int
 	Deletions    int
 	TouchedFiles int
+	Section      DiffSection
+	NodeKind     DiffTreeNodeKind
+	NodeKey      string
 }
 
 type treeBuildNode struct {
@@ -31,6 +44,10 @@ type treeBuildNode struct {
 }
 
 func buildDiffTree(files []*DiffFile) (roots []t.TreeNode[DiffTreeNodeData], filePathToTreePath map[string][]int, orderedFilePaths []string) {
+	return buildDiffTreeForSection(DiffSectionUnstaged, files)
+}
+
+func buildDiffTreeForSection(section DiffSection, files []*DiffFile) (roots []t.TreeNode[DiffTreeNodeData], filePathToTreePath map[string][]int, orderedFilePaths []string) {
 	root := &treeBuildNode{
 		IsDir:    true,
 		Children: map[string]*treeBuildNode{},
@@ -44,7 +61,7 @@ func buildDiffTree(files []*DiffFile) (roots []t.TreeNode[DiffTreeNodeData], fil
 	}
 
 	aggregateTreeStats(root)
-	roots = buildSortedTreeNodes(root.Children)
+	roots = buildSortedTreeNodes(section, root.Children)
 
 	filePathToTreePath = map[string][]int{}
 	orderedFilePaths = make([]string, 0, len(files))
@@ -158,7 +175,7 @@ func aggregateTreeStats(node *treeBuildNode) (additions int, deletions int, touc
 	return node.Additions, node.Deletions, node.TouchedFiles
 }
 
-func buildSortedTreeNodes(children map[string]*treeBuildNode) []t.TreeNode[DiffTreeNodeData] {
+func buildSortedTreeNodes(section DiffSection, children map[string]*treeBuildNode) []t.TreeNode[DiffTreeNodeData] {
 	if len(children) == 0 {
 		return []t.TreeNode[DiffTreeNodeData]{}
 	}
@@ -186,6 +203,12 @@ func buildSortedTreeNodes(children map[string]*treeBuildNode) []t.TreeNode[DiffT
 	nodes := make([]t.TreeNode[DiffTreeNodeData], 0, len(keys))
 	for _, key := range keys {
 		child := children[key]
+		nodeKind := DiffTreeNodeFile
+		nodeKey := diffFileNodeKey(section, child.Path)
+		if child.IsDir {
+			nodeKind = DiffTreeNodeDirectory
+			nodeKey = diffDirectoryNodeKey(section, child.Path)
+		}
 		treeNode := t.TreeNode[DiffTreeNodeData]{
 			Data: DiffTreeNodeData{
 				Name:         child.Name,
@@ -195,10 +218,13 @@ func buildSortedTreeNodes(children map[string]*treeBuildNode) []t.TreeNode[DiffT
 				Additions:    child.Additions,
 				Deletions:    child.Deletions,
 				TouchedFiles: child.TouchedFiles,
+				Section:      section,
+				NodeKind:     nodeKind,
+				NodeKey:      nodeKey,
 			},
 		}
 		if child.IsDir {
-			treeNode.Children = buildSortedTreeNodes(child.Children)
+			treeNode.Children = buildSortedTreeNodes(section, child.Children)
 		} else {
 			treeNode.Children = []t.TreeNode[DiffTreeNodeData]{}
 		}

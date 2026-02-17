@@ -10,7 +10,7 @@ import (
 
 func main() {
 	var staged bool
-	flag.BoolVar(&staged, "staged", false, "show staged diff (git diff --staged)")
+	flag.BoolVar(&staged, "staged", false, "start focused on staged changes")
 	flag.Parse()
 
 	cwd, err := os.Getwd()

@@ -158,6 +158,7 @@ type sidePaneLayout struct {
 }
 
 const sideEmptyHatchRune = "╱"
+const sideDividerRune = "▏"
 
 func (d DiffView) layoutSideBySide(constraints t.Constraints, widthDim t.Dimension, heightDim t.Dimension, sideBySide *SideBySideRenderedFile) t.Size {
 	contentWidth := sideBySideNaturalWidth(sideBySide, d.HideChangeSigns)
@@ -198,8 +199,9 @@ func sideBySideNaturalWidth(sideBySide *SideBySideRenderedFile, hideSigns bool) 
 	}
 	leftGutter := sideLineGutterWidth(sideBySide.LeftNumWidth, hideSigns)
 	rightGutter := sideLineGutterWidth(sideBySide.RightNumWidth, hideSigns)
+	dividerWidth := 1
 
-	width := leftGutter + max(1, sideBySide.LeftMaxContentWidth) + rightGutter + max(1, sideBySide.RightMaxContentWidth)
+	width := leftGutter + max(1, sideBySide.LeftMaxContentWidth) + dividerWidth + rightGutter + max(1, sideBySide.RightMaxContentWidth)
 	shared := max(sideBySide.LeftMaxContentWidth, sideBySide.RightMaxContentWidth)
 	if shared > width {
 		width = shared
@@ -242,7 +244,7 @@ func sideBySidePaneLayout(totalWidth int, sideBySide *SideBySideRenderedFile, hi
 	layout.LeftGutterWidth = sideLineGutterWidth(leftNumWidth, hideSigns)
 	layout.RightGutterWidth = sideLineGutterWidth(rightNumWidth, hideSigns)
 
-	dividerWidth := 0
+	dividerWidth := 1
 	layout.DividerWidth = dividerWidth
 
 	available := totalWidth - dividerWidth
@@ -449,6 +451,7 @@ func (d DiffView) Render(ctx *t.RenderContext) {
 				continue
 			}
 			line = rendered.Lines[contentRow]
+			contentScrollX = horizontalScrollXForLine(line.Kind, contentScrollX)
 		}
 
 		if lineStyle, ok := d.Palette.LineStyleForKind(line.Kind); ok && lineStyle.BackgroundColor != nil && lineStyle.BackgroundColor.IsSet() {
@@ -519,6 +522,8 @@ func (d DiffView) renderSideSharedRow(ctx *t.RenderContext, row int, line Render
 	contentScrollX := scrollX
 	if d.HardWrap {
 		contentScrollX = wrapRow * max(1, ctx.Width)
+	} else {
+		contentScrollX = horizontalScrollXForLine(line.Kind, contentScrollX)
 	}
 	d.renderSegments(ctx, row, 0, ctx.Width, line.Segments, contentScrollX)
 }
@@ -548,6 +553,70 @@ func (d DiffView) renderSidePairedRow(ctx *t.RenderContext, row int, panes sideP
 		wrapRow,
 		scrollX,
 	)
+	d.renderSideDivider(ctx, row, panes, line)
+}
+
+func (d DiffView) renderSideDivider(ctx *t.RenderContext, row int, panes sidePaneLayout, line SideBySideRenderedRow) {
+	if !shouldRenderSideDivider(line) {
+		return
+	}
+	if panes.DividerWidth <= 0 {
+		return
+	}
+	x := panes.DividerX
+	if x < 0 || x >= ctx.Width {
+		return
+	}
+
+	runeText := sideDividerRune
+	if line.Right == nil {
+		runeText = sideEmptyHatchRune
+	}
+
+	style, ok := d.sideDividerStyle(line)
+	if !ok {
+		ctx.DrawText(x, row, runeText)
+		return
+	}
+	ctx.DrawStyledText(x, row, runeText, style)
+}
+
+func shouldRenderSideDivider(line SideBySideRenderedRow) bool {
+	return line.Right != nil || line.Left != nil
+}
+
+func (d DiffView) sideDividerStyle(line SideBySideRenderedRow) (t.Style, bool) {
+	if line.Right == nil {
+		return d.styleForRole(TokenRoleDiffHatch), true
+	}
+
+	role, kind, ok := sideDividerLineNumberRole(line)
+	if !ok {
+		return t.Style{}, false
+	}
+	span, ok := d.Palette.StyleForRole(role)
+	if !ok || !span.Foreground.IsSet() {
+		return t.Style{}, false
+	}
+
+	fg := span.Foreground
+	fg = fg.WithAlpha(fg.Alpha() * 0.24)
+	style := t.Style{ForegroundColor: fg}
+
+	if gutterStyle, ok := d.Palette.GutterStyleForKind(kind); ok && gutterStyle.BackgroundColor != nil && gutterStyle.BackgroundColor.IsSet() {
+		style.BackgroundColor = gutterStyle.BackgroundColor
+	}
+	return style, true
+}
+
+func sideDividerLineNumberRole(line SideBySideRenderedRow) (TokenRole, RenderedLineKind, bool) {
+	if line.Right != nil {
+		return sideLineNumberRole(line.Right.Kind, false), line.Right.Kind, true
+	}
+	if line.Left != nil {
+		return sideLineNumberRole(line.Left.Kind, true), line.Left.Kind, true
+	}
+	return TokenRoleOldLineNumber, RenderedLineContext, false
 }
 
 func (d DiffView) renderSideCell(ctx *t.RenderContext, row int, paneX int, paneWidth int, gutterWidth int, numWidth int, cell *RenderedSideCell, isLeft bool, wrapRow int, scrollX int) {
@@ -716,6 +785,13 @@ func lineNumberRolesForLine(kind RenderedLineKind) (oldRole TokenRole, newRole T
 	default:
 		return oldRole, newRole
 	}
+}
+
+func horizontalScrollXForLine(kind RenderedLineKind, scrollX int) int {
+	if kind == RenderedLineHunkHeader {
+		return 0
+	}
+	return scrollX
 }
 
 func displayLinePrefix(line RenderedDiffLine, hideChangeSigns bool) string {
