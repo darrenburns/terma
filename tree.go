@@ -5,6 +5,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // TreeNode represents a node in a tree.
@@ -25,6 +28,7 @@ type TreeState[T any] struct {
 	viewPaths       [][]int
 	viewIndexByPath map[string]int
 	rowLayouts      []treeRowLayout
+	indicatorLayout []treeIndicatorLayout
 	nodeID          func(T) string
 	eagerLoadOnce   sync.Once
 }
@@ -504,6 +508,12 @@ type treeRowLayout struct {
 	height int
 }
 
+type treeIndicatorLayout struct {
+	x          int
+	width      int
+	expandable bool
+}
+
 type treeViewEntry[T any] struct {
 	node       TreeNode[T]
 	path       []int
@@ -576,6 +586,135 @@ func (t Tree[T]) IsFocusable() bool {
 	return !t.DisableFocus
 }
 
+// OnMouseDown moves the cursor to the clicked node.
+func (t Tree[T]) OnMouseDown(event MouseEvent) {
+	if t.State == nil {
+		return
+	}
+
+	localX := event.LocalX - t.Style.Border.Width() - t.Style.Padding.Left
+	localY := event.LocalY - t.Style.Border.Width() - t.Style.Padding.Top
+	viewIdx, ok := t.viewIndexFromMouseY(localY)
+	if !ok {
+		return
+	}
+
+	view := t.viewPaths()
+	if viewIdx < 0 || viewIdx >= len(view) {
+		return
+	}
+
+	path := view[viewIdx]
+	t.setCursorFromMousePath(path, event.Mod.Contains(uv.ModShift))
+
+	if t.shouldToggleExpansionFromClick(viewIdx, localX, path) {
+		t.togglePathExpansion(path)
+	}
+}
+
+func (t Tree[T]) viewIndexFromMouseY(localY int) (int, bool) {
+	if t.State == nil {
+		return 0, false
+	}
+	view := t.viewPaths()
+	if len(view) == 0 {
+		return 0, false
+	}
+
+	if len(t.State.rowLayouts) > 0 {
+		for i, layout := range t.State.rowLayouts {
+			if layout.height <= 0 {
+				continue
+			}
+			if localY >= layout.y && localY < layout.y+layout.height {
+				return i, true
+			}
+		}
+		return 0, false
+	}
+
+	if localY < 0 || localY >= len(view) {
+		return 0, false
+	}
+	return localY, true
+}
+
+func (t Tree[T]) setCursorFromMousePath(path []int, shift bool) {
+	if t.State == nil || len(path) == 0 {
+		return
+	}
+
+	next := clonePath(path)
+	previous := t.State.CursorPath.Peek()
+
+	if t.MultiSelect && shift {
+		if !t.State.hasAnchor() {
+			anchor := previous
+			if len(anchor) == 0 {
+				anchor = next
+			}
+			t.State.setAnchor(anchor)
+		}
+		t.State.CursorPath.Set(next)
+		t.selectViewRange(t.State.getAnchor(), next)
+	} else {
+		if t.MultiSelect {
+			t.State.ClearSelection()
+			t.State.clearAnchor()
+		}
+		t.State.CursorPath.Set(next)
+	}
+
+	t.scrollCursorIntoView()
+	if !pathsEqual(previous, next) {
+		t.notifyCursorChange()
+	}
+}
+
+func (t Tree[T]) shouldToggleExpansionFromClick(viewIdx, localX int, path []int) bool {
+	if localX < 0 || t.State == nil {
+		return false
+	}
+
+	layout, ok := t.indicatorLayoutForRow(viewIdx)
+	if !ok || !layout.expandable || layout.width <= 0 {
+		return false
+	}
+
+	if localX < layout.x || localX >= layout.x+layout.width {
+		return false
+	}
+
+	node, ok := t.State.NodeAtPath(path)
+	return ok && t.nodeExpandable(node)
+}
+
+func (t Tree[T]) indicatorLayoutForRow(viewIdx int) (treeIndicatorLayout, bool) {
+	var zero treeIndicatorLayout
+	if t.State == nil {
+		return zero, false
+	}
+	if viewIdx < 0 || viewIdx >= len(t.State.indicatorLayout) {
+		return zero, false
+	}
+	return t.State.indicatorLayout[viewIdx], true
+}
+
+func (t Tree[T]) togglePathExpansion(path []int) {
+	if t.State == nil {
+		return
+	}
+	node, ok := t.State.NodeAtPath(path)
+	if !ok || !t.nodeExpandable(node) {
+		return
+	}
+	if t.nodeExpanded(node, path) {
+		t.State.Collapse(path)
+		return
+	}
+	t.expandNode(node, path)
+}
+
 // Build builds the tree into a column of rendered nodes.
 func (t Tree[T]) Build(ctx BuildContext) Widget {
 	if t.State == nil {
@@ -596,6 +735,7 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 
 	if len(entries) == 0 {
 		t.State.rowLayouts = nil
+		t.State.indicatorLayout = nil
 		return Column{}
 	}
 
@@ -648,6 +788,7 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 	}
 
 	children := make([]Widget, len(entries))
+	indicatorLayout := make([]treeIndicatorLayout, len(entries))
 	for i, entry := range entries {
 		active := pathsEqual(entry.path, cursorPath)
 		selected := false
@@ -683,6 +824,11 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 		indentation, indicator := t.prefixPartsForEntry(entry, indent, expandIndicator, collapseIndicator, leafIndicator, showGuideLines, lastSiblingByPath)
 		prefixSpans := treePrefixSpans(rowPrefix, indentation, indicator, showGuideLines, guideSpanStyle)
 		prefixStyle := t.styleForContext(ctx, nodeCtx, widgetFocused)
+		indicatorLayout[i] = treeIndicatorLayout{
+			x:          ansi.StringWidth(rowPrefix) + ansi.StringWidth(indentation),
+			width:      ansi.StringWidth(indicator),
+			expandable: entry.expandable,
+		}
 
 		children[i] = Row{
 			Spacing: 0,
@@ -692,6 +838,7 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 			},
 		}
 	}
+	t.State.indicatorLayout = indicatorLayout
 
 	t.registerScrollCallbacks()
 
