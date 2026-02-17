@@ -5,7 +5,7 @@ import (
 	"log"
 	"math/rand"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 

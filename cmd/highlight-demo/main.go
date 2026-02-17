@@ -3,7 +3,7 @@ package main
 import (
 	"regexp"
 
-	"terma"
+	"github.com/darrenburns/terma"
 )
 
 // PatternHighlighter matches regex patterns and applies styles.

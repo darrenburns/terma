@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"os"
 
-	"terma"
+	"github.com/darrenburns/terma"
 )
 
 func main() {

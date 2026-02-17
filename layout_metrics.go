@@ -1,6 +1,6 @@
 package terma
 
-import "terma/layout"
+import "github.com/darrenburns/terma/layout"
 
 // LayoutMetrics provides convenient access to computed layout information.
 // Child bounds are returned in the parent's content coordinate space.

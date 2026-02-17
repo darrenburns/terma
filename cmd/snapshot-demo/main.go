@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"terma"
+	"github.com/darrenburns/terma"
 )
 
 // DemoApp is a sample widget for demonstrating snapshots.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"terma"
+	"github.com/darrenburns/terma"
 )
 
 type App struct {

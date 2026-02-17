@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // TextInputDemo demonstrates the TextInput widget with multiple inputs,

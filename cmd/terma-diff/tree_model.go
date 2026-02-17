@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // DiffTreeNodeKind describes what kind of sidebar node is being rendered.

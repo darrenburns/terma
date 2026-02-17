@@ -1,6 +1,6 @@
 package main
 
-import t "terma"
+import t "github.com/darrenburns/terma"
 
 type App struct {
 	scrollState *t.ScrollState

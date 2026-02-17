@@ -1,6 +1,6 @@
 package terma
 
-import "terma/layout"
+import "github.com/darrenburns/terma/layout"
 
 // RenderTree pairs a widget with its computed layout for rendering.
 // This enables complete separation of layout and rendering phases:

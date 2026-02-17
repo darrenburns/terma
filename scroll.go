@@ -1,6 +1,6 @@
 package terma
 
-import "terma/layout"
+import "github.com/darrenburns/terma/layout"
 
 // Vertical scrollbar characters for smooth rendering.
 // These are "lower eighths" Unicode block elements (U+2581-U+2587).

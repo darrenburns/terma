@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 
 	"github.com/stretchr/testify/require"
 )

@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
-	"terma/layout"
+	"github.com/darrenburns/terma/layout"
 )
 
 // WrapMode defines how text should wrap within available width.

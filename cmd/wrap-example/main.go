@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"log"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 const sampleText = `The quick brown fox jumps over the lazy dog. This is a longer sentence to demonstrate how text wrapping works in different modes. Here's another sentence with some longer words like "extraordinary" and "phenomenal" to test word breaking.`

@@ -1,6 +1,6 @@
 package main
 
-import t "terma"
+import t "github.com/darrenburns/terma"
 
 // ThemePalette stores all styles needed by the diff renderer for one theme.
 type ThemePalette struct {

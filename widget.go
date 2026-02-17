@@ -3,7 +3,7 @@ package terma
 import (
 	"sync/atomic"
 
-	"terma/layout"
+	"github.com/darrenburns/terma/layout"
 )
 
 // Widget is the base interface for all UI elements.

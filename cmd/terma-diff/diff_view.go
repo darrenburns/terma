@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
-	t "terma"
-	"terma/layout"
+	t "github.com/darrenburns/terma"
+	"github.com/darrenburns/terma/layout"
 )
 
 // DiffView is a purpose-built diff renderer with fixed gutter and scroll support.

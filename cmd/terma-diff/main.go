@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 func main() {

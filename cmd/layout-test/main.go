@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"terma"
+	"github.com/darrenburns/terma"
 )
 
 var mainAlignNames = []string{"Start", "Center", "End"}

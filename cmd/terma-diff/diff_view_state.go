@@ -1,6 +1,6 @@
 package main
 
-import t "terma"
+import t "github.com/darrenburns/terma"
 
 // DiffViewState tracks scroll state and rendered diff content for DiffView.
 type DiffViewState struct {

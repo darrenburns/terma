@@ -1,6 +1,6 @@
 package main
 
-import t "terma"
+import t "github.com/darrenburns/terma"
 
 // SplitFriendlyTree wraps Tree and removes left/right keybinds so they bubble
 // to ancestor widgets (e.g. SplitPane divider controls).

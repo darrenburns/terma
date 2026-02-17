@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 type DirectoryTreeDemo struct {

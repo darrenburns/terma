@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"terma/layout"
+	"github.com/darrenburns/terma/layout"
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"

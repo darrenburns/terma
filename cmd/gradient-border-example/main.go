@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // Colors for the demo

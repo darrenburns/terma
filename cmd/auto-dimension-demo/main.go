@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // App demonstrates the difference between Auto, unset, Flex, and Cells dimensions.

@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // App demonstrates the ProgressBar widget with smooth Unicode rendering and animations.

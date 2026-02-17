@@ -1,6 +1,6 @@
 package terma
 
-import "terma/layout"
+import "github.com/darrenburns/terma/layout"
 
 // Switcher displays one child at a time based on a string key.
 // Only the child matching the Active key is rendered; others are not built.

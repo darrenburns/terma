@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 
 	"github.com/stretchr/testify/require"
 )

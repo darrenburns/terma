@@ -1,7 +1,7 @@
 package terma
 
 import (
-	"terma/layout"
+	"github.com/darrenburns/terma/layout"
 )
 
 // toLayoutEdgeInsets converts terma.EdgeInsets to layout.EdgeInsets.

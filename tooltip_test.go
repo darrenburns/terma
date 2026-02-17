@@ -7,7 +7,7 @@ import (
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/stretchr/testify/assert"
-	"terma/layout"
+	"github.com/darrenburns/terma/layout"
 )
 
 // renderToBufferWithFocus renders a widget with the given widget ID focused.

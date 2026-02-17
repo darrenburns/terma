@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // App demonstrates the theme system with interactive theme switching.

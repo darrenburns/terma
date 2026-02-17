@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	terma "terma"
+	terma "github.com/darrenburns/terma"
 )
 
 func TestBuildTaskList_BlurPreservesSelectionWhenMoveMenuOpen(t *testing.T) {

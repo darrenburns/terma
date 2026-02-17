@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // Theme names for cycling

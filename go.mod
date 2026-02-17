@@ -1,4 +1,4 @@
-module terma
+module github.com/darrenburns/terma
 
 go 1.25.5
 

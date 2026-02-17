@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"terma/layout"
+	"github.com/darrenburns/terma/layout"
 )
 
 // TableState holds the state for a Table widget.

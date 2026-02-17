@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 type TextAreaDemo struct {

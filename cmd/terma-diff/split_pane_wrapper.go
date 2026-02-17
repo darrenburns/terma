@@ -1,6 +1,6 @@
 package main
 
-import t "terma"
+import t "github.com/darrenburns/terma"
 
 // FocusAwareSplitPane makes SplitPane focus opt-in for tab traversal.
 type FocusAwareSplitPane struct {

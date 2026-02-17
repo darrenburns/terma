@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"time"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // App demonstrates the Sparkline widget with various configurations.

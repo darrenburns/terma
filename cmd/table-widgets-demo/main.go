@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // Task represents a row in our table with various states

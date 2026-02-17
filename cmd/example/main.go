@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 

@@ -6,7 +6,7 @@ import (
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
-	"terma/layout"
+	"github.com/darrenburns/terma/layout"
 )
 
 // --- Grapheme Helper Functions (reusable for multi-line) ---

@@ -1,6 +1,6 @@
 package terma
 
-import "terma/layout"
+import "github.com/darrenburns/terma/layout"
 
 // IntPtr returns a pointer to an int value.
 // This is a helper for creating Positioned widgets.

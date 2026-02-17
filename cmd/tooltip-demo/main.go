@@ -1,6 +1,6 @@
 package main
 
-import "terma"
+import "github.com/darrenburns/terma"
 
 type App struct{}
 

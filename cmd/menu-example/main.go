@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 type MenuDemo struct {

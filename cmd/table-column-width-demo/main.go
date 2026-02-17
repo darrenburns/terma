@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // TableColumnWidthDemo demonstrates different table column width behaviors.

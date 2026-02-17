@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // tagPattern matches hashtags: # followed by alphanumeric, underscore, or hyphen

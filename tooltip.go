@@ -1,6 +1,6 @@
 package terma
 
-import "terma/layout"
+import "github.com/darrenburns/terma/layout"
 
 // TooltipPosition specifies where the tooltip appears relative to the child.
 type TooltipPosition int

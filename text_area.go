@@ -6,7 +6,7 @@ import (
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
-	"terma/layout"
+	"github.com/darrenburns/terma/layout"
 )
 
 // TextAreaState holds the state for a TextArea widget.

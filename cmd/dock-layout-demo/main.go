@@ -1,6 +1,6 @@
 package main
 
-import "terma"
+import "github.com/darrenburns/terma"
 
 var (
 	layoutRed    = terma.RGB(180, 70, 70)

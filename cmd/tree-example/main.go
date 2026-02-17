@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 type FileInfo struct {

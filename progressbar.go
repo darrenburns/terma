@@ -3,7 +3,7 @@ package terma
 import (
 	"strings"
 
-	"terma/layout"
+	"github.com/darrenburns/terma/layout"
 )
 
 // progressBarChars contains Unicode block characters for smooth progress rendering.

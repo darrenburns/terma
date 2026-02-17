@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // App demonstrates FocusTrap with 3 columns, each acting as a focus trap.

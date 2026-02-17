@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // TreeItem represents an item in the request tree

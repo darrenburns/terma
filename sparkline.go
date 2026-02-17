@@ -4,7 +4,7 @@ import (
 	"math"
 	"strings"
 
-	"terma/layout"
+	"github.com/darrenburns/terma/layout"
 )
 
 var sparklineBars = []string{

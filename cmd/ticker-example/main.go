@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // TickerDemo demonstrates the problem with signals not triggering re-renders.

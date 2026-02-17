@@ -1,6 +1,6 @@
 package terma
 
-import "terma/layout"
+import "github.com/darrenburns/terma/layout"
 
 // MainAxisAlign specifies how children are aligned along the main axis.
 // For Row, main axis is horizontal. For Column, main axis is vertical.

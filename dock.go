@@ -1,6 +1,6 @@
 package terma
 
-import "terma/layout"
+import "github.com/darrenburns/terma/layout"
 
 // Edge specifies which edge a child is docked to.
 // This is a re-export of layout.DockEdge for widget API.

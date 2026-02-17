@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 const stateSchemaVersion = 1
@@ -40,12 +40,12 @@ type persistedTask struct {
 
 func resolveStatePath() (string, error) {
 	if xdgStateHome := strings.TrimSpace(os.Getenv("XDG_STATE_HOME")); xdgStateHome != "" {
-		return filepath.Join(xdgStateHome, "terma", "todo-app", "state.json"), nil
+		return filepath.Join(xdgStateHome, "github.com/darrenburns/terma", "todo-app", "state.json"), nil
 	}
 
 	homeDir, err := userHomeDir()
 	if err == nil && homeDir != "" {
-		return filepath.Join(homeDir, ".local", "state", "terma", "todo-app", "state.json"), nil
+		return filepath.Join(homeDir, ".local", "state", "github.com/darrenburns/terma", "todo-app", "state.json"), nil
 	}
 
 	configDir, configErr := userConfigDir()
@@ -56,7 +56,7 @@ func resolveStatePath() (string, error) {
 		return "", fmt.Errorf("resolve state path: user config dir unavailable")
 	}
 
-	return filepath.Join(configDir, "terma", "todo-app", "state.json"), nil
+	return filepath.Join(configDir, "github.com/darrenburns/terma", "todo-app", "state.json"), nil
 }
 
 func loadState(path string) (*todoStateV1, error) {

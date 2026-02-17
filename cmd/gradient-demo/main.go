@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 type GradientDemo struct {

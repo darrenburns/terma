@@ -16,7 +16,7 @@ func TestResolveStatePath_UsesXDGStateHome(t *testing.T) {
 
 	path, err := resolveStatePath()
 	require.NoError(t, err)
-	require.Equal(t, filepath.Join("/tmp/custom-state", "terma", "todo-app", "state.json"), path)
+	require.Equal(t, filepath.Join("/tmp/custom-state", "github.com/darrenburns/terma", "todo-app", "state.json"), path)
 }
 
 func TestResolveStatePath_UsesHomeLocalState(t *testing.T) {
@@ -37,7 +37,7 @@ func TestResolveStatePath_UsesHomeLocalState(t *testing.T) {
 
 	path, err := resolveStatePath()
 	require.NoError(t, err)
-	require.Equal(t, filepath.Join("/tmp/fake-home", ".local", "state", "terma", "todo-app", "state.json"), path)
+	require.Equal(t, filepath.Join("/tmp/fake-home", ".local", "state", "github.com/darrenburns/terma", "todo-app", "state.json"), path)
 }
 
 func TestResolveStatePath_FallsBackToConfigDir(t *testing.T) {
@@ -58,7 +58,7 @@ func TestResolveStatePath_FallsBackToConfigDir(t *testing.T) {
 
 	path, err := resolveStatePath()
 	require.NoError(t, err)
-	require.Equal(t, filepath.Join("/tmp/fake-config", "terma", "todo-app", "state.json"), path)
+	require.Equal(t, filepath.Join("/tmp/fake-config", "github.com/darrenburns/terma", "todo-app", "state.json"), path)
 }
 
 func TestLoadState_MissingFileReturnsNil(t *testing.T) {

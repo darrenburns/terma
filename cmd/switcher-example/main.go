@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // SwitcherDemo demonstrates the Switcher widget with three tabs.

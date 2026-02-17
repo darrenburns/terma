@@ -4,7 +4,7 @@ import (
 	"log"
 	"strings"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 type SplitPaneDemo struct {

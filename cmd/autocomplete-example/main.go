@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"terma"
+	"github.com/darrenburns/terma"
 )
 
 // Sample data for demonstrations

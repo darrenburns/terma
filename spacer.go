@@ -1,6 +1,6 @@
 package terma
 
-import "terma/layout"
+import "github.com/darrenburns/terma/layout"
 
 // Spacer is a non-visual widget that occupies space in layouts.
 // It renders nothing but participates in layout calculations.

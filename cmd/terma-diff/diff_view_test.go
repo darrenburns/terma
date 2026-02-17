@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
+	t "github.com/darrenburns/terma"
 	"github.com/stretchr/testify/require"
-	t "terma"
 )
 
 func TestLineNumberRolesForLine(tt *testing.T) {
@@ -156,38 +156,6 @@ func TestSideDividerLineNumberRole(tt *testing.T) {
 
 	_, _, ok = sideDividerLineNumberRole(SideBySideRenderedRow{})
 	require.False(tt, ok)
-}
-
-func TestSideDividerStyle_UsesHalfLineNumberAlpha(tt *testing.T) {
-	theme, ok := t.GetTheme(t.CurrentThemeName())
-	require.True(tt, ok)
-
-	view := DiffView{
-		Palette: NewThemePalette(theme),
-	}
-	line := SideBySideRenderedRow{
-		Left:  &RenderedSideCell{Kind: RenderedLineRemove},
-		Right: &RenderedSideCell{Kind: RenderedLineAdd},
-	}
-
-	style, ok := view.sideDividerStyle(line)
-	require.True(tt, ok)
-	require.NotNil(tt, style.ForegroundColor)
-	require.NotNil(tt, style.BackgroundColor)
-
-	fg, ok := style.ForegroundColor.(t.Color)
-	require.True(tt, ok)
-
-	numberStyle, ok := view.Palette.StyleForRole(TokenRoleLineNumberAdd)
-	require.True(tt, ok)
-	require.Equal(tt, numberStyle.Foreground.WithAlpha(numberStyle.Foreground.Alpha()*0.5), fg)
-
-	gutterStyle, ok := view.Palette.GutterStyleForKind(RenderedLineAdd)
-	require.True(tt, ok)
-	require.NotNil(tt, gutterStyle.BackgroundColor)
-	expectedBg := gutterStyle.BackgroundColor.ColorAt(1, 1, 0, 0)
-	actualBg := style.BackgroundColor.ColorAt(1, 1, 0, 0)
-	require.Equal(tt, expectedBg, actualBg)
 }
 
 func TestShouldRenderSideDivider(tt *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // FileInfo holds metadata about a file or directory.

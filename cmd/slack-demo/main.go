@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 type Channel struct {

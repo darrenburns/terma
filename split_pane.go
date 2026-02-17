@@ -1,6 +1,6 @@
 package terma
 
-import "terma/layout"
+import "github.com/darrenburns/terma/layout"
 
 // SplitPaneOrientation determines how the split divides space.
 type SplitPaneOrientation int

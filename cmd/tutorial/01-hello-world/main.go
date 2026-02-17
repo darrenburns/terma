@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // App is the root widget for this application.
