@@ -1,6 +1,10 @@
 package main
 
-import "github.com/darrenburns/terma"
+import (
+	"log"
+
+	"github.com/darrenburns/terma"
+)
 
 type App struct{}
 
@@ -156,5 +160,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 }
 
 func main() {
-	terma.Run(&App{})
+	if err := terma.Run(&App{}); err != nil {
+		log.Fatal(err)
+	}
 }

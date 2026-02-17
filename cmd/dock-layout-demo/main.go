@@ -1,6 +1,10 @@
 package main
 
-import "github.com/darrenburns/terma"
+import (
+	"log"
+
+	"github.com/darrenburns/terma"
+)
 
 var (
 	layoutRed    = terma.RGB(180, 70, 70)
@@ -23,5 +27,7 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 }
 
 func main() {
-	terma.Run(&App{})
+	if err := terma.Run(&App{}); err != nil {
+		log.Fatal(err)
+	}
 }

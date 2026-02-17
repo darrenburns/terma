@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/darrenburns/terma"
 )
@@ -236,5 +237,7 @@ func (a *App) buildTagSection(ctx terma.BuildContext) terma.Widget {
 }
 
 func main() {
-	terma.Run(NewApp())
+	if err := terma.Run(NewApp()); err != nil {
+		log.Fatal(err)
+	}
 }
