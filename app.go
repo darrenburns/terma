@@ -691,6 +691,7 @@ func Run(root Widget) (runErr error) {
 
 					if entry != nil {
 						Log("  Found widget: ID=%q Type=%T", entry.ID, entry.EventWidget)
+						focusEntry := renderer.FocusableAt(ev.X, ev.Y)
 						focusAt(ev.X, ev.Y)
 						clickCount := clickTracker.nextClick(entry.ID, ev.Button, ev.X, ev.Y, time.Now())
 						mouseEvent := buildMouseEvent(uv.Mouse(ev), entry, clickCount)
@@ -703,6 +704,16 @@ func Run(root Widget) (runErr error) {
 						if downHandler, ok := entry.EventWidget.(MouseDownHandler); ok {
 							Log("  Widget has OnMouseDown")
 							downHandler.OnMouseDown(mouseEvent)
+						}
+
+						// Also notify the focused widget when a non-focusable child was clicked.
+						// This lets focusable widgets (Tree/TextInput/TextArea, etc.) handle cursor placement.
+						if focusEntry != nil && focusEntry != entry {
+							focusMouseEvent := buildMouseEvent(uv.Mouse(ev), focusEntry, clickCount)
+							if downHandler, ok := focusEntry.EventWidget.(MouseDownHandler); ok {
+								Log("  Focused widget has OnMouseDown")
+								downHandler.OnMouseDown(focusMouseEvent)
+							}
 						}
 
 						if clickable, ok := entry.EventWidget.(Clickable); ok {
