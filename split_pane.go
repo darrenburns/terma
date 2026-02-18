@@ -458,8 +458,12 @@ func (s SplitPane) Render(ctx *RenderContext) {
 		return
 	}
 
-	focused := ctx.IsFocused(s)
-	fgProvider, bgProvider := s.dividerProviders(focused)
+	dividerHighlighted := ctx.IsFocused(s)
+	if s.State != nil && s.State.dragging {
+		// Keep focus colors while the divider is actively being dragged.
+		dividerHighlighted = true
+	}
+	fgProvider, bgProvider := s.dividerProviders(dividerHighlighted)
 
 	dividerChar := s.dividerChar()
 	if s.Orientation == SplitVertical {
@@ -527,11 +531,11 @@ func (s SplitPane) contentCoord(event MouseEvent, cache splitPaneLayoutCache) in
 	return event.LocalX - cache.contentOffsetX
 }
 
-func (s SplitPane) dividerProviders(focused bool) (ColorProvider, ColorProvider) {
+func (s SplitPane) dividerProviders(dividerHighlighted bool) (ColorProvider, ColorProvider) {
 	var fg ColorProvider
 	var bg ColorProvider
 
-	if focused {
+	if dividerHighlighted {
 		if colorProviderIsSet(s.DividerFocusForeground) {
 			fg = s.DividerFocusForeground
 		} else if colorProviderIsSet(s.DividerForeground) {
@@ -553,7 +557,7 @@ func (s SplitPane) dividerProviders(focused bool) (ColorProvider, ColorProvider)
 
 	theme := getTheme()
 	if !colorProviderIsSet(fg) {
-		if focused {
+		if dividerHighlighted {
 			fg = theme.Primary
 		} else {
 			fg = theme.Border

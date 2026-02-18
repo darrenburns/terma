@@ -67,6 +67,42 @@ func TestSplitPane_DisableFocus(t *testing.T) {
 	assertSnapshotFromSVG(t, svg, "Attempting to focus SplitPane by ID should fail when DisableFocus=true; divider remains in unfocused color (red), not the focus gradient")
 }
 
+func TestSplitPane_DraggingUsesFocusDividerColors(t *testing.T) {
+	state := NewSplitPaneState(0.5)
+	state.dragging = true
+
+	unfocusedColor := RGB(255, 0, 0)
+	focusedColor := RGB(0, 255, 0)
+
+	widget := SplitPane{
+		State:                  state,
+		DisableFocus:           true,
+		First:                  EmptyWidget{},
+		Second:                 EmptyWidget{},
+		Orientation:            SplitHorizontal,
+		DividerForeground:      unfocusedColor,
+		DividerFocusForeground: focusedColor,
+	}
+
+	width, height := 12, 4
+	buf := renderToBufferWithFocus(widget, width, height, "")
+	dividerX := computeSplitPaneMetrics(width, widget.dividerSize(), widget.minPaneSize(), state.GetPosition()).offset
+
+	for y := 0; y < height; y++ {
+		cell := buf.CellAt(dividerX, y)
+		if cell == nil {
+			t.Fatalf("expected divider cell at x=%d y=%d", dividerX, y)
+		}
+		got := FromANSI(cell.Style.Fg)
+		if got.Hex() != focusedColor.Hex() {
+			t.Fatalf("expected divider focus color %s while dragging, got %s", focusedColor.Hex(), got.Hex())
+		}
+		if got.Hex() == unfocusedColor.Hex() {
+			t.Fatalf("expected divider not to use unfocused color while dragging")
+		}
+	}
+}
+
 func TestSplitPane_KeybindsHorizontalIncludesVimAliases(t *testing.T) {
 	state := NewSplitPaneState(0.5)
 	pane := SplitPane{
