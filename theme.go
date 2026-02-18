@@ -18,6 +18,10 @@ const (
 	ThemeNameAurora        = "aurora"
 	ThemeNameObsidianTide  = "obsidian-tide"
 	ThemeNameMidnightEmber = "midnight-ember"
+	ThemeNameHearthstone   = "hearthstone"
+	ThemeNameCyberdeck     = "cyberdeck"
+	ThemeNameNeonReef      = "neon-reef"
+	ThemeNameUnderstory    = "understory"
 
 	// Light themes
 	ThemeNameRosePineDawn    = "rose-pine-dawn"
@@ -795,6 +799,202 @@ var midnightEmberThemeData = ThemeData{
 	Link: Hex("#FFB87A"),
 }
 
+// hearthstoneThemeData - Warm & cozy dark theme with copper and dusty rose tones
+var hearthstoneThemeData = ThemeData{
+	Name: ThemeNameHearthstone,
+
+	Primary:   Hex("#d4915c"),
+	Secondary: Hex("#c2787e"),
+	Accent:    Hex("#d4a84b"),
+
+	Background:   Hex("#1c1614"),
+	Surface:      Hex("#261e1b"),
+	SurfaceHover: Hex("#332926"),
+	Surface2:     Hex("#3f3330"),
+	Surface3:     Hex("#4d3e3a"),
+
+	Text:            Hex("#e8ddd4"),
+	TextMuted:       Hex("#a89486"),
+	TextOnPrimary:   Hex("#1c1614"),
+	TextOnSecondary: Hex("#1c1614"),
+	TextOnAccent:    Hex("#1c1614"),
+	TextDisabled:    Hex("#7a685c"),
+
+	Border:    Hex("#4d3e3a"),
+	FocusRing: Hex("#d4915c"),
+
+	Error:   Hex("#e06b6b"),
+	Warning: Hex("#d4a84b"),
+	Success: Hex("#7abf7a"),
+	Info:    Hex("#7aa8c9"),
+
+	TextOnError:   Hex("#1c1614"),
+	TextOnWarning: Hex("#1c1614"),
+	TextOnSuccess: Hex("#1c1614"),
+	TextOnInfo:    Hex("#1c1614"),
+
+	ActiveCursor:  Hex("#d4915c"),
+	Selection:     Hex("#d4915c").WithAlpha(0.26),
+	SelectionText: Hex("#1c1614"),
+
+	ScrollbarTrack: Hex("#261e1b"),
+	ScrollbarThumb: Hex("#4d3e3a"),
+
+	Overlay: Hex("#1c1614").WithAlpha(0.8),
+
+	Placeholder: Hex("#7a685c"),
+	Cursor:      Hex("#d4915c"),
+
+	Link: Hex("#c2787e"),
+}
+
+// cyberdeckThemeData - Cyberpunk dark theme with harsh yellow on near-black, neon magenta accents
+var cyberdeckThemeData = ThemeData{
+	Name: ThemeNameCyberdeck,
+
+	Primary:   Hex("#f0e030"),
+	Secondary: Hex("#e040a0"),
+	Accent:    Hex("#30e0f0"),
+
+	Background:   Hex("#0a0a10"),
+	Surface:      Hex("#111118"),
+	SurfaceHover: Hex("#1a1a24"),
+	Surface2:     Hex("#222230"),
+	Surface3:     Hex("#2c2c3a"),
+
+	Text:            Hex("#e8e8e0"),
+	TextMuted:       Hex("#808090"),
+	TextOnPrimary:   Hex("#0a0a10"),
+	TextOnSecondary: Hex("#0a0a10"),
+	TextOnAccent:    Hex("#0a0a10"),
+	TextDisabled:    Hex("#505060"),
+
+	Border:    Hex("#2c2c3a"),
+	FocusRing: Hex("#f0e030"),
+
+	Error:   Hex("#ff3050"),
+	Warning: Hex("#f0a020"),
+	Success: Hex("#30e070"),
+	Info:    Hex("#30e0f0"),
+
+	TextOnError:   Hex("#0a0a10"),
+	TextOnWarning: Hex("#0a0a10"),
+	TextOnSuccess: Hex("#0a0a10"),
+	TextOnInfo:    Hex("#0a0a10"),
+
+	ActiveCursor:  Hex("#f0e030"),
+	Selection:     Hex("#f0e030").WithAlpha(0.26),
+	SelectionText: Hex("#0a0a10"),
+
+	ScrollbarTrack: Hex("#111118"),
+	ScrollbarThumb: Hex("#2c2c3a"),
+
+	Overlay: Hex("#0a0a10").WithAlpha(0.85),
+
+	Placeholder: Hex("#505060"),
+	Cursor:      Hex("#f0e030"),
+
+	Link: Hex("#30e0f0"),
+}
+
+// neonReefThemeData - Vibrant & bold dark theme with electric teal and coral tones
+var neonReefThemeData = ThemeData{
+	Name: ThemeNameNeonReef,
+
+	Primary:   Hex("#18d5c4"),
+	Secondary: Hex("#f0728a"),
+	Accent:    Hex("#4d8bff"),
+
+	Background:   Hex("#0c0e14"),
+	Surface:      Hex("#12151e"),
+	SurfaceHover: Hex("#1a1e2c"),
+	Surface2:     Hex("#232838"),
+	Surface3:     Hex("#2d3346"),
+
+	Text:            Hex("#e0e6f0"),
+	TextMuted:       Hex("#8892a8"),
+	TextOnPrimary:   Hex("#0c0e14"),
+	TextOnSecondary: Hex("#0c0e14"),
+	TextOnAccent:    Hex("#e0e6f0"),
+	TextDisabled:    Hex("#555e74"),
+
+	Border:    Hex("#2d3346"),
+	FocusRing: Hex("#18d5c4"),
+
+	Error:   Hex("#f06070"),
+	Warning: Hex("#f0b840"),
+	Success: Hex("#40e890"),
+	Info:    Hex("#4d8bff"),
+
+	TextOnError:   Hex("#0c0e14"),
+	TextOnWarning: Hex("#0c0e14"),
+	TextOnSuccess: Hex("#0c0e14"),
+	TextOnInfo:    Hex("#e0e6f0"),
+
+	ActiveCursor:  Hex("#18d5c4"),
+	Selection:     Hex("#18d5c4").WithAlpha(0.26),
+	SelectionText: Hex("#0c0e14"),
+
+	ScrollbarTrack: Hex("#12151e"),
+	ScrollbarThumb: Hex("#2d3346"),
+
+	Overlay: Hex("#0c0e14").WithAlpha(0.8),
+
+	Placeholder: Hex("#555e74"),
+	Cursor:      Hex("#18d5c4"),
+
+	Link: Hex("#4d8bff"),
+}
+
+// understoryThemeData - Earthy & organic dark theme with moss green and terracotta tones
+var understoryThemeData = ThemeData{
+	Name: ThemeNameUnderstory,
+
+	Primary:   Hex("#7fa87a"),
+	Secondary: Hex("#c07a58"),
+	Accent:    Hex("#c9b06b"),
+
+	Background:   Hex("#151a18"),
+	Surface:      Hex("#1c2320"),
+	SurfaceHover: Hex("#262e2a"),
+	Surface2:     Hex("#313a35"),
+	Surface3:     Hex("#3c4641"),
+
+	Text:            Hex("#d4ddd0"),
+	TextMuted:       Hex("#8d9a88"),
+	TextOnPrimary:   Hex("#151a18"),
+	TextOnSecondary: Hex("#151a18"),
+	TextOnAccent:    Hex("#151a18"),
+	TextDisabled:    Hex("#5e6b5a"),
+
+	Border:    Hex("#3c4641"),
+	FocusRing: Hex("#7fa87a"),
+
+	Error:   Hex("#cf6b6b"),
+	Warning: Hex("#c9b06b"),
+	Success: Hex("#7fa87a"),
+	Info:    Hex("#6b9fba"),
+
+	TextOnError:   Hex("#151a18"),
+	TextOnWarning: Hex("#151a18"),
+	TextOnSuccess: Hex("#151a18"),
+	TextOnInfo:    Hex("#151a18"),
+
+	ActiveCursor:  Hex("#7fa87a"),
+	Selection:     Hex("#7fa87a").WithAlpha(0.26),
+	SelectionText: Hex("#151a18"),
+
+	ScrollbarTrack: Hex("#1c2320"),
+	ScrollbarThumb: Hex("#3c4641"),
+
+	Overlay: Hex("#151a18").WithAlpha(0.8),
+
+	Placeholder: Hex("#5e6b5a"),
+	Cursor:      Hex("#7fa87a"),
+
+	Link: Hex("#c07a58"),
+}
+
 // ============================================================================
 // Light Theme Definitions
 // ============================================================================
@@ -1272,6 +1472,10 @@ var themeRegistry = map[string]ThemeData{
 	ThemeNameAurora:        auroraThemeData,
 	ThemeNameObsidianTide:  obsidianTideThemeData,
 	ThemeNameMidnightEmber: midnightEmberThemeData,
+	ThemeNameHearthstone:   hearthstoneThemeData,
+	ThemeNameCyberdeck:     cyberdeckThemeData,
+	ThemeNameNeonReef:      neonReefThemeData,
+	ThemeNameUnderstory:    understoryThemeData,
 	// Light themes
 	ThemeNameRosePineDawn:    rosePineDawnThemeData,
 	ThemeNameDraculaLight:    draculaLightThemeData,
