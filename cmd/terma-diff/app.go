@@ -81,6 +81,7 @@ type DiffApp struct {
 	diffLayoutMode      DiffLayoutMode
 	diffHardWrap        bool
 	diffHideChangeSigns bool
+	diffIntralineStyle  IntralineStyleMode
 	focusedWidgetID     string
 	sidebarVisible      bool
 
@@ -131,6 +132,7 @@ func NewDiffApp(provider DiffProvider, staged bool) *DiffApp {
 		sidebarVisible:      true,
 		diffLayoutMode:      DiffLayoutUnified,
 		diffHideChangeSigns: true,
+		diffIntralineStyle:  IntralineStyleModeBackground,
 		lastNonDividerFocus: diffViewerScrollID,
 		focusReturnID:       diffViewerScrollID,
 	}
@@ -296,6 +298,7 @@ func (a *DiffApp) Keybinds() []t.Keybind {
 		{Key: "s", Name: "Switch section", Action: a.switchSectionFocus, Hidden: true},
 		{Key: "w", Name: "Toggle line wrap", Action: a.toggleDiffWrap, Hidden: true},
 		{Key: "v", Name: "Toggle side-by-side", Action: a.toggleDiffLayoutMode, Hidden: true},
+		{Key: "i", Name: "Toggle intraline style", Action: a.toggleDiffIntralineStyle, Hidden: true},
 		{Key: "d", Name: "Focus divider", Action: a.focusDivider, Hidden: true},
 		{Key: "ctrl+p", Name: "Command palette", Action: a.togglePalette},
 		{Key: "ctrl+t", Name: "Theme menu", Action: a.openThemePalette, Hidden: true},
@@ -613,6 +616,7 @@ func (a *DiffApp) buildRightPane(theme t.ThemeData) t.Widget {
 		LayoutMode:      a.diffLayoutMode,
 		HardWrap:        a.diffHardWrap,
 		HideChangeSigns: a.diffHideChangeSigns,
+		IntralineStyle:  a.diffIntralineStyle,
 		Palette:         NewThemePalette(theme),
 		Style: t.Style{
 			Width:           t.Flex(1),
@@ -1460,6 +1464,14 @@ func (a *DiffApp) toggleDiffChangeSigns() {
 	a.clampDiffHorizontalScroll()
 }
 
+func (a *DiffApp) toggleDiffIntralineStyle() {
+	if a.diffIntralineStyle == IntralineStyleModeBackground {
+		a.diffIntralineStyle = IntralineStyleModeUnderline
+		return
+	}
+	a.diffIntralineStyle = IntralineStyleModeBackground
+}
+
 func (a *DiffApp) clampDiffHorizontalScroll() {
 	if a.diffViewState == nil {
 		return
@@ -1813,6 +1825,12 @@ func (a *DiffApp) newCommandPalette() *t.CommandPaletteState {
 			Label:      "Toggle +/- symbols",
 			FilterText: "Toggle plus minus symbols signs prefixes add remove",
 			Action:     a.paletteAction(a.toggleDiffChangeSigns),
+		},
+		{
+			Label:      "Toggle intraline style",
+			FilterText: "Toggle intraline style highlight background underline changed characters",
+			Hint:       "[i]",
+			Action:     a.paletteAction(a.toggleDiffIntralineStyle),
 		},
 		{
 			Label:         "Theme",

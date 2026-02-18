@@ -17,6 +17,7 @@ type DiffView struct {
 	LayoutMode      DiffLayoutMode
 	HardWrap        bool
 	HideChangeSigns bool
+	IntralineStyle  IntralineStyleMode
 	Palette         ThemePalette
 	Width           t.Dimension
 	Height          t.Dimension
@@ -831,7 +832,7 @@ func (d DiffView) renderSegments(ctx *t.RenderContext, row int, startX int, visi
 		if segment.Text == "" {
 			continue
 		}
-		style := d.styleForRole(segment.Role)
+		style := d.styleForSegment(segment)
 		remaining := segment.Text
 		for len(remaining) > 0 {
 			grapheme, width := ansi.FirstGraphemeCluster(remaining, ansi.GraphemeWidth)
@@ -868,6 +869,15 @@ func (d DiffView) renderSegments(ctx *t.RenderContext, row int, startX int, visi
 	}
 }
 
+func (d DiffView) styleForSegment(segment RenderedSegment) t.Style {
+	style := d.styleForRole(segment.Role)
+	overlay, ok := d.Palette.IntralineOverlayStyle(segment.Intraline, d.IntralineStyle)
+	if !ok {
+		return style
+	}
+	return applyIntralineOverlay(style, overlay)
+}
+
 func (d DiffView) drawText(ctx *t.RenderContext, x int, y int, value string, role TokenRole) {
 	if x >= ctx.Width || y < 0 || y >= ctx.Height || value == "" {
 		return
@@ -880,6 +890,47 @@ func (d DiffView) styleForRole(role TokenRole) t.Style {
 	if !ok {
 		return t.Style{}
 	}
+	return styleFromSpanStyle(span)
+}
+
+func applyIntralineOverlay(base t.Style, overlay t.SpanStyle) t.Style {
+	if overlay.Foreground.IsSet() {
+		base.ForegroundColor = overlay.Foreground
+	}
+	if overlay.Background.IsSet() {
+		base.BackgroundColor = overlay.Background
+	}
+	if overlay.Underline != t.UnderlineNone {
+		base.Underline = overlay.Underline
+	}
+	if overlay.UnderlineColor.IsSet() {
+		base.UnderlineColor = overlay.UnderlineColor
+	}
+	if overlay.Bold {
+		base.Bold = true
+	}
+	if overlay.Faint {
+		base.Faint = true
+	}
+	if overlay.Italic {
+		base.Italic = true
+	}
+	if overlay.Blink {
+		base.Blink = true
+	}
+	if overlay.Reverse {
+		base.Reverse = true
+	}
+	if overlay.Conceal {
+		base.Conceal = true
+	}
+	if overlay.Strikethrough {
+		base.Strikethrough = true
+	}
+	return base
+}
+
+func styleFromSpanStyle(span t.SpanStyle) t.Style {
 	style := t.Style{
 		Bold:           span.Bold,
 		Faint:          span.Faint,
