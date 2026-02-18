@@ -296,6 +296,8 @@ func (a *DiffApp) Keybinds() []t.Keybind {
 		{Key: "s", Name: "Switch section", Action: a.switchSectionFocus, Hidden: true},
 		{Key: "w", Name: "Toggle line wrap", Action: a.toggleDiffWrap, Hidden: true},
 		{Key: "v", Name: "Toggle side-by-side", Action: a.toggleDiffLayoutMode, Hidden: true},
+		{Key: "ctrl+h", Name: "Shift split left", Action: a.shiftSideBySideSplitLeft, Hidden: true},
+		{Key: "ctrl+l", Name: "Shift split right", Action: a.shiftSideBySideSplitRight, Hidden: true},
 		{Key: "d", Name: "Focus divider", Action: a.focusDivider, Hidden: true},
 		{Key: "ctrl+p", Name: "Command palette", Action: a.togglePalette},
 		{Key: "ctrl+t", Name: "Theme menu", Action: a.openThemePalette, Hidden: true},
@@ -1070,6 +1072,7 @@ func (a *DiffApp) toggleDiffLayoutMode() {
 
 	a.rememberToggleLayoutScroll(sourceMode, targetMode, sourceOffset, targetOffset)
 	a.diffLayoutMode = targetMode
+	a.refreshCommandPaletteItems()
 	a.clampDiffHorizontalScroll()
 
 	if a.diffScrollState != nil {
@@ -1078,6 +1081,60 @@ func (a *DiffApp) toggleDiffLayoutMode() {
 	if a.diffViewState != nil {
 		a.diffViewState.ScrollY.Set(targetOffset)
 	}
+}
+
+func (a *DiffApp) resetSideBySideSplit() {
+	if a.diffLayoutMode != DiffLayoutSideBySide || a.diffViewState == nil {
+		return
+	}
+	if a.diffViewState.SideBySideSplitRatio() == 0.5 {
+		return
+	}
+	a.diffViewState.SetSideBySideSplitRatio(0.5)
+	a.diffViewState.MarkSideDividerResized()
+	a.clampDiffHorizontalScroll()
+}
+
+func (a *DiffApp) shiftSideBySideSplitLeft() {
+	a.shiftSideBySideSplit(-1)
+}
+
+func (a *DiffApp) shiftSideBySideSplitRight() {
+	a.shiftSideBySideSplit(1)
+}
+
+func (a *DiffApp) shiftSideBySideSplit(delta int) {
+	if delta == 0 || a.diffLayoutMode != DiffLayoutSideBySide || a.diffViewState == nil {
+		return
+	}
+	sideBySide := a.diffViewState.SideBySide.Peek()
+	if sideBySide == nil {
+		return
+	}
+	viewportWidth := a.diffViewState.ViewportWidth()
+	if viewportWidth <= 0 {
+		return
+	}
+
+	metrics := sideBySideDividerMetrics(viewportWidth, sideBySide, a.diffHideChangeSigns)
+	panes := sideBySidePaneLayout(
+		viewportWidth,
+		sideBySide,
+		a.diffHideChangeSigns,
+		a.diffViewState.SideBySideSplitRatio(),
+	)
+	nextOffset := clampInt(panes.DividerX+delta, metrics.MinOffset, metrics.MaxOffset)
+	if nextOffset == panes.DividerX {
+		return
+	}
+
+	ratio := 0.5
+	if metrics.Available > 0 {
+		ratio = float64(nextOffset) / float64(metrics.Available)
+	}
+	a.diffViewState.SetSideBySideSplitRatio(ratio)
+	a.diffViewState.MarkSideDividerResized()
+	a.clampDiffHorizontalScroll()
 }
 
 func (a *DiffApp) currentDiffVerticalOffset() int {
@@ -1185,7 +1242,12 @@ func (a *DiffApp) diffLayoutVisualRows(mode DiffLayoutMode) int {
 		if viewportWidth <= 0 {
 			return len(sideBySide.Rows)
 		}
-		panes := sideBySidePaneLayout(viewportWidth, sideBySide, a.diffHideChangeSigns)
+		panes := sideBySidePaneLayout(
+			viewportWidth,
+			sideBySide,
+			a.diffHideChangeSigns,
+			a.diffViewState.SideBySideSplitRatio(),
+		)
 		return wrappedSideContentHeight(sideBySide.Rows, panes, viewportWidth)
 	}
 
@@ -1477,6 +1539,7 @@ func (a *DiffApp) diffScrollGutterWidth() int {
 			a.diffViewState.SideBySide.Peek(),
 			a.diffHideChangeSigns,
 			a.diffViewState.ViewportWidth(),
+			a.diffViewState.SideBySideSplitRatio(),
 		)
 	}
 	return renderedGutterWidth(a.diffViewState.Rendered.Peek(), a.diffHideChangeSigns)
@@ -1770,7 +1833,11 @@ func focusedWidgetID(ctx t.BuildContext) string {
 }
 
 func (a *DiffApp) newCommandPalette() *t.CommandPaletteState {
-	return t.NewCommandPaletteState("Commands", []t.CommandPaletteItem{
+	return t.NewCommandPaletteState("Commands", a.commandPaletteItems())
+}
+
+func (a *DiffApp) commandPaletteItems() []t.CommandPaletteItem {
+	items := []t.CommandPaletteItem{
 		{
 			Label:      "Switch section",
 			FilterText: "Switch section staged unstaged",
@@ -1809,17 +1876,39 @@ func (a *DiffApp) newCommandPalette() *t.CommandPaletteState {
 			Hint:       "[v]",
 			Action:     a.paletteAction(a.toggleDiffLayoutMode),
 		},
-		{
+	}
+	if a.diffLayoutMode == DiffLayoutSideBySide {
+		items = append(items, t.CommandPaletteItem{
+			Label:      "Reset pane split",
+			FilterText: "Reset pane split divider even ratio 50 50",
+			Action:     a.paletteAction(a.resetSideBySideSplit),
+		})
+	}
+
+	items = append(items,
+		t.CommandPaletteItem{
 			Label:      "Toggle +/- symbols",
 			FilterText: "Toggle plus minus symbols signs prefixes add remove",
 			Action:     a.paletteAction(a.toggleDiffChangeSigns),
 		},
-		{
+		t.CommandPaletteItem{
 			Label:         "Theme",
 			ChildrenTitle: diffThemesPalette,
 			Children:      a.themeItems,
 		},
-	})
+	)
+	return items
+}
+
+func (a *DiffApp) refreshCommandPaletteItems() {
+	if a.commandPalette == nil {
+		return
+	}
+	level := a.commandPalette.CurrentLevel()
+	if level == nil || level.Title != "Commands" {
+		return
+	}
+	a.commandPalette.SetItems(a.commandPaletteItems())
 }
 
 func (a *DiffApp) themeItems() []t.CommandPaletteItem {

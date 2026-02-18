@@ -243,6 +243,43 @@ func TestDiffApp_CommandPaletteIncludesCommonActions(tt *testing.T) {
 	require.Equal(tt, "[d]", divider.Hint)
 }
 
+func TestDiffApp_CommandPaletteShowsResetSplitOnlyInSideBySideMode(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+	level := app.commandPalette.CurrentLevel()
+	require.NotNil(tt, level)
+
+	reset := findPaletteItemByLabel(level.Items, "Reset pane split")
+	require.Empty(tt, reset.Label)
+
+	app.toggleDiffLayoutMode()
+	level = app.commandPalette.CurrentLevel()
+	require.NotNil(tt, level)
+	reset = findPaletteItemByLabel(level.Items, "Reset pane split")
+	require.Equal(tt, "Reset pane split", reset.Label)
+	require.True(tt, reset.IsSelectable())
+
+	app.toggleDiffLayoutMode()
+	level = app.commandPalette.CurrentLevel()
+	require.NotNil(tt, level)
+	reset = findPaletteItemByLabel(level.Items, "Reset pane split")
+	require.Empty(tt, reset.Label)
+}
+
+func TestDiffApp_CommandPaletteResetSplitActionResetsToEvenRatio(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+	app.toggleDiffLayoutMode()
+	app.diffViewState.SetSideBySideSplitRatio(0.73)
+
+	level := app.commandPalette.CurrentLevel()
+	require.NotNil(tt, level)
+	reset := findPaletteItemByLabel(level.Items, "Reset pane split")
+	require.Equal(tt, "Reset pane split", reset.Label)
+	require.NotNil(tt, reset.Action)
+
+	reset.Action()
+	require.InDelta(tt, 0.5, app.diffViewState.SideBySideSplitRatio(), 0.00001)
+}
+
 func TestDiffApp_CommandPaletteUsesLayoutAndAppearanceSections(tt *testing.T) {
 	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
 	level := app.commandPalette.CurrentLevel()
@@ -296,6 +333,8 @@ func TestDiffApp_KeybindsHideCommandsExposedInPalette(tt *testing.T) {
 	require.True(tt, keybindIsHidden(keybinds, "s"))
 	require.True(tt, keybindIsHidden(keybinds, "r"))
 	require.True(tt, keybindIsHidden(keybinds, "d"))
+	require.True(tt, keybindIsHidden(keybinds, "ctrl+h"))
+	require.True(tt, keybindIsHidden(keybinds, "ctrl+l"))
 	require.True(tt, keybindIsHidden(keybinds, "w"))
 	require.True(tt, keybindIsHidden(keybinds, "v"))
 	require.True(tt, keybindIsHidden(keybinds, "ctrl+b"))
@@ -325,6 +364,30 @@ func TestDiffApp_KeybindsIncludeSideBySideToggle(tt *testing.T) {
 	require.True(tt, ok)
 	require.Equal(tt, "Toggle side-by-side", keybind.Name)
 	require.True(tt, keybind.Hidden)
+}
+
+func TestDiffApp_KeybindsIncludeSideBySideSplitShiftShortcuts(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+
+	left, ok := findKeybindByKey(app.Keybinds(), "ctrl+h")
+	require.True(tt, ok)
+	require.Equal(tt, "Shift split left", left.Name)
+	require.True(tt, left.Hidden)
+
+	right, ok := findKeybindByKey(app.Keybinds(), "ctrl+l")
+	require.True(tt, ok)
+	require.Equal(tt, "Shift split right", right.Name)
+	require.True(tt, right.Hidden)
+
+	app.diffLayoutMode = DiffLayoutSideBySide
+
+	left, ok = findKeybindByKey(app.Keybinds(), "ctrl+h")
+	require.True(tt, ok)
+	require.True(tt, left.Hidden)
+
+	right, ok = findKeybindByKey(app.Keybinds(), "ctrl+l")
+	require.True(tt, ok)
+	require.True(tt, right.Hidden)
 }
 
 func TestDiffApp_KeybindsIncludeThemeMenuShortcut(tt *testing.T) {
@@ -1068,7 +1131,13 @@ func TestDiffApp_DiffScrollStateHorizontalCallbacksMoveAndClampInSideBySideMode(
 		RightMaxContentWidth: 96,
 	}
 	app.diffViewState.SetRenderedPair(rendered, side)
-	gutterWidth := sideBySideStateGutterWidth(rendered, side, app.diffHideChangeSigns, 60)
+	gutterWidth := sideBySideStateGutterWidth(
+		rendered,
+		side,
+		app.diffHideChangeSigns,
+		60,
+		app.diffViewState.SideBySideSplitRatio(),
+	)
 	app.diffViewState.SetViewport(60, 10, gutterWidth)
 
 	require.NotNil(tt, app.diffScrollState.OnScrollRight)
@@ -1080,7 +1149,7 @@ func TestDiffApp_DiffScrollStateHorizontalCallbacksMoveAndClampInSideBySideMode(
 
 	handled = app.diffScrollState.ScrollRight(1000)
 	require.True(tt, handled)
-	require.Equal(tt, sideBySideMaxScrollX(side, app.diffHideChangeSigns, 60), app.diffViewState.ScrollX.Peek())
+	require.Equal(tt, sideBySideMaxScrollX(side, app.diffHideChangeSigns, 60, app.diffViewState.SideBySideSplitRatio()), app.diffViewState.ScrollX.Peek())
 
 	handled = app.diffScrollState.ScrollLeft(1000)
 	require.True(tt, handled)
@@ -1107,6 +1176,62 @@ func TestDiffApp_DiffScrollStateHorizontalCallbacksNoopWhenWrappedInSideBySideMo
 	handled := app.diffScrollState.ScrollRight(1)
 	require.False(tt, handled)
 	require.Equal(tt, 9, app.diffViewState.ScrollX.Peek())
+}
+
+func TestDiffApp_ShiftSideBySideSplitActionsMoveDividerByOneCell(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+	app.diffLayoutMode = DiffLayoutSideBySide
+
+	rendered := buildTestRenderedFile(20, 120)
+	side := &SideBySideRenderedFile{
+		Title:                "test",
+		Rows:                 []SideBySideRenderedRow{{Left: &RenderedSideCell{Kind: RenderedLineContext, LineNumber: 1, Prefix: " ", ContentWidth: 120}, Right: &RenderedSideCell{Kind: RenderedLineContext, LineNumber: 1, Prefix: " ", ContentWidth: 96}}},
+		LeftNumWidth:         2,
+		RightNumWidth:        2,
+		LeftMaxContentWidth:  120,
+		RightMaxContentWidth: 96,
+	}
+	app.diffViewState.SetRenderedPair(rendered, side)
+	gutterWidth := sideBySideStateGutterWidth(
+		rendered,
+		side,
+		app.diffHideChangeSigns,
+		60,
+		app.diffViewState.SideBySideSplitRatio(),
+	)
+	app.diffViewState.SetViewport(60, 10, gutterWidth)
+
+	before := sideBySidePaneLayout(60, side, app.diffHideChangeSigns, app.diffViewState.SideBySideSplitRatio())
+	right, ok := findKeybindByKey(app.Keybinds(), "ctrl+l")
+	require.True(tt, ok)
+	require.NotNil(tt, right.Action)
+	right.Action()
+	require.True(tt, app.diffViewState.SideDividerOverlayVisible())
+
+	afterRight := sideBySidePaneLayout(60, side, app.diffHideChangeSigns, app.diffViewState.SideBySideSplitRatio())
+	require.Equal(tt, before.DividerX+1, afterRight.DividerX)
+
+	left, ok := findKeybindByKey(app.Keybinds(), "ctrl+h")
+	require.True(tt, ok)
+	require.NotNil(tt, left.Action)
+	left.Action()
+	require.True(tt, app.diffViewState.SideDividerOverlayVisible())
+
+	afterLeft := sideBySidePaneLayout(60, side, app.diffHideChangeSigns, app.diffViewState.SideBySideSplitRatio())
+	require.Equal(tt, before.DividerX, afterLeft.DividerX)
+}
+
+func TestDiffApp_ShiftSideBySideSplitActionsNoopOutsideSideBySide(tt *testing.T) {
+	app := NewDiffApp(&scriptedDiffProvider{repoRoot: "/tmp/repo"}, false)
+	app.diffViewState.SetSideBySideSplitRatio(0.71)
+
+	right, ok := findKeybindByKey(app.Keybinds(), "ctrl+l")
+	require.True(tt, ok)
+	require.NotNil(tt, right.Action)
+	right.Action()
+
+	require.InDelta(tt, 0.71, app.diffViewState.SideBySideSplitRatio(), 0.00001)
+	require.False(tt, app.diffViewState.SideDividerOverlayVisible())
 }
 
 func TestDiffApp_ToggleDiffChangeSigns(tt *testing.T) {

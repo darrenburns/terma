@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -60,6 +61,7 @@ func TestDiffViewState_SetRenderedPairResetsScrollAndStoresBothModels(t *testing
 	state := NewDiffViewState(initial)
 	state.ScrollY.Set(4)
 	state.ScrollX.Set(7)
+	state.SetSideBySideSplitRatio(0.73)
 
 	nextRendered := buildTestRenderedFile(20, 90)
 	nextSide := &SideBySideRenderedFile{
@@ -75,8 +77,39 @@ func TestDiffViewState_SetRenderedPairResetsScrollAndStoresBothModels(t *testing
 
 	require.Equal(t, 0, state.ScrollY.Peek())
 	require.Equal(t, 0, state.ScrollX.Peek())
+	require.Equal(t, 0.73, state.SideBySideSplitRatio())
 	require.Same(t, nextRendered, state.Rendered.Peek())
 	require.Same(t, nextSide, state.SideBySide.Peek())
+}
+
+func TestDiffViewState_SideBySideSplitRatioClampsToRange(t *testing.T) {
+	state := NewDiffViewState(buildTestRenderedFile(4, 10))
+	require.Equal(t, 0.5, state.SideBySideSplitRatio())
+
+	state.SetSideBySideSplitRatio(-1)
+	require.Equal(t, 0.0, state.SideBySideSplitRatio())
+
+	state.SetSideBySideSplitRatio(2)
+	require.Equal(t, 1.0, state.SideBySideSplitRatio())
+}
+
+func TestDiffViewState_SideDividerOverlayVisibleForTwoSecondsAfterResize(t *testing.T) {
+	state := NewDiffViewState(buildTestRenderedFile(4, 10))
+	base := time.Unix(10, 0)
+	state.sideDividerLastResize.Set(base.UnixNano())
+
+	require.True(t, state.sideDividerOverlayVisibleAt(base.Add(1999*time.Millisecond)))
+	require.False(t, state.sideDividerOverlayVisibleAt(base.Add(2*time.Second)))
+}
+
+func TestDiffViewState_SideDividerOverlayVisibleWhileDragging(t *testing.T) {
+	state := NewDiffViewState(buildTestRenderedFile(4, 10))
+	state.StartSideDividerDrag(4, 4)
+
+	require.True(t, state.sideDividerOverlayVisibleAt(time.Unix(0, 0).Add(24*time.Hour)))
+
+	state.StopSideDividerDrag()
+	require.False(t, state.sideDividerOverlayVisibleAt(time.Unix(0, 0).Add(24*time.Hour)))
 }
 
 func buildTestRenderedFile(lineCount int, contentWidth int) *RenderedFile {

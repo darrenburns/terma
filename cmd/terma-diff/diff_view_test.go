@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	uv "github.com/charmbracelet/ultraviolet"
 	t "github.com/darrenburns/terma"
 	"github.com/stretchr/testify/require"
 )
@@ -123,7 +124,7 @@ func TestSideBySidePaneLayout(tt *testing.T) {
 		RightNumWidth: 2,
 	}
 
-	layout := sideBySidePaneLayout(80, side, false)
+	layout := sideBySidePaneLayout(80, side, false, 0.5)
 	require.Equal(tt, 0, layout.LeftPaneX)
 	require.Equal(tt, 39, layout.LeftPaneWidth)
 	require.Equal(tt, 1, layout.DividerWidth)
@@ -134,6 +135,54 @@ func TestSideBySidePaneLayout(tt *testing.T) {
 	require.Equal(tt, sideLineGutterWidth(2, false), layout.RightGutterWidth)
 	require.Equal(tt, layout.LeftPaneWidth-layout.LeftGutterWidth, layout.LeftContentWidth)
 	require.Equal(tt, layout.RightPaneWidth-layout.RightGutterWidth, layout.RightContentWidth)
+}
+
+func TestSideBySidePaneLayout_ClampsToDynamicMinima(tt *testing.T) {
+	side := &SideBySideRenderedFile{
+		LeftNumWidth:  3,
+		RightNumWidth: 2,
+	}
+	metrics := sideBySideDividerMetrics(60, side, false)
+	require.Less(tt, metrics.MinOffset, metrics.MaxOffset)
+
+	leftClamped := sideBySidePaneLayout(60, side, false, 0.01)
+	require.Equal(tt, metrics.MinOffset, leftClamped.DividerX)
+	require.Equal(tt, metrics.MinOffset, leftClamped.LeftPaneWidth)
+
+	rightClamped := sideBySidePaneLayout(60, side, false, 0.99)
+	require.Equal(tt, metrics.MaxOffset, rightClamped.DividerX)
+	require.Equal(tt, metrics.Available-metrics.MaxOffset, rightClamped.RightPaneWidth)
+}
+
+func TestSideBySidePaneLayout_NarrowViewLocksDividerToCenter(tt *testing.T) {
+	side := &SideBySideRenderedFile{
+		LeftNumWidth:  3,
+		RightNumWidth: 2,
+	}
+	metrics := sideBySideDividerMetrics(10, side, false)
+	require.Equal(tt, metrics.MinOffset, metrics.MaxOffset)
+	require.Equal(tt, 4, metrics.MinOffset)
+
+	layout := sideBySidePaneLayout(10, side, false, 0.95)
+	require.Equal(tt, metrics.MinOffset, layout.DividerX)
+	require.Equal(tt, 4, layout.LeftPaneWidth)
+	require.Equal(tt, 5, layout.RightPaneWidth)
+}
+
+func TestSideBySidePaneLayout_RatioRoundTripPreservesOffsets(tt *testing.T) {
+	side := &SideBySideRenderedFile{
+		LeftNumWidth:  3,
+		RightNumWidth: 2,
+	}
+	metrics := sideBySideDividerMetrics(80, side, false)
+	for offset := metrics.MinOffset; offset <= metrics.MaxOffset; offset++ {
+		ratio := 0.5
+		if metrics.Available > 0 {
+			ratio = float64(offset) / float64(metrics.Available)
+		}
+		panes := sideBySidePaneLayout(80, side, false, ratio)
+		require.Equal(tt, offset, panes.DividerX, "offset %d should map back exactly", offset)
+	}
 }
 
 func TestSideDividerLineNumberRole(tt *testing.T) {
@@ -193,6 +242,37 @@ func TestSideDividerStyle_UsesHatchStyleWhenRightIsEmpty(tt *testing.T) {
 	require.Equal(tt, expectedFg, actualFg)
 }
 
+func TestSideDividerStyle_DraggingEmphasizesDividerColumn(tt *testing.T) {
+	theme, ok := t.GetTheme(t.CurrentThemeName())
+	require.True(tt, ok)
+
+	state := NewDiffViewState(buildTestRenderedFile(4, 10))
+	state.StartSideDividerDrag(5, 5)
+
+	view := DiffView{
+		State:   state,
+		Palette: NewThemePalette(theme),
+	}
+	line := SideBySideRenderedRow{
+		Right: &RenderedSideCell{Kind: RenderedLineAdd},
+	}
+
+	dragStyle, ok := view.sideDividerStyle(line)
+	require.True(tt, ok)
+	require.NotNil(tt, dragStyle.ForegroundColor)
+	require.True(tt, dragStyle.ForegroundColor.IsSet())
+
+	state.StopSideDividerDrag()
+	normalStyle, ok := view.sideDividerStyle(line)
+	require.True(tt, ok)
+	require.NotNil(tt, normalStyle.ForegroundColor)
+	require.True(tt, normalStyle.ForegroundColor.IsSet())
+
+	dragFg := dragStyle.ForegroundColor.ColorAt(1, 1, 0, 0)
+	normalFg := normalStyle.ForegroundColor.ColorAt(1, 1, 0, 0)
+	require.Greater(tt, dragFg.Alpha(), normalFg.Alpha())
+}
+
 func TestWrappedSideContentHeight_UsesMaxWrappedRowsPerPair(tt *testing.T) {
 	rows := []SideBySideRenderedRow{
 		{
@@ -234,11 +314,147 @@ func TestSideBySideMaxScrollX(tt *testing.T) {
 		RightMaxContentWidth: 50,
 	}
 
-	maxScroll := sideBySideMaxScrollX(side, false, 60)
-	panes := sideBySidePaneLayout(60, side, false)
+	maxScroll := sideBySideMaxScrollX(side, false, 60, 0.5)
+	panes := sideBySidePaneLayout(60, side, false, 0.5)
 	expected := max(80-panes.LeftContentWidth, 50-panes.RightContentWidth)
 	if expected < 0 {
 		expected = 0
 	}
 	require.Equal(tt, expected, maxScroll)
+}
+
+func TestDiffView_OnMouseDownStartsDragOnlyOnDivider(tt *testing.T) {
+	view, state, _, sideBySide := newSideBySideDragTestView(80)
+	panes := sideBySidePaneLayout(80, sideBySide, view.HideChangeSigns, state.SideBySideSplitRatio())
+
+	view.OnMouseDown(t.MouseEvent{LocalX: panes.DividerX - 1, Button: uv.MouseLeft})
+	require.False(tt, state.SideDividerDragging())
+
+	view.OnMouseDown(t.MouseEvent{LocalX: panes.DividerX, Button: uv.MouseLeft})
+	require.True(tt, state.SideDividerDragging())
+	require.Equal(tt, 0, state.SideDividerDragOffset())
+}
+
+func TestDiffView_OnMouseMoveUpdatesSplitAndClampsScroll(tt *testing.T) {
+	view, state, rendered, sideBySide := newSideBySideDragTestView(80)
+	panes := sideBySidePaneLayout(80, sideBySide, view.HideChangeSigns, state.SideBySideSplitRatio())
+	metrics := sideBySideDividerMetrics(80, sideBySide, view.HideChangeSigns)
+
+	view.OnMouseDown(t.MouseEvent{LocalX: panes.DividerX, Button: uv.MouseLeft})
+	require.True(tt, state.SideDividerDragging())
+
+	state.ScrollX.Set(999)
+	targetX := panes.DividerX + 8
+	view.OnMouseMove(t.MouseEvent{LocalX: targetX, Button: uv.MouseLeft})
+
+	expectedOffset := clampInt(targetX, metrics.MinOffset, metrics.MaxOffset)
+	expectedSplit := float64(expectedOffset) / float64(metrics.Available)
+	require.InDelta(tt, expectedSplit, state.SideBySideSplitRatio(), 0.0001)
+
+	gutterWidth := sideBySideStateGutterWidth(rendered, sideBySide, view.HideChangeSigns, 80, state.SideBySideSplitRatio())
+	require.Equal(tt, state.MaxScrollX(gutterWidth), state.ScrollX.Peek())
+}
+
+func TestDiffView_OnMouseUpStopsDrag(tt *testing.T) {
+	view, state, _, sideBySide := newSideBySideDragTestView(80)
+	panes := sideBySidePaneLayout(80, sideBySide, view.HideChangeSigns, state.SideBySideSplitRatio())
+	view.OnMouseDown(t.MouseEvent{LocalX: panes.DividerX, Button: uv.MouseLeft})
+	require.True(tt, state.SideDividerDragging())
+
+	view.OnMouseUp(t.MouseEvent{Button: uv.MouseLeft})
+	require.False(tt, state.SideDividerDragging())
+	require.True(tt, state.SideDividerOverlayVisible())
+}
+
+func TestDiffView_DraggingIsNoopOutsideSideBySideMode(tt *testing.T) {
+	view, state, _, sideBySide := newSideBySideDragTestView(80)
+	panes := sideBySidePaneLayout(80, sideBySide, view.HideChangeSigns, state.SideBySideSplitRatio())
+	initialSplit := state.SideBySideSplitRatio()
+
+	view.LayoutMode = DiffLayoutUnified
+	view.OnMouseDown(t.MouseEvent{LocalX: panes.DividerX, Button: uv.MouseLeft})
+	require.False(tt, state.SideDividerDragging())
+
+	state.StartSideDividerDrag(panes.DividerX, panes.DividerX)
+	view.OnMouseMove(t.MouseEvent{LocalX: panes.DividerX + 12, Button: uv.MouseLeft})
+	require.False(tt, state.SideDividerDragging())
+	require.Equal(tt, initialSplit, state.SideBySideSplitRatio())
+}
+
+func newSideBySideDragTestView(width int) (DiffView, *DiffViewState, *RenderedFile, *SideBySideRenderedFile) {
+	rendered := buildTestRenderedFile(20, 120)
+	sideBySide := &SideBySideRenderedFile{
+		Title: "drag-test",
+		Rows: []SideBySideRenderedRow{
+			{
+				Left:  &RenderedSideCell{Kind: RenderedLineContext, LineNumber: 1, Prefix: " ", ContentWidth: 120},
+				Right: &RenderedSideCell{Kind: RenderedLineContext, LineNumber: 1, Prefix: " ", ContentWidth: 96},
+			},
+		},
+		LeftNumWidth:         3,
+		RightNumWidth:        2,
+		LeftMaxContentWidth:  120,
+		RightMaxContentWidth: 96,
+	}
+	state := NewDiffViewState(rendered)
+	state.SetRenderedPair(rendered, sideBySide)
+	gutterWidth := sideBySideStateGutterWidth(rendered, sideBySide, false, width, state.SideBySideSplitRatio())
+	state.SetViewport(width, 10, gutterWidth)
+
+	view := DiffView{
+		State:           state,
+		LayoutMode:      DiffLayoutSideBySide,
+		HideChangeSigns: false,
+	}
+	return view, state, rendered, sideBySide
+}
+
+func TestSideDividerSizeOverlayLayout(t *testing.T) {
+	panes := sidePaneLayout{
+		LeftPaneWidth:  39,
+		DividerX:       39,
+		DividerWidth:   1,
+		RightPaneWidth: 40,
+	}
+
+	leftText, leftX, rightText, rightX := sideDividerSizeOverlayLayout(panes, 80)
+	require.Equal(t, "← 39 ", leftText)
+	require.Equal(t, 34, leftX)
+	require.Equal(t, "40 →", rightText)
+	require.Equal(t, 40, rightX)
+}
+
+func TestSideDividerSizeOverlayLayout_HandlesNarrowViewport(tt *testing.T) {
+	panes := sidePaneLayout{
+		LeftPaneWidth:  123,
+		DividerX:       1,
+		DividerWidth:   1,
+		RightPaneWidth: 45,
+	}
+
+	leftText, leftX, rightText, rightX := sideDividerSizeOverlayLayout(panes, 4)
+	require.Equal(tt, "3", leftText)
+	require.Equal(tt, 0, leftX)
+	require.Equal(tt, "45", rightText)
+	require.Equal(tt, 2, rightX)
+}
+
+func TestDiffView_SideDividerOverlayRowIsOneThirdFromTop(tt *testing.T) {
+	view := DiffView{}
+	require.Equal(tt, 6, view.sideDividerOverlayRow(0, 20))
+	require.Equal(tt, 6, view.sideDividerOverlayRow(5, 10))
+	require.Equal(tt, 5, view.sideDividerOverlayRow(5, 6))
+	require.Equal(tt, 5, view.sideDividerOverlayRow(5, 5))
+}
+
+func TestDiffView_SideDividerSizeOverlayStyle_UsesSecondaryLabelColors(tt *testing.T) {
+	theme, ok := t.GetTheme(t.CurrentThemeName())
+	require.True(tt, ok)
+
+	view := DiffView{}
+	style := view.sideDividerSizeOverlayStyle()
+	require.NotNil(tt, style.ForegroundColor)
+	require.NotNil(tt, style.BackgroundColor)
+	require.Equal(tt, theme.SecondaryText, style.ForegroundColor.ColorAt(1, 1, 0, 0))
+	require.Equal(tt, theme.SecondaryBg, style.BackgroundColor.ColorAt(1, 1, 0, 0))
 }
