@@ -93,13 +93,13 @@ func TestDiffViewState_SideBySideSplitRatioClampsToRange(t *testing.T) {
 	require.Equal(t, 1.0, state.SideBySideSplitRatio())
 }
 
-func TestDiffViewState_SideDividerOverlayVisibleForTwoSecondsAfterResize(t *testing.T) {
+func TestDiffViewState_SideDividerOverlayVisibleForOneSecondAfterResize(t *testing.T) {
 	state := NewDiffViewState(buildTestRenderedFile(4, 10))
 	base := time.Unix(10, 0)
 	state.sideDividerLastResize.Set(base.UnixNano())
 
-	require.True(t, state.sideDividerOverlayVisibleAt(base.Add(1999*time.Millisecond)))
-	require.False(t, state.sideDividerOverlayVisibleAt(base.Add(2*time.Second)))
+	require.True(t, state.sideDividerOverlayVisibleAt(base.Add(999*time.Millisecond)))
+	require.False(t, state.sideDividerOverlayVisibleAt(base.Add(1*time.Second)))
 }
 
 func TestDiffViewState_SideDividerOverlayVisibleWhileDragging(t *testing.T) {
