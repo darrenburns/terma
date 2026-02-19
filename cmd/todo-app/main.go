@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	t "terma"
+	t "github.com/darrenburns/terma"
 )
 
 // Task represents a single TODO item.
