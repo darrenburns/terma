@@ -67,17 +67,40 @@ func kittyKeyboardEnabledByEnv() bool {
 	return boolEnv("TERMA_ENABLE_KITTY_KEYBOARD")
 }
 
-func enableTerminalInputModes(writeString func(string) (int, error), enableKittyKeyboard bool) {
+// resolveKittyKeyboardMode decides whether Kitty keyboard protocol should be
+// enabled or force-disabled for this app session.
+//
+// Default is force-disabled to avoid duplicate/synthetic keypress behavior on
+// some terminal stacks. TERMA_ENABLE_KITTY_KEYBOARD opts in and takes
+// precedence when both env vars are set.
+func resolveKittyKeyboardMode() (enableKittyKeyboard bool, forceDisableKittyKeyboard bool) {
+	kittyDisabledByEnv := kittyKeyboardDisabledByEnv()
+	kittyEnabledByEnv := kittyKeyboardEnabledByEnv()
+
+	enableKittyKeyboard = kittyEnabledByEnv
+	if kittyDisabledByEnv && !kittyEnabledByEnv {
+		enableKittyKeyboard = false
+	}
+
+	forceDisableKittyKeyboard = !enableKittyKeyboard
+	return
+}
+
+func enableTerminalInputModes(writeString func(string) (int, error), enableKittyKeyboard bool, forceDisableKittyKeyboard bool) {
 	writeTerminalSequences(writeString, terminalEnableSequences)
 	if enableKittyKeyboard {
 		// Preserve any pre-existing Kitty keyboard state by using stack push.
 		_, _ = writeString(ansi.PushKittyKeyboard(ansi.KittyAllFlags))
+	} else if forceDisableKittyKeyboard {
+		// Explicit opt-out should override any pre-existing Kitty keyboard state
+		// for this app session. Push 0 so cleanup can safely restore prior state.
+		_, _ = writeString(ansi.PushKittyKeyboard(0))
 	}
 }
 
-func disableTerminalInputModes(writeString func(string) (int, error), enableKittyKeyboard bool, aggressive bool) {
+func disableTerminalInputModes(writeString func(string) (int, error), enableKittyKeyboard bool, forceDisableKittyKeyboard bool, aggressive bool) {
 	writeTerminalSequences(writeString, terminalDisableSequences)
-	if enableKittyKeyboard {
+	if enableKittyKeyboard || forceDisableKittyKeyboard {
 		// Restore the previous Kitty keyboard state from the terminal stack.
 		_, _ = writeString(ansi.PopKittyKeyboard(1))
 	}
@@ -223,17 +246,13 @@ func Run(root Widget) (runErr error) {
 	if err := t.Start(); err != nil {
 		return err
 	}
-	// Keep Kitty keyboard protocol enabled by default, but allow opt-out for
-	// environments with buggy pager/terminal combinations.
-	enableKittyKeyboard := !kittyKeyboardDisabledByEnv()
-	if kittyKeyboardEnabledByEnv() {
-		enableKittyKeyboard = true
-	}
+	// Keep Kitty keyboard protocol disabled by default, but allow explicit opt-in.
+	enableKittyKeyboard, forceDisableKittyKeyboard := resolveKittyKeyboardMode()
 
 	t.EnterAltScreen()
 
 	// Enable input reporting modes used by Terma (mouse + Kitty keyboard).
-	enableTerminalInputModes(t.WriteString, enableKittyKeyboard)
+	enableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard)
 
 	// shutdownTerminal restores the terminal to its normal state.
 	// Safe to call multiple times (Shutdown is idempotent).
@@ -243,7 +262,7 @@ func Run(root Widget) (runErr error) {
 		// state to screen buffers, so doing this before shutdown is more
 		// reliable than only restoring after shutdown.
 		preRestoreDone := false
-		disableTerminalInputModes(t.WriteString, enableKittyKeyboard, false)
+		disableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard, false)
 		if err := t.Flush(); err == nil {
 			preRestoreDone = true
 		}
@@ -265,8 +284,8 @@ func Run(root Widget) (runErr error) {
 		_, _ = os.Stdout.WriteString(ansi.ResetModeAltScreenSaveCursor)
 		_, _ = os.Stdout.WriteString(ansi.SetModeTextCursorEnable)
 		// If pre-shutdown restore succeeded, avoid a second Kitty pop on stdout.
-		postRestoreKitty := enableKittyKeyboard && !preRestoreDone
-		disableTerminalInputModes(os.Stdout.WriteString, postRestoreKitty, aggressiveRestore)
+		postRestoreKitty := (enableKittyKeyboard || forceDisableKittyKeyboard) && !preRestoreDone
+		disableTerminalInputModes(os.Stdout.WriteString, postRestoreKitty, false, aggressiveRestore)
 		if boolEnv("TERMA_FORCE_TERMINAL_RIS") {
 			_, _ = os.Stdout.WriteString(ansi.ResetInitialState)
 		}
@@ -627,7 +646,7 @@ func Run(root Widget) (runErr error) {
 					if ev.MatchString("ctrl+z") {
 						// Disable input reporting modes before suspending so
 						// the shell gets plain keyboard input while suspended.
-						disableTerminalInputModes(t.WriteString, enableKittyKeyboard, false)
+						disableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard, false)
 
 						// Exit alternate screen to show shell
 						t.ExitAltScreen()
@@ -643,7 +662,7 @@ func Run(root Widget) (runErr error) {
 						t.EnterAltScreen()
 
 						// Re-enable mouse tracking
-						enableTerminalInputModes(t.WriteString, enableKittyKeyboard)
+						enableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard)
 
 						// Redraw the screen
 						requestRender()
