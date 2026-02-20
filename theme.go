@@ -22,6 +22,11 @@ const (
 	ThemeNameCyberdeck     = "cyberdeck"
 	ThemeNameNeonReef      = "neon-reef"
 	ThemeNameUnderstory    = "understory"
+	ThemeNameDwarven = "dwarven"
+	ThemeNameAbyss   = "abyss"
+	ThemeNameAmber   = "amber"
+	ThemeNameVelvet  = "velvet"
+	ThemeNamePhosphor = "phosphor"
 
 	// Light themes
 	ThemeNameRosePineDawn    = "rose-pine-dawn"
@@ -758,20 +763,20 @@ var midnightEmberThemeData = ThemeData{
 	Secondary: Hex("#FFB87A"),
 	Accent:    Hex("#FF6B9E"),
 
-	Background:   Hex("#0F1016"),
-	Surface:      Hex("#171A24"),
-	SurfaceHover: Hex("#202636"),
-	Surface2:     Hex("#2A3246"),
-	Surface3:     Hex("#36415A"),
+	Background:   Hex("#12100e"), // Warm near-black
+	Surface:      Hex("#1c1814"), // Warm surface
+	SurfaceHover: Hex("#282220"), // Warm hover
+	Surface2:     Hex("#342c28"),
+	Surface3:     Hex("#403834"),
 
-	Text:            Hex("#0F1016").AutoText(),
-	TextMuted:       Hex("#9EA7BF"),
-	TextOnPrimary:   Hex("#0F1016"),
-	TextOnSecondary: Hex("#0F1016"),
-	TextOnAccent:    Hex("#0F1016"),
-	TextDisabled:    Hex("#646E86"),
+	Text:            Hex("#12100e").AutoText(),
+	TextMuted:       Hex("#a09088"),
+	TextOnPrimary:   Hex("#12100e"),
+	TextOnSecondary: Hex("#12100e"),
+	TextOnAccent:    Hex("#12100e"),
+	TextDisabled:    Hex("#6a5e56"),
 
-	Border:    Hex("#36415A"),
+	Border:    Hex("#403834"),
 	FocusRing: Hex("#FF9A5C"),
 
 	Error:   Hex("#FF7070"),
@@ -779,21 +784,21 @@ var midnightEmberThemeData = ThemeData{
 	Success: Hex("#67E4AE"),
 	Info:    Hex("#79B9FF"),
 
-	TextOnError:   Hex("#0F1016"),
-	TextOnWarning: Hex("#0F1016"),
-	TextOnSuccess: Hex("#0F1016"),
-	TextOnInfo:    Hex("#0F1016"),
+	TextOnError:   Hex("#12100e"),
+	TextOnWarning: Hex("#12100e"),
+	TextOnSuccess: Hex("#12100e"),
+	TextOnInfo:    Hex("#12100e"),
 
 	ActiveCursor:  Hex("#FF9A5C"),
 	Selection:     Hex("#FF9A5C").WithAlpha(0.26),
-	SelectionText: Hex("#0F1016"),
+	SelectionText: Hex("#12100e"),
 
-	ScrollbarTrack: Hex("#171A24"),
-	ScrollbarThumb: Hex("#36415A"),
+	ScrollbarTrack: Hex("#1c1814"),
+	ScrollbarThumb: Hex("#403834"),
 
-	Overlay: Hex("#0F1016").WithAlpha(0.8),
+	Overlay: Hex("#12100e").WithAlpha(0.8),
 
-	Placeholder: Hex("#646E86"),
+	Placeholder: Hex("#6a5e56"),
 	Cursor:      Hex("#FF9A5C"),
 
 	Link: Hex("#FFB87A"),
@@ -994,6 +999,253 @@ var understoryThemeData = ThemeData{
 
 	Link: Hex("#c07a58"),
 }
+
+// dwarvenThemeData - Industrial monochrome with steel-blue and rust-orange highlights
+var dwarvenThemeData = ThemeData{
+	Name: ThemeNameDwarven,
+
+	Primary:   Hex("#6e8898"), // Steel blue
+	Secondary: Hex("#a09080"), // Warm gray
+	Accent:    Hex("#c87840"), // Rust orange
+
+	Background:   Hex("#121416"), // Near-black
+	Surface:      Hex("#1a1d20"), // Dark steel
+	SurfaceHover: Hex("#24282c"), // Lighter steel
+	Surface2:     Hex("#2e3338"),
+	Surface3:     Hex("#3a4044"),
+
+	Text:            Hex("#d0d4d8"),
+	TextMuted:       Hex("#889098"),
+	TextOnPrimary:   Hex("#121416"),
+	TextOnSecondary: Hex("#121416"),
+	TextOnAccent:    Hex("#121416"),
+	TextDisabled:    Hex("#585e66"),
+
+	Border:    Hex("#3a4044"),
+	FocusRing: Hex("#6e8898"),
+
+	Error:   Hex("#d06060"),
+	Warning: Hex("#c87840"),
+	Success: Hex("#68a870"),
+	Info:    Hex("#6e8898"),
+
+	TextOnError:   Hex("#121416"),
+	TextOnWarning: Hex("#121416"),
+	TextOnSuccess: Hex("#121416"),
+	TextOnInfo:    Hex("#d0d4d8"),
+
+	ActiveCursor:  Hex("#c87840"),
+	Selection:     Hex("#c87840").WithAlpha(DefaultSelectionAlpha),
+	SelectionText: Hex("#121416"),
+
+	ScrollbarTrack: Hex("#1a1d20"),
+	ScrollbarThumb: Hex("#3a4044"),
+
+	Overlay: Hex("#121416").WithAlpha(0.8),
+
+	Placeholder: Hex("#585e66"),
+	Cursor:      Hex("#d0d4d8"),
+
+	Link: Hex("#6e8898"),
+}
+
+// abyssThemeData - Abyssal blues with bioluminescent teal and coral
+var abyssThemeData = ThemeData{
+	Name: ThemeNameAbyss,
+
+	Primary:   Hex("#0098a8"), // Deep teal
+	Secondary: Hex("#60c8b8"), // Sea foam
+	Accent:    Hex("#e87060"), // Coral
+
+	Background:   Hex("#080e18"), // Midnight blue
+	Surface:      Hex("#101a28"), // Deep water
+	SurfaceHover: Hex("#182838"), // Rising depth
+	Surface2:     Hex("#203448"),
+	Surface3:     Hex("#284058"),
+
+	Text:            Hex("#c8d8e8"),
+	TextMuted:       Hex("#7898b0"),
+	TextOnPrimary:   Hex("#080e18"),
+	TextOnSecondary: Hex("#080e18"),
+	TextOnAccent:    Hex("#080e18"),
+	TextDisabled:    Hex("#506878"),
+
+	Border:    Hex("#284058"),
+	FocusRing: Hex("#0098a8"),
+
+	Error:   Hex("#e87060"),
+	Warning: Hex("#d8a048"),
+	Success: Hex("#48b888"),
+	Info:    Hex("#0098a8"),
+
+	TextOnError:   Hex("#080e18"),
+	TextOnWarning: Hex("#080e18"),
+	TextOnSuccess: Hex("#080e18"),
+	TextOnInfo:    Hex("#c8d8e8"),
+
+	ActiveCursor:  Hex("#e87060"),
+	Selection:     Hex("#e87060").WithAlpha(DefaultSelectionAlpha),
+	SelectionText: Hex("#080e18"),
+
+	ScrollbarTrack: Hex("#101a28"),
+	ScrollbarThumb: Hex("#284058"),
+
+	Overlay: Hex("#080e18").WithAlpha(0.8),
+
+	Placeholder: Hex("#506878"),
+	Cursor:      Hex("#c8d8e8"),
+
+	Link: Hex("#60c8b8"),
+}
+
+// amberThemeData - Warm amber and golden tones on dark brown base
+var amberThemeData = ThemeData{
+	Name: ThemeNameAmber,
+
+	Primary:   Hex("#e0a030"), // Amber
+	Secondary: Hex("#d8c090"), // Warm cream
+	Accent:    Hex("#c06030"), // Burnt sienna
+
+	Background:   Hex("#141008"), // Dark brown
+	Surface:      Hex("#1e1810"), // Dark wood
+	SurfaceHover: Hex("#2a2218"), // Lighter wood
+	Surface2:     Hex("#362c20"),
+	Surface3:     Hex("#423828"),
+
+	Text:            Hex("#e8dcc8"),
+	TextMuted:       Hex("#a09070"),
+	TextOnPrimary:   Hex("#141008"),
+	TextOnSecondary: Hex("#141008"),
+	TextOnAccent:    Hex("#e8dcc8"),
+	TextDisabled:    Hex("#706048"),
+
+	Border:    Hex("#423828"),
+	FocusRing: Hex("#e0a030"),
+
+	Error:   Hex("#d85040"),
+	Warning: Hex("#e0a030"),
+	Success: Hex("#80a848"),
+	Info:    Hex("#6898b0"),
+
+	TextOnError:   Hex("#141008"),
+	TextOnWarning: Hex("#141008"),
+	TextOnSuccess: Hex("#141008"),
+	TextOnInfo:    Hex("#e8dcc8"),
+
+	ActiveCursor:  Hex("#e0a030"),
+	Selection:     Hex("#e0a030").WithAlpha(DefaultSelectionAlpha),
+	SelectionText: Hex("#141008"),
+
+	ScrollbarTrack: Hex("#1e1810"),
+	ScrollbarThumb: Hex("#423828"),
+
+	Overlay: Hex("#141008").WithAlpha(0.8),
+
+	Placeholder: Hex("#706048"),
+	Cursor:      Hex("#e8dcc8"),
+
+	Link: Hex("#d8c090"),
+}
+
+
+// velvetThemeData - Rich plum and magenta with gold accents on velvety darks
+var velvetThemeData = ThemeData{
+	Name: ThemeNameVelvet,
+
+	Primary:   Hex("#c060b0"), // Plum
+	Secondary: Hex("#e070a0"), // Magenta pink
+	Accent:    Hex("#d8b060"), // Gold
+
+	Background:   Hex("#140e16"), // Dark plum
+	Surface:      Hex("#1e1620"), // Velvet
+	SurfaceHover: Hex("#2a202e"), // Lighter velvet
+	Surface2:     Hex("#362c3a"),
+	Surface3:     Hex("#423848"),
+
+	Text:            Hex("#dcd0e0"),
+	TextMuted:       Hex("#9888a0"),
+	TextOnPrimary:   Hex("#140e16"),
+	TextOnSecondary: Hex("#140e16"),
+	TextOnAccent:    Hex("#140e16"),
+	TextDisabled:    Hex("#685c70"),
+
+	Border:    Hex("#423848"),
+	FocusRing: Hex("#c060b0"),
+
+	Error:   Hex("#e06068"),
+	Warning: Hex("#d8b060"),
+	Success: Hex("#68b880"),
+	Info:    Hex("#7890c8"),
+
+	TextOnError:   Hex("#140e16"),
+	TextOnWarning: Hex("#140e16"),
+	TextOnSuccess: Hex("#140e16"),
+	TextOnInfo:    Hex("#dcd0e0"),
+
+	ActiveCursor:  Hex("#d8b060"),
+	Selection:     Hex("#d8b060").WithAlpha(DefaultSelectionAlpha),
+	SelectionText: Hex("#140e16"),
+
+	ScrollbarTrack: Hex("#1e1620"),
+	ScrollbarThumb: Hex("#423848"),
+
+	Overlay: Hex("#140e16").WithAlpha(0.8),
+
+	Placeholder: Hex("#685c70"),
+	Cursor:      Hex("#dcd0e0"),
+
+	Link: Hex("#c060b0"),
+}
+
+// phosphorThemeData - Retro green phosphor CRT terminal aesthetic
+var phosphorThemeData = ThemeData{
+	Name: ThemeNamePhosphor,
+
+	Primary:   Hex("#40e850"), // Phosphor green
+	Secondary: Hex("#30a840"), // Dim green
+	Accent:    Hex("#d0e8d0"), // Bright white
+
+	Background:   Hex("#050a08"), // CRT black
+	Surface:      Hex("#0c1410"), // Dark CRT
+	SurfaceHover: Hex("#141e18"), // Lighter CRT
+	Surface2:     Hex("#1c2820"),
+	Surface3:     Hex("#243228"),
+
+	Text:            Hex("#b0e0b0"),
+	TextMuted:       Hex("#608860"),
+	TextOnPrimary:   Hex("#050a08"),
+	TextOnSecondary: Hex("#050a08"),
+	TextOnAccent:    Hex("#050a08"),
+	TextDisabled:    Hex("#406040"),
+
+	Border:    Hex("#243228"),
+	FocusRing: Hex("#40e850"),
+
+	Error:   Hex("#e05050"),
+	Warning: Hex("#c0a040"),
+	Success: Hex("#40e850"),
+	Info:    Hex("#40a8c0"),
+
+	TextOnError:   Hex("#050a08"),
+	TextOnWarning: Hex("#050a08"),
+	TextOnSuccess: Hex("#050a08"),
+	TextOnInfo:    Hex("#050a08"),
+
+	ActiveCursor:  Hex("#40e850"),
+	Selection:     Hex("#40e850").WithAlpha(DefaultSelectionAlpha),
+	SelectionText: Hex("#050a08"),
+
+	ScrollbarTrack: Hex("#0c1410"),
+	ScrollbarThumb: Hex("#243228"),
+
+	Overlay: Hex("#050a08").WithAlpha(0.8),
+
+	Placeholder: Hex("#406040"),
+	Cursor:      Hex("#40e850"),
+
+	Link: Hex("#30a840"),
+}
+
 
 // ============================================================================
 // Light Theme Definitions
@@ -1476,6 +1728,11 @@ var themeRegistry = map[string]ThemeData{
 	ThemeNameCyberdeck:     cyberdeckThemeData,
 	ThemeNameNeonReef:      neonReefThemeData,
 	ThemeNameUnderstory:    understoryThemeData,
+	ThemeNameDwarven:     dwarvenThemeData,
+	ThemeNameAbyss:     abyssThemeData,
+	ThemeNameAmber:     amberThemeData,
+	ThemeNameVelvet:    velvetThemeData,
+	ThemeNamePhosphor:      phosphorThemeData,
 	// Light themes
 	ThemeNameRosePineDawn:    rosePineDawnThemeData,
 	ThemeNameDraculaLight:    draculaLightThemeData,

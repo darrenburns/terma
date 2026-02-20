@@ -855,14 +855,14 @@ func (s Scrollable) OnKey(event KeyEvent) bool {
 		if !s.canScrollY() {
 			return false
 		}
-		s.ScrollUp(viewportHeight / 2)
+		s.ScrollUp(viewportHeight)
 		Log("Scrollable[%s].OnKey: page up, offset %d -> %d", s.ID, oldOffsetY, s.getScrollOffset())
 		return true
 	case event.MatchString("pgdown", "pagedown", "ctrl+d"):
 		if !s.canScrollY() {
 			return false
 		}
-		s.ScrollDown(viewportHeight / 2)
+		s.ScrollDown(viewportHeight)
 		Log("Scrollable[%s].OnKey: page down, offset %d -> %d", s.ID, oldOffsetY, s.getScrollOffset())
 		return true
 	case event.MatchString("home", "g"):

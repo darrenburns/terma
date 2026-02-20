@@ -779,7 +779,7 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 	}
 	guideStyle := t.GuideStyle
 	if guideStyle.IsZero() {
-		guideStyle = Style{ForegroundColor: theme.TextMuted}
+		guideStyle = Style{ForegroundColor: theme.TextMuted.WithAlpha(0.26)}
 	}
 	guideSpanStyle := treeSpanStyleFromStyle(guideStyle)
 	var lastSiblingByPath map[string]bool

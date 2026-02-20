@@ -434,6 +434,7 @@ func (fm *FocusManager) FocusPrevious() {
 // checked first, then the imperative OnKey handler.
 // Returns true if the key was handled.
 func (fm *FocusManager) HandleKey(event KeyEvent) bool {
+	Log("---------")
 	Log("HandleKey: received key %q", event.Key())
 
 	// Handle Tab navigation

@@ -61,33 +61,33 @@ Tree[T]{
 
 ### Fields
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `ID` | `string` | `""` | Optional identifier |
-| `DisableFocus` | `bool` | `false` | Prevent keyboard focus |
-| `State` | `*TreeState[T]` | — | Required state |
-| `NodeID` | `func(T) string` | path-based | Stable ID for nodes when tree structure changes |
-| `RenderNode` | `func(T, TreeNodeContext) Widget` | default | Node renderer |
-| `RenderNodeWithMatch` | `func(T, TreeNodeContext, MatchResult) Widget` | `nil` | Optional renderer with match info |
-| `HasChildren` | `func(T) bool` | `nil` | For lazy nodes with `Children == nil` |
-| `OnExpand` | `func(T, []int, func([]TreeNode[T]))` | `nil` | Lazy load callback |
-| `Filter` | `*FilterState` | `nil` | Filter state (query + options) |
-| `MatchNode` | `func(T, string, FilterOptions) MatchResult` | `MatchString(fmt)` | Custom matcher |
-| `OnSelect` | `func(T)` | `nil` | Invoked on Enter |
-| `OnCursorChange` | `func(T)` | `nil` | Invoked when cursor moves |
-| `ScrollState` | `*ScrollState` | `nil` | Share with Scrollable for scroll-into-view |
-| `Width` | `Dimension` | auto | Width preference |
-| `Height` | `Dimension` | auto | Height preference |
-| `Style` | `Style` | — | Container styling |
-| `MultiSelect` | `bool` | `false` | Enable multi-select |
-| `CursorPrefix` | `string` | `""` | Optional cursor prefix (from `CursorStyle`) |
-| `SelectedPrefix` | `string` | `""` | Optional selection prefix (from `CursorStyle`) |
-| `Indent` | `int` | `2` | Indentation per depth level |
-| `ShowGuideLines` | `*bool` | `true` | Display guide lines connecting tree levels |
-| `GuideStyle` | `Style` | `theme.TextMuted` | Style for guide lines |
-| `ExpandIndicator` | `string` | `"\u25BC"` | Indicator for expanded nodes |
-| `CollapseIndicator` | `string` | `"\u25B6"` | Indicator for collapsed nodes |
-| `LeafIndicator` | `string` | `" "` | Indicator for leaf nodes |
+| Field | Type | Default                        | Description |
+|-------|------|--------------------------------|-------------|
+| `ID` | `string` | `""`                           | Optional identifier |
+| `DisableFocus` | `bool` | `false`                        | Prevent keyboard focus |
+| `State` | `*TreeState[T]` | —                              | Required state |
+| `NodeID` | `func(T) string` | path-based                     | Stable ID for nodes when tree structure changes |
+| `RenderNode` | `func(T, TreeNodeContext) Widget` | default                        | Node renderer |
+| `RenderNodeWithMatch` | `func(T, TreeNodeContext, MatchResult) Widget` | `nil`                          | Optional renderer with match info |
+| `HasChildren` | `func(T) bool` | `nil`                          | For lazy nodes with `Children == nil` |
+| `OnExpand` | `func(T, []int, func([]TreeNode[T]))` | `nil`                          | Lazy load callback |
+| `Filter` | `*FilterState` | `nil`                          | Filter state (query + options) |
+| `MatchNode` | `func(T, string, FilterOptions) MatchResult` | `MatchString(fmt)`             | Custom matcher |
+| `OnSelect` | `func(T)` | `nil`                          | Invoked on Enter |
+| `OnCursorChange` | `func(T)` | `nil`                          | Invoked when cursor moves |
+| `ScrollState` | `*ScrollState` | `nil`                          | Share with Scrollable for scroll-into-view |
+| `Width` | `Dimension` | auto                           | Width preference |
+| `Height` | `Dimension` | auto                           | Height preference |
+| `Style` | `Style` | —                              | Container styling |
+| `MultiSelect` | `bool` | `false`                        | Enable multi-select |
+| `CursorPrefix` | `string` | `""`                           | Optional cursor prefix (from `CursorStyle`) |
+| `SelectedPrefix` | `string` | `""`                           | Optional selection prefix (from `CursorStyle`) |
+| `Indent` | `int` | `2`                            | Indentation per depth level |
+| `ShowGuideLines` | `*bool` | `true`                         | Display guide lines connecting tree levels |
+| `GuideStyle` | `Style` | `theme.TextMuted` (alpha 0.26) | Style for guide lines |
+| `ExpandIndicator` | `string` | `"\u25BC"`                     | Indicator for expanded nodes |
+| `CollapseIndicator` | `string` | `"\u25B6"`                     | Indicator for collapsed nodes |
+| `LeafIndicator` | `string` | `" "`                          | Indicator for leaf nodes |
 
 To disable guide lines:
 
