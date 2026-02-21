@@ -314,10 +314,10 @@ type TabBar struct {
 	Style          Style             // Container style
 	TabStyle       Style             // Inactive tab style
 	ActiveTabStyle Style             // Active tab style
-	Click     func(MouseEvent) // Optional callback invoked when clicked
-	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
-	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
-	Hover     func(bool)       // Optional callback invoked when hover state changes
+	Click          func(MouseEvent)  // Optional callback invoked when clicked
+	MouseDown      func(MouseEvent)  // Optional callback invoked when mouse is pressed
+	MouseUp        func(MouseEvent)  // Optional callback invoked when mouse is released
+	Hover          func(HoverEvent)  // Optional callback invoked when hover state changes
 }
 
 // WidgetID returns the widget's unique identifier.
@@ -369,10 +369,10 @@ func (t TabBar) OnMouseUp(event MouseEvent) {
 	}
 }
 
-// OnHover is called when the hover state changes.
-func (t TabBar) OnHover(hovered bool) {
+// OnHover is called on hover enter/leave transitions.
+func (t TabBar) OnHover(event HoverEvent) {
 	if t.Hover != nil {
-		t.Hover(hovered)
+		t.Hover(event)
 	}
 }
 
@@ -698,7 +698,7 @@ func (t TabView) Build(ctx BuildContext) Widget {
 	content := Switcher{
 		Active:   t.State.ActiveKey(),
 		Children: contentMap,
-		Style:    func() Style {
+		Style: func() Style {
 			style := t.ContentStyle
 			if style.Height.IsUnset() {
 				style.Height = Flex(1)
@@ -715,8 +715,8 @@ func (t TabView) Build(ctx BuildContext) Widget {
 		containerStyle.Height = t.Height
 	}
 	return Column{
-		ID:     t.ID,
-		Style:  containerStyle,
+		ID:    t.ID,
+		Style: containerStyle,
 		Children: []Widget{
 			tabBar,
 			content,

@@ -502,7 +502,7 @@ type WidgetName struct {
     Height   Dimension
     Style    Style       // 4. Styling (optional)
     Click    func()      // 5. Callbacks (optional)
-    Hover    func(bool)
+    Hover    func(HoverEvent)
 }
 ```
 
@@ -514,7 +514,7 @@ type WidgetName struct {
 | Width/Height | `Dimensioned` | `GetDimensions() (Dimension, Dimension)` |
 | Style | `Styled` | `GetStyle() Style` |
 | Click | `Clickable` | `OnClick()` |
-| Hover | `Hoverable` | `OnHover(bool)` |
+| Hover | `Hoverable` | `OnHover(HoverEvent)` |
 
 ### Conditional Rendering
 

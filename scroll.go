@@ -295,7 +295,7 @@ type Scrollable struct {
 	MouseDown     func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp       func(MouseEvent) // Optional callback invoked when mouse is released
 	MouseMove     func(MouseEvent) // Optional callback invoked when mouse is moved while dragging
-	Hover         func(bool)       // Optional callback invoked when hover state changes
+	Hover         func(HoverEvent) // Optional callback invoked when hover state changes
 
 	// Scrollbar appearance customization
 	ScrollbarThumbColor Color // Custom thumb color (default: White unfocused, BrightCyan focused)
@@ -441,11 +441,11 @@ func (s Scrollable) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 	}
 }
 
-// OnHover is called when the hover state changes.
+// OnHover is called on hover enter/leave transitions.
 // Implements the Hoverable interface.
-func (s Scrollable) OnHover(hovered bool) {
+func (s Scrollable) OnHover(event HoverEvent) {
 	if s.Hover != nil {
-		s.Hover(hovered)
+		s.Hover(event)
 	}
 }
 

@@ -31,7 +31,7 @@ Scrollable{
 | `Click` | `func(MouseEvent)` | — | Click callback |
 | `MouseDown` | `func(MouseEvent)` | — | Mouse down callback |
 | `MouseUp` | `func(MouseEvent)` | — | Mouse up callback |
-| `Hover` | `func(bool)` | — | Hover callback |
+| `Hover` | `func(HoverEvent)` | — | Hover transition callback |
 
 ## ScrollState
 

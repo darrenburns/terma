@@ -36,15 +36,18 @@ const (
 
 var terminalEnableSequences = []string{
 	ansi.SetModeMouseNormal,
-	ansi.SetModeMouseAnyEvent,
 	ansi.SetModeMouseButtonEvent,
+	// Some terminals treat 1002/1003 as mutually exclusive tracking modes.
+	// Enable AnyEvent (1003) after ButtonEvent (1002) so plain hover motion
+	// is reported even when no mouse button is pressed.
+	ansi.SetModeMouseAnyEvent,
 	ansi.SetModeMouseExtSgr,
 }
 
 var terminalDisableSequences = []string{
-	ansi.ResetModeMouseNormal,
 	ansi.ResetModeMouseAnyEvent,
 	ansi.ResetModeMouseButtonEvent,
+	ansi.ResetModeMouseNormal,
 	ansi.ResetModeMouseExtSgr,
 }
 
@@ -415,6 +418,8 @@ func Run(root Widget) (runErr error) {
 
 	renderInterval := time.Second / time.Duration(defaultFPS)
 	lastModalCount := 0
+	hoverState := &hoverTracker{}
+	var resolveHoverTarget hoverTargetResolver
 
 	// Render and update focusables
 	display := func() {
@@ -466,6 +471,12 @@ func Run(root Widget) (runErr error) {
 		if updateFocusedSignal() {
 			renderer.Render(root)
 		}
+
+		// Reconcile hover after render so enter/leave transitions still fire when
+		// layout changes under a stationary pointer.
+		if hoverState.Reconcile(resolveHoverTarget, hoveredSignal) {
+			renderer.Render(root)
+		}
 		// Position terminal cursor for IME support (emoji picker, input methods)
 		// Must be before Display() since MoveTo only takes effect on next Display call
 		if focusedID := focusManager.FocusedID(); focusedID != "" {
@@ -492,7 +503,6 @@ func Run(root Widget) (runErr error) {
 
 	clickTracker := &mouseClickTracker{}
 	dragState := &mouseDragState{}
-	currentHoveredID := ""
 
 	resolveMouseTarget := func(x, y int, allowDismiss bool) (*WidgetEntry, bool) {
 		// Check if click is on a float
@@ -517,6 +527,14 @@ func Run(root Widget) (runErr error) {
 		}
 
 		return renderer.WidgetAt(x, y), false
+	}
+
+	resolveHoverTarget = func(x, y int) *WidgetEntry {
+		entry, blocked := resolveMouseTarget(x, y, false)
+		if blocked {
+			return nil
+		}
+		return entry
 	}
 
 	// focusAt finds the innermost focusable widget at (x, y) and focuses it.
@@ -806,41 +824,7 @@ func Run(root Widget) (runErr error) {
 						}
 					}
 
-					// Find the widget under the cursor
-					entry := renderer.WidgetAt(ev.X, ev.Y)
-					var newHovered Widget
-					newHoveredID := ""
-					if entry != nil {
-						newHovered = entry.EventWidget
-						newHoveredID = entry.ID
-					}
-
-					// Only update if hover changed (compare by ID to avoid incomparable type issues)
-					if newHoveredID != currentHoveredID {
-						Log("  Hover changed: %q -> %q", currentHoveredID, newHoveredID)
-
-						// Notify old widget it's no longer hovered
-						oldHovered := hoveredSignal.Get()
-						if oldHovered != nil {
-							if hoverable, ok := oldHovered.(Hoverable); ok {
-								Log("  Calling OnHover(false) on %q", currentHoveredID)
-								hoverable.OnHover(false)
-							}
-						}
-
-						// Update the hovered signal
-						hoveredSignal.Set(newHovered)
-						currentHoveredID = newHoveredID
-
-						// Notify new widget it's now hovered
-						if entry != nil {
-							if hoverable, ok := entry.EventWidget.(Hoverable); ok {
-								Log("  Calling OnHover(true) on %q", newHoveredID)
-								hoverable.OnHover(true)
-							}
-						}
-
-						// Re-render after hover change
+					if hoverState.UpdatePointer(ev.X, ev.Y, ev.Mod, ev.Button, resolveHoverTarget, hoveredSignal) {
 						requestRender()
 					}
 

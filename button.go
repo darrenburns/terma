@@ -36,18 +36,18 @@ func buttonVariantColors(variant ButtonVariant, theme ThemeData) (fg, bg Color) 
 // Button is a focusable widget that renders as styled text.
 // It can be pressed with Enter or Space when focused.
 type Button struct {
-	ID           string        // Optional unique identifier for the button
-	DisableFocus bool          // If true, prevent keyboard focus
-	Label        string        // Display text for the button
-	Variant      ButtonVariant // Semantic color variant (default: ButtonDefault)
-	OnPress      func()        // Callback invoked when button is pressed
-	Width        Dimension     // Deprecated: use Style.Width
-	Height       Dimension     // Deprecated: use Style.Height
-	Style        Style         // Optional styling (colors) applied when not focused
+	ID           string           // Optional unique identifier for the button
+	DisableFocus bool             // If true, prevent keyboard focus
+	Label        string           // Display text for the button
+	Variant      ButtonVariant    // Semantic color variant (default: ButtonDefault)
+	OnPress      func()           // Callback invoked when button is pressed
+	Width        Dimension        // Deprecated: use Style.Width
+	Height       Dimension        // Deprecated: use Style.Height
+	Style        Style            // Optional styling (colors) applied when not focused
 	Click        func(MouseEvent) // Optional callback invoked when clicked
-	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
-	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
-	Hover   func(bool) // Optional callback invoked when hover state changes
+	MouseDown    func(MouseEvent) // Optional callback invoked when mouse is pressed
+	MouseUp      func(MouseEvent) // Optional callback invoked when mouse is released
+	Hover        func(HoverEvent) // Optional callback invoked when hover state changes
 }
 
 // WidgetID returns the button's unique identifier.
@@ -129,7 +129,7 @@ func (b Button) Build(ctx BuildContext) Widget {
 				PlainSpan(b.Label),
 				ColorSpan("]", bracketColor),
 			},
-			Style:  style,
+			Style: style,
 		}
 	}
 
@@ -150,7 +150,7 @@ func (b Button) Build(ctx BuildContext) Widget {
 			PlainSpan(b.Label),
 			ColorSpan("]", bracketColor),
 		},
-		Style:  style,
+		Style: style,
 	}
 }
 
@@ -192,10 +192,10 @@ func (b Button) OnMouseUp(event MouseEvent) {
 	}
 }
 
-// OnHover is called when the hover state changes.
+// OnHover is called on hover enter/leave transitions.
 // Implements the Hoverable interface.
-func (b Button) OnHover(hovered bool) {
+func (b Button) OnHover(event HoverEvent) {
 	if b.Hover != nil {
-		b.Hover(hovered)
+		b.Hover(event)
 	}
 }

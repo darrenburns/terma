@@ -49,16 +49,16 @@ func (p Positioned) Build(ctx BuildContext) Widget {
 // Stack sizes itself based on the largest non-positioned child.
 // Positioned children do not affect Stack's size.
 type Stack struct {
-	ID        string    // Optional unique identifier for the widget
-	Children  []Widget  // Children to overlay (first at bottom, last on top)
-	Alignment Alignment // Default alignment for non-positioned children (default: top-start)
-	Width     Dimension // Deprecated: use Style.Width
-	Height    Dimension // Deprecated: use Style.Height
-	Style     Style     // Optional styling
+	ID        string           // Optional unique identifier for the widget
+	Children  []Widget         // Children to overlay (first at bottom, last on top)
+	Alignment Alignment        // Default alignment for non-positioned children (default: top-start)
+	Width     Dimension        // Deprecated: use Style.Width
+	Height    Dimension        // Deprecated: use Style.Height
+	Style     Style            // Optional styling
 	Click     func(MouseEvent) // Optional callback invoked when clicked
 	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
-	Hover     func(bool)       // Optional callback invoked when hover state changes
+	Hover     func(HoverEvent) // Optional callback invoked when hover state changes
 }
 
 // GetContentDimensions returns the width and height dimension preferences.
@@ -107,10 +107,10 @@ func (s Stack) OnMouseUp(event MouseEvent) {
 	}
 }
 
-// OnHover is called when the hover state changes.
-func (s Stack) OnHover(hovered bool) {
+// OnHover is called on hover enter/leave transitions.
+func (s Stack) OnHover(event HoverEvent) {
 	if s.Hover != nil {
-		s.Hover(hovered)
+		s.Hover(event)
 	}
 }
 

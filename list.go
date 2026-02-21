@@ -448,7 +448,7 @@ type List[T any] struct {
 	Click               func(MouseEvent)                                                   // Optional callback invoked when clicked
 	MouseDown           func(MouseEvent)                                                   // Optional callback invoked when mouse is pressed
 	MouseUp             func(MouseEvent)                                                   // Optional callback invoked when mouse is released
-	Hover               func(bool)                                                         // Optional callback invoked when hover state changes
+	Hover               func(HoverEvent)                                                   // Optional callback invoked when hover state changes
 	Blur                func()                                                             // Optional callback invoked when focus leaves this widget
 }
 
@@ -544,11 +544,11 @@ func (l List[T]) OnMouseUp(event MouseEvent) {
 	}
 }
 
-// OnHover is called when the hover state changes.
+// OnHover is called on hover enter/leave transitions.
 // Implements the Hoverable interface.
-func (l List[T]) OnHover(hovered bool) {
+func (l List[T]) OnHover(event HoverEvent) {
 	if l.Hover != nil {
-		l.Hover(hovered)
+		l.Hover(event)
 	}
 }
 

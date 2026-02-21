@@ -107,7 +107,7 @@ type SplitPane struct {
 	MouseDown func(MouseEvent)
 	MouseUp   func(MouseEvent)
 	MouseMove func(MouseEvent)
-	Hover     func(bool)
+	Hover     func(HoverEvent) // Optional callback invoked when hover state changes
 }
 
 // WidgetID returns the split pane's unique identifier.
@@ -292,10 +292,10 @@ func (s SplitPane) OnMouseUp(event MouseEvent) {
 	}
 }
 
-// OnHover is called when the hover state changes.
-func (s SplitPane) OnHover(hovered bool) {
+// OnHover is called on hover enter/leave transitions.
+func (s SplitPane) OnHover(event HoverEvent) {
 	if s.Hover != nil {
-		s.Hover(hovered)
+		s.Hover(event)
 	}
 }
 

@@ -44,7 +44,7 @@ type Row struct {
 	Click      func(MouseEvent) // Optional callback invoked when clicked
 	MouseDown  func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp    func(MouseEvent) // Optional callback invoked when mouse is released
-	Hover      func(bool)       // Optional callback invoked when hover state changes
+	Hover      func(HoverEvent) // Optional callback invoked when hover state changes
 }
 
 // GetContentDimensions returns the width and height dimension preferences.
@@ -95,11 +95,11 @@ func (r Row) OnMouseUp(event MouseEvent) {
 	}
 }
 
-// OnHover is called when the hover state changes.
+// OnHover is called on hover enter/leave transitions.
 // Implements the Hoverable interface.
-func (r Row) OnHover(hovered bool) {
+func (r Row) OnHover(event HoverEvent) {
 	if r.Hover != nil {
-		r.Hover(hovered)
+		r.Hover(event)
 	}
 }
 
@@ -193,7 +193,7 @@ type Column struct {
 	Click      func(MouseEvent) // Optional callback invoked when clicked
 	MouseDown  func(MouseEvent) // Optional callback invoked when mouse is pressed
 	MouseUp    func(MouseEvent) // Optional callback invoked when mouse is released
-	Hover      func(bool)       // Optional callback invoked when hover state changes
+	Hover      func(HoverEvent) // Optional callback invoked when hover state changes
 }
 
 // GetContentDimensions returns the width and height dimension preferences.
@@ -244,11 +244,11 @@ func (c Column) OnMouseUp(event MouseEvent) {
 	}
 }
 
-// OnHover is called when the hover state changes.
+// OnHover is called on hover enter/leave transitions.
 // Implements the Hoverable interface.
-func (c Column) OnHover(hovered bool) {
+func (c Column) OnHover(event HoverEvent) {
 	if c.Hover != nil {
-		c.Hover(hovered)
+		c.Hover(event)
 	}
 }
 

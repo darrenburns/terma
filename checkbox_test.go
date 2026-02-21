@@ -219,33 +219,35 @@ func TestCheckbox_OnMouseUp(t *testing.T) {
 }
 
 func TestCheckbox_OnHover(t *testing.T) {
-	t.Run("calls Hover callback with true", func(t *testing.T) {
-		var hoverValue bool
+	t.Run("calls Hover callback with HoverEnter", func(t *testing.T) {
+		var received HoverEvent
 		checkbox := &Checkbox{
-			Hover: func(hovered bool) {
-				hoverValue = hovered
+			Hover: func(event HoverEvent) {
+				received = event
 			},
 		}
 
-		checkbox.OnHover(true)
-		assert.True(t, hoverValue)
+		checkbox.OnHover(HoverEvent{Type: HoverEnter, WidgetID: "checkbox"})
+		assert.Equal(t, HoverEnter, received.Type)
+		assert.Equal(t, "checkbox", received.WidgetID)
 	})
 
-	t.Run("calls Hover callback with false", func(t *testing.T) {
-		hoverValue := true
+	t.Run("calls Hover callback with HoverLeave", func(t *testing.T) {
+		var received HoverEvent
 		checkbox := &Checkbox{
-			Hover: func(hovered bool) {
-				hoverValue = hovered
+			Hover: func(event HoverEvent) {
+				received = event
 			},
 		}
 
-		checkbox.OnHover(false)
-		assert.False(t, hoverValue)
+		checkbox.OnHover(HoverEvent{Type: HoverLeave, WidgetID: "checkbox"})
+		assert.Equal(t, HoverLeave, received.Type)
+		assert.Equal(t, "checkbox", received.WidgetID)
 	})
 
 	t.Run("handles nil callback", func(t *testing.T) {
 		checkbox := &Checkbox{}
 		// Should not panic
-		checkbox.OnHover(true)
+		checkbox.OnHover(HoverEvent{Type: HoverEnter})
 	})
 }

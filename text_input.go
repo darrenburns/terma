@@ -460,7 +460,7 @@ type TextInput struct {
 	Click         func(MouseEvent)  // Optional click callback
 	MouseDown     func(MouseEvent)  // Optional mouse down callback
 	MouseUp       func(MouseEvent)  // Optional mouse up callback
-	Hover         func(bool)        // Optional hover callback
+	Hover         func(HoverEvent)  // Optional hover callback
 	Blur          func()            // Optional blur callback
 	ExtraKeybinds []Keybind         // Optional additional keybinds (checked before defaults)
 }
@@ -1061,10 +1061,10 @@ func (t TextInput) OnMouseUp(event MouseEvent) {
 	}
 }
 
-// OnHover is called when the hover state changes.
-func (t TextInput) OnHover(hovered bool) {
+// OnHover is called on hover enter/leave transitions.
+func (t TextInput) OnHover(event HoverEvent) {
 	if t.Hover != nil {
-		t.Hover(hovered)
+		t.Hover(event)
 	}
 }
 

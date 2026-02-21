@@ -8,7 +8,6 @@ import (
 	t "github.com/darrenburns/terma"
 )
 
-
 // HoverText is a Text widget that changes its background color on hover.
 type HoverText struct {
 	ID              string
@@ -50,8 +49,8 @@ func (h *HoverText) Build(ctx t.BuildContext) t.Widget {
 	}
 }
 
-func (h *HoverText) OnHover(hovered bool) {
-	if hovered {
+func (h *HoverText) OnHover(event t.HoverEvent) {
+	if event.Type == t.HoverEnter {
 		colors := []t.Color{t.Green, t.Yellow, t.Magenta, t.Cyan, t.Blue}
 		h.backgroundColor.Set(colors[rand.Intn(len(colors))])
 	} else {

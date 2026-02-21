@@ -33,18 +33,18 @@ const (
 
 // Text is a leaf widget that displays text content.
 type Text struct {
-	ID        string             // Optional unique identifier for the widget
-	Content   string             // Plain text (used if Spans is empty)
-	Spans     []Span             // Rich text segments (takes precedence if non-empty)
-	Wrap      WrapMode           // Wrapping mode (default = WrapNone)
-	TextAlign TextAlign          // Horizontal alignment (default = TextAlignLeft)
-	Width     Dimension          // Deprecated: use Style.Width
-	Height    Dimension          // Deprecated: use Style.Height
-	Style     Style              // Optional styling (colors, inherited by spans)
-	Click     func(MouseEvent)   // Optional callback invoked when clicked
-	MouseDown func(MouseEvent)   // Optional callback invoked when mouse is pressed
-	MouseUp   func(MouseEvent)   // Optional callback invoked when mouse is released
-	Hover     func(bool)         // Optional callback invoked when hover state changes
+	ID        string           // Optional unique identifier for the widget
+	Content   string           // Plain text (used if Spans is empty)
+	Spans     []Span           // Rich text segments (takes precedence if non-empty)
+	Wrap      WrapMode         // Wrapping mode (default = WrapNone)
+	TextAlign TextAlign        // Horizontal alignment (default = TextAlignLeft)
+	Width     Dimension        // Deprecated: use Style.Width
+	Height    Dimension        // Deprecated: use Style.Height
+	Style     Style            // Optional styling (colors, inherited by spans)
+	Click     func(MouseEvent) // Optional callback invoked when clicked
+	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
+	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
+	Hover     func(HoverEvent) // Optional callback invoked when hover state changes
 }
 
 // Build returns itself as Text is a leaf widget.
@@ -82,11 +82,11 @@ func (t Text) OnMouseUp(event MouseEvent) {
 	}
 }
 
-// OnHover is called when the hover state changes.
+// OnHover is called on hover enter/leave transitions.
 // Implements the Hoverable interface.
-func (t Text) OnHover(hovered bool) {
+func (t Text) OnHover(event HoverEvent) {
 	if t.Hover != nil {
-		t.Hover(hovered)
+		t.Hover(event)
 	}
 }
 
@@ -301,9 +301,9 @@ func (t Text) renderPlain(ctx *RenderContext) {
 
 // spanSegment holds a span segment at a relative x position within a line.
 type spanSegment struct {
-	span   Span
-	relX   int // x position relative to line start
-	width  int
+	span  Span
+	relX  int // x position relative to line start
+	width int
 }
 
 // lineData holds all span segments for a single line.

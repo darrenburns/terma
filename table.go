@@ -431,7 +431,7 @@ type Table[T any] struct {
 	Click               func(MouseEvent)                                                                              // Optional callback invoked when clicked
 	MouseDown           func(MouseEvent)                                                                              // Optional callback invoked when mouse is pressed
 	MouseUp             func(MouseEvent)                                                                              // Optional callback invoked when mouse is released
-	Hover               func(bool)                                                                                    // Optional callback invoked when hover state changes
+	Hover               func(HoverEvent)                                                                              // Optional callback invoked when hover state changes
 }
 
 type tableRowLayout struct {
@@ -556,11 +556,11 @@ func (t Table[T]) OnMouseUp(event MouseEvent) {
 	}
 }
 
-// OnHover is called when the hover state changes.
+// OnHover is called on hover enter/leave transitions.
 // Implements the Hoverable interface.
-func (t Table[T]) OnHover(hovered bool) {
+func (t Table[T]) OnHover(event HoverEvent) {
 	if t.Hover != nil {
-		t.Hover(hovered)
+		t.Hover(event)
 	}
 }
 

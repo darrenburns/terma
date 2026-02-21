@@ -36,6 +36,33 @@ type MouseEvent struct {
 	WidgetID   string
 }
 
+// HoverEventType identifies the hover transition kind.
+type HoverEventType int
+
+const (
+	// HoverEnter indicates the pointer entered a widget.
+	HoverEnter HoverEventType = iota
+	// HoverLeave indicates the pointer left a widget.
+	HoverLeave
+)
+
+// HoverEvent describes a pointer hover transition for a widget.
+type HoverEvent struct {
+	Type HoverEventType
+	// Absolute screen coordinates of the pointer.
+	X, Y int
+	// Local coordinates relative to the target widget's bounds.
+	LocalX, LocalY int
+	Button         uv.MouseButton
+	Mod            uv.KeyMod
+	// WidgetID is the ID of the target widget receiving this event.
+	WidgetID string
+	// PreviousWidgetID is the widget hovered before the transition.
+	PreviousWidgetID string
+	// NextWidgetID is the widget hovered after the transition.
+	NextWidgetID string
+}
+
 // Identifiable is implemented by widgets that provide an identity.
 // If WidgetID() returns a non-empty string, that ID takes precedence
 // over the position-based AutoID for focus management and hit testing.
@@ -82,9 +109,9 @@ type MouseMoveHandler interface {
 	OnMouseMove(event MouseEvent)
 }
 
-// Hoverable is implemented by widgets that respond to mouse hover.
+// Hoverable is implemented by widgets that respond to hover transitions.
 type Hoverable interface {
-	OnHover(hovered bool)
+	OnHover(event HoverEvent)
 }
 
 // KeyCapturer is implemented by widgets that capture certain key events,

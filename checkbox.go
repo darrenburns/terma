@@ -31,18 +31,18 @@ func (s *CheckboxState) IsChecked() bool {
 // Checkbox is a focusable widget that displays a checkable box with an optional label.
 // It can be toggled with Enter or Space when focused.
 type Checkbox struct {
-	ID           string          // Optional unique identifier for the checkbox
-	DisableFocus bool            // If true, prevent keyboard focus
-	State        *CheckboxState  // Required - holds checked state
-	Label        string          // Optional text displayed after the indicator
-	Width        Dimension       // Deprecated: use Style.Width
-	Height       Dimension       // Deprecated: use Style.Height
-	Style        Style           // Optional styling applied when not focused
-	OnChange     func(bool)      // Optional callback invoked after state changes
+	ID           string           // Optional unique identifier for the checkbox
+	DisableFocus bool             // If true, prevent keyboard focus
+	State        *CheckboxState   // Required - holds checked state
+	Label        string           // Optional text displayed after the indicator
+	Width        Dimension        // Deprecated: use Style.Width
+	Height       Dimension        // Deprecated: use Style.Height
+	Style        Style            // Optional styling applied when not focused
+	OnChange     func(bool)       // Optional callback invoked after state changes
 	Click        func(MouseEvent) // Optional callback invoked when clicked
-	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
-	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
-	Hover     func(bool)      // Optional callback invoked when hover state changes
+	MouseDown    func(MouseEvent) // Optional callback invoked when mouse is pressed
+	MouseUp      func(MouseEvent) // Optional callback invoked when mouse is released
+	Hover        func(HoverEvent) // Optional callback invoked when hover state changes
 }
 
 // WidgetID returns the checkbox's unique identifier.
@@ -183,10 +183,10 @@ func (c *Checkbox) OnMouseUp(event MouseEvent) {
 	}
 }
 
-// OnHover is called when the hover state changes.
+// OnHover is called on hover enter/leave transitions.
 // Implements the Hoverable interface.
-func (c *Checkbox) OnHover(hovered bool) {
+func (c *Checkbox) OnHover(event HoverEvent) {
 	if c.Hover != nil {
-		c.Hover(hovered)
+		c.Hover(event)
 	}
 }

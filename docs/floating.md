@@ -265,8 +265,8 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
             t.Button{
                 ID:    "help-btn",
                 Label: "?",
-                Hover: func(hovered bool) {
-                    if hovered {
+                Hover: func(event t.HoverEvent) {
+                    if event.Type == t.HoverEnter {
                         a.hoveredButton.Set("help-btn")
                     } else {
                         a.hoveredButton.Set("")

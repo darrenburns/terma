@@ -8,6 +8,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func indexOfString(values []string, target string) int {
+	for i, v := range values {
+		if v == target {
+			return i
+		}
+	}
+	return -1
+}
+
+func TestTerminalEnableSequences_PreferAnyEventAfterButtonEvent(t *testing.T) {
+	buttonIdx := indexOfString(terminalEnableSequences, ansi.SetModeMouseButtonEvent)
+	anyIdx := indexOfString(terminalEnableSequences, ansi.SetModeMouseAnyEvent)
+
+	require.NotEqual(t, -1, buttonIdx)
+	require.NotEqual(t, -1, anyIdx)
+	require.Greater(t, anyIdx, buttonIdx)
+}
+
 func captureTerminalSequences(t *testing.T, fn func(writeString func(string) (int, error))) string {
 	t.Helper()
 
