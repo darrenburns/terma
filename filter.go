@@ -12,7 +12,8 @@ type FilterMode int
 const (
 	// FilterContains matches contiguous substrings (default).
 	FilterContains FilterMode = iota
-	// FilterFuzzy matches characters in order (subsequence).
+	// FilterFuzzy matches characters in order (subsequence); ranked consumers
+	// prefer matches near the start of the string.
 	FilterFuzzy
 )
 
@@ -109,6 +110,12 @@ type FilteredView[T any] struct {
 	Matches []MatchResult
 }
 
+type fuzzyMatchRank struct {
+	start int
+	gap   int
+	span  int
+}
+
 // ApplyFilter filters items using the matcher and returns the view with match data.
 func ApplyFilter[T any](items []T, query string, match func(item T, query string) MatchResult) FilteredView[T] {
 	if match == nil {
@@ -151,6 +158,128 @@ func ApplyFilter[T any](items []T, query string, match func(item T, query string
 		}
 	}
 	return view
+}
+
+func fuzzyWorstMatchRank() fuzzyMatchRank {
+	max := int(^uint(0) >> 1)
+	return fuzzyMatchRank{start: max, gap: max, span: max}
+}
+
+func fuzzyMatchRankFromResult(match MatchResult) fuzzyMatchRank {
+	if !match.Matched {
+		return fuzzyWorstMatchRank()
+	}
+	normalized := normalizeRankRanges(match.Ranges)
+	if len(normalized) == 0 {
+		return fuzzyWorstMatchRank()
+	}
+
+	start := normalized[0].Start
+	end := normalized[len(normalized)-1].End
+	matchedBytes := 0
+	for _, r := range normalized {
+		matchedBytes += r.End - r.Start
+	}
+	span := end - start
+	gap := span - matchedBytes
+	if gap < 0 {
+		gap = 0
+	}
+
+	return fuzzyMatchRank{
+		start: start,
+		gap:   gap,
+		span:  span,
+	}
+}
+
+func fuzzyMatchRankLess(a, b fuzzyMatchRank) bool {
+	if a.start != b.start {
+		return a.start < b.start
+	}
+	if a.gap != b.gap {
+		return a.gap < b.gap
+	}
+	return a.span < b.span
+}
+
+func normalizeRankRanges(ranges []MatchRange) []MatchRange {
+	if len(ranges) == 0 {
+		return nil
+	}
+
+	trimmed := make([]MatchRange, 0, len(ranges))
+	for _, r := range ranges {
+		if r.End <= r.Start {
+			continue
+		}
+		trimmed = append(trimmed, r)
+	}
+	if len(trimmed) == 0 {
+		return nil
+	}
+
+	sort.Slice(trimmed, func(i, j int) bool {
+		if trimmed[i].Start == trimmed[j].Start {
+			return trimmed[i].End < trimmed[j].End
+		}
+		return trimmed[i].Start < trimmed[j].Start
+	})
+
+	merged := trimmed[:0]
+	for _, r := range trimmed {
+		if len(merged) == 0 {
+			merged = append(merged, r)
+			continue
+		}
+		last := &merged[len(merged)-1]
+		if r.Start <= last.End {
+			if r.End > last.End {
+				last.End = r.End
+			}
+			continue
+		}
+		merged = append(merged, r)
+	}
+
+	return merged
+}
+
+func sortFilteredViewByFuzzyRank[T any](view *FilteredView[T]) {
+	if view == nil || len(view.Items) < 2 {
+		return
+	}
+
+	n := len(view.Items)
+	if len(view.Indices) != n || len(view.Matches) != n {
+		return
+	}
+
+	order := make([]int, n)
+	for i := range order {
+		order[i] = i
+	}
+	ranks := make([]fuzzyMatchRank, n)
+	for i := range view.Matches {
+		ranks[i] = fuzzyMatchRankFromResult(view.Matches[i])
+	}
+
+	sort.SliceStable(order, func(i, j int) bool {
+		return fuzzyMatchRankLess(ranks[order[i]], ranks[order[j]])
+	})
+
+	items := make([]T, n)
+	indices := make([]int, n)
+	matches := make([]MatchResult, n)
+	for i, originalIdx := range order {
+		items[i] = view.Items[originalIdx]
+		indices[i] = view.Indices[originalIdx]
+		matches[i] = view.Matches[originalIdx]
+	}
+
+	view.Items = items
+	view.Indices = indices
+	view.Matches = matches
 }
 
 // MatchString matches query against text using the provided options.

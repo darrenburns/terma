@@ -392,6 +392,9 @@ func (s *ListState[T]) ApplyFilter(filter *FilterState, matchItem func(item T, q
 	filtered := ApplyFilter(items, query, func(item T, q string) MatchResult {
 		return matchItem(item, q, options)
 	})
+	if options.Mode == FilterFuzzy {
+		sortFilteredViewByFuzzyRank(&filtered)
+	}
 
 	s.setViewIndices(filtered.Indices)
 	s.cachedMatches = filtered.Matches
@@ -617,6 +620,9 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 		filtered = ApplyFilter(items, query, func(item T, q string) MatchResult {
 			return matchItem(item, q, options)
 		})
+		if options.Mode == FilterFuzzy {
+			sortFilteredViewByFuzzyRank(&filtered)
+		}
 		l.State.setViewIndices(filtered.Indices)
 		l.State.cachedMatches = filtered.Matches
 		l.State.cachedFilterQuery = query

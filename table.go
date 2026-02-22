@@ -3,6 +3,7 @@ package terma
 import (
 	"fmt"
 	"reflect"
+	"sort"
 
 	"github.com/darrenburns/terma/layout"
 )
@@ -751,22 +752,51 @@ func (t Table[T]) filteredRows(rows []T, columnCount int, query string, options 
 	viewRows := make([]T, 0, len(rows))
 	viewIndices := make([]int, 0, len(rows))
 	viewMatches := make([][]MatchResult, 0, len(rows))
+	rowRanks := make([]fuzzyMatchRank, 0, len(rows))
 
 	for rowIdx, row := range rows {
 		cellMatches := make([]MatchResult, columnCount)
 		rowMatched := false
+		bestRank := fuzzyWorstMatchRank()
 		for colIdx := 0; colIdx < columnCount; colIdx++ {
 			match := matchCell(row, rowIdx, colIdx, query, options)
 			cellMatches[colIdx] = match
 			if match.Matched {
 				rowMatched = true
+				rank := fuzzyMatchRankFromResult(match)
+				if fuzzyMatchRankLess(rank, bestRank) {
+					bestRank = rank
+				}
 			}
 		}
 		if rowMatched {
 			viewRows = append(viewRows, row)
 			viewIndices = append(viewIndices, rowIdx)
 			viewMatches = append(viewMatches, cellMatches)
+			rowRanks = append(rowRanks, bestRank)
 		}
+	}
+
+	if options.Mode == FilterFuzzy && len(viewRows) > 1 {
+		order := make([]int, len(viewRows))
+		for i := range order {
+			order[i] = i
+		}
+		sort.SliceStable(order, func(i, j int) bool {
+			return fuzzyMatchRankLess(rowRanks[order[i]], rowRanks[order[j]])
+		})
+
+		sortedRows := make([]T, len(viewRows))
+		sortedIndices := make([]int, len(viewIndices))
+		sortedMatches := make([][]MatchResult, len(viewMatches))
+		for i, originalIdx := range order {
+			sortedRows[i] = viewRows[originalIdx]
+			sortedIndices[i] = viewIndices[originalIdx]
+			sortedMatches[i] = viewMatches[originalIdx]
+		}
+		viewRows = sortedRows
+		viewIndices = sortedIndices
+		viewMatches = sortedMatches
 	}
 
 	return viewRows, viewIndices, viewMatches

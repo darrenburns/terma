@@ -281,7 +281,11 @@ func commandPaletteFilteredView(items []CommandPaletteItem, filter *FilterState)
 	matchItem := func(item CommandPaletteItem, query string) MatchResult {
 		return commandPaletteMatchItem(item, query, options)
 	}
-	return ApplyFilter(items, query, matchItem)
+	view := ApplyFilter(items, query, matchItem)
+	if options.Mode == FilterFuzzy {
+		sortFilteredViewByFuzzyRank(&view)
+	}
+	return view
 }
 
 func commandPaletteMatchItem(item CommandPaletteItem, query string, options FilterOptions) MatchResult {
