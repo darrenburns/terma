@@ -226,4 +226,5 @@ This allows the scrollbar thumb to smoothly track scroll position even with smal
 - Set an `ID` to enable keyboard focus and navigation
 - The scrollbar occupies 1 cell on the right edge
 - Content is clipped to the viewport bounds
+- Inside `Scrollable`, `Height: Flex(...)` and `Height: Percent(...)` are resolved against the visible viewport height
 - Scroll offset is automatically clamped to valid bounds

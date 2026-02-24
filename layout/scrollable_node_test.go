@@ -28,6 +28,37 @@ func (n *fillsMaxWidthNode) ComputeLayout(constraints Constraints) ComputedLayou
 	}
 }
 
+// fillsMaxHeightNode expands to whatever max height it's given.
+// This simulates height: flex/fill behavior.
+type fillsMaxHeightNode struct {
+	Width int
+}
+
+func (n *fillsMaxHeightNode) ComputeLayout(constraints Constraints) ComputedLayout {
+	return ComputedLayout{
+		Box: BoxModel{
+			Width:  n.Width,
+			Height: constraints.MaxHeight,
+		},
+	}
+}
+
+// percentMaxHeightNode sizes itself to a percentage of max height.
+// This simulates height: percent behavior.
+type percentMaxHeightNode struct {
+	Width   int
+	Percent float64
+}
+
+func (n *percentMaxHeightNode) ComputeLayout(constraints Constraints) ComputedLayout {
+	return ComputedLayout{
+		Box: BoxModel{
+			Width:  n.Width,
+			Height: int(float64(constraints.MaxHeight) * n.Percent / 100.0),
+		},
+	}
+}
+
 func TestScrollableNode_NoScrollNeeded(t *testing.T) {
 	t.Run("ContentFitsInViewport", func(t *testing.T) {
 		// Child is 50x30, viewport is 100x100 - no scrolling needed
@@ -424,6 +455,54 @@ func TestScrollableNode_ScrollbarInteraction(t *testing.T) {
 		assert.Equal(t, 99, result.Box.VirtualWidth)
 		assert.False(t, result.Box.IsScrollableX())
 		assert.Equal(t, 0, result.Box.ScrollbarHeight)
+	})
+}
+
+func TestScrollableNode_ViewportRelativeHeightResolution(t *testing.T) {
+	t.Run("FlexLikeHeight_UsesViewportHeight", func(t *testing.T) {
+		scrollable := &ScrollableNode{
+			Child: &fillsMaxHeightNode{Width: 80},
+		}
+		result := scrollable.ComputeLayout(Tight(80, 24))
+
+		assert.Equal(t, 24, result.Box.VirtualHeight)
+		assert.False(t, result.Box.IsScrollableY())
+	})
+
+	t.Run("PercentLikeHeight_UsesViewportHeight", func(t *testing.T) {
+		scrollable := &ScrollableNode{
+			Child: &percentMaxHeightNode{Width: 80, Percent: 50},
+		}
+		result := scrollable.ComputeLayout(Tight(80, 24))
+
+		assert.Equal(t, 12, result.Box.VirtualHeight)
+		assert.False(t, result.Box.IsScrollableY())
+	})
+
+	t.Run("PreviouslyCollapsingFlexPath_UsesViewportHeight", func(t *testing.T) {
+		scrollable := &ScrollableNode{
+			Child: &ColumnNode{
+				Children: []LayoutNode{
+					fixedBox(80, 1),
+					&FlexNode{Flex: 1, Child: fixedBox(80, 0)},
+					fixedBox(80, 1),
+				},
+			},
+		}
+		result := scrollable.ComputeLayout(Tight(80, 24))
+
+		assert.Equal(t, 24, result.Box.VirtualHeight)
+		assert.False(t, result.Box.IsScrollableY())
+	})
+
+	t.Run("NaturallyTallFixedContent_RemainsScrollable", func(t *testing.T) {
+		scrollable := &ScrollableNode{
+			Child: fixedBox(80, 200),
+		}
+		result := scrollable.ComputeLayout(Tight(80, 24))
+
+		assert.Equal(t, 200, result.Box.VirtualHeight)
+		assert.True(t, result.Box.IsScrollableY())
 	})
 }
 

@@ -12,9 +12,9 @@ func TestFlexHeightInTableCell_GracefullyHandled(t *testing.T) {
 	scrollState := NewScrollState()
 
 	// Reproduces the real app layout: Scrollable wrapping a Table.
-	// The Scrollable measures its child with unbounded height.
-	// Flex(1) inside a table cell has no natural size in this context,
-	// so it gracefully returns 0 instead of panicking.
+	// Scrollable resolves Flex/Percent heights against the visible viewport.
+	// Flex(1) inside a table cell should stay bounded to viewport semantics
+	// and should not panic.
 	widget := Scrollable{
 		State:  scrollState,
 		Height: Flex(1),
@@ -34,7 +34,7 @@ func TestFlexHeightInTableCell_GracefullyHandled(t *testing.T) {
 		},
 	}
 
-	// Should not panic - Flex content in unbounded context gracefully returns zero size
+	// Should not panic with viewport-relative Flex sizing inside Scrollable.
 	assert.NotPanics(t, func() {
 		RenderToBuffer(widget, 80, 24)
 	}, "Flex height inside a table cell within a Scrollable should not panic")
@@ -48,23 +48,23 @@ func TestScrollableWithFixedAndFlexChildren(t *testing.T) {
 	gray := RGB(80, 80, 80)
 
 	// A Scrollable containing a Column with both fixed and flex children.
-	// The Scrollable measures with unbounded height, so the Flex child
-	// should gracefully collapse to zero while the fixed child retains its size.
+	// Flex height should resolve against Scrollable's viewport height,
+	// so the Spacer fills remaining vertical space.
 	widget := Scrollable{
 		State: scrollState,
 		Child: Column{
 			Style: Style{BackgroundColor: gray, Width: Flex(1)},
 			Children: []Widget{
 				Text{Content: "Fixed header", Style: Style{BackgroundColor: red, Width: Flex(1)}},
-				Spacer{Height: Flex(1)}, // Flex - should collapse to 0 (not visible)
+				Spacer{Height: Flex(1)}, // Flex - should fill remaining viewport height
 				Text{Content: "Fixed footer", Style: Style{BackgroundColor: blue, Width: Flex(1)}},
 			},
 		},
 	}
 
 	AssertSnapshot(t, widget, 40, 10,
-		"Red 'Fixed header' and blue 'Fixed footer' on adjacent lines (no gap). "+
-			"Flex Spacer between them collapses to 0 height in unbounded context. "+
+		"Red 'Fixed header' at top and blue 'Fixed footer' at bottom. "+
+			"Flex Spacer between them fills the remaining viewport height. "+
 			"Gray column background extends full width.")
 }
 
@@ -77,9 +77,8 @@ func TestScrollableWithNestedFlexInRow(t *testing.T) {
 	gray := RGB(80, 80, 80)
 
 	// A Scrollable containing a Column with a Row that has flex children.
-	// The Row's width is bounded (by Scrollable), but Column's height measurement
-	// is unbounded. The Row itself should lay out correctly (bounded width),
-	// while any Flex height in the Column should collapse.
+	// The Row's width is bounded (by Scrollable), and Flex height below it
+	// should resolve against the Scrollable viewport height.
 	widget := Scrollable{
 		State: scrollState,
 		Child: Column{
@@ -93,7 +92,7 @@ func TestScrollableWithNestedFlexInRow(t *testing.T) {
 						Text{Content: "Right", Style: Style{BackgroundColor: blue}},
 					},
 				},
-				Spacer{Height: Flex(1)}, // Flex height - unbounded, should collapse (not visible)
+				Spacer{Height: Flex(1)}, // Flex height - fills remaining viewport height
 			},
 		},
 	}
@@ -101,5 +100,5 @@ func TestScrollableWithNestedFlexInRow(t *testing.T) {
 	AssertSnapshot(t, widget, 40, 10,
 		"Single row: red 'Left' on left edge, blue 'Right' on right edge, green fills between. "+
 			"Flex width works (Row has bounded width). "+
-			"Flex height Spacer below Row collapses to 0 (Column has unbounded height).")
+			"Flex height Spacer below Row fills remaining viewport height.")
 }

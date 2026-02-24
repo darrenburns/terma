@@ -8,7 +8,7 @@ import "math"
 //
 // The layout algorithm:
 // 1. Reserve scrollbar space if needed (based on AlwaysReserveScrollbarSpace or content size)
-// 2. Measure child with unbounded height to determine virtual content size
+// 2. Measure child with both bounded and unbounded heights, then choose virtual content size
 // 3. If virtual size exceeds viewport, scrollbar space is reserved
 // 4. Build BoxModel with VirtualHeight/ScrollOffsetY populated
 //
@@ -57,10 +57,91 @@ type ScrollableNode struct {
 	MaxHeight int
 }
 
+const scrollableUnboundedMeasureHeight = math.MaxInt32
+
+func clampScrollableMeasureHeight(maxHeight int) int {
+	if maxHeight < 0 {
+		return 0
+	}
+	if maxHeight > scrollableUnboundedMeasureHeight {
+		return scrollableUnboundedMeasureHeight
+	}
+	return maxHeight
+}
+
+func shouldPreferBoundedHeightScale(boundedHeight, boundedMaxHeight, unboundedHeight, unboundedMaxHeight int) bool {
+	if boundedMaxHeight <= 0 || unboundedMaxHeight <= 0 {
+		return false
+	}
+	if !isUnbounded(unboundedHeight) {
+		return false
+	}
+	if unboundedHeight <= boundedHeight {
+		return false
+	}
+
+	boundedRatio := float64(boundedHeight) / float64(boundedMaxHeight)
+	unboundedRatio := float64(unboundedHeight) / float64(unboundedMaxHeight)
+	diff := boundedRatio - unboundedRatio
+	if diff < 0 {
+		diff = -diff
+	}
+
+	// Small bounded viewports produce coarse percentage rounding.
+	// Allow a small tolerance so Percent/Flex still map to viewport-relative sizing.
+	tolerance := (1.0 / float64(max(1, boundedMaxHeight))) + 0.02
+	return diff <= tolerance
+}
+
+func (s *ScrollableNode) chooseViewportMeasurement(boundedLayout, unboundedLayout ComputedLayout, boundedMaxHeight int) ComputedLayout {
+	boundedVirtualHeight := boundedLayout.Box.MarginBoxHeight()
+	unboundedVirtualHeight := unboundedLayout.Box.MarginBoxHeight()
+
+	// In unbounded probes, some Flex layouts collapse. Use bounded measurement
+	// so Flex/Percent heights resolve against the visible viewport.
+	if unboundedVirtualHeight < boundedVirtualHeight {
+		return boundedLayout
+	}
+
+	if shouldPreferBoundedHeightScale(
+		boundedLayout.Box.BorderBoxHeight(),
+		boundedMaxHeight,
+		unboundedLayout.Box.BorderBoxHeight(),
+		scrollableUnboundedMeasureHeight,
+	) {
+		return boundedLayout
+	}
+
+	return unboundedLayout
+}
+
+func (s *ScrollableNode) measureChildForViewport(maxWidth, viewportMaxHeight int) (ComputedLayout, int, int) {
+	boundedMaxHeight := clampScrollableMeasureHeight(viewportMaxHeight)
+
+	boundedConstraints := Constraints{
+		MinWidth:  0,
+		MaxWidth:  maxWidth,
+		MinHeight: 0,
+		MaxHeight: boundedMaxHeight,
+	}
+	unboundedConstraints := Constraints{
+		MinWidth:  0,
+		MaxWidth:  maxWidth,
+		MinHeight: 0,
+		MaxHeight: scrollableUnboundedMeasureHeight,
+	}
+
+	boundedLayout := s.Child.ComputeLayout(boundedConstraints)
+	unboundedLayout := s.Child.ComputeLayout(unboundedConstraints)
+	selected := s.chooseViewportMeasurement(boundedLayout, unboundedLayout, boundedMaxHeight)
+
+	return selected, selected.Box.MarginBoxWidth(), selected.Box.MarginBoxHeight()
+}
+
 // ComputeLayout computes the scrollable layout.
-// The child is measured with unbounded constraints on the scroll axis to
-// determine its natural (virtual) size. The viewport is then constrained
-// to the parent constraints, and scroll offsets are applied.
+// The child is measured with both viewport-bounded and unbounded height probes
+// to derive a stable virtual size. The viewport is then constrained to the
+// parent constraints, and scroll offsets are applied.
 func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 	// Apply node's own constraints
 	effective := constraints.WithNodeConstraints(s.MinWidth, s.MaxWidth, s.MinHeight, s.MaxHeight)
@@ -78,23 +159,14 @@ func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 	contentMinWidth := max(0, effective.MinWidth-hInset)
 	contentMinHeight := max(0, effective.MinHeight-vInset)
 
-	// Phase 1: Measure child with unbounded height to get virtual content size
+	// Phase 1: Measure child to get virtual content size
 	// Reserve scrollbar space pessimistically if AlwaysReserveScrollbarSpace is set
 	measureWidth := contentMaxWidth
 	if s.AlwaysReserveScrollbarSpace && scrollbarWidth > 0 {
 		measureWidth = max(0, measureWidth-scrollbarWidth)
 	}
 
-	unboundedConstraints := Constraints{
-		MinWidth:  0,
-		MaxWidth:  measureWidth,
-		MinHeight: 0,
-		MaxHeight: math.MaxInt32, // Unbounded height for measuring
-	}
-
-	childLayout := s.Child.ComputeLayout(unboundedConstraints)
-	virtualHeight := childLayout.Box.MarginBoxHeight()
-	virtualWidth := childLayout.Box.MarginBoxWidth()
+	childLayout, virtualWidth, virtualHeight := s.measureChildForViewport(measureWidth, contentMaxHeight)
 
 	// Phase 2: Determine if scrolling is needed
 	needsVerticalScroll := virtualHeight > contentMaxHeight
@@ -106,15 +178,7 @@ func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 	if needsVerticalScroll && !s.AlwaysReserveScrollbarSpace && scrollbarWidth > 0 {
 		measureWidth = max(0, contentMaxWidth-scrollbarWidth)
 
-		// Measure with bounded width for proper text wrapping and height calculation
-		boundedConstraints := Constraints{
-			MinWidth:  0,
-			MaxWidth:  measureWidth,
-			MinHeight: 0,
-			MaxHeight: math.MaxInt32,
-		}
-		childLayout = s.Child.ComputeLayout(boundedConstraints)
-		virtualHeight = childLayout.Box.MarginBoxHeight()
+		childLayout, virtualWidth, virtualHeight = s.measureChildForViewport(measureWidth, contentMaxHeight)
 
 		// Measure with unbounded width to detect horizontal overflow.
 		// This reveals if the child has minimum width requirements that exceed
@@ -123,9 +187,9 @@ func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 		// so we fall back to the bounded measurement for them.
 		unboundedWidthConstraints := Constraints{
 			MinWidth:  0,
-			MaxWidth:  math.MaxInt32,
+			MaxWidth:  scrollableUnboundedMeasureHeight,
 			MinHeight: 0,
-			MaxHeight: math.MaxInt32,
+			MaxHeight: scrollableUnboundedMeasureHeight,
 		}
 		naturalWidthLayout := s.Child.ComputeLayout(unboundedWidthConstraints)
 		naturalWidth := naturalWidthLayout.Box.MarginBoxWidth()
