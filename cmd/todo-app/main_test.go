@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	terma "github.com/darrenburns/terma"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildTaskList_BlurPreservesSelectionWhenMoveMenuOpen(t *testing.T) {
@@ -94,10 +94,48 @@ func TestMoveTaskToList_UsesFilteredSelectionInFilterMode(t *testing.T) {
 	require.Empty(t, app.filteredListState.SelectedItems())
 }
 
+func TestKeybinds_IncludeNewTaskShortcut(t *testing.T) {
+	app := NewTodoApp()
+
+	keybind, ok := findKeybindByKey(app.Keybinds(), "n")
+	require.True(t, ok)
+	require.Equal(t, "New", keybind.Name)
+	require.NotNil(t, keybind.Action)
+}
+
+func TestBuildInputRow_NewTaskInputIncludesEscapeToTaskList(t *testing.T) {
+	app := NewTodoApp()
+
+	widget := app.buildInputRow(terma.ThemeData{})
+	row, ok := widget.(terma.Row)
+	require.True(t, ok)
+	require.Len(t, row.Children, 2)
+
+	autocomplete, ok := row.Children[1].(terma.Autocomplete)
+	require.True(t, ok)
+
+	input, ok := autocomplete.Child.(terma.TextInput)
+	require.True(t, ok)
+
+	keybind, ok := findKeybindByKey(input.ExtraKeybinds, "escape")
+	require.True(t, ok)
+	require.Equal(t, "Tasks", keybind.Name)
+	require.NotNil(t, keybind.Action)
+}
+
 func collectTaskIDs(tasks []Task) []string {
 	ids := make([]string, 0, len(tasks))
 	for _, task := range tasks {
 		ids = append(ids, task.ID)
 	}
 	return ids
+}
+
+func findKeybindByKey(keybinds []terma.Keybind, key string) (terma.Keybind, bool) {
+	for _, keybind := range keybinds {
+		if keybind.Key == key {
+			return keybind, true
+		}
+	}
+	return terma.Keybind{}, false
 }

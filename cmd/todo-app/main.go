@@ -462,6 +462,7 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 					ExtraKeybinds: []t.Keybind{
 						{Key: "enter", Name: "Create", Action: func() { a.addTask(a.inputState.GetText()) }},
 						{Key: "tab", Name: "Tasks", Action: func() {}},
+						{Key: "escape", Name: "Tasks", Action: func() { t.RequestFocus("task-list") }},
 						{Key: "left", Action: a.handleNewTaskInputLeft, Hidden: true},
 						{Key: "right", Action: a.handleNewTaskInputRight, Hidden: true},
 					},
@@ -896,6 +897,7 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 
 	keybinds := []t.Keybind{
 		{Key: "q", Name: "Quit", Action: t.Quit},
+		{Key: "n", Name: "New", Action: func() { t.RequestFocus("new-task-input") }},
 		// Navigation between input and list (these bubble up from focused widgets)
 		{Key: "up", Action: a.navigateUp, Hidden: true},
 		{Key: "down", Action: a.navigateDown, Hidden: true},
