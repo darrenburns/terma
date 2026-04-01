@@ -123,6 +123,52 @@ func TestBuildInputRow_NewTaskInputIncludesEscapeToTaskList(t *testing.T) {
 	require.NotNil(t, keybind.Action)
 }
 
+func TestInitialFocusTarget_TaskListWhenActiveListHasTasks(t *testing.T) {
+	app := NewTodoApp()
+	ctx := terma.NewBuildContext(nil, terma.AnySignal[terma.Focusable]{}, terma.AnySignal[terma.Widget]{}, nil)
+
+	require.Equal(t, "task-list", app.initialFocusTarget(ctx))
+}
+
+func TestInitialFocusTarget_EmptyWhenActiveListHasNoTasks(t *testing.T) {
+	app := NewTodoApp()
+	app.activeListIdx.Set(1)
+	ctx := terma.NewBuildContext(nil, terma.AnySignal[terma.Focusable]{}, terma.AnySignal[terma.Widget]{}, nil)
+
+	require.Empty(t, app.initialFocusTarget(ctx))
+}
+
+func TestInitialFocusTarget_EmptyWhenSomethingIsAlreadyFocused(t *testing.T) {
+	app := NewTodoApp()
+	ctx := terma.NewBuildContext(
+		nil,
+		terma.NewAnySignal[terma.Focusable](testFocusable{id: "already-focused"}),
+		terma.AnySignal[terma.Widget]{},
+		nil,
+	)
+
+	require.Empty(t, app.initialFocusTarget(ctx))
+}
+
+func TestAddTask_SelectsNewTaskAndResetsListViewport(t *testing.T) {
+	app := NewTodoApp()
+	listState := app.activeList().Tasks
+	scrollState := app.activeList().ScrollState
+
+	listState.Select(2)
+	scrollState.SetOffset(4)
+
+	app.addTask("  New task  ")
+
+	items := listState.GetItems()
+	require.NotEmpty(t, items)
+	require.Equal(t, "New task", items[0].Title)
+	require.Equal(t, 0, listState.CursorIndex.Peek())
+	require.Empty(t, listState.SelectedItems())
+	require.Equal(t, 0, scrollState.GetOffset())
+	require.Equal(t, "", app.inputState.GetText())
+}
+
 func collectTaskIDs(tasks []Task) []string {
 	ids := make([]string, 0, len(tasks))
 	for _, task := range tasks {
@@ -139,3 +185,12 @@ func findKeybindByKey(keybinds []terma.Keybind, key string) (terma.Keybind, bool
 	}
 	return terma.Keybind{}, false
 }
+
+type testFocusable struct {
+	id string
+}
+
+func (f testFocusable) WidgetID() string                          { return f.id }
+func (f testFocusable) Build(ctx terma.BuildContext) terma.Widget { return terma.Text{} }
+func (f testFocusable) OnKey(event terma.KeyEvent) bool           { return false }
+func (f testFocusable) IsFocusable() bool                         { return true }

@@ -197,6 +197,16 @@ func NewTodoApp() *TodoApp {
 	return app
 }
 
+func (a *TodoApp) initialFocusTarget(ctx t.BuildContext) string {
+	if ctx.Focused() != nil {
+		return ""
+	}
+	if a.activeList().Tasks.ItemCount() == 0 {
+		return ""
+	}
+	return "task-list"
+}
+
 // generateID creates a unique ID for a new task.
 func (a *TodoApp) generateID() string {
 	for i := 0; i < 8; i++ {
@@ -256,6 +266,10 @@ func (a *TodoApp) isAllDone() bool {
 // Build implements the Widget interface.
 func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
+
+	if target := a.initialFocusTarget(ctx); target != "" {
+		t.RequestFocus(target)
+	}
 
 	// Check celebration state and manage animation
 	celebrating := a.isAllDone()
@@ -1155,11 +1169,14 @@ func (a *TodoApp) addTask(title string) {
 	}
 	listState := a.activeList().Tasks
 	listState.Prepend(task)
+	listState.ClearSelection()
 	listState.SelectIndex(0)
+	a.activeList().ScrollState.SetOffset(0)
 	a.inputState.SetText("")
 	a.refreshTagSuggestions()
 	a.refreshFilteredTasks()
 	a.scheduleSave()
+	t.RequestFocus("task-list")
 }
 
 // toggleCurrentTask toggles the completion status of selected tasks.
