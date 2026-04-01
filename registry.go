@@ -17,6 +17,11 @@ func (r Rect) IsEmpty() bool {
 	return r.Width <= 0 || r.Height <= 0
 }
 
+// Intersects returns true if two rectangles overlap.
+func (r Rect) Intersects(other Rect) bool {
+	return !r.Intersect(other).IsEmpty()
+}
+
 // Intersect returns the intersection of two rectangles.
 // Returns a zero-size rect if they don't overlap.
 func (r Rect) Intersect(other Rect) Rect {
@@ -28,6 +33,21 @@ func (r Rect) Intersect(other Rect) Rect {
 	if x2 <= x1 || y2 <= y1 {
 		return Rect{} // No intersection
 	}
+	return Rect{X: x1, Y: y1, Width: x2 - x1, Height: y2 - y1}
+}
+
+// Union returns the smallest rectangle covering both rectangles.
+func (r Rect) Union(other Rect) Rect {
+	if r.IsEmpty() {
+		return other
+	}
+	if other.IsEmpty() {
+		return r
+	}
+	x1 := min(r.X, other.X)
+	y1 := min(r.Y, other.Y)
+	x2 := max(r.X+r.Width, other.X+other.Width)
+	y2 := max(r.Y+r.Height, other.Y+other.Height)
 	return Rect{X: x1, Y: y1, Width: x2 - x1, Height: y2 - y1}
 }
 

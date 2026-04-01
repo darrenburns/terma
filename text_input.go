@@ -750,6 +750,19 @@ func (t TextInput) GetStyle() Style {
 	return t.Style
 }
 
+func (t TextInput) ContentWidthHint() int {
+	contentWidth := 1
+	if t.State != nil {
+		contentWidth = t.State.contentWidth()
+	}
+	placeholderWidth := ansi.StringWidth(t.Placeholder)
+	return max(contentWidth, placeholderWidth, 1)
+}
+
+func (t TextInput) ContentHeightHint(width int) int {
+	return 1
+}
+
 // BuildLayoutNode builds a layout node for this TextInput widget.
 // Implements the LayoutNodeBuilder interface.
 func (t TextInput) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
@@ -815,12 +828,7 @@ func (t TextInput) Layout(ctx BuildContext, constraints Constraints) Size {
 	case widthDim.IsFlex():
 		width = constraints.MaxWidth
 	default: // Auto - use content or placeholder width, minimum 1
-		contentWidth := 1
-		if t.State != nil {
-			contentWidth = t.State.contentWidth()
-		}
-		placeholderWidth := ansi.StringWidth(t.Placeholder)
-		width = max(contentWidth, placeholderWidth)
+		width = t.ContentWidthHint()
 	}
 
 	// Clamp to constraints

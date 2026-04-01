@@ -75,3 +75,5 @@ func (w MyCompositeWidget) Build(ctx BuildContext) Widget {
     }
 }
 ```
+
+For a full guide to authoring widgets with phase-aware invalidation, see [Custom Widgets](custom-widgets.md).

@@ -86,12 +86,18 @@ func (s Switcher) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		childNode = buildFallbackLayoutNode(built, childCtx)
 	}
 
-	// Wrap in FlexNode if child has Flex height (Switcher acts as a vertical container)
-	mainAxisDim := getChildMainAxisDimension(built, false) // false = vertical axis
-	childNode = wrapInPercentIfNeeded(childNode, mainAxisDim, layout.Vertical)
-	childNode = wrapInFlexIfNeeded(childNode, mainAxisDim)
+	return s.BuildContainerLayoutNode(ctx, []layout.LayoutNode{childNode})
+}
 
-	// Get Switcher's own dimensions and style
+func (s Switcher) BuildContainerLayoutNode(ctx BuildContext, children []layout.LayoutNode) layout.LayoutNode {
+	if len(children) > 0 {
+		if child, ok := s.Children[s.Active]; ok {
+			mainAxisDim := getChildMainAxisDimension(child, false)
+			children[0] = wrapInPercentIfNeeded(children[0], mainAxisDim, layout.Vertical)
+			children[0] = wrapInFlexIfNeeded(children[0], mainAxisDim)
+		}
+	}
+
 	style := s.Style
 	padding := toLayoutEdgeInsets(style.Padding)
 	border := borderToEdgeInsets(style.Border)
@@ -103,14 +109,11 @@ func (s Switcher) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		dims.Height = s.Height
 	}
 	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
-
-	// Explicit Auto means "fit content, don't stretch" - set preserve flags
 	preserveWidth := dims.Width.IsAuto() && !dims.Width.IsUnset()
 	preserveHeight := dims.Height.IsAuto() && !dims.Height.IsUnset()
 
-	// Create a column node that wraps the single child
 	node := layout.LayoutNode(&layout.ColumnNode{
-		Children:       []layout.LayoutNode{childNode},
+		Children:       children,
 		Padding:        padding,
 		Border:         border,
 		Margin:         toLayoutEdgeInsets(style.Margin),

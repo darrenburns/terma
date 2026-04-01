@@ -370,6 +370,19 @@ func (s SplitPane) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		secondNode = buildFallbackLayoutNode(builtSecond, secondCtx)
 	}
 
+	return s.BuildContainerLayoutNode(ctx, []layout.LayoutNode{firstNode, secondNode})
+}
+
+func (s SplitPane) BuildContainerLayoutNode(ctx BuildContext, children []layout.LayoutNode) layout.LayoutNode {
+	firstNode := layout.LayoutNode(&layout.BoxNode{})
+	secondNode := layout.LayoutNode(&layout.BoxNode{})
+	if len(children) > 0 {
+		firstNode = children[0]
+	}
+	if len(children) > 1 {
+		secondNode = children[1]
+	}
+
 	position := 0.5
 	if s.State != nil {
 		if s.State.DividerPosition.IsValid() {

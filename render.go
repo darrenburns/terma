@@ -220,6 +220,13 @@ func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, sc
 // Widgets with an explicit ID are matched by that ID; otherwise the
 // position-based AutoID is used as a fallback.
 func (ctx *RenderContext) IsFocused(widget Widget) bool {
+	if ctx.buildContext.focusedSignal.IsValid() {
+		// Subscribe paint-phase renders to focus changes so widgets that draw
+		// their own focus affordances (for example TextInput's virtual cursor)
+		// repaint correctly on focus/blur.
+		_ = ctx.buildContext.focusedSignal.Get()
+	}
+
 	if ctx.focusManager == nil {
 		return false
 	}
@@ -885,20 +892,69 @@ type Renderer struct {
 	floatCollector *FloatCollector
 	// modalCount tracks the number of modal floats rendered in the last pass.
 	modalCount int
+	rootNode   *widgetNode
+
+	retainedFloats []retainedFloat
+
+	fullRenderRequired bool
+	lastFocusables     []FocusableEntry
+	lastLayoutWidth    int
+	lastLayoutHeight   int
+
+	lastFrameMode      rendererFrameMode
+	fullRenderCount    int
+	partialRenderCount int
+	lastBuildCount     int
+	lastLayoutCount    int
+	lastPaintCount     int
+	lastDamagedRects   []Rect
+}
+
+// RenderStats captures renderer activity for the most recent frame.
+// These values are primarily intended for debugging and demos.
+type RenderStats struct {
+	FrameMode          string
+	FullRenderCount    int
+	PartialRenderCount int
+	BuildCount         int
+	LayoutCount        int
+	PaintCount         int
+	DamagedRects       []Rect
 }
 
 // NewRenderer creates a new renderer for the given terminal.
 func NewRenderer(terminal CellBuffer, width, height int, fm *FocusManager, focusedSignal AnySignal[Focusable], hoveredSignal AnySignal[Widget]) *Renderer {
 	return &Renderer{
-		terminal:       terminal,
-		width:          width,
-		height:         height,
-		focusCollector: NewFocusCollector(),
-		focusManager:   fm,
-		focusedSignal:  focusedSignal,
-		hoveredSignal:  hoveredSignal,
-		widgetRegistry: NewWidgetRegistry(),
-		floatCollector: NewFloatCollector(),
+		terminal:           terminal,
+		width:              width,
+		height:             height,
+		focusCollector:     NewFocusCollector(),
+		focusManager:       fm,
+		focusedSignal:      focusedSignal,
+		hoveredSignal:      hoveredSignal,
+		widgetRegistry:     NewWidgetRegistry(),
+		floatCollector:     NewFloatCollector(),
+		fullRenderRequired: true,
+	}
+}
+
+// Stats returns a snapshot of the renderer's most recent frame activity.
+func (r *Renderer) Stats() RenderStats {
+	if r == nil {
+		return RenderStats{}
+	}
+
+	rects := make([]Rect, len(r.lastDamagedRects))
+	copy(rects, r.lastDamagedRects)
+
+	return RenderStats{
+		FrameMode:          string(r.lastFrameMode),
+		FullRenderCount:    r.fullRenderCount,
+		PartialRenderCount: r.partialRenderCount,
+		BuildCount:         r.lastBuildCount,
+		LayoutCount:        r.lastLayoutCount,
+		PaintCount:         r.lastPaintCount,
+		DamagedRects:       rects,
 	}
 }
 
@@ -906,6 +962,7 @@ func NewRenderer(terminal CellBuffer, width, height int, fm *FocusManager, focus
 func (r *Renderer) Resize(width, height int) {
 	r.width = width
 	r.height = height
+	r.fullRenderRequired = true
 }
 
 // ScreenText returns the current screen content as plain text.
@@ -946,14 +1003,14 @@ func (r *Renderer) ScreenText() string {
 // This uses the tree-based rendering path which builds the complete layout tree first,
 // then renders using BoxModel utilities for clean separation of layout and painting.
 func (r *Renderer) Render(root Widget) []FocusableEntry {
-	focusables, _, _ := r.renderInternal(root)
+	focusables, _, _ := r.renderFull(root)
 	return focusables
 }
 
 // RenderWithSize renders the widget and returns the computed border-box dimensions.
 // The border-box includes the widget's content, padding, and borders.
 func (r *Renderer) RenderWithSize(root Widget) (layoutWidth, layoutHeight int) {
-	_, layoutWidth, layoutHeight = r.renderInternal(root)
+	_, layoutWidth, layoutHeight = r.renderFull(root)
 	return layoutWidth, layoutHeight
 }
 
@@ -1341,8 +1398,10 @@ func (r *Renderer) renderModalBackdrop(ctx *RenderContext, backdropColor Color) 
 		backdropColor = getTheme().Overlay
 	}
 
-	for y := 0; y < r.height; y++ {
-		for x := 0; x < r.width; {
+	minX, maxX := ctx.clip.X, ctx.clip.X+ctx.clip.Width
+	minY, maxY := ctx.clip.Y, ctx.clip.Y+ctx.clip.Height
+	for y := max(0, minY); y < min(r.height, maxY); y++ {
+		for x := max(0, minX); x < min(r.width, maxX); {
 			// Get existing cell to blend with
 			existing := ctx.terminal.CellAt(x, y)
 			var bgColor Color
@@ -1389,15 +1448,15 @@ func (r *Renderer) renderModalBackdrop(ctx *RenderContext, backdropColor Color) 
 
 // HasFloats returns true if there are any floating widgets.
 func (r *Renderer) HasFloats() bool {
-	return r.floatCollector.Len() > 0
+	return len(r.retainedFloats) > 0
 }
 
 // FloatAt returns the topmost float entry containing the point (x, y).
 // Returns nil if no float contains the point.
 func (r *Renderer) FloatAt(x, y int) *FloatEntry {
 	// Search back-to-front (topmost floats are last)
-	for i := len(r.floatCollector.entries) - 1; i >= 0; i-- {
-		entry := &r.floatCollector.entries[i]
+	for i := len(r.retainedFloats) - 1; i >= 0; i-- {
+		entry := &r.retainedFloats[i].entry
 		if x >= entry.X && x < entry.X+entry.Width &&
 			y >= entry.Y && y < entry.Y+entry.Height {
 			return entry
@@ -1408,15 +1467,20 @@ func (r *Renderer) FloatAt(x, y int) *FloatEntry {
 
 // TopFloat returns the topmost (last registered) float entry, or nil if none.
 func (r *Renderer) TopFloat() *FloatEntry {
-	if r.floatCollector.Len() == 0 {
+	if len(r.retainedFloats) == 0 {
 		return nil
 	}
-	return &r.floatCollector.entries[len(r.floatCollector.entries)-1]
+	return &r.retainedFloats[len(r.retainedFloats)-1].entry
 }
 
 // HasModalFloat returns true if any float is modal.
 func (r *Renderer) HasModalFloat() bool {
-	return r.floatCollector.HasModal()
+	for _, entry := range r.retainedFloats {
+		if entry.entry.Config.Modal {
+			return true
+		}
+	}
+	return false
 }
 
 // ModalCount returns the number of modal floats currently rendered.
