@@ -1,6 +1,11 @@
 package terma
 
-import "time"
+import (
+	"time"
+
+	"github.com/charmbracelet/x/ansi"
+	"github.com/darrenburns/terma/layout"
+)
 
 // SpinnerStyle defines the visual appearance of a spinner.
 type SpinnerStyle struct {
@@ -108,8 +113,7 @@ func (s *SpinnerState) IsRunning() bool {
 	return s.animation.IsRunning()
 }
 
-// Frame returns the current animation frame. Call this in Build() to subscribe
-// to animation updates and trigger rebuilds when the frame changes.
+// Frame returns the current animation frame.
 func (s *SpinnerState) Frame() string {
 	return s.animation.Value().Get()
 }
@@ -152,33 +156,68 @@ func (s Spinner) GetStyle() Style {
 	return s.Style
 }
 
-// Build returns a Text widget showing the current frame.
+// Build returns self so spinner frames can update during paint without rebuilding
+// the widget tree.
 func (s Spinner) Build(ctx BuildContext) Widget {
+	return s
+}
+
+func (s Spinner) resolvedStyle() Style {
+	style := s.Style
+	if style.Width.IsUnset() {
+		style.Width = s.Width
+	}
+	if style.Height.IsUnset() {
+		style.Height = s.Height
+	}
+	return style
+}
+
+func (s Spinner) widestFrame() string {
 	if s.State == nil || s.State.animation == nil {
-		style := s.Style
-		if style.Width.IsUnset() {
-			style.Width = s.Width
-		}
-		if style.Height.IsUnset() {
-			style.Height = s.Height
-		}
-		return Text{Content: " ", Style: style}
+		return " "
 	}
-
-	// Subscribe to animation updates
-	frame := s.State.animation.Value().Get()
-
-	return Text{
-		Content: frame,
-		Style: func() Style {
-			style := s.Style
-			if style.Width.IsUnset() {
-				style.Width = s.Width
-			}
-			if style.Height.IsUnset() {
-				style.Height = s.Height
-			}
-			return style
-		}(),
+	frames := s.State.animation.frames
+	if len(frames) == 0 {
+		return " "
 	}
+	widest := frames[0]
+	widestWidth := ansi.StringWidth(widest)
+	for _, frame := range frames[1:] {
+		if width := ansi.StringWidth(frame); width > widestWidth {
+			widest = frame
+			widestWidth = width
+		}
+	}
+	return widest
+}
+
+func (s Spinner) currentFrame() string {
+	if s.State == nil || s.State.animation == nil {
+		return " "
+	}
+	return s.State.animation.Value().Get()
+}
+
+func (s Spinner) ContentWidthHint() int {
+	return max(1, ansi.StringWidth(s.widestFrame()))
+}
+
+func (s Spinner) ContentHeightHint(width int) int {
+	return 1
+}
+
+func (s Spinner) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
+	text := Text{
+		Content: s.widestFrame(),
+		Style:   s.resolvedStyle(),
+	}
+	return text.BuildLayoutNode(ctx)
+}
+
+func (s Spinner) Render(ctx *RenderContext) {
+	Text{
+		Content: s.currentFrame(),
+		Style:   s.resolvedStyle(),
+	}.Render(ctx)
 }

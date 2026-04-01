@@ -121,16 +121,13 @@ func (s Stack) Build(ctx BuildContext) Widget {
 
 // BuildLayoutNode creates a StackNode for the layout system.
 func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
-	children := make([]layout.StackChild, len(s.Children))
+	children := make([]layout.LayoutNode, len(s.Children))
 
 	for i, child := range s.Children {
 		childCtx := ctx.PushChild(i)
 		built := child.Build(childCtx)
 
-		// Check if this is a Positioned wrapper
-		var stackChild layout.StackChild
 		if positioned, ok := built.(Positioned); ok {
-			// Build the inner child's layout node
 			innerBuilt := positioned.Child.Build(childCtx)
 			var childNode layout.LayoutNode
 			if builder, ok := innerBuilt.(LayoutNodeBuilder); ok {
@@ -139,9 +136,33 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 				childNode = buildFallbackLayoutNode(innerBuilt, childCtx)
 			}
 
-			// Wrap in PercentNode for width/height if the inner child has percent dimensions
-			childNode = wrapInPercentNodesForStack(childNode, innerBuilt)
+			children[i] = childNode
+		} else {
+			var childNode layout.LayoutNode
+			if builder, ok := built.(LayoutNodeBuilder); ok {
+				childNode = builder.BuildLayoutNode(childCtx)
+			} else {
+				childNode = buildFallbackLayoutNode(built, childCtx)
+			}
 
+			children[i] = childNode
+		}
+	}
+	return s.BuildContainerLayoutNode(ctx, children)
+}
+
+func (s Stack) BuildContainerLayoutNode(ctx BuildContext, children []layout.LayoutNode) layout.LayoutNode {
+	stackChildren := make([]layout.StackChild, len(s.Children))
+	childIndex := 0
+
+	for i, child := range s.Children {
+		var stackChild layout.StackChild
+		if positioned, ok := child.(Positioned); ok {
+			childNode := layout.LayoutNode(&layout.BoxNode{})
+			if childIndex < len(children) {
+				childNode = wrapInPercentNodesForStack(children[childIndex], positioned.Child)
+				childIndex++
+			}
 			stackChild = layout.StackChild{
 				Node:         childNode,
 				IsPositioned: true,
@@ -151,24 +172,17 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 				Left:         positioned.Left,
 			}
 		} else {
-			// Regular child - will use Stack's alignment
-			var childNode layout.LayoutNode
-			if builder, ok := built.(LayoutNodeBuilder); ok {
-				childNode = builder.BuildLayoutNode(childCtx)
-			} else {
-				childNode = buildFallbackLayoutNode(built, childCtx)
+			childNode := layout.LayoutNode(&layout.BoxNode{})
+			if childIndex < len(children) {
+				childNode = wrapInPercentNodesForStack(children[childIndex], child)
+				childIndex++
 			}
-
-			// Wrap in PercentNode for width/height if child has percent dimensions
-			childNode = wrapInPercentNodesForStack(childNode, built)
-
 			stackChild = layout.StackChild{
 				Node:         childNode,
 				IsPositioned: false,
 			}
 		}
-
-		children[i] = stackChild
+		stackChildren[i] = stackChild
 	}
 
 	padding := toLayoutEdgeInsets(s.Style.Padding)
@@ -177,7 +191,7 @@ func (s Stack) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
 
 	node := layout.LayoutNode(&layout.StackNode{
-		Children:      children,
+		Children:      stackChildren,
 		DefaultHAlign: toLayoutHAlign(s.Alignment.Horizontal),
 		DefaultVAlign: toLayoutVAlign(s.Alignment.Vertical),
 		Padding:       padding,

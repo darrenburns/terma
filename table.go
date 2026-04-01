@@ -1533,12 +1533,14 @@ func (c tableContainer[T]) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 
 		children[i] = childNode
 	}
+	return c.BuildContainerLayoutNode(ctx, children)
+}
 
+func (c tableContainer[T]) BuildContainerLayoutNode(ctx BuildContext, children []layout.LayoutNode) layout.LayoutNode {
 	padding := toLayoutEdgeInsets(c.Style.Padding)
 	border := borderToEdgeInsets(c.Style.Border)
 	dims := GetWidgetDimensionSet(c)
 	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
-
 	preserveWidth := dims.Width.IsAuto() && !dims.Width.IsUnset()
 	preserveHeight := dims.Height.IsAuto() && !dims.Height.IsUnset()
 

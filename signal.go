@@ -8,11 +8,32 @@ import (
 	"sync/atomic"
 )
 
-// currentBuildingNode tracks which widget node is currently being built.
-// When a Signal.Get() is called during Build(), the node is subscribed.
-// Protected by currentBuildMu for thread-safe access.
-var currentBuildingNode *widgetNode
-var currentBuildMu sync.Mutex
+type signalReadContext struct {
+	node  *widgetNode
+	phase dependencyMask
+}
+
+var currentSignalRead signalReadContext
+var currentSignalReadMu sync.Mutex
+
+func withSignalRead[T any](node *widgetNode, phase dependencyMask, fn func() T) T {
+	currentSignalReadMu.Lock()
+	prev := currentSignalRead
+	currentSignalRead = signalReadContext{node: node, phase: phase}
+	currentSignalReadMu.Unlock()
+	defer func() {
+		currentSignalReadMu.Lock()
+		currentSignalRead = prev
+		currentSignalReadMu.Unlock()
+	}()
+	return fn()
+}
+
+func currentReadSubscription() signalReadContext {
+	currentSignalReadMu.Lock()
+	defer currentSignalReadMu.Unlock()
+	return currentSignalRead
+}
 
 var debugRenderCauseEnabled atomic.Bool
 var lastRenderCause atomic.Value
@@ -22,7 +43,7 @@ var lastRenderCause atomic.Value
 type signalCore[T comparable] struct {
 	mu        sync.Mutex
 	value     T
-	listeners map[*widgetNode]struct{}
+	listeners map[*widgetNode]dependencyMask
 }
 
 // Signal holds reactive state that automatically tracks dependencies.
@@ -37,25 +58,23 @@ func NewSignal[T comparable](initial T) Signal[T] {
 	return Signal[T]{
 		core: &signalCore[T]{
 			value:     initial,
-			listeners: make(map[*widgetNode]struct{}),
+			listeners: make(map[*widgetNode]dependencyMask),
 		},
 	}
 }
 
-// Get returns the current value. If called during a widget's Build(),
-// the widget is automatically subscribed to future changes.
+// Get returns the current value. If called during a tracked render phase,
+// the widget is automatically subscribed to future changes for that phase.
 // Thread-safe: can be called from any goroutine.
 func (s Signal[T]) Get() T {
-	// Read current building node atomically
-	currentBuildMu.Lock()
-	node := currentBuildingNode
-	currentBuildMu.Unlock()
+	read := currentReadSubscription()
 
 	s.core.mu.Lock()
 	defer s.core.mu.Unlock()
 
-	if node != nil {
-		s.core.listeners[node] = struct{}{}
+	if read.node != nil && read.phase != readPhaseNone {
+		s.core.listeners[read.node] |= read.phase
+		read.node.trackDependency(s.core, read.phase)
 	}
 	return s.core.value
 }
@@ -71,15 +90,19 @@ func (s Signal[T]) Set(value T) {
 	}
 	s.core.value = value
 
-	// Copy listeners to avoid holding lock during markDirty
-	listeners := make([]*widgetNode, 0, len(s.core.listeners))
-	for listener := range s.core.listeners {
-		listeners = append(listeners, listener)
+	// Copy listeners to avoid holding lock during markDirty.
+	type listenerEntry struct {
+		node *widgetNode
+		mask dependencyMask
+	}
+	listeners := make([]listenerEntry, 0, len(s.core.listeners))
+	for listener, mask := range s.core.listeners {
+		listeners = append(listeners, listenerEntry{node: listener, mask: mask})
 	}
 	s.core.mu.Unlock()
 
 	for _, listener := range listeners {
-		listener.markDirty()
+		listener.node.markDirtyMask(listener.mask)
 	}
 	recordRenderCause("Signal.Set", value, s.core, 2)
 	scheduleRender()
@@ -106,15 +129,18 @@ func (s Signal[T]) Update(fn func(T) T) {
 	}
 	s.core.value = newValue
 
-	// Copy listeners to avoid holding lock during markDirty
-	listeners := make([]*widgetNode, 0, len(s.core.listeners))
-	for listener := range s.core.listeners {
-		listeners = append(listeners, listener)
+	type listenerEntry struct {
+		node *widgetNode
+		mask dependencyMask
+	}
+	listeners := make([]listenerEntry, 0, len(s.core.listeners))
+	for listener, mask := range s.core.listeners {
+		listeners = append(listeners, listenerEntry{node: listener, mask: mask})
 	}
 	s.core.mu.Unlock()
 
 	for _, listener := range listeners {
-		listener.markDirty()
+		listener.node.markDirtyMask(listener.mask)
 	}
 	recordRenderCause("Signal.Update", newValue, s.core, 2)
 	scheduleRender()
@@ -129,6 +155,18 @@ func (s Signal[T]) unsubscribe(node *widgetNode) {
 	delete(s.core.listeners, node)
 }
 
+func (s *signalCore[T]) removeListener(node *widgetNode, mask dependencyMask) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	current := s.listeners[node]
+	next := current &^ mask
+	if next == 0 {
+		delete(s.listeners, node)
+		return
+	}
+	s.listeners[node] = next
+}
+
 // IsValid returns true if the signal was properly initialized.
 // An uninitialized Signal (zero value) returns false.
 func (s Signal[T]) IsValid() bool {
@@ -140,7 +178,7 @@ func (s Signal[T]) IsValid() bool {
 type anySignalCore[T any] struct {
 	mu        sync.Mutex
 	value     T
-	listeners map[*widgetNode]struct{}
+	listeners map[*widgetNode]dependencyMask
 }
 
 // AnySignal holds reactive state for non-comparable types (like interfaces).
@@ -155,25 +193,23 @@ func NewAnySignal[T any](initial T) AnySignal[T] {
 	return AnySignal[T]{
 		core: &anySignalCore[T]{
 			value:     initial,
-			listeners: make(map[*widgetNode]struct{}),
+			listeners: make(map[*widgetNode]dependencyMask),
 		},
 	}
 }
 
-// Get returns the current value. If called during a widget's Build(),
-// the widget is automatically subscribed to future changes.
+// Get returns the current value. If called during a tracked render phase,
+// the widget is automatically subscribed to future changes for that phase.
 // Thread-safe: can be called from any goroutine.
 func (s AnySignal[T]) Get() T {
-	// Read current building node atomically
-	currentBuildMu.Lock()
-	node := currentBuildingNode
-	currentBuildMu.Unlock()
+	read := currentReadSubscription()
 
 	s.core.mu.Lock()
 	defer s.core.mu.Unlock()
 
-	if node != nil {
-		s.core.listeners[node] = struct{}{}
+	if read.node != nil && read.phase != readPhaseNone {
+		s.core.listeners[read.node] |= read.phase
+		read.node.trackDependency(s.core, read.phase)
 	}
 	return s.core.value
 }
@@ -184,15 +220,18 @@ func (s AnySignal[T]) Set(value T) {
 	s.core.mu.Lock()
 	s.core.value = value
 
-	// Copy listeners to avoid holding lock during markDirty
-	listeners := make([]*widgetNode, 0, len(s.core.listeners))
-	for listener := range s.core.listeners {
-		listeners = append(listeners, listener)
+	type listenerEntry struct {
+		node *widgetNode
+		mask dependencyMask
+	}
+	listeners := make([]listenerEntry, 0, len(s.core.listeners))
+	for listener, mask := range s.core.listeners {
+		listeners = append(listeners, listenerEntry{node: listener, mask: mask})
 	}
 	s.core.mu.Unlock()
 
 	for _, listener := range listeners {
-		listener.markDirty()
+		listener.node.markDirtyMask(listener.mask)
 	}
 	recordRenderCause("AnySignal.Set", value, s.core, 2)
 	scheduleRender()
@@ -213,15 +252,18 @@ func (s AnySignal[T]) Update(fn func(T) T) {
 	s.core.mu.Lock()
 	s.core.value = fn(s.core.value)
 
-	// Copy listeners to avoid holding lock during markDirty
-	listeners := make([]*widgetNode, 0, len(s.core.listeners))
-	for listener := range s.core.listeners {
-		listeners = append(listeners, listener)
+	type listenerEntry struct {
+		node *widgetNode
+		mask dependencyMask
+	}
+	listeners := make([]listenerEntry, 0, len(s.core.listeners))
+	for listener, mask := range s.core.listeners {
+		listeners = append(listeners, listenerEntry{node: listener, mask: mask})
 	}
 	s.core.mu.Unlock()
 
 	for _, listener := range listeners {
-		listener.markDirty()
+		listener.node.markDirtyMask(listener.mask)
 	}
 	recordRenderCause("AnySignal.Update", s.core.value, s.core, 2)
 	scheduleRender()
@@ -231,6 +273,18 @@ func (s AnySignal[T]) Update(fn func(T) T) {
 // An uninitialized AnySignal (zero value) returns false.
 func (s AnySignal[T]) IsValid() bool {
 	return s.core != nil
+}
+
+func (s *anySignalCore[T]) removeListener(node *widgetNode, mask dependencyMask) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	current := s.listeners[node]
+	next := current &^ mask
+	if next == 0 {
+		delete(s.listeners, node)
+		return
+	}
+	s.listeners[node] = next
 }
 
 // EnableDebugRenderCause turns on tracking of the most recent render cause.

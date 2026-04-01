@@ -476,8 +476,16 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		childNode = buildFallbackLayoutNode(built, childCtx)
 	}
 
-	// Get scroll offsets from state.
-	// Use Get() to subscribe to offset changes so state updates trigger re-render.
+	return s.BuildContainerLayoutNode(ctx, []layout.LayoutNode{childNode})
+}
+
+func (s Scrollable) BuildContainerLayoutNode(ctx BuildContext, children []layout.LayoutNode) layout.LayoutNode {
+	if len(children) == 0 {
+		return &layout.BoxNode{}
+	}
+
+	childNode := children[0]
+
 	scrollOffsetX := 0
 	scrollOffsetY := 0
 	if s.State != nil {
@@ -485,7 +493,6 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		scrollOffsetY = s.State.Offset.Get()
 	}
 
-	// Scrollbar width: 1 if scrolling enabled, 0 if disabled
 	scrollbarWidth := 0
 	if !s.DisableScroll {
 		scrollbarWidth = 1
@@ -501,7 +508,7 @@ func (s Scrollable) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		ScrollOffsetX:   scrollOffsetX,
 		ScrollOffsetY:   scrollOffsetY,
 		ScrollbarWidth:  scrollbarWidth,
-		ScrollbarHeight: 0, // Horizontal scrollbar rendering is not implemented yet.
+		ScrollbarHeight: 0,
 		Padding:         padding,
 		Border:          border,
 		Margin:          toLayoutEdgeInsets(s.Style.Margin),

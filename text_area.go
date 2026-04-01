@@ -1168,6 +1168,32 @@ func (t TextArea) GetStyle() Style {
 	return t.Style
 }
 
+func (t TextArea) ContentWidthHint() int {
+	contentWidth := 1
+	if t.State != nil {
+		contentWidth = maxLineWidth(t.State.Content.Peek())
+	}
+	placeholderWidth := maxLineWidthString(t.Placeholder)
+	width := max(contentWidth, placeholderWidth, 1)
+	if width > 1 {
+		width++
+	}
+	return width
+}
+
+func (t TextArea) ContentHeightHint(width int) int {
+	contentLines := 1
+	wrapMode := WrapSoft
+	if t.State != nil {
+		wrapMode = t.State.WrapMode.Peek()
+		contentWidth := reservedContentWidth(width)
+		layout := buildTextAreaLayout(t.State.Content.Peek(), wrapMode, contentWidth, t.State.CursorIndex.Peek())
+		contentLines = max(1, len(layout.lines))
+	}
+	placeholderLines := wrapLineCount(t.Placeholder, reservedContentWidth(width), wrapMode)
+	return max(contentLines, placeholderLines, 1)
+}
+
 // Layout computes the size of the text area.
 func (t TextArea) Layout(ctx BuildContext, constraints Constraints) Size {
 	dims := t.Style.GetDimensions()
@@ -1186,15 +1212,7 @@ func (t TextArea) Layout(ctx BuildContext, constraints Constraints) Size {
 	case widthDim.IsFlex():
 		width = constraints.MaxWidth
 	default:
-		contentWidth := 1
-		if t.State != nil {
-			contentWidth = maxLineWidth(t.State.Content.Peek())
-		}
-		placeholderWidth := maxLineWidthString(t.Placeholder)
-		width = max(contentWidth, placeholderWidth, 1)
-		if width > 1 {
-			width++
-		}
+		width = t.ContentWidthHint()
 	}
 	width = clampInt(width, constraints.MinWidth, constraints.MaxWidth)
 
@@ -1205,16 +1223,7 @@ func (t TextArea) Layout(ctx BuildContext, constraints Constraints) Size {
 	case heightDim.IsFlex():
 		height = constraints.MaxHeight
 	default:
-		contentLines := 1
-		wrapMode := WrapSoft
-		if t.State != nil {
-			wrapMode = t.State.WrapMode.Peek()
-			contentWidth := reservedContentWidth(width)
-			layout := buildTextAreaLayout(t.State.Content.Peek(), wrapMode, contentWidth, t.State.CursorIndex.Peek())
-			contentLines = max(1, len(layout.lines))
-		}
-		placeholderLines := wrapLineCount(t.Placeholder, reservedContentWidth(width), wrapMode)
-		height = max(contentLines, placeholderLines, 1)
+		height = t.ContentHeightHint(width)
 	}
 	height = clampInt(height, constraints.MinHeight, constraints.MaxHeight)
 

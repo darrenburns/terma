@@ -109,6 +109,38 @@ func (d Dock) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			body = buildFallbackLayoutNode(built, bodyCtx)
 		}
 	}
+	children := make([]layout.LayoutNode, 0, childIndex+1)
+	for _, nodes := range [][]layout.LayoutNode{top, bottom, left, right} {
+		children = append(children, nodes...)
+	}
+	if body != nil {
+		children = append(children, body)
+	}
+	return d.BuildContainerLayoutNode(ctx, children)
+}
+
+func (d Dock) BuildContainerLayoutNode(ctx BuildContext, children []layout.LayoutNode) layout.LayoutNode {
+	childIndex := 0
+	order := d.dockOrder()
+
+	var top, bottom, left, right []layout.LayoutNode
+	for _, edge := range order {
+		switch edge {
+		case Top:
+			top = d.buildLayoutEdgeChildren(children, &childIndex, edge)
+		case Bottom:
+			bottom = d.buildLayoutEdgeChildren(children, &childIndex, edge)
+		case Left:
+			left = d.buildLayoutEdgeChildren(children, &childIndex, edge)
+		case Right:
+			right = d.buildLayoutEdgeChildren(children, &childIndex, edge)
+		}
+	}
+
+	var body layout.LayoutNode
+	if d.Body != nil && childIndex < len(children) {
+		body = children[childIndex]
+	}
 
 	padding := toLayoutEdgeInsets(d.Style.Padding)
 	border := borderToEdgeInsets(d.Style.Border)
@@ -159,29 +191,51 @@ func (d Dock) buildEdgeChildren(ctx BuildContext, widgets []Widget, index *int, 
 			node = buildFallbackLayoutNode(built, childCtx)
 		}
 
-		// Wrap in PercentNode if the child has a percentage dimension on the relevant axis
-		// Top/Bottom: check Height (Vertical), Left/Right: check Width (Horizontal)
-		dims := GetWidgetDimensionSet(built)
+		nodes[i] = node
+		*index++
+	}
+	return nodes
+}
+
+func (d Dock) buildLayoutEdgeChildren(children []layout.LayoutNode, index *int, edge Edge) []layout.LayoutNode {
+	var widgets []Widget
+	switch edge {
+	case Top:
+		widgets = d.Top
+	case Bottom:
+		widgets = d.Bottom
+	case Left:
+		widgets = d.Left
+	case Right:
+		widgets = d.Right
+	}
+
+	nodes := make([]layout.LayoutNode, len(widgets))
+	for i, widget := range widgets {
+		if *index >= len(children) {
+			break
+		}
+		childNode := children[*index]
+		dims := GetWidgetDimensionSet(widget)
 		switch edge {
 		case Top, Bottom:
 			if dims.Height.IsPercent() {
-				node = &layout.PercentNode{
+				childNode = &layout.PercentNode{
 					Percent: dims.Height.PercentValue(),
-					Child:   node,
+					Child:   childNode,
 					Axis:    layout.Vertical,
 				}
 			}
 		case Left, Right:
 			if dims.Width.IsPercent() {
-				node = &layout.PercentNode{
+				childNode = &layout.PercentNode{
 					Percent: dims.Width.PercentValue(),
-					Child:   node,
+					Child:   childNode,
 					Axis:    layout.Horizontal,
 				}
 			}
 		}
-
-		nodes[i] = node
+		nodes[i] = childNode
 		*index++
 	}
 	return nodes

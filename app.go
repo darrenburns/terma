@@ -10,7 +10,6 @@ import (
 	"time"
 
 	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/charmbracelet/ultraviolet/screen"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
 )
@@ -234,6 +233,15 @@ func ScreenText() string {
 	return appRenderer.ScreenText()
 }
 
+// CurrentRenderStats returns debug information for the most recent frame.
+// Returns zero values if no app is currently running.
+func CurrentRenderStats() RenderStats {
+	if appRenderer == nil {
+		return RenderStats{}
+	}
+	return appRenderer.Stats()
+}
+
 // Run starts the application with the given root widget and blocks until it exits.
 // The root widget can implement KeyHandler to receive key events that bubble up
 // from focused descendants.
@@ -375,6 +383,8 @@ func Run(root Widget) (runErr error) {
 		lastFrameDuration       time.Duration
 		lastOverlayWidth        int
 		lastCauseOverlayWidth   int
+		lastStatsOverlayWidth   int
+		lastDamageOverlayWidth  int
 	)
 
 	drawDebugOverlay := func() {
@@ -403,6 +413,53 @@ func Run(root Widget) (runErr error) {
 			lastCauseOverlayWidth = causeWidth
 		}
 
+		stats := renderer.Stats()
+		mode := stats.FrameMode
+		if mode == "" {
+			mode = "(none)"
+		}
+		modeLabel := mode
+		switch mode {
+		case string(rendererFramePartial):
+			modeLabel = "partial repaint"
+		case string(rendererFrameFull):
+			modeLabel = "full render"
+		}
+		statsText := fmt.Sprintf(
+			"last frame: %s | rebuilt %d | relaid out %d | repainted %d",
+			modeLabel,
+			stats.BuildCount,
+			stats.LayoutCount,
+			stats.PaintCount,
+		)
+		statsWidth := ansi.StringWidth(statsText)
+		if statsWidth < lastStatsOverlayWidth {
+			statsText += strings.Repeat(" ", lastStatsOverlayWidth-statsWidth)
+		} else {
+			lastStatsOverlayWidth = statsWidth
+		}
+
+		damageText := "repaint area: none"
+		if len(stats.DamagedRects) > 0 {
+			damageUnion := stats.DamagedRects[0]
+			for _, rect := range stats.DamagedRects[1:] {
+				damageUnion = damageUnion.Union(rect)
+			}
+			damageText = fmt.Sprintf(
+				"repaint area: %dx%d at %d,%d",
+				damageUnion.Width,
+				damageUnion.Height,
+				damageUnion.X,
+				damageUnion.Y,
+			)
+		}
+		damageWidth := ansi.StringWidth(damageText)
+		if damageWidth < lastDamageOverlayWidth {
+			damageText += strings.Repeat(" ", lastDamageOverlayWidth-damageWidth)
+		} else {
+			lastDamageOverlayWidth = damageWidth
+		}
+
 		ctx := NewRenderContext(t, width, height, nil, nil, BuildContext{}, nil)
 		ctx.DrawStyledText(0, 0, text, Style{
 			ForegroundColor: BrightWhite,
@@ -410,6 +467,18 @@ func Run(root Widget) (runErr error) {
 		})
 		if height > 1 {
 			ctx.DrawStyledText(0, 1, causeText, Style{
+				ForegroundColor: BrightWhite,
+				BackgroundColor: Black,
+			})
+		}
+		if height > 2 {
+			ctx.DrawStyledText(0, 2, statsText, Style{
+				ForegroundColor: BrightWhite,
+				BackgroundColor: Black,
+			})
+		}
+		if height > 3 {
+			ctx.DrawStyledText(0, 3, damageText, Style{
 				ForegroundColor: BrightWhite,
 				BackgroundColor: Black,
 			})
@@ -424,16 +493,15 @@ func Run(root Widget) (runErr error) {
 	// Render and update focusables
 	display := func() {
 		startTime := time.Now()
-		screen.Clear(t)
 		// Update the focused signal BEFORE render so widgets can read it
 		updateFocusedSignal()
 
-		focusables := renderer.Render(root)
+		focusables := renderer.Update(root)
 		focusManager.SetFocusables(focusables)
 
 		// If focus changed after render (auto-focus or focus removal), re-render
 		if updateFocusedSignal() {
-			renderer.Render(root)
+			renderer.Update(root)
 		}
 
 		// Manage modal focus transitions (open/close) and keep focus inside topmost modal.
@@ -462,20 +530,20 @@ func Run(root Widget) (runErr error) {
 			pendingFocusID = ""
 			// Update the signal and re-render so the focused widget shows focus style
 			if updateFocusedSignal() {
-				renderer.Render(root)
+				renderer.Update(root)
 			}
 		}
 
 		lastModalCount = modalCount
 		// Update the signal and re-render so the focused widget shows focus style
 		if updateFocusedSignal() {
-			renderer.Render(root)
+			renderer.Update(root)
 		}
 
 		// Reconcile hover after render so enter/leave transitions still fire when
 		// layout changes under a stationary pointer.
 		if hoverState.Reconcile(resolveHoverTarget, hoveredSignal) {
-			renderer.Render(root)
+			renderer.Update(root)
 		}
 		// Position terminal cursor for IME support (emoji picker, input methods)
 		// Must be before Display() since MoveTo only takes effect on next Display call

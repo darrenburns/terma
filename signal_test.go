@@ -2,6 +2,13 @@ package terma
 
 import "testing"
 
+func withTrackedRead(node *widgetNode, phase dependencyMask, fn func()) {
+	withSignalRead(node, phase, func() struct{} {
+		fn()
+		return struct{}{}
+	})
+}
+
 func TestNewSignal_InitialValue(t *testing.T) {
 	s := NewSignal(42)
 
@@ -61,20 +68,10 @@ func TestSignal_Update_ChainedUpdates(t *testing.T) {
 func TestSignal_Peek_DoesNotSubscribe(t *testing.T) {
 	s := NewSignal(42)
 
-	// Simulate being in a build context
 	node := newWidgetNode(nil)
-	currentBuildMu.Lock()
-	oldNode := currentBuildingNode
-	currentBuildingNode = node
-	currentBuildMu.Unlock()
-	defer func() {
-		currentBuildMu.Lock()
-		currentBuildingNode = oldNode
-		currentBuildMu.Unlock()
-	}()
-
-	// Peek should not subscribe
-	_ = s.Peek()
+	withTrackedRead(node, readPhaseBuild, func() {
+		_ = s.Peek()
+	})
 
 	s.core.mu.Lock()
 	listenerCount := len(s.core.listeners)
@@ -87,20 +84,10 @@ func TestSignal_Peek_DoesNotSubscribe(t *testing.T) {
 func TestSignal_Get_DuringBuild_Subscribes(t *testing.T) {
 	s := NewSignal(42)
 
-	// Simulate being in a build context
 	node := newWidgetNode(nil)
-	currentBuildMu.Lock()
-	oldNode := currentBuildingNode
-	currentBuildingNode = node
-	currentBuildMu.Unlock()
-	defer func() {
-		currentBuildMu.Lock()
-		currentBuildingNode = oldNode
-		currentBuildMu.Unlock()
-	}()
-
-	// Get should subscribe
-	_ = s.Get()
+	withTrackedRead(node, readPhaseBuild, func() {
+		_ = s.Get()
+	})
 
 	s.core.mu.Lock()
 	listenerCount := len(s.core.listeners)
@@ -116,17 +103,6 @@ func TestSignal_Get_DuringBuild_Subscribes(t *testing.T) {
 
 func TestSignal_Get_OutsideBuild_NoSubscription(t *testing.T) {
 	s := NewSignal(42)
-
-	// Ensure we're not in a build context
-	currentBuildMu.Lock()
-	oldNode := currentBuildingNode
-	currentBuildingNode = nil
-	currentBuildMu.Unlock()
-	defer func() {
-		currentBuildMu.Lock()
-		currentBuildingNode = oldNode
-		currentBuildMu.Unlock()
-	}()
 
 	_ = s.Get()
 
@@ -145,7 +121,7 @@ func TestSignal_Set_SameValue_NoRebuild(t *testing.T) {
 	node := newWidgetNode(nil)
 	node.clearDirty() // Start clean
 	s.core.mu.Lock()
-	s.core.listeners[node] = struct{}{}
+	s.core.listeners[node] = readPhaseBuild
 	s.core.mu.Unlock()
 
 	// Set same value
@@ -164,7 +140,7 @@ func TestSignal_Set_DifferentValue_MarksDirty(t *testing.T) {
 	node := newWidgetNode(nil)
 	node.clearDirty() // Start clean
 	s.core.mu.Lock()
-	s.core.listeners[node] = struct{}{}
+	s.core.listeners[node] = readPhaseBuild
 	s.core.mu.Unlock()
 
 	// Set different value
@@ -184,29 +160,9 @@ func TestSignal_MultipleSubscribers(t *testing.T) {
 	node2 := newWidgetNode(nil)
 	node3 := newWidgetNode(nil)
 
-	currentBuildMu.Lock()
-	oldNode := currentBuildingNode
-	currentBuildMu.Unlock()
-	defer func() {
-		currentBuildMu.Lock()
-		currentBuildingNode = oldNode
-		currentBuildMu.Unlock()
-	}()
-
-	currentBuildMu.Lock()
-	currentBuildingNode = node1
-	currentBuildMu.Unlock()
-	_ = s.Get()
-
-	currentBuildMu.Lock()
-	currentBuildingNode = node2
-	currentBuildMu.Unlock()
-	_ = s.Get()
-
-	currentBuildMu.Lock()
-	currentBuildingNode = node3
-	currentBuildMu.Unlock()
-	_ = s.Get()
+	withTrackedRead(node1, readPhaseBuild, func() { _ = s.Get() })
+	withTrackedRead(node2, readPhaseBuild, func() { _ = s.Get() })
+	withTrackedRead(node3, readPhaseBuild, func() { _ = s.Get() })
 
 	s.core.mu.Lock()
 	listenerCount := len(s.core.listeners)
@@ -228,9 +184,9 @@ func TestSignal_Set_NotifiesAllSubscribers(t *testing.T) {
 	node3.clearDirty()
 
 	s.core.mu.Lock()
-	s.core.listeners[node1] = struct{}{}
-	s.core.listeners[node2] = struct{}{}
-	s.core.listeners[node3] = struct{}{}
+	s.core.listeners[node1] = readPhaseBuild
+	s.core.listeners[node2] = readPhaseBuild
+	s.core.listeners[node3] = readPhaseBuild
 	s.core.mu.Unlock()
 
 	// Change value
@@ -253,7 +209,7 @@ func TestSignal_Unsubscribe(t *testing.T) {
 
 	node := newWidgetNode(nil)
 	s.core.mu.Lock()
-	s.core.listeners[node] = struct{}{}
+	s.core.listeners[node] = readPhaseBuild
 	s.core.mu.Unlock()
 
 	s.core.mu.Lock()
@@ -345,7 +301,7 @@ func TestAnySignal_Set_AlwaysNotifies(t *testing.T) {
 	node := newWidgetNode(nil)
 	node.clearDirty()
 	s.core.mu.Lock()
-	s.core.listeners[node] = struct{}{}
+	s.core.listeners[node] = readPhaseBuild
 	s.core.mu.Unlock()
 
 	// Set same content (but AnySignal can't compare, so it always notifies)
@@ -360,17 +316,9 @@ func TestAnySignal_Peek_DoesNotSubscribe(t *testing.T) {
 	s := NewAnySignal([]int{1, 2, 3})
 
 	node := newWidgetNode(nil)
-	currentBuildMu.Lock()
-	oldNode := currentBuildingNode
-	currentBuildingNode = node
-	currentBuildMu.Unlock()
-	defer func() {
-		currentBuildMu.Lock()
-		currentBuildingNode = oldNode
-		currentBuildMu.Unlock()
-	}()
-
-	_ = s.Peek()
+	withTrackedRead(node, readPhaseBuild, func() {
+		_ = s.Peek()
+	})
 
 	s.core.mu.Lock()
 	listenerCount := len(s.core.listeners)
@@ -384,17 +332,9 @@ func TestAnySignal_Get_DuringBuild_Subscribes(t *testing.T) {
 	s := NewAnySignal([]int{1, 2, 3})
 
 	node := newWidgetNode(nil)
-	currentBuildMu.Lock()
-	oldNode := currentBuildingNode
-	currentBuildingNode = node
-	currentBuildMu.Unlock()
-	defer func() {
-		currentBuildMu.Lock()
-		currentBuildingNode = oldNode
-		currentBuildMu.Unlock()
-	}()
-
-	_ = s.Get()
+	withTrackedRead(node, readPhaseBuild, func() {
+		_ = s.Get()
+	})
 
 	s.core.mu.Lock()
 	listenerCount := len(s.core.listeners)
@@ -575,7 +515,7 @@ func TestSignal_ConcurrentSetWithListeners(t *testing.T) {
 	for i := range nodes {
 		nodes[i] = newWidgetNode(nil)
 		s.core.mu.Lock()
-		s.core.listeners[nodes[i]] = struct{}{}
+		s.core.listeners[nodes[i]] = readPhaseBuild
 		s.core.mu.Unlock()
 	}
 

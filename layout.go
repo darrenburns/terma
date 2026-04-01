@@ -125,18 +125,26 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			childNode = buildFallbackLayoutNode(built, childCtx)
 		}
 
-		// Wrap in FlexNode or PercentNode if child has Flex/Percent width (Row's main axis is horizontal)
-		mainAxisDim := getChildMainAxisDimension(built, true)
-		childNode = wrapInPercentIfNeeded(childNode, mainAxisDim, layout.Horizontal)
-		children[i] = wrapInFlexIfNeeded(childNode, mainAxisDim)
+		children[i] = childNode
+	}
+	return r.BuildContainerLayoutNode(ctx, children)
+}
+
+func (r Row) BuildContainerLayoutNode(ctx BuildContext, children []layout.LayoutNode) layout.LayoutNode {
+	wrappedChildren := make([]layout.LayoutNode, len(children))
+	for i, childNode := range children {
+		if i < len(r.Children) {
+			mainAxisDim := getChildMainAxisDimension(r.Children[i], true)
+			childNode = wrapInPercentIfNeeded(childNode, mainAxisDim, layout.Horizontal)
+			childNode = wrapInFlexIfNeeded(childNode, mainAxisDim)
+		}
+		wrappedChildren[i] = childNode
 	}
 
 	padding := toLayoutEdgeInsets(r.Style.Padding)
 	border := borderToEdgeInsets(r.Style.Border)
 	dims := GetWidgetDimensionSet(r)
 	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
-
-	// Explicit Auto means "fit content, don't stretch" - set preserve flags
 	preserveWidth := dims.Width.IsAuto() && !dims.Width.IsUnset()
 	preserveHeight := dims.Height.IsAuto() && !dims.Height.IsUnset()
 
@@ -144,7 +152,7 @@ func (r Row) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		Spacing:        r.Spacing,
 		MainAlign:      toLayoutMainAlign(r.MainAlign),
 		CrossAlign:     toLayoutCrossAlign(r.CrossAlign),
-		Children:       children,
+		Children:       wrappedChildren,
 		Padding:        padding,
 		Border:         border,
 		Margin:         toLayoutEdgeInsets(r.Style.Margin),
@@ -273,18 +281,26 @@ func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 			childNode = buildFallbackLayoutNode(built, childCtx)
 		}
 
-		// Wrap in FlexNode or PercentNode if child has Flex/Percent height (Column's main axis is vertical)
-		mainAxisDim := getChildMainAxisDimension(built, false)
-		childNode = wrapInPercentIfNeeded(childNode, mainAxisDim, layout.Vertical)
-		children[i] = wrapInFlexIfNeeded(childNode, mainAxisDim)
+		children[i] = childNode
+	}
+	return c.BuildContainerLayoutNode(ctx, children)
+}
+
+func (c Column) BuildContainerLayoutNode(ctx BuildContext, children []layout.LayoutNode) layout.LayoutNode {
+	wrappedChildren := make([]layout.LayoutNode, len(children))
+	for i, childNode := range children {
+		if i < len(c.Children) {
+			mainAxisDim := getChildMainAxisDimension(c.Children[i], false)
+			childNode = wrapInPercentIfNeeded(childNode, mainAxisDim, layout.Vertical)
+			childNode = wrapInFlexIfNeeded(childNode, mainAxisDim)
+		}
+		wrappedChildren[i] = childNode
 	}
 
 	padding := toLayoutEdgeInsets(c.Style.Padding)
 	border := borderToEdgeInsets(c.Style.Border)
 	dims := GetWidgetDimensionSet(c)
 	minWidth, maxWidth, minHeight, maxHeight := dimensionSetToMinMax(dims, padding, border)
-
-	// Explicit Auto means "fit content, don't stretch" - set preserve flags
 	preserveWidth := dims.Width.IsAuto() && !dims.Width.IsUnset()
 	preserveHeight := dims.Height.IsAuto() && !dims.Height.IsUnset()
 
@@ -292,7 +308,7 @@ func (c Column) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 		Spacing:        c.Spacing,
 		MainAlign:      toLayoutMainAlign(c.MainAlign),
 		CrossAlign:     toLayoutCrossAlign(c.CrossAlign),
-		Children:       children,
+		Children:       wrappedChildren,
 		Padding:        padding,
 		Border:         border,
 		Margin:         toLayoutEdgeInsets(c.Style.Margin),

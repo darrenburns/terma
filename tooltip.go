@@ -16,7 +16,6 @@ const (
 	TooltipRight
 )
 
-
 // Tooltip displays contextual help when hovering over or focusing on an element.
 // It wraps a child widget and shows a floating tooltip based on the configured trigger.
 //
@@ -138,8 +137,15 @@ func (t Tooltip) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 	}
 
 	// Wrap in ColumnNode so ComputedLayout.Children is populated
+	return t.BuildContainerLayoutNode(ctx, []layout.LayoutNode{childNode})
+}
+
+func (t Tooltip) BuildContainerLayoutNode(ctx BuildContext, children []layout.LayoutNode) layout.LayoutNode {
+	if len(children) == 0 {
+		return &layout.BoxNode{}
+	}
 	return &layout.ColumnNode{
-		Children: []layout.LayoutNode{childNode},
+		Children: children,
 	}
 }
 

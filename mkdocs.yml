@@ -40,6 +40,7 @@ nav:
   - Getting Started: getting-started.md
   - Widgets:
     - Overview: widgets/index.md
+    - Custom Widgets: widgets/custom-widgets.md
     - Autocomplete: widgets/autocomplete.md
     - Breadcrumbs: widgets/breadcrumbs.md
     - Button: widgets/button.md
