@@ -529,6 +529,20 @@ type treeContainer[T any] struct {
 	tree Tree[T]
 }
 
+type defaultTreeRowWidget[T any] struct {
+	tree           Tree[T]
+	focusID        string
+	focusManager   *FocusManager
+	theme          ThemeData
+	entry          treeViewEntry[T]
+	match          MatchResult
+	prefixWidth    int
+	indentation    string
+	indicator      string
+	showGuideLines bool
+	guideSpanStyle SpanStyle
+}
+
 func (c treeContainer[T]) Build(ctx BuildContext) Widget {
 	return c
 }
@@ -556,6 +570,145 @@ func (c treeContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 
 func (c treeContainer[T]) ChildWidgets() []Widget {
 	return c.Children
+}
+
+func (w defaultTreeRowWidget[T]) Build(ctx BuildContext) Widget {
+	content := fmt.Sprintf("%v", w.entry.node.Data)
+	prefixLayoutText := padCursorPrefix("", w.prefixWidth) + w.indentation + w.indicator
+	return Row{
+		Spacing: 0,
+		Children: []Widget{
+			PresentText(
+				prefixLayoutText,
+				Style{},
+				w.currentPrefixStyle,
+				func(ctx *RenderContext) PresentedTextPaint {
+					return PresentedTextPaint{
+						Spans: treePrefixSpans(w.paintRowPrefix(ctx), w.indentation, w.indicator, w.showGuideLines, w.guideSpanStyle),
+						Style: w.paintPrefixStyle(ctx),
+					}
+				},
+			),
+			PresentHighlightedText(
+				content,
+				Style{Width: Flex(1)},
+				w.currentContentStyle,
+				w.paintContentStyle,
+				func(*RenderContext) MatchResult { return w.match },
+			),
+		},
+	}
+}
+
+func (w defaultTreeRowWidget[T]) currentCursorPath() []int {
+	if w.tree.State == nil {
+		return nil
+	}
+	return w.tree.State.CursorPath.Peek()
+}
+
+func (w defaultTreeRowWidget[T]) isSelected() bool {
+	if !w.tree.MultiSelect || w.tree.State == nil {
+		return false
+	}
+	if selection := w.tree.State.Selection.Peek(); selection != nil {
+		_, selected := selection[w.tree.State.idForPath(w.entry.path)]
+		return selected
+	}
+	return false
+}
+
+func (w defaultTreeRowWidget[T]) nodeContext(active, selected bool) TreeNodeContext {
+	return TreeNodeContext{
+		Path:             clonePath(w.entry.path),
+		Depth:            w.entry.depth,
+		Expanded:         w.entry.expanded,
+		Expandable:       w.entry.expandable,
+		Active:           active,
+		Selected:         selected,
+		FilteredAncestor: w.entry.ancestor,
+	}
+}
+
+func (w defaultTreeRowWidget[T]) rowPrefix(active, selected, focused bool) string {
+	rowPrefix := ""
+	if active && focused {
+		rowPrefix = w.tree.CursorPrefix
+	} else if selected {
+		rowPrefix = w.tree.SelectedPrefix
+	}
+	return padCursorPrefix(rowPrefix, w.prefixWidth)
+}
+
+func (w defaultTreeRowWidget[T]) currentPrefixStyle() Style {
+	cursorPath := w.currentCursorPath()
+	active := pathsEqual(w.entry.path, cursorPath)
+	selected := w.isSelected()
+	focused := w.focusManager != nil && w.focusID != "" && w.focusManager.FocusedID() == w.focusID
+	return styleForTreeNodeContext(w.theme, w.nodeContext(active, selected), focused)
+}
+
+func (w defaultTreeRowWidget[T]) paintRowPrefix(ctx *RenderContext) string {
+	cursorPath := []int(nil)
+	if w.tree.State != nil {
+		cursorPath = w.tree.State.CursorPath.Get()
+	}
+	selected := false
+	if w.tree.MultiSelect && w.tree.State != nil {
+		if selection := w.tree.State.Selection.Get(); selection != nil {
+			_, selected = selection[w.tree.State.idForPath(w.entry.path)]
+		}
+	}
+
+	active := pathsEqual(w.entry.path, cursorPath)
+	focused := ctx.IsFocusedID(w.focusID)
+	return w.rowPrefix(active, selected, focused)
+}
+
+func (w defaultTreeRowWidget[T]) paintPrefixStyle(ctx *RenderContext) Style {
+	cursorPath := []int(nil)
+	if w.tree.State != nil {
+		cursorPath = w.tree.State.CursorPath.Get()
+	}
+	selected := false
+	if w.tree.MultiSelect && w.tree.State != nil {
+		if selection := w.tree.State.Selection.Get(); selection != nil {
+			_, selected = selection[w.tree.State.idForPath(w.entry.path)]
+		}
+	}
+
+	active := pathsEqual(w.entry.path, cursorPath)
+	focused := ctx.IsFocusedID(w.focusID)
+	return styleForTreeNodeContext(w.theme, w.nodeContext(active, selected), focused)
+}
+
+func (w defaultTreeRowWidget[T]) currentContentStyle() Style {
+	cursorPath := w.currentCursorPath()
+	active := pathsEqual(w.entry.path, cursorPath)
+	selected := w.isSelected()
+	focused := w.focusManager != nil && w.focusID != "" && w.focusManager.FocusedID() == w.focusID
+	style := styleForTreeNodeContext(w.theme, w.nodeContext(active, selected), focused)
+	style.Width = Flex(1)
+	return style
+}
+
+func (w defaultTreeRowWidget[T]) paintContentStyle(ctx *RenderContext) Style {
+	cursorPath := []int(nil)
+	if w.tree.State != nil {
+		cursorPath = w.tree.State.CursorPath.Get()
+	}
+	selected := false
+	if w.tree.MultiSelect && w.tree.State != nil {
+		if selection := w.tree.State.Selection.Get(); selection != nil {
+			_, selected = selection[w.tree.State.idForPath(w.entry.path)]
+		}
+	}
+
+	active := pathsEqual(w.entry.path, cursorPath)
+	focused := ctx.IsFocusedID(w.focusID)
+	style := styleForTreeNodeContext(w.theme, w.nodeContext(active, selected), focused)
+	style.Width = Flex(1)
+	return style
 }
 
 // WidgetID returns the tree widget's unique identifier.
@@ -739,23 +892,10 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 		return Column{}
 	}
 
-	cursorPath := t.State.CursorPath.Get()
-	cursorPath = t.ensureCursor(viewPaths, cursorPath)
-
-	var selection map[string]struct{}
-	if t.MultiSelect {
-		selection = t.State.Selection.Get()
-	}
-
 	renderNode := t.RenderNode
 	renderNodeWithMatch := t.RenderNodeWithMatch
-	if renderNodeWithMatch == nil && renderNode == nil {
-		renderNodeWithMatch = t.themedDefaultRenderNode(ctx)
-	}
+	useDefaultRenderer := renderNodeWithMatch == nil && renderNode == nil
 	theme := ctx.Theme()
-	widgetFocused := ctx.IsFocused(t)
-	cursorPrefix := t.CursorPrefix
-	selectedPrefix := t.SelectedPrefix
 
 	indent := t.Indent
 	if indent <= 0 {
@@ -789,6 +929,68 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 
 	children := make([]Widget, len(entries))
 	indicatorLayout := make([]treeIndicatorLayout, len(entries))
+	prefixWidth := cursorPrefixSlotWidth(t.CursorPrefix, t.SelectedPrefix)
+	focusID := widgetIdentity(t, ctx)
+
+	if useDefaultRenderer {
+		theme := ctx.Theme()
+		for i, entry := range entries {
+			indentation, indicator := t.prefixPartsForEntry(entry, indent, expandIndicator, collapseIndicator, leafIndicator, showGuideLines, lastSiblingByPath)
+			indicatorLayout[i] = treeIndicatorLayout{
+				x:          prefixWidth + ansi.StringWidth(indentation),
+				width:      ansi.StringWidth(indicator),
+				expandable: entry.expandable,
+			}
+			children[i] = defaultTreeRowWidget[T]{
+				tree:           t,
+				focusID:        focusID,
+				focusManager:   ctx.focusManager,
+				theme:          theme,
+				entry:          entry,
+				match:          entry.match,
+				prefixWidth:    prefixWidth,
+				indentation:    indentation,
+				indicator:      indicator,
+				showGuideLines: showGuideLines,
+				guideSpanStyle: guideSpanStyle,
+			}
+		}
+		t.State.indicatorLayout = indicatorLayout
+		t.registerScrollCallbacks()
+
+		return treeContainer[T]{
+			Column: Column{
+				ID: t.ID,
+				Style: func() Style {
+					style := t.Style
+					if style.Width.IsUnset() {
+						style.Width = t.Width
+					}
+					if style.Height.IsUnset() {
+						style.Height = t.Height
+					}
+					return style
+				}(),
+				Children: children,
+			},
+			tree: t,
+		}
+	}
+
+	cursorPath := t.State.CursorPath.Get()
+	cursorPath = t.ensureCursor(viewPaths, cursorPath)
+
+	var selection map[string]struct{}
+	if t.MultiSelect {
+		selection = t.State.Selection.Get()
+	}
+
+	if renderNodeWithMatch == nil && renderNode == nil {
+		renderNodeWithMatch = t.themedDefaultRenderNode(ctx)
+	}
+	widgetFocused := ctx.IsFocused(t)
+	cursorPrefix := t.CursorPrefix
+	selectedPrefix := t.SelectedPrefix
 	for i, entry := range entries {
 		active := pathsEqual(entry.path, cursorPath)
 		selected := false
@@ -1058,7 +1260,7 @@ func (t Tree[T]) themedDefaultRenderNode(ctx BuildContext) func(node T, nodeCtx 
 	highlight := MatchHighlightStyle(theme)
 	return func(node T, nodeCtx TreeNodeContext, match MatchResult) Widget {
 		content := fmt.Sprintf("%v", node)
-		style := t.styleForContext(ctx, nodeCtx, ctx.IsFocused(t))
+		style := styleForTreeNodeContext(theme, nodeCtx, ctx.IsFocused(t))
 		if match.Matched && len(match.Ranges) > 0 {
 			spans := HighlightSpans(content, match.Ranges, highlight)
 			style.Width = Flex(1)
@@ -1076,7 +1278,10 @@ func (t Tree[T]) themedDefaultRenderNode(ctx BuildContext) func(node T, nodeCtx 
 }
 
 func (t Tree[T]) styleForContext(ctx BuildContext, nodeCtx TreeNodeContext, widgetFocused bool) Style {
-	theme := ctx.Theme()
+	return styleForTreeNodeContext(ctx.Theme(), nodeCtx, widgetFocused)
+}
+
+func styleForTreeNodeContext(theme ThemeData, nodeCtx TreeNodeContext, widgetFocused bool) Style {
 	style := Style{ForegroundColor: theme.Text}
 	if nodeCtx.FilteredAncestor {
 		style.ForegroundColor = theme.TextMuted

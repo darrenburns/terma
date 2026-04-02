@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"runtime/pprof"
+	"strconv"
 	"strings"
 
 	t "github.com/darrenburns/terma"
@@ -140,6 +141,8 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
 	themeIdx := d.themeIndex.Get()
 	currentTheme := themeNames[themeIdx]
+	itemCount := d.listState.ItemCount()
+	cursorDigits := len(strconv.Itoa(max(1, itemCount)))
 
 	return t.Column{
 		ID:      "list-demo-root",
@@ -236,9 +239,14 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 			},
 
 			// Status showing item count and cursor
-			t.Text{
-				Spans: t.ParseMarkup(fmt.Sprintf("Items: [b $Warning]%d[/] | Cursor: [b $Info]%d[/] | Press [b $Error]Ctrl+C[/] to quit", d.listState.ItemCount(), d.listState.CursorIndex.Get()+1), theme),
-			},
+			t.SignalMarkup(d.listState.CursorIndex, func(cursor int) string {
+				return fmt.Sprintf(
+					"Items: [b $Warning]%d[/] | Cursor: [b $Info]%*d[/] | Press [b $Error]Ctrl+C[/] to quit",
+					itemCount,
+					cursorDigits,
+					cursor+1,
+				)
+			}),
 
 			// ActiveCursor summary
 			d.buildSelectionSummary(theme),

@@ -1,6 +1,7 @@
 package terma
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -293,5 +294,230 @@ func TestRenderer_TextInputBlurRepaintsVirtualCursor(t *testing.T) {
 	}
 	if len(screen.touched) == 0 {
 		t.Fatal("expected blur to repaint the input and clear the virtual cursor")
+	}
+}
+
+func TestRenderer_SignalMarkupUsesPartialPaint(t *testing.T) {
+	screen := newTrackingScreen(20, 1)
+	renderer := newTestRenderer(screen, 20, 1)
+
+	cursor := NewSignal(1)
+	widget := SignalMarkup(cursor, func(i int) string {
+		return "Cursor: [b]" + strconv.Itoa(i) + "[/]"
+	})
+
+	renderer.Update(widget)
+	screen.resetTouched()
+
+	cursor.Set(2)
+	renderer.Update(widget)
+
+	if renderer.lastFrameMode != rendererFramePartial {
+		t.Fatalf("expected partial repaint for SignalMarkup, got %q", renderer.lastFrameMode)
+	}
+	if renderer.lastLayoutCount != 0 {
+		t.Fatalf("SignalMarkup should not relayout when width is stable, got %d layout ops", renderer.lastLayoutCount)
+	}
+	if len(screen.touched) == 0 {
+		t.Fatal("expected SignalMarkup update to repaint text")
+	}
+}
+
+func TestRenderer_SignalTextAutoWidthPromotesLayoutWhenWidthChanges(t *testing.T) {
+	screen := newTrackingScreen(20, 1)
+	renderer := newTestRenderer(screen, 20, 1)
+
+	content := NewSignal("ab")
+	widget := SignalText(content, func(s string) string { return s })
+	widget.LayoutStyle.Width = Auto
+
+	renderer.Update(widget)
+
+	content.Set("wider")
+	renderer.Update(widget)
+
+	if renderer.lastFrameMode != rendererFrameFull {
+		t.Fatalf("expected full render after SignalText width growth, got %q", renderer.lastFrameMode)
+	}
+	if renderer.lastLayoutCount == 0 {
+		t.Fatal("expected layout work after SignalText intrinsic width changed")
+	}
+}
+
+func TestRenderer_ListCursorMoveUsesPartialPaint(t *testing.T) {
+	screen := newTrackingScreen(20, 3)
+	focusManager := NewFocusManager()
+	focusedSignal := NewAnySignal[Focusable](nil)
+	renderer := NewRenderer(
+		screen,
+		20,
+		3,
+		focusManager,
+		focusedSignal,
+		NewAnySignal[Widget](nil),
+	)
+
+	state := NewListState([]string{"One", "Two", "Three"})
+	list := List[string]{ID: "list", State: state}
+
+	focusManager.focusedID = "list"
+	focusedSignal.Set(list)
+	renderer.Update(list)
+
+	screen.resetTouched()
+	state.SelectNext()
+	renderer.Update(list)
+
+	if renderer.lastFrameMode != rendererFramePartial {
+		t.Fatalf("expected partial repaint for list cursor move, got %q", renderer.lastFrameMode)
+	}
+	if renderer.lastBuildCount != 0 {
+		t.Fatalf("list cursor move should not rebuild, got %d build ops", renderer.lastBuildCount)
+	}
+	if renderer.lastLayoutCount != 0 {
+		t.Fatalf("list cursor move should not relayout, got %d layout ops", renderer.lastLayoutCount)
+	}
+	if len(screen.touched) == 0 {
+		t.Fatal("expected list cursor move to repaint affected rows")
+	}
+}
+
+type listSelectionSummaryRoot struct {
+	list  List[string]
+	state *ListState[string]
+}
+
+func (w listSelectionSummaryRoot) Build(ctx BuildContext) Widget {
+	selection := w.state.Selection.Get()
+	return Column{
+		Children: []Widget{
+			w.list,
+			Text{Content: "selected: " + strconv.Itoa(len(selection))},
+		},
+	}
+}
+
+func TestRenderer_ListCursorMoveDoesNotRebuildWhenSelectionAlreadyEmpty(t *testing.T) {
+	screen := newTrackingScreen(30, 6)
+	focusManager := NewFocusManager()
+	focusedSignal := NewAnySignal[Focusable](nil)
+	renderer := NewRenderer(
+		screen,
+		30,
+		6,
+		focusManager,
+		focusedSignal,
+		NewAnySignal[Widget](nil),
+	)
+
+	state := NewListState([]string{"One", "Two", "Three"})
+	list := List[string]{ID: "list", State: state, MultiSelect: true}
+	root := listSelectionSummaryRoot{
+		list:  list,
+		state: state,
+	}
+
+	focusManager.focusedID = "list"
+	focusedSignal.Set(list)
+	renderer.Update(root)
+
+	screen.resetTouched()
+	list.keyCursorDown()
+	renderer.Update(root)
+
+	if renderer.lastFrameMode != rendererFramePartial {
+		t.Fatalf("expected partial repaint for cursor move with empty selection summary, got %q", renderer.lastFrameMode)
+	}
+	if renderer.lastBuildCount != 0 {
+		t.Fatalf("cursor move with unchanged empty selection should not rebuild, got %d build ops", renderer.lastBuildCount)
+	}
+	if renderer.lastLayoutCount != 0 {
+		t.Fatalf("cursor move with unchanged empty selection should not relayout, got %d layout ops", renderer.lastLayoutCount)
+	}
+}
+
+func TestRenderer_TableCursorMoveUsesPartialPaint(t *testing.T) {
+	screen := newTrackingScreen(30, 3)
+	focusManager := NewFocusManager()
+	focusedSignal := NewAnySignal[Focusable](nil)
+	renderer := NewRenderer(
+		screen,
+		30,
+		3,
+		focusManager,
+		focusedSignal,
+		NewAnySignal[Widget](nil),
+	)
+
+	state := NewTableState([][]string{
+		{"Alice", "Engineer"},
+		{"Bob", "Designer"},
+	})
+	table := Table[[]string]{
+		ID:    "table",
+		State: state,
+		Columns: []TableColumn{
+			{Width: Cells(10)},
+			{Width: Cells(10)},
+		},
+	}
+
+	focusManager.focusedID = "table"
+	focusedSignal.Set(table)
+	renderer.Update(table)
+
+	screen.resetTouched()
+	state.SelectColumn(1)
+	renderer.Update(table)
+
+	if renderer.lastFrameMode != rendererFramePartial {
+		t.Fatalf("expected partial repaint for table cursor move, got %q", renderer.lastFrameMode)
+	}
+	if renderer.lastBuildCount != 0 {
+		t.Fatalf("table cursor move should not rebuild, got %d build ops", renderer.lastBuildCount)
+	}
+	if renderer.lastLayoutCount != 0 {
+		t.Fatalf("table cursor move should not relayout, got %d layout ops", renderer.lastLayoutCount)
+	}
+	if len(screen.touched) == 0 {
+		t.Fatal("expected table cursor move to repaint affected cells")
+	}
+}
+
+func TestRenderer_TreeCursorMoveUsesPartialPaint(t *testing.T) {
+	screen := newTrackingScreen(30, 6)
+	focusManager := NewFocusManager()
+	focusedSignal := NewAnySignal[Focusable](nil)
+	renderer := NewRenderer(
+		screen,
+		30,
+		6,
+		focusManager,
+		focusedSignal,
+		NewAnySignal[Widget](nil),
+	)
+
+	state := NewTreeState(sampleTreeSnapshotNodes())
+	tree := Tree[string]{ID: "tree", State: state}
+
+	focusManager.focusedID = "tree"
+	focusedSignal.Set(tree)
+	renderer.Update(tree)
+
+	screen.resetTouched()
+	state.CursorDown()
+	renderer.Update(tree)
+
+	if renderer.lastFrameMode != rendererFramePartial {
+		t.Fatalf("expected partial repaint for tree cursor move, got %q", renderer.lastFrameMode)
+	}
+	if renderer.lastBuildCount != 0 {
+		t.Fatalf("tree cursor move should not rebuild, got %d build ops", renderer.lastBuildCount)
+	}
+	if renderer.lastLayoutCount != 0 {
+		t.Fatalf("tree cursor move should not relayout, got %d layout ops", renderer.lastLayoutCount)
+	}
+	if len(screen.touched) == 0 {
+		t.Fatal("expected tree cursor move to repaint affected rows")
 	}
 }

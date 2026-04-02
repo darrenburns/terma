@@ -1,6 +1,8 @@
 package terma
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // ListState holds the state for a List widget.
 // It is the source of truth for items and cursor position, and must be provided to List.
@@ -286,6 +288,9 @@ func (s *ListState[T]) IsSelected(index int) bool {
 
 // ClearSelection removes all items from the selection.
 func (s *ListState[T]) ClearSelection() {
+	if len(s.Selection.Peek()) == 0 {
+		return
+	}
 	s.Selection.Set(make(map[int]struct{}))
 }
 
@@ -465,6 +470,17 @@ type listContainer[T any] struct {
 	list List[T]
 }
 
+type defaultListItemWidget[T any] struct {
+	list         List[T]
+	focusID      string
+	focusManager *FocusManager
+	theme        ThemeData
+	item         T
+	sourceIdx    int
+	match        MatchResult
+	prefixWidth  int
+}
+
 func (c listContainer[T]) Build(ctx BuildContext) Widget {
 	return c
 }
@@ -495,6 +511,117 @@ func (c listContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 
 func (c listContainer[T]) ChildWidgets() []Widget {
 	return c.Children
+}
+
+func (w defaultListItemWidget[T]) Build(ctx BuildContext) Widget {
+	content := fmt.Sprintf("%v", w.item)
+	return PresentPrefixedText(
+		padCursorPrefix("", w.prefixWidth)+content,
+		content,
+		Style{Width: Flex(1)},
+		w.currentStyle,
+		w.paintStyle,
+		w.paintPrefix,
+		func(*RenderContext) MatchResult { return w.match },
+	)
+}
+
+func (w defaultListItemWidget[T]) currentPrefix() string {
+	cursorIdx := 0
+	if w.list.State != nil {
+		cursorIdx = w.list.State.CursorIndex.Peek()
+	}
+
+	selected := false
+	if w.list.MultiSelect && w.list.State != nil {
+		if selection := w.list.State.Selection.Peek(); selection != nil {
+			_, selected = selection[w.sourceIdx]
+		}
+	}
+
+	focused := w.focusManager != nil && w.focusID != "" && w.focusManager.FocusedID() == w.focusID
+	showCursor := w.sourceIdx == cursorIdx && focused
+	if showCursor {
+		return w.list.CursorPrefix
+	}
+	if selected {
+		return w.list.SelectedPrefix
+	}
+	return ""
+}
+
+func (w defaultListItemWidget[T]) currentStyle() Style {
+	cursorIdx := 0
+	if w.list.State != nil {
+		cursorIdx = w.list.State.CursorIndex.Peek()
+	}
+
+	selected := false
+	if w.list.MultiSelect && w.list.State != nil {
+		if selection := w.list.State.Selection.Peek(); selection != nil {
+			_, selected = selection[w.sourceIdx]
+		}
+	}
+
+	focused := w.focusManager != nil && w.focusID != "" && w.focusManager.FocusedID() == w.focusID
+	showCursor := w.sourceIdx == cursorIdx && focused
+	style := Style{ForegroundColor: w.theme.Text, Width: Flex(1)}
+	if showCursor {
+		style.BackgroundColor = w.theme.ActiveCursor
+		style.ForegroundColor = w.theme.SelectionText
+	} else if selected {
+		style.BackgroundColor = w.theme.Selection
+	}
+	return style
+}
+
+func (w defaultListItemWidget[T]) paintPrefix(ctx *RenderContext) string {
+	cursorIdx := 0
+	if w.list.State != nil {
+		cursorIdx = w.list.State.CursorIndex.Get()
+	}
+
+	selected := false
+	if w.list.MultiSelect && w.list.State != nil {
+		if selection := w.list.State.Selection.Get(); selection != nil {
+			_, selected = selection[w.sourceIdx]
+		}
+	}
+
+	focused := ctx.IsFocusedID(w.focusID)
+	showCursor := w.sourceIdx == cursorIdx && focused
+	if showCursor {
+		return w.list.CursorPrefix
+	}
+	if selected {
+		return w.list.SelectedPrefix
+	}
+	return ""
+}
+
+func (w defaultListItemWidget[T]) paintStyle(ctx *RenderContext) Style {
+	cursorIdx := 0
+	if w.list.State != nil {
+		cursorIdx = w.list.State.CursorIndex.Get()
+	}
+
+	selected := false
+	if w.list.MultiSelect && w.list.State != nil {
+		if selection := w.list.State.Selection.Get(); selection != nil {
+			_, selected = selection[w.sourceIdx]
+		}
+	}
+
+	focused := ctx.IsFocusedID(w.focusID)
+	showCursor := w.sourceIdx == cursorIdx && focused
+	style := Style{ForegroundColor: w.theme.Text, Width: Flex(1)}
+	if showCursor {
+		style.BackgroundColor = w.theme.ActiveCursor
+		style.ForegroundColor = w.theme.SelectionText
+	} else if selected {
+		style.BackgroundColor = w.theme.Selection
+	}
+	return style
 }
 
 // WidgetID returns the widget's unique identifier.
@@ -633,6 +760,57 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 		return Column{}
 	}
 
+	// Register scroll callbacks for mouse wheel support
+	l.registerScrollCallbacks()
+
+	// Use default render function if none provided
+	renderItem := l.RenderItem
+	renderItemWithMatch := l.RenderItemWithMatch
+	useDefaultRenderer := renderItemWithMatch == nil && renderItem == nil
+	if useDefaultRenderer {
+		l.registerScrollCallbacks()
+		style := l.Style
+		theme := ctx.Theme()
+		if style.Width.IsUnset() {
+			style.Width = l.Width
+		}
+		if style.Height.IsUnset() {
+			style.Height = l.Height
+		}
+
+		focusID := widgetIdentity(l, ctx)
+		prefixWidth := cursorPrefixSlotWidth(l.CursorPrefix, l.SelectedPrefix)
+		children := make([]Widget, len(filtered.Items))
+		for viewIdx, item := range filtered.Items {
+			match := MatchResult{}
+			if len(filtered.Matches) > 0 {
+				match = filtered.Matches[viewIdx]
+			}
+			children[viewIdx] = defaultListItemWidget[T]{
+				list:         l,
+				focusID:      focusID,
+				focusManager: ctx.focusManager,
+				theme:        theme,
+				item:         item,
+				sourceIdx:    filtered.Indices[viewIdx],
+				match:        match,
+				prefixWidth:  prefixWidth,
+			}
+		}
+
+		return listContainer[T]{
+			Column: Column{
+				ID:         l.ID,
+				CrossAlign: CrossAxisStretch,
+				Style:      style,
+				Children:   children,
+				Click:      l.Click,
+				Hover:      l.Hover,
+			},
+			list: l,
+		}
+	}
+
 	// Get cursor position (subscribes to changes)
 	cursorIdx := l.State.CursorIndex.Get()
 
@@ -648,12 +826,6 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 		cursorIdx = filtered.Indices[0]
 	}
 
-	// Register scroll callbacks for mouse wheel support
-	l.registerScrollCallbacks()
-
-	// Use default render function if none provided
-	renderItem := l.RenderItem
-	renderItemWithMatch := l.RenderItemWithMatch
 	if renderItemWithMatch == nil && renderItem == nil {
 		renderItemWithMatch = l.themedDefaultRenderItem(ctx)
 	}
