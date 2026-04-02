@@ -267,6 +267,53 @@ func TestBuild_UsesReducedBottomPaddingForLowerFooter(t *testing.T) {
 	require.Equal(t, 6, column.Style.Padding.Right)
 }
 
+func TestEditInput_BlurSavesAndLeavesEditMode(t *testing.T) {
+	app := NewTodoApp()
+	app.editingIndex.Set(0)
+	app.editInputState.SetText("  Edited title  ")
+
+	task := app.activeList().Tasks.GetItems()[0]
+	renderItem := app.renderTaskItem(terma.BuildContext{}, false)
+
+	widget := renderItem(task, true, false)
+	row, ok := widget.(terma.Row)
+	require.True(t, ok)
+	require.Len(t, row.Children, 2)
+
+	autocomplete, ok := row.Children[1].(terma.Autocomplete)
+	require.True(t, ok)
+
+	textArea, ok := autocomplete.Child.(terma.TextArea)
+	require.True(t, ok)
+	require.NotNil(t, textArea.Blur)
+
+	textArea.Blur()
+	require.Equal(t, -1, app.editingIndex.Get())
+	require.Equal(t, "Edited title", app.activeList().Tasks.GetItems()[0].Title)
+}
+
+func TestKeybinds_EscapeClearsSelectionWhenPresent(t *testing.T) {
+	app := NewTodoApp()
+	app.activeList().Tasks.Select(1)
+	app.activeList().Tasks.Select(2)
+
+	keybind, ok := findKeybindByKey(app.Keybinds(), "escape")
+	require.True(t, ok)
+	require.Equal(t, "Clear", keybind.Name)
+	require.NotNil(t, keybind.Action)
+
+	keybind.Action()
+	require.Empty(t, app.activeList().Tasks.SelectedItems())
+	require.False(t, app.activeList().Tasks.HasAnchor())
+}
+
+func TestKeybinds_EscapeOmittedWhenNoSelection(t *testing.T) {
+	app := NewTodoApp()
+
+	_, ok := findKeybindByKey(app.Keybinds(), "escape")
+	require.False(t, ok)
+}
+
 func collectTaskIDs(tasks []Task) []string {
 	ids := make([]string, 0, len(tasks))
 	for _, task := range tasks {

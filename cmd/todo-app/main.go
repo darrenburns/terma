@@ -632,6 +632,11 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 							Style: t.Style{
 								BackgroundColor: theme.Surface,
 							},
+							Blur: func() {
+								if a.editingIndex.Peek() == idx {
+									a.commitEdit(idx, a.editInputState.GetText(), "")
+								}
+							},
 							ExtraKeybinds: []t.Keybind{
 								{Key: "enter", Name: "Save", Action: func() {
 									a.saveEdit(idx, a.editInputState.GetText())
@@ -959,6 +964,9 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 	}
 
 	if !isEditing {
+		if a.hasTaskSelection() {
+			keybinds = append(keybinds, t.Keybind{Key: "escape", Name: "Clear", Action: a.clearTaskSelection})
+		}
 		keybinds = append(keybinds,
 			t.Keybind{Key: "enter", Name: "Toggle", Action: a.toggleCurrentTask, Hidden: true},
 			t.Keybind{Key: " ", Name: "Toggle", Action: a.toggleCurrentTask},
@@ -978,6 +986,22 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 	}
 
 	return keybinds
+}
+
+func (a *TodoApp) hasTaskSelection() bool {
+	if a.filterMode.Peek() {
+		return len(a.filteredListState.SelectedItems()) > 0
+	}
+	return len(a.activeList().Tasks.SelectedItems()) > 0
+}
+
+func (a *TodoApp) clearTaskSelection() {
+	listState := a.activeList().Tasks
+	if a.filterMode.Peek() {
+		listState = a.filteredListState
+	}
+	listState.ClearSelection()
+	listState.ClearAnchor()
 }
 
 func (a *TodoApp) switchToPreviousList() {
@@ -1468,9 +1492,13 @@ func (a *TodoApp) startEdit() {
 
 // saveEdit saves the edited task title.
 func (a *TodoApp) saveEdit(index int, newTitle string) {
+	a.commitEdit(index, newTitle, "task-list")
+}
+
+func (a *TodoApp) commitEdit(index int, newTitle string, focusID string) {
 	newTitle = strings.TrimSpace(newTitle)
 	if newTitle == "" {
-		a.cancelEdit()
+		a.leaveEditMode(focusID)
 		return
 	}
 
@@ -1486,14 +1514,19 @@ func (a *TodoApp) saveEdit(index int, newTitle string) {
 		a.refreshFilteredTasks()
 		a.scheduleSave()
 	}
-	a.editingIndex.Set(-1)
-	t.RequestFocus("task-list")
+	a.leaveEditMode(focusID)
 }
 
 // cancelEdit cancels the current edit.
 func (a *TodoApp) cancelEdit() {
+	a.leaveEditMode("task-list")
+}
+
+func (a *TodoApp) leaveEditMode(focusID string) {
 	a.editingIndex.Set(-1)
-	t.RequestFocus("task-list")
+	if focusID != "" {
+		t.RequestFocus(focusID)
+	}
 }
 
 // openThemePicker shows the theme picker modal.
