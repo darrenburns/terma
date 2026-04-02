@@ -693,7 +693,7 @@ type TextArea struct {
 	ID                string            // Optional unique identifier
 	DisableFocus      bool              // If true, prevent keyboard focus
 	State             *TextAreaState    // Required - holds text and cursor position
-	Placeholder       string            // Text shown when empty and unfocused
+	Placeholder       string            // Text shown when empty
 	Highlighter       Highlighter       // Optional: dynamic text highlighting
 	LineHighlights    []LineHighlight   // Optional: line-based background highlights
 	Width             Dimension         // Deprecated: use Style.Width
@@ -1171,7 +1171,7 @@ func (t TextArea) GetStyle() Style {
 func (t TextArea) ContentWidthHint() int {
 	contentWidth := 1
 	if t.State != nil {
-		contentWidth = maxLineWidth(t.State.Content.Peek())
+		contentWidth = maxLineWidth(t.State.Content.Get())
 	}
 	placeholderWidth := maxLineWidthString(t.Placeholder)
 	width := max(contentWidth, placeholderWidth, 1)
@@ -1185,9 +1185,10 @@ func (t TextArea) ContentHeightHint(width int) int {
 	contentLines := 1
 	wrapMode := WrapSoft
 	if t.State != nil {
-		wrapMode = t.State.WrapMode.Peek()
+		graphemes := t.State.Content.Get()
+		wrapMode = t.State.WrapMode.Get()
 		contentWidth := reservedContentWidth(width)
-		layout := buildTextAreaLayout(t.State.Content.Peek(), wrapMode, contentWidth, t.State.CursorIndex.Peek())
+		layout := buildTextAreaLayout(graphemes, wrapMode, contentWidth, 0)
 		contentLines = max(1, len(layout.lines))
 	}
 	placeholderLines := wrapLineCount(t.Placeholder, reservedContentWidth(width), wrapMode)
@@ -1263,7 +1264,7 @@ func (t TextArea) Render(ctx *RenderContext) {
 	bgColor := baseStyle.BackgroundColor.ColorAt(ctx.Width, ctx.Height, 0, 0)
 	ctx.FillRect(0, 0, ctx.Width, ctx.Height, bgColor)
 
-	if len(graphemes) == 0 && !focused {
+	if len(graphemes) == 0 {
 		placeholderStyle := baseStyle
 		placeholderStyle.ForegroundColor = theme.TextMuted
 		lines := wrapText(t.Placeholder, contentWidth, wrapMode)
@@ -1273,6 +1274,20 @@ func (t TextArea) Render(ctx *RenderContext) {
 				line = ansi.Truncate(line, contentWidth, "")
 			}
 			ctx.DrawStyledText(0, i, line, placeholderStyle)
+		}
+		if focused && ctx.Width > 0 && ctx.Height > 0 {
+			cursorStyle := baseStyle
+			cursorStyle.Reverse = true
+
+			cursorChar := " "
+			if len(lines) > 0 && lines[0] != "" {
+				firstGrapheme, _ := ansi.FirstGraphemeCluster(lines[0], ansi.GraphemeWidth)
+				if firstGrapheme != "" {
+					cursorChar = firstGrapheme
+				}
+			}
+
+			ctx.DrawStyledText(0, 0, cursorChar, cursorStyle)
 		}
 		return
 	}
