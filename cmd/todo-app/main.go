@@ -237,7 +237,7 @@ func (a *TodoApp) taskRowID(taskID string) string {
 
 // activeList returns the currently active TaskList.
 func (a *TodoApp) activeList() *TaskList {
-	return a.taskLists[a.activeListIdx.Peek()]
+	return a.taskLists[a.activeListIdx.Get()]
 }
 
 // allTasks returns tasks from all lists.
@@ -299,18 +299,12 @@ func (a *TodoApp) Build(ctx t.BuildContext) t.Widget {
 		Height: t.Flex(1),
 		Style: t.Style{
 			BackgroundColor: bgColor,
-			Padding:         t.EdgeInsetsXY(6, 2),
+			Padding:         t.EdgeInsets{Top: 2, Right: 6, Bottom: 1, Left: 6},
 		},
 		Children: []t.Widget{
 			t.Dock{
 				Bottom: []t.Widget{
-					t.Column{
-						Width:      t.Flex(1),
-						CrossAlign: t.CrossAxisCenter,
-						Children: []t.Widget{
-							t.KeybindBar{},
-						},
-					},
+					a.buildFooter(theme),
 				},
 				Body: a.buildMainContainer(ctx, bgColor),
 			},
@@ -364,18 +358,23 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 		}
 	} else {
 		// Normal mode: static gradient
-		headerText := a.activeList().Name
+		headerText := ""
 		if a.filterMode.Get() {
 			headerText = "Type to filter"
 		} else if selectedCount := len(a.activeList().Tasks.SelectedItems()); selectedCount > 1 {
 			headerText = fmt.Sprintf("%d items selected", selectedCount)
 		}
-		border = t.Border{
-			Style: t.BorderRounded,
-			Decorations: []t.BorderDecoration{
+		decorations := []t.BorderDecoration{
+			{Text: countText, Position: t.DecorationTopRight},
+		}
+		if headerText != "" {
+			decorations = append([]t.BorderDecoration{
 				{Text: headerText, Position: t.DecorationTopLeft},
-				{Text: countText, Position: t.DecorationTopRight},
-			},
+			}, decorations...)
+		}
+		border = t.Border{
+			Style:       t.BorderRounded,
+			Decorations: decorations,
 			Color: t.NewGradient(
 				theme.Background.Blend(theme.Primary, 0.5),
 				theme.Background,
@@ -397,6 +396,46 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 			a.buildTaskList(ctx),
 		},
 	}
+}
+
+func (a *TodoApp) buildFooter(theme t.ThemeData) t.Widget {
+	return t.Column{
+		Width:      t.Flex(1),
+		CrossAlign: t.CrossAxisCenter,
+		Children: []t.Widget{
+			a.buildListSwitcher(theme),
+			t.Spacer{Height: t.Cells(1)},
+			t.KeybindBar{},
+		},
+	}
+}
+
+func (a *TodoApp) buildListSwitcher(theme t.ThemeData) t.Widget {
+	return t.Text{
+		Width:     t.Flex(1),
+		Height:    t.Cells(1),
+		TextAlign: t.TextAlignCenter,
+		Spans:     a.listSwitcherSpans(theme),
+	}
+}
+
+func (a *TodoApp) listSwitcherSpans(theme t.ThemeData) []t.Span {
+	spans := make([]t.Span, 0, len(a.taskLists)*2-1)
+	activeIdx := a.activeListIdx.Get()
+
+	for i, list := range a.taskLists {
+		if i > 0 {
+			spans = append(spans, t.ColorSpan(" · ", theme.TextMuted.WithAlpha(0.6)))
+		}
+
+		color := theme.TextMuted.WithAlpha(0.6)
+		if i == activeIdx {
+			color = theme.Primary
+		}
+		spans = append(spans, t.ColorSpan(list.Name, color))
+	}
+
+	return spans
 }
 
 // buildInputRow creates the new task input row or filter input row.

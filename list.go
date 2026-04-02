@@ -43,14 +43,15 @@ func (s *ListState[T]) SetItems(items []T) {
 	s.clampCursor()
 }
 
-// GetItems returns the current list data (without subscribing to changes).
+// GetItems returns the current list data.
+// If called during a tracked render phase, this subscribes to item changes.
 func (s *ListState[T]) GetItems() []T {
-	return s.Items.Peek()
+	return s.Items.Get()
 }
 
 // ItemCount returns the number of items.
 func (s *ListState[T]) ItemCount() int {
-	return len(s.Items.Peek())
+	return len(s.Items.Get())
 }
 
 // Append adds an item to the end of the list.
@@ -143,8 +144,8 @@ func (s *ListState[T]) Clear() {
 
 // SelectedItem returns the currently selected item (if any).
 func (s *ListState[T]) SelectedItem() (T, bool) {
-	items := s.Items.Peek()
-	idx := s.CursorIndex.Peek()
+	items := s.Items.Get()
+	idx := s.CursorIndex.Get()
 	if idx >= 0 && idx < len(items) {
 		return items[idx], true
 	}
@@ -306,8 +307,8 @@ func (s *ListState[T]) SelectAll() {
 
 // SelectedItems returns all currently selected items.
 func (s *ListState[T]) SelectedItems() []T {
-	items := s.Items.Peek()
-	sel := s.Selection.Peek()
+	items := s.Items.Get()
+	sel := s.Selection.Get()
 	result := make([]T, 0, len(sel))
 	for i := range items {
 		if _, exists := sel[i]; exists {

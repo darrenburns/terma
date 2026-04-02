@@ -169,6 +169,104 @@ func TestAddTask_SelectsNewTaskAndResetsListViewport(t *testing.T) {
 	require.Equal(t, "", app.inputState.GetText())
 }
 
+func TestBuildFooter_AddsSpacerAboveKeybindBar(t *testing.T) {
+	app := NewTodoApp()
+	theme := terma.ThemeData{
+		Primary:   terma.Hex("#ff00aa"),
+		TextMuted: terma.Hex("#778899"),
+	}
+
+	widget := app.buildFooter(theme)
+	column, ok := widget.(terma.Column)
+	require.True(t, ok)
+	require.Len(t, column.Children, 3)
+	require.Equal(t, 0, column.Spacing)
+
+	switcher, ok := column.Children[0].(terma.Text)
+	require.True(t, ok)
+	require.Equal(t, terma.TextAlignCenter, switcher.TextAlign)
+	require.Equal(t, terma.EdgeInsets{}, switcher.Style.Padding)
+	require.Equal(t, terma.EdgeInsets{}, switcher.Style.Margin)
+	require.True(t, switcher.Height.IsCells())
+	require.Equal(t, 1, switcher.Height.CellsValue())
+
+	spacer, ok := column.Children[1].(terma.Spacer)
+	require.True(t, ok)
+	require.True(t, spacer.Height.IsCells())
+	require.Equal(t, 1, spacer.Height.CellsValue())
+
+	_, ok = column.Children[2].(terma.KeybindBar)
+	require.True(t, ok)
+}
+
+func TestBuildListSwitcher_CentersActiveListInSequence(t *testing.T) {
+	app := NewTodoApp()
+	theme := terma.ThemeData{
+		Primary:   terma.Hex("#ff00aa"),
+		TextMuted: terma.Hex("#778899"),
+	}
+
+	widget := app.buildListSwitcher(theme)
+	text, ok := widget.(terma.Text)
+	require.True(t, ok)
+	require.True(t, text.Width.IsFlex())
+	require.Equal(t, 1.0, text.Width.FlexValue())
+	require.Equal(t, terma.TextAlignCenter, text.TextAlign)
+	require.Len(t, text.Spans, 3)
+	require.Equal(t, app.taskLists[0].Name, text.Spans[0].Text)
+	require.Equal(t, theme.Primary, text.Spans[0].Style.Foreground)
+	require.Equal(t, " · ", text.Spans[1].Text)
+	require.Equal(t, theme.TextMuted.WithAlpha(0.6), text.Spans[1].Style.Foreground)
+	require.Equal(t, app.taskLists[1].Name, text.Spans[2].Text)
+	require.Equal(t, theme.TextMuted.WithAlpha(0.6), text.Spans[2].Style.Foreground)
+}
+
+func TestListSwitcherSpans_UpdatesWhenActiveListChanges(t *testing.T) {
+	app := NewTodoApp()
+	theme := terma.ThemeData{
+		Primary:   terma.Hex("#ff00aa"),
+		TextMuted: terma.Hex("#778899"),
+	}
+
+	initial := app.listSwitcherSpans(theme)
+	require.Equal(t, theme.Primary, initial[0].Style.Foreground)
+	require.Equal(t, theme.TextMuted.WithAlpha(0.6), initial[2].Style.Foreground)
+
+	app.switchToNextList()
+
+	updated := app.listSwitcherSpans(theme)
+	require.Equal(t, theme.TextMuted.WithAlpha(0.6), updated[0].Style.Foreground)
+	require.Equal(t, theme.Primary, updated[2].Style.Foreground)
+}
+
+func TestBuildMainContainer_NormalBorderOmitsActiveListNameTitle(t *testing.T) {
+	app := NewTodoApp()
+	theme, ok := terma.GetTheme(terma.CurrentThemeName())
+	require.True(t, ok)
+
+	widget := app.buildMainContainer(terma.BuildContext{}, theme.Background)
+	column, ok := widget.(terma.Column)
+	require.True(t, ok)
+
+	decorations := column.Style.Border.Decorations
+	require.NotEmpty(t, decorations)
+	for _, decoration := range decorations {
+		require.NotEqual(t, app.activeList().Name, decoration.Text)
+	}
+}
+
+func TestBuild_UsesReducedBottomPaddingForLowerFooter(t *testing.T) {
+	app := NewTodoApp()
+
+	widget := app.Build(terma.BuildContext{})
+	column, ok := widget.(terma.Column)
+	require.True(t, ok)
+	require.Equal(t, 2, column.Style.Padding.Top)
+	require.Equal(t, 1, column.Style.Padding.Bottom)
+	require.Equal(t, 6, column.Style.Padding.Left)
+	require.Equal(t, 6, column.Style.Padding.Right)
+}
+
 func collectTaskIDs(tasks []Task) []string {
 	ids := make([]string, 0, len(tasks))
 	for _, task := range tasks {
