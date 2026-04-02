@@ -448,6 +448,18 @@ type tableContainer[T any] struct {
 	headerRows  int
 }
 
+type defaultTableCellWidget[T any] struct {
+	table        Table[T]
+	focusID      string
+	focusManager *FocusManager
+	theme        ThemeData
+	row          T
+	sourceRow    int
+	colIndex     int
+	match        MatchResult
+	prefixWidth  int
+}
+
 func (c tableContainer[T]) Build(ctx BuildContext) Widget {
 	return c
 }
@@ -505,6 +517,115 @@ func (c tableContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 
 func (c tableContainer[T]) ChildWidgets() []Widget {
 	return c.children
+}
+
+func (w defaultTableCellWidget[T]) Build(ctx BuildContext) Widget {
+	content, ok := tableDefaultCellContent(w.row, w.colIndex)
+	if !ok {
+		if w.colIndex != 0 {
+			return PresentStyledText("", Style{}, w.currentStyle, w.paintStyle)
+		} else {
+			content = fmt.Sprintf("%v", w.row)
+			return PresentPrefixedText(
+				padCursorPrefix("", w.prefixWidth)+content,
+				content,
+				Style{},
+				w.currentStyle,
+				w.paintStyle,
+				w.paintPrefix,
+				func(*RenderContext) MatchResult { return w.match },
+			)
+		}
+	}
+	return PresentHighlightedText(
+		content,
+		Style{},
+		w.currentStyle,
+		w.paintStyle,
+		func(*RenderContext) MatchResult { return w.match },
+	)
+}
+
+func (w defaultTableCellWidget[T]) currentStyle() Style {
+	mode := w.table.selectionMode()
+	cursorRow := 0
+	cursorCol := 0
+	if w.table.State != nil {
+		cursorRow = w.table.State.CursorIndex.Peek()
+		cursorCol = w.table.State.CursorColumn.Peek()
+	}
+
+	selection := map[int]struct{}{}
+	if w.table.MultiSelect && w.table.State != nil {
+		if current := w.table.State.Selection.Peek(); current != nil {
+			selection = current
+		}
+	}
+
+	focused := w.focusManager != nil && w.focusID != "" && w.focusManager.FocusedID() == w.focusID
+	active := tableCellActive(mode, w.sourceRow, w.colIndex, cursorRow, cursorCol)
+	selected := false
+	if w.table.MultiSelect {
+		selected = tableCellSelected(mode, selection, w.sourceRow, w.colIndex, len(w.table.Columns))
+	}
+	return tableDefaultCellStyle(w.theme, active, selected, focused)
+}
+
+func (w defaultTableCellWidget[T]) paintPrefix(ctx *RenderContext) string {
+	mode := w.table.selectionMode()
+	cursorRow := 0
+	cursorCol := 0
+	if w.table.State != nil {
+		cursorRow = w.table.State.CursorIndex.Get()
+		cursorCol = w.table.State.CursorColumn.Get()
+	}
+
+	selection := map[int]struct{}{}
+	if w.table.MultiSelect && w.table.State != nil {
+		if current := w.table.State.Selection.Get(); current != nil {
+			selection = current
+		}
+	}
+
+	focused := ctx.IsFocusedID(w.focusID)
+	active := tableCellActive(mode, w.sourceRow, w.colIndex, cursorRow, cursorCol)
+	selected := false
+	if w.table.MultiSelect {
+		selected = tableCellSelected(mode, selection, w.sourceRow, w.colIndex, len(w.table.Columns))
+	}
+	showCursor := active && focused
+	if showCursor {
+		return w.table.CursorPrefix
+	}
+	if selected {
+		return w.table.SelectedPrefix
+	}
+	return ""
+}
+
+func (w defaultTableCellWidget[T]) paintStyle(ctx *RenderContext) Style {
+	mode := w.table.selectionMode()
+	cursorRow := 0
+	cursorCol := 0
+	if w.table.State != nil {
+		cursorRow = w.table.State.CursorIndex.Get()
+		cursorCol = w.table.State.CursorColumn.Get()
+	}
+
+	selection := map[int]struct{}{}
+	if w.table.MultiSelect && w.table.State != nil {
+		if current := w.table.State.Selection.Get(); current != nil {
+			selection = current
+		}
+	}
+
+	focused := ctx.IsFocusedID(w.focusID)
+	active := tableCellActive(mode, w.sourceRow, w.colIndex, cursorRow, cursorCol)
+	selected := false
+	if w.table.MultiSelect {
+		selected = tableCellSelected(mode, selection, w.sourceRow, w.colIndex, len(w.table.Columns))
+	}
+	return tableDefaultCellStyle(w.theme, active, selected, focused)
 }
 
 // WidgetID returns the table's unique identifier.
@@ -579,9 +700,7 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 
 	renderCell := t.RenderCell
 	renderCellWithMatch := t.RenderCellWithMatch
-	if renderCellWithMatch == nil && renderCell == nil {
-		renderCellWithMatch = t.themedDefaultRenderCell(ctx)
-	}
+	useDefaultRenderer := renderCellWithMatch == nil && renderCell == nil
 
 	rows := t.State.Rows.Get()
 	columnCount := len(t.Columns)
@@ -621,6 +740,48 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 		children = append(children, headerCells...)
 	}
 
+	if len(viewRows) > 0 {
+		t.registerScrollCallbacks(mode, hasHeader)
+	}
+
+	if useDefaultRenderer {
+		focusID := widgetIdentity(t, ctx)
+		theme := ctx.Theme()
+		prefixWidth := cursorPrefixSlotWidth(t.CursorPrefix, t.SelectedPrefix)
+		for viewRowIdx, row := range viewRows {
+			sourceRowIdx := viewIndices[viewRowIdx]
+			for colIdx := 0; colIdx < columnCount; colIdx++ {
+				match := MatchResult{}
+				if len(viewMatches) > 0 {
+					match = viewMatches[viewRowIdx][colIdx]
+				}
+				children = append(children, defaultTableCellWidget[T]{
+					table:        t,
+					focusID:      focusID,
+					focusManager: ctx.focusManager,
+					theme:        theme,
+					row:          row,
+					sourceRow:    sourceRowIdx,
+					colIndex:     colIdx,
+					match:        match,
+					prefixWidth:  prefixWidth,
+				})
+			}
+		}
+
+		return tableContainer[T]{
+			Table:       t,
+			children:    children,
+			rowCount:    len(viewRows),
+			columnCount: columnCount,
+			headerRows:  headerRows,
+		}
+	}
+
+	if renderCellWithMatch == nil && renderCell == nil {
+		renderCellWithMatch = t.themedDefaultRenderCell(ctx)
+	}
+
 	cursorRow := 0
 	cursorCol := 0
 	selection := map[int]struct{}{}
@@ -640,8 +801,6 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 		if _, ok := t.State.viewIndexForSource(cursorRow); !ok {
 			cursorRow = viewIndices[0]
 		}
-
-		t.registerScrollCallbacks(mode, hasHeader)
 	}
 
 	for viewRowIdx, row := range viewRows {

@@ -250,6 +250,22 @@ func (ctx *RenderContext) IsFocused(widget Widget) bool {
 	return ctx.buildContext.AutoID() == focusedID
 }
 
+// IsFocusedID returns whether the given widget identity currently has focus.
+// Unlike IsFocused(widget), this lets paint-only helper widgets react to focus
+// changes for a parent widget without having to reuse that parent's WidgetID.
+func (ctx *RenderContext) IsFocusedID(id string) bool {
+	if id == "" {
+		return false
+	}
+	if ctx.buildContext.focusedSignal.IsValid() {
+		_ = ctx.buildContext.focusedSignal.Get()
+	}
+	if ctx.focusManager == nil {
+		return false
+	}
+	return ctx.focusManager.FocusedID() == id
+}
+
 // FillRect fills a rectangular region with a background color.
 // If the color is semi-transparent, it blends with the inherited background.
 func (ctx *RenderContext) FillRect(x, y, width, height int, bgColor Color) {
