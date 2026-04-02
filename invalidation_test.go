@@ -555,6 +555,49 @@ func TestRenderer_AutocompleteTracksTriggerTyping(t *testing.T) {
 	}
 }
 
+func TestAutocomplete_SelectUsesFilteredSuggestionAfterQueryNarrowing(t *testing.T) {
+	input := NewTextInputState("")
+	acState := NewAutocompleteState()
+	acState.SetSuggestions([]Suggestion{
+		{Label: "apple", Value: "apple"},
+		{Label: "banana", Value: "banana"},
+		{Label: "cherry", Value: "cherry"},
+	})
+
+	selected := ""
+	widget := Autocomplete{
+		State:     acState,
+		MatchMode: FilterContains,
+		Insert:    InsertReplace,
+		Child: TextInput{
+			ID:    "input",
+			State: input,
+		},
+		OnSelect: func(s Suggestion) {
+			selected = s.Value
+		},
+	}
+
+	input.SetText("a")
+	input.CursorIndex.Set(1)
+	widget.handleTextChange("a", 1)
+	widget.filteredSuggestionCount()
+	widget.onDown() // move to banana
+
+	input.SetText("ap")
+	input.CursorIndex.Set(2)
+	widget.handleTextChange("ap", 2)
+	widget.filteredSuggestionCount()
+	widget.selectCurrentSuggestion()
+
+	if selected != "apple" {
+		t.Fatalf("expected filtered selection to resolve to apple, got %q", selected)
+	}
+	if got := input.GetText(); got != "apple" {
+		t.Fatalf("expected input text to be replaced with apple, got %q", got)
+	}
+}
+
 func TestRenderer_TableCursorMoveUsesPartialPaint(t *testing.T) {
 	screen := newTrackingScreen(30, 3)
 	focusManager := NewFocusManager()
