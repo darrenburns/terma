@@ -305,6 +305,7 @@ func Run(root Widget) (runErr error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	appCancel = cancel
+	setAppRuntimeState(ctx, newDispatchQueue())
 
 	// Create animation controller for this app
 	animController := NewAnimationController(defaultFPS)
@@ -340,6 +341,7 @@ func Run(root Widget) (runErr error) {
 		appRenderer = nil
 		renderTrigger = nil
 		currentController = nil
+		clearAppRuntimeState()
 		animController.Stop()
 
 		shutdownTerminal()
@@ -493,6 +495,7 @@ func Run(root Widget) (runErr error) {
 	// Render and update focusables
 	display := func() {
 		startTime := time.Now()
+		drainPendingDispatches()
 		// Update the focused signal BEFORE render so widgets can read it
 		updateFocusedSignal()
 

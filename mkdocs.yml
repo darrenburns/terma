@@ -71,6 +71,7 @@ nav:
     - SplitPane: layout/splitpane.md
     - Stack: layout/stack.md
   - Signals: signals.md
+  - Async Tasks: async.md
   - Styling: styling.md
   - Focus & Keyboard: focus-keyboard.md
   - Conditional Rendering: conditional.md

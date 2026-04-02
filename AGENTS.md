@@ -23,6 +23,13 @@ Terma is a Go module for terminal UI widgets plus many runnable demos. Use this 
 - Keep widget IDs stable and explicit when focus or state persistence matters (see `cmd/` demos for patterns).
 - Do not mutate reactive state (Signals or AnySignals) inside `Build()` methods. Setting signal values during `Build()` triggers re-renders and can cause infinite refresh loops. Do updates in handlers, effects, or setup code instead.
 
+## Invalidation Guidance
+- Terma invalidation depends on where reactive state is read: `Build()` reads cause rebuilds, layout/measurement reads cause relayouts, and render/paint reads can stay repaint-only.
+- `Peek()` does not subscribe. Use it only for non-reactive reads or internal derived state.
+- Avoid reading fast-changing visual state in `Build()` unless it truly changes structure. If state only changes displayed text or markup, prefer the reactive text helpers: `SignalText`, `SignalMarkup`, `AnySignalText`, `AnySignalMarkup`, `ComputedText`, `ComputedMarkup`, `ComputedSpans`.
+- `Auto` dimensions are a boundary for paint-only invalidation. If a reactive change can alter intrinsic content width or height, Terma may need a relayout instead of a repaint.
+- Common pitfalls: reading a signal too high in the tree causes broader invalidation than intended; using `Peek()` where reactivity is required prevents updates; filtered or derived views must keep navigation and selection aligned with the current visible view.
+
 ## Testing Guidelines
 - Tests use Go’s `testing` package and `stretchr/testify`.
 - Snapshot tests render UI to SVG and compare against `testdata/<TestName>.svg`.

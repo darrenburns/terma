@@ -42,6 +42,7 @@ No manual redraws. No event wiring. Just declare your UI and let Terma handle th
 - [Hello World](getting-started.md#chapter-1-hello-world) — Your first widget and Run()
 - [Widgets](widgets/index.md) — Overview of available widgets
 - [Signals](signals.md) — Reactive state management
+- [Async Tasks](async.md) — Run blocking work without freezing the UI
 - [Layout](layout/index.md) — Layout system and dimensions
 - [Styling](styling.md) — Colors, padding, margins, and theming
 - [Focus & Keyboard](focus-keyboard.md) — Focus management and keybindings
