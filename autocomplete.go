@@ -120,10 +120,10 @@ type AutocompleteState struct {
 	listState       *ListState[Suggestion]
 	scrollState     *ScrollState
 	filterState     *FilterState
-	triggerPosition Signal[int]    // Where trigger char was typed (-1 if none)
-	filterQuery     Signal[string] // Text after trigger (for filtering)
-	dismissed       bool           // Tracks manual dismissal (e.g. Escape) until query changes
-	anchorWidth     Signal[int]    // Border-box width of the input for anchored popups
+	triggerPosition int         // Where trigger char was typed (-1 if none)
+	filterQuery     string      // Text after trigger (for filtering)
+	dismissed       bool        // Tracks manual dismissal (e.g. Escape) until query changes
+	anchorWidth     Signal[int] // Border-box width of the input for anchored popups
 }
 
 // NewAutocompleteState creates a new AutocompleteState.
@@ -134,8 +134,8 @@ func NewAutocompleteState() *AutocompleteState {
 		listState:       NewListState([]Suggestion{}),
 		scrollState:     NewScrollState(),
 		filterState:     NewFilterState(),
-		triggerPosition: NewSignal(-1),
-		filterQuery:     NewSignal(""),
+		triggerPosition: -1,
+		filterQuery:     "",
 		anchorWidth:     NewSignal(0),
 	}
 }
@@ -237,7 +237,7 @@ func (c autocompleteContainer) OnLayout(ctx BuildContext, metrics LayoutMetrics)
 	if contentWidth < 1 {
 		contentWidth = 1
 	}
-	c.state.anchorWidth.Set(contentWidth)
+	c.state.anchorWidth.setSilently(contentWidth)
 }
 
 func (a Autocomplete) anchorContentInsets() EdgeInsets {
@@ -288,10 +288,10 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 	// Get child text and cursor for trigger detection
 	text, cursorPos := a.getChildTextAndCursor()
 
-	// Update trigger and query based on current text/cursor
+	// Update derived trigger/query based on current text/cursor.
 	a.updateTriggerAndQuery(text, cursorPos)
 
-	// Apply filter to get filtered count (List.Build will reuse cached results)
+	// Apply filter to get filtered count (List.Build will reuse cached results).
 	hasItems := a.filteredSuggestionCount() > 0
 
 	// Determine visibility
@@ -299,12 +299,12 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 
 	// Auto-dismiss when empty if configured
 	if a.DismissWhenEmpty && visible && !hasItems {
-		a.State.Visible.Set(false)
+		a.State.Visible.setSilently(false)
 		visible = false
 	}
 	if a.dismissOnBlurEnabled() && !a.isChildFocused(ctx) {
 		if visible {
-			a.State.Visible.Set(false)
+			a.State.Visible.setSilently(false)
 		}
 		visible = false
 	}
@@ -596,8 +596,8 @@ func (a Autocomplete) updateTriggerAndQuery(text string, cursorPos int) {
 	triggerPos := a.findTriggerPosition(text, cursorPos)
 	query := a.extractQuery(text, cursorPos, triggerPos)
 
-	a.State.triggerPosition.Set(triggerPos)
-	a.State.filterQuery.Set(query)
+	a.State.triggerPosition = triggerPos
+	a.State.filterQuery = query
 
 	// Determine if we should show the popup
 	queryRuneCount := utf8.RuneCountInString(query)
@@ -612,7 +612,7 @@ func (a Autocomplete) updateTriggerAndQuery(text string, cursorPos int) {
 	if a.State.dismissed && shouldShow {
 		shouldShow = false
 	}
-	a.State.Visible.Set(shouldShow)
+	a.State.Visible.setSilently(shouldShow)
 
 	if a.OnQueryChange != nil && shouldShow {
 		a.OnQueryChange(query)
@@ -704,8 +704,8 @@ func (a Autocomplete) filteredSuggestionCount() int {
 	if a.State == nil {
 		return 0
 	}
-	a.State.filterState.Query.Set(a.State.filterQuery.Peek())
-	a.State.filterState.Mode.Set(a.matchMode())
+	a.State.filterState.Query.setSilently(a.State.filterQuery)
+	a.State.filterState.Mode.setSilently(a.matchMode())
 	return a.State.listState.ApplyFilter(a.State.filterState, suggestionMatchItem)
 }
 
@@ -745,7 +745,7 @@ func (a Autocomplete) selectSuggestion(suggestion Suggestion) {
 
 	triggerPos := -1
 	if a.State != nil {
-		triggerPos = a.State.triggerPosition.Peek()
+		triggerPos = a.State.triggerPosition
 	}
 
 	newText, newCursor := strategy(text, cursor, suggestion, triggerPos)
@@ -799,11 +799,11 @@ func (a Autocomplete) getChildTextAndCursor() (string, int) {
 	switch child := a.Child.(type) {
 	case TextInput:
 		if child.State != nil {
-			return child.State.GetText(), child.State.CursorIndex.Peek()
+			return joinGraphemes(child.State.Content.Get()), child.State.CursorIndex.Get()
 		}
 	case TextArea:
 		if child.State != nil {
-			return child.State.GetText(), child.State.CursorIndex.Peek()
+			return joinGraphemes(child.State.Content.Get()), child.State.CursorIndex.Get()
 		}
 	}
 	return "", 0
@@ -832,7 +832,6 @@ func (a Autocomplete) textAreaState() *TextAreaState {
 	}
 	return nil
 }
-
 
 // scrollCursorIntoView ensures the selected item is visible.
 func (a Autocomplete) scrollCursorIntoView() {

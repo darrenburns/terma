@@ -108,6 +108,18 @@ func (s Signal[T]) Set(value T) {
 	scheduleRender()
 }
 
+// setSilently updates the signal value without notifying listeners or scheduling
+// a render. It is only for framework-owned derived state that is synchronized
+// during an in-flight render/layout pass.
+func (s Signal[T]) setSilently(value T) {
+	if s.core == nil {
+		return
+	}
+	s.core.mu.Lock()
+	s.core.value = value
+	s.core.mu.Unlock()
+}
+
 // Peek returns the current value without subscribing.
 // Thread-safe: can be called from any goroutine.
 func (s Signal[T]) Peek() T {
