@@ -18,6 +18,39 @@ func TestSnapshot_TextArea_WrapOn(t *testing.T) {
 		"TextArea with wrapping enabled. First line on row 1, second line wraps to additional rows. Cursor at start.")
 }
 
+func TestSnapshot_TextArea_PlaceholderFocused(t *testing.T) {
+	state := NewTextAreaState("")
+	widget := TextArea{
+		ID:          "textarea-placeholder-focused",
+		State:       state,
+		Placeholder: "Type here...",
+		Width:       Cells(20),
+		Height:      Cells(2),
+	}
+
+	AssertSnapshot(t, widget, 20, 2,
+		"Empty TextArea with placeholder, focused. First placeholder character should remain visible under the cursor.")
+}
+
+func TestSnapshot_TextArea_PlaceholderUnfocused(t *testing.T) {
+	state := NewTextAreaState("")
+	widget := Column{
+		Children: []Widget{
+			Button{ID: "focus-stealer", Label: ""},
+			TextArea{
+				ID:          "textarea-placeholder-unfocused",
+				State:       state,
+				Placeholder: "Type here...",
+				Width:       Cells(20),
+				Height:      Cells(2),
+			},
+		},
+	}
+
+	AssertSnapshot(t, widget, 20, 3,
+		"Empty TextArea with placeholder, unfocused. Full placeholder text visible without cursor.")
+}
+
 func TestSnapshot_TextArea_WrapOff(t *testing.T) {
 	state := NewTextAreaState("0123456789ABCDEF")
 	state.WrapMode.Set(WrapNone)
