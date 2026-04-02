@@ -2,6 +2,7 @@ package terma
 
 import (
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -433,6 +434,167 @@ func TestRenderer_ListCursorMoveDoesNotRebuildWhenSelectionAlreadyEmpty(t *testi
 	}
 	if renderer.lastLayoutCount != 0 {
 		t.Fatalf("cursor move with unchanged empty selection should not relayout, got %d layout ops", renderer.lastLayoutCount)
+	}
+}
+
+func TestRenderer_AutocompleteDoesNotSelfInvalidateAfterBuild(t *testing.T) {
+	screen := newTrackingScreen(40, 8)
+	focusManager := NewFocusManager()
+	focusedSignal := NewAnySignal[Focusable](nil)
+	renderer := NewRenderer(
+		screen,
+		40,
+		8,
+		focusManager,
+		focusedSignal,
+		NewAnySignal[Widget](nil),
+	)
+
+	inputState := NewTextInputState("he")
+	inputState.CursorIndex.Set(2)
+	acState := NewAutocompleteState()
+	acState.SetSuggestions([]Suggestion{
+		{Label: "hello"},
+		{Label: "help"},
+	})
+
+	widget := Autocomplete{
+		ID:    "ac",
+		State: acState,
+		Child: TextInput{ID: "input", State: inputState, Width: Cells(20)},
+	}
+
+	focusManager.focusedID = "input"
+	focusedSignal.Set(widget.Child.(TextInput))
+	renderer.Update(widget)
+
+	screenText := renderer.ScreenText()
+	if !strings.Contains(screenText, "hello") {
+		t.Fatalf("expected autocomplete popup to render on first update, got screen:\n%s", screenText)
+	}
+
+	fullCount := renderer.fullRenderCount
+	partialCount := renderer.partialRenderCount
+	renderer.Update(widget)
+
+	if renderer.fullRenderCount != fullCount || renderer.partialRenderCount != partialCount {
+		t.Fatalf("expected clean follow-up update to be a no-op, got full=%d->%d partial=%d->%d",
+			fullCount, renderer.fullRenderCount, partialCount, renderer.partialRenderCount)
+	}
+}
+
+func TestRenderer_AutocompleteTracksTextInputTyping(t *testing.T) {
+	screen := newTrackingScreen(40, 8)
+	focusManager := NewFocusManager()
+	focusedSignal := NewAnySignal[Focusable](nil)
+	renderer := NewRenderer(
+		screen,
+		40,
+		8,
+		focusManager,
+		focusedSignal,
+		NewAnySignal[Widget](nil),
+	)
+
+	input := TextInput{ID: "input", State: NewTextInputState(""), Width: Cells(20)}
+	acState := NewAutocompleteState()
+	acState.SetSuggestions([]Suggestion{{Label: "hello"}, {Label: "help"}})
+	widget := Autocomplete{
+		ID:    "ac",
+		State: acState,
+		Child: input,
+	}
+
+	focusManager.focusedID = "input"
+	focusedSignal.Set(input)
+	renderer.Update(widget)
+
+	input.State.SetText("he")
+	input.State.CursorIndex.Set(2)
+	renderer.Update(widget)
+
+	if !strings.Contains(renderer.ScreenText(), "hello") {
+		t.Fatalf("expected always-on autocomplete to rerender suggestions after typing, got screen:\n%s", renderer.ScreenText())
+	}
+}
+
+func TestRenderer_AutocompleteTracksTriggerTyping(t *testing.T) {
+	screen := newTrackingScreen(40, 8)
+	focusManager := NewFocusManager()
+	focusedSignal := NewAnySignal[Focusable](nil)
+	renderer := NewRenderer(
+		screen,
+		40,
+		8,
+		focusManager,
+		focusedSignal,
+		NewAnySignal[Widget](nil),
+	)
+
+	input := TextInput{ID: "tag-input", State: NewTextInputState(""), Width: Cells(20)}
+	acState := NewAutocompleteState()
+	acState.SetSuggestions([]Suggestion{{Label: "bug", Value: "#bug"}, {Label: "feature", Value: "#feature"}})
+	widget := Autocomplete{
+		ID:           "tag-ac",
+		State:        acState,
+		TriggerChars: []rune{'#'},
+		MinChars:     0,
+		Child:        input,
+	}
+
+	focusManager.focusedID = "tag-input"
+	focusedSignal.Set(input)
+	renderer.Update(widget)
+
+	input.State.SetText("#")
+	input.State.CursorIndex.Set(1)
+	renderer.Update(widget)
+
+	if !strings.Contains(renderer.ScreenText(), "bug") {
+		t.Fatalf("expected trigger autocomplete to show popup after typing trigger, got screen:\n%s", renderer.ScreenText())
+	}
+}
+
+func TestAutocomplete_SelectUsesFilteredSuggestionAfterQueryNarrowing(t *testing.T) {
+	input := NewTextInputState("")
+	acState := NewAutocompleteState()
+	acState.SetSuggestions([]Suggestion{
+		{Label: "apple", Value: "apple"},
+		{Label: "banana", Value: "banana"},
+		{Label: "cherry", Value: "cherry"},
+	})
+
+	selected := ""
+	widget := Autocomplete{
+		State:     acState,
+		MatchMode: FilterContains,
+		Insert:    InsertReplace,
+		Child: TextInput{
+			ID:    "input",
+			State: input,
+		},
+		OnSelect: func(s Suggestion) {
+			selected = s.Value
+		},
+	}
+
+	input.SetText("a")
+	input.CursorIndex.Set(1)
+	widget.handleTextChange("a", 1)
+	widget.filteredSuggestionCount()
+	widget.onDown() // move to banana
+
+	input.SetText("ap")
+	input.CursorIndex.Set(2)
+	widget.handleTextChange("ap", 2)
+	widget.filteredSuggestionCount()
+	widget.selectCurrentSuggestion()
+
+	if selected != "apple" {
+		t.Fatalf("expected filtered selection to resolve to apple, got %q", selected)
+	}
+	if got := input.GetText(); got != "apple" {
+		t.Fatalf("expected input text to be replaced with apple, got %q", got)
 	}
 }
 

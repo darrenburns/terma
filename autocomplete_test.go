@@ -517,7 +517,7 @@ func TestAutocomplete_SelectSuggestion_CallsTextInputOnChange(t *testing.T) {
 		},
 	}
 
-	state.triggerPosition.Set(0)
+	state.triggerPosition = 0
 	ac.selectSuggestion(Suggestion{Value: "#fun"})
 
 	assert.Equal(t, "#fun", inputState.GetText())
@@ -546,7 +546,7 @@ func TestAutocomplete_SelectSuggestion_CallsTextAreaOnChange(t *testing.T) {
 		},
 	}
 
-	state.triggerPosition.Set(0)
+	state.triggerPosition = 0
 	ac.selectSuggestion(Suggestion{Value: "#fun"})
 
 	assert.Equal(t, "#fun", textAreaState.GetText())

@@ -120,10 +120,10 @@ type AutocompleteState struct {
 	listState       *ListState[Suggestion]
 	scrollState     *ScrollState
 	filterState     *FilterState
-	triggerPosition Signal[int]    // Where trigger char was typed (-1 if none)
-	filterQuery     Signal[string] // Text after trigger (for filtering)
-	dismissed       bool           // Tracks manual dismissal (e.g. Escape) until query changes
-	anchorWidth     Signal[int]    // Border-box width of the input for anchored popups
+	triggerPosition int         // Where trigger char was typed (-1 if none)
+	filterQuery     string      // Text after trigger (for filtering)
+	dismissed       bool        // Tracks manual dismissal (e.g. Escape) until query changes
+	anchorWidth     Signal[int] // Border-box width of the input for anchored popups
 }
 
 // NewAutocompleteState creates a new AutocompleteState.
@@ -134,8 +134,8 @@ func NewAutocompleteState() *AutocompleteState {
 		listState:       NewListState([]Suggestion{}),
 		scrollState:     NewScrollState(),
 		filterState:     NewFilterState(),
-		triggerPosition: NewSignal(-1),
-		filterQuery:     NewSignal(""),
+		triggerPosition: -1,
+		filterQuery:     "",
 		anchorWidth:     NewSignal(0),
 	}
 }
@@ -165,7 +165,18 @@ func (s *AutocompleteState) IsVisible() bool {
 
 // SelectedSuggestion returns the currently selected suggestion, if any.
 func (s *AutocompleteState) SelectedSuggestion() (Suggestion, bool) {
-	return s.listState.SelectedItem()
+	if s == nil || s.listState == nil {
+		return Suggestion{}, false
+	}
+	sourceIdx, ok := s.currentSuggestionSourceIndex()
+	if !ok {
+		return Suggestion{}, false
+	}
+	items := s.listState.Items.Peek()
+	if sourceIdx < 0 || sourceIdx >= len(items) {
+		return Suggestion{}, false
+	}
+	return items[sourceIdx], true
 }
 
 // Autocomplete is a widget that wraps TextInput or TextArea to provide
@@ -237,7 +248,7 @@ func (c autocompleteContainer) OnLayout(ctx BuildContext, metrics LayoutMetrics)
 	if contentWidth < 1 {
 		contentWidth = 1
 	}
-	c.state.anchorWidth.Set(contentWidth)
+	c.state.anchorWidth.setSilently(contentWidth)
 }
 
 func (a Autocomplete) anchorContentInsets() EdgeInsets {
@@ -288,10 +299,10 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 	// Get child text and cursor for trigger detection
 	text, cursorPos := a.getChildTextAndCursor()
 
-	// Update trigger and query based on current text/cursor
+	// Update derived trigger/query based on current text/cursor.
 	a.updateTriggerAndQuery(text, cursorPos)
 
-	// Apply filter to get filtered count (List.Build will reuse cached results)
+	// Apply filter to get filtered count (List.Build will reuse cached results).
 	hasItems := a.filteredSuggestionCount() > 0
 
 	// Determine visibility
@@ -299,12 +310,12 @@ func (a Autocomplete) Build(ctx BuildContext) Widget {
 
 	// Auto-dismiss when empty if configured
 	if a.DismissWhenEmpty && visible && !hasItems {
-		a.State.Visible.Set(false)
+		a.State.Visible.setSilently(false)
 		visible = false
 	}
 	if a.dismissOnBlurEnabled() && !a.isChildFocused(ctx) {
 		if visible {
-			a.State.Visible.Set(false)
+			a.State.Visible.setSilently(false)
 		}
 		visible = false
 	}
@@ -460,7 +471,7 @@ func (a Autocomplete) onDown() {
 	if a.filteredSuggestionCount() == 0 {
 		return
 	}
-	a.State.listState.SelectNext()
+	a.moveFilteredSelection(1)
 	a.scrollCursorIntoView()
 }
 
@@ -474,7 +485,7 @@ func (a Autocomplete) onUp() {
 	if a.filteredSuggestionCount() == 0 {
 		return
 	}
-	a.State.listState.SelectPrevious()
+	a.moveFilteredSelection(-1)
 	a.scrollCursorIntoView()
 }
 
@@ -495,7 +506,7 @@ func (a Autocomplete) onDownTextArea() {
 		}
 		return
 	}
-	a.State.listState.SelectNext()
+	a.moveFilteredSelection(1)
 	a.scrollCursorIntoView()
 }
 
@@ -516,7 +527,7 @@ func (a Autocomplete) onUpTextArea() {
 		}
 		return
 	}
-	a.State.listState.SelectPrevious()
+	a.moveFilteredSelection(-1)
 	a.scrollCursorIntoView()
 }
 
@@ -596,8 +607,8 @@ func (a Autocomplete) updateTriggerAndQuery(text string, cursorPos int) {
 	triggerPos := a.findTriggerPosition(text, cursorPos)
 	query := a.extractQuery(text, cursorPos, triggerPos)
 
-	a.State.triggerPosition.Set(triggerPos)
-	a.State.filterQuery.Set(query)
+	a.State.triggerPosition = triggerPos
+	a.State.filterQuery = query
 
 	// Determine if we should show the popup
 	queryRuneCount := utf8.RuneCountInString(query)
@@ -612,7 +623,7 @@ func (a Autocomplete) updateTriggerAndQuery(text string, cursorPos int) {
 	if a.State.dismissed && shouldShow {
 		shouldShow = false
 	}
-	a.State.Visible.Set(shouldShow)
+	a.State.Visible.setSilently(shouldShow)
 
 	if a.OnQueryChange != nil && shouldShow {
 		a.OnQueryChange(query)
@@ -704,9 +715,11 @@ func (a Autocomplete) filteredSuggestionCount() int {
 	if a.State == nil {
 		return 0
 	}
-	a.State.filterState.Query.Set(a.State.filterQuery.Peek())
-	a.State.filterState.Mode.Set(a.matchMode())
-	return a.State.listState.ApplyFilter(a.State.filterState, suggestionMatchItem)
+	a.State.filterState.Query.setSilently(a.State.filterQuery)
+	a.State.filterState.Mode.setSilently(a.matchMode())
+	count := a.State.listState.ApplyFilter(a.State.filterState, suggestionMatchItem)
+	a.normalizeFilteredSelection()
+	return count
 }
 
 func (a Autocomplete) dismissOnBlurEnabled() bool {
@@ -722,7 +735,7 @@ func (a Autocomplete) selectCurrentSuggestion() {
 		return
 	}
 
-	suggestion, ok := a.State.listState.SelectedItem()
+	suggestion, ok := a.State.SelectedSuggestion()
 	if !ok {
 		return
 	}
@@ -745,7 +758,7 @@ func (a Autocomplete) selectSuggestion(suggestion Suggestion) {
 
 	triggerPos := -1
 	if a.State != nil {
-		triggerPos = a.State.triggerPosition.Peek()
+		triggerPos = a.State.triggerPosition
 	}
 
 	newText, newCursor := strategy(text, cursor, suggestion, triggerPos)
@@ -799,11 +812,11 @@ func (a Autocomplete) getChildTextAndCursor() (string, int) {
 	switch child := a.Child.(type) {
 	case TextInput:
 		if child.State != nil {
-			return child.State.GetText(), child.State.CursorIndex.Peek()
+			return joinGraphemes(child.State.Content.Get()), child.State.CursorIndex.Get()
 		}
 	case TextArea:
 		if child.State != nil {
-			return child.State.GetText(), child.State.CursorIndex.Peek()
+			return joinGraphemes(child.State.Content.Get()), child.State.CursorIndex.Get()
 		}
 	}
 	return "", 0
@@ -833,15 +846,85 @@ func (a Autocomplete) textAreaState() *TextAreaState {
 	return nil
 }
 
-
 // scrollCursorIntoView ensures the selected item is visible.
 func (a Autocomplete) scrollCursorIntoView() {
 	if a.State == nil || a.State.scrollState == nil {
 		return
 	}
-	cursorIdx := a.State.listState.CursorIndex.Peek()
-	// Simple approach: scroll to show item at index
-	a.State.scrollState.ScrollToView(cursorIdx, 1)
+	if viewIdx, ok := a.State.currentSuggestionViewIndex(); ok {
+		a.State.scrollState.ScrollToView(viewIdx, 1)
+	}
+}
+
+func (s *AutocompleteState) currentSuggestionSourceIndex() (int, bool) {
+	if s == nil || s.listState == nil {
+		return 0, false
+	}
+	view := s.listState.viewIndices
+	items := s.listState.Items.Peek()
+	if len(items) == 0 {
+		return 0, false
+	}
+	if len(view) == 0 {
+		return clampInt(s.listState.CursorIndex.Peek(), 0, len(items)-1), true
+	}
+	cursor := s.listState.CursorIndex.Peek()
+	if _, ok := s.listState.viewIndexForSource(cursor); ok {
+		return cursor, true
+	}
+	return view[0], true
+}
+
+func (s *AutocompleteState) currentSuggestionViewIndex() (int, bool) {
+	if s == nil || s.listState == nil {
+		return 0, false
+	}
+	view := s.listState.viewIndices
+	if len(view) == 0 {
+		if len(s.listState.Items.Peek()) == 0 {
+			return 0, false
+		}
+		return clampInt(s.listState.CursorIndex.Peek(), 0, len(s.listState.Items.Peek())-1), true
+	}
+	cursor := s.listState.CursorIndex.Peek()
+	if viewIdx, ok := s.listState.viewIndexForSource(cursor); ok {
+		return viewIdx, true
+	}
+	return 0, true
+}
+
+func (a Autocomplete) normalizeFilteredSelection() {
+	if a.State == nil || a.State.listState == nil {
+		return
+	}
+	sourceIdx, ok := a.State.currentSuggestionSourceIndex()
+	if !ok {
+		return
+	}
+	a.State.listState.CursorIndex.setSilently(sourceIdx)
+}
+
+func (a Autocomplete) moveFilteredSelection(delta int) {
+	if a.State == nil || a.State.listState == nil {
+		return
+	}
+	view := a.State.listState.viewIndices
+	if len(view) == 0 {
+		items := a.State.listState.Items.Peek()
+		if len(items) == 0 {
+			return
+		}
+		current := clampInt(a.State.listState.CursorIndex.Peek(), 0, len(items)-1)
+		next := clampInt(current+delta, 0, len(items)-1)
+		a.State.listState.CursorIndex.Set(next)
+		return
+	}
+	currentView, ok := a.State.currentSuggestionViewIndex()
+	if !ok {
+		return
+	}
+	nextView := clampInt(currentView+delta, 0, len(view)-1)
+	a.State.listState.CursorIndex.Set(view[nextView])
 }
 
 // buildPopup builds the floating popup with suggestions list.
