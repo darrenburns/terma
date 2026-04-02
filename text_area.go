@@ -1171,7 +1171,7 @@ func (t TextArea) GetStyle() Style {
 func (t TextArea) ContentWidthHint() int {
 	contentWidth := 1
 	if t.State != nil {
-		contentWidth = maxLineWidth(t.State.Content.Peek())
+		contentWidth = maxLineWidth(t.State.Content.Get())
 	}
 	placeholderWidth := maxLineWidthString(t.Placeholder)
 	width := max(contentWidth, placeholderWidth, 1)
@@ -1185,9 +1185,10 @@ func (t TextArea) ContentHeightHint(width int) int {
 	contentLines := 1
 	wrapMode := WrapSoft
 	if t.State != nil {
-		wrapMode = t.State.WrapMode.Peek()
+		graphemes := t.State.Content.Get()
+		wrapMode = t.State.WrapMode.Get()
 		contentWidth := reservedContentWidth(width)
-		layout := buildTextAreaLayout(t.State.Content.Peek(), wrapMode, contentWidth, t.State.CursorIndex.Peek())
+		layout := buildTextAreaLayout(graphemes, wrapMode, contentWidth, 0)
 		contentLines = max(1, len(layout.lines))
 	}
 	placeholderLines := wrapLineCount(t.Placeholder, reservedContentWidth(width), wrapMode)
