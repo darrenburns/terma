@@ -276,3 +276,46 @@ func TestSnapshot_CommandPalette_ScrollOverflow(t *testing.T) {
 
 	AssertSnapshot(t, widget, 60, 16, "Command palette with constrained height and enough items to require scrolling; scrollbar should remain visible within the palette")
 }
+
+func TestCommandPalette_MoveCursorScrollsIntoView(t *testing.T) {
+	items := make([]CommandPaletteItem, 0, 8)
+	for i := 0; i < 8; i++ {
+		items = append(items, CommandPaletteItem{Label: fmt.Sprintf("Item %d", i+1)})
+	}
+
+	state := NewCommandPaletteState("Commands", items)
+	level := state.CurrentLevel()
+	if level == nil {
+		t.Fatal("expected current level")
+	}
+
+	viewIndices := make([]int, len(items))
+	layouts := make([]listItemLayout, len(items))
+	for i := range items {
+		viewIndices[i] = i
+		layouts[i] = listItemLayout{y: i, height: 1}
+	}
+	level.ListState.setViewIndices(viewIndices)
+	level.ListState.itemLayouts = layouts
+	level.ScrollState.updateLayout(3, len(items))
+
+	palette := CommandPalette{
+		ID:    "palette",
+		State: state,
+	}
+
+	palette.moveCursor(1)
+	palette.moveCursor(1)
+	if got := level.ScrollState.GetOffset(); got != 0 {
+		t.Fatalf("expected offset 0 while cursor remains visible, got %d", got)
+	}
+
+	palette.moveCursor(1)
+	if got := level.ScrollState.GetOffset(); got != 1 {
+		t.Fatalf("expected offset 1 after cursor moved past viewport, got %d", got)
+	}
+
+	if got := level.ListState.CursorIndex.Peek(); got != 3 {
+		t.Fatalf("expected cursor index 3, got %d", got)
+	}
+}

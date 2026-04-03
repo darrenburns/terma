@@ -750,6 +750,7 @@ func (p CommandPalette) moveCursor(delta int) {
 		idx := view.Indices[i]
 		if level.Items[idx].IsSelectable() {
 			level.ListState.SelectIndex(idx)
+			p.scrollCursorIntoView(level)
 			p.notifyCursorChange()
 			return
 		}
@@ -766,6 +767,7 @@ func (p CommandPalette) moveCursorToStart() {
 	view := commandPaletteFilteredView(level.Items, level.FilterState)
 	if first, ok := firstSelectableIndex(level.Items, view.Indices); ok {
 		level.ListState.SelectIndex(first)
+		p.scrollCursorIntoView(level)
 		p.notifyCursorChange()
 	}
 }
@@ -778,8 +780,20 @@ func (p CommandPalette) moveCursorToEnd() {
 	view := commandPaletteFilteredView(level.Items, level.FilterState)
 	if last, ok := lastSelectableIndex(level.Items, view.Indices); ok {
 		level.ListState.SelectIndex(last)
+		p.scrollCursorIntoView(level)
 		p.notifyCursorChange()
 	}
+}
+
+func (p CommandPalette) scrollCursorIntoView(level *CommandPaletteLevel) {
+	if level == nil || level.ListState == nil || level.ScrollState == nil {
+		return
+	}
+
+	List[CommandPaletteItem]{
+		State:       level.ListState,
+		ScrollState: level.ScrollState,
+	}.scrollCursorIntoView()
 }
 
 func (p CommandPalette) scrollList(level *CommandPaletteLevel, delta int) {
