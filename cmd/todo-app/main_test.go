@@ -390,6 +390,11 @@ func TestKeybinds_IncludeListAliasesAndJumpKeys(t *testing.T) {
 	keybind, ok = findKeybindByKey(app.Keybinds(), "y")
 	require.True(t, ok)
 	require.Equal(t, "Copy", keybind.Name)
+
+	app.activeListIdx.Set(2)
+	keybind, ok = findKeybindByKey(app.Keybinds(), "D")
+	require.True(t, ok)
+	require.Equal(t, "Delete", keybind.Name)
 }
 
 func TestMoveSelectedTasksRightAndLeft_UsesAdjacentLists(t *testing.T) {

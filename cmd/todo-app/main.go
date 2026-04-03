@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -1023,7 +1024,7 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 			{Key: "enter", Name: "Toggle", Action: a.toggleCurrentTask, Hidden: true},
 			{Key: " ", Name: "Toggle", Action: a.toggleCurrentTask},
 			{Key: "y", Name: "Copy", Action: a.copySelectionAsMarkdown},
-			{Key: "ctrl+d", Name: "Delete", Action: a.permanentlyDeleteCurrentTask, Hidden: !isArchive},
+			{Key: "D", Name: "Delete", Action: a.permanentlyDeleteCurrentTask, Hidden: !isArchive},
 			{Key: "ctrl+h", Name: "Move Left", Action: a.moveSelectedTasksLeft, Hidden: true},
 			{Key: "ctrl+l", Name: "Move Right", Action: a.moveSelectedTasksRight, Hidden: true},
 			{Key: "up", Action: a.navigateUp, Hidden: true},
@@ -1057,7 +1058,7 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 			t.Keybind{Key: " ", Name: "Toggle", Action: a.toggleCurrentTask},
 			t.Keybind{Key: "e", Name: "Edit", Action: a.startEdit},
 			t.Keybind{Key: "y", Name: "Copy", Action: a.copySelectionAsMarkdown},
-			t.Keybind{Key: "ctrl+d", Name: "Delete", Action: a.permanentlyDeleteCurrentTask, Hidden: !isArchive},
+			t.Keybind{Key: "D", Name: "Delete", Action: a.permanentlyDeleteCurrentTask, Hidden: !isArchive},
 			t.Keybind{Key: "ctrl+h", Name: "Move Left", Action: a.moveSelectedTasksLeft, Hidden: true},
 			t.Keybind{Key: "ctrl+l", Name: "Move Right", Action: a.moveSelectedTasksRight, Hidden: true},
 			t.Keybind{Key: "m", Name: "Move", Action: a.openMoveMenu},
@@ -1539,7 +1540,7 @@ func (a *TodoApp) copySelectionAsMarkdown() {
 	if len(selectedTasks) == 0 {
 		return
 	}
-	_ = t.CopyToClipboard(tasksToMarkdownChecklist(selectedTasks))
+	_, _ = os.Stdout.WriteString(t.SetClipboard(t.SystemClipboard, tasksToMarkdownChecklist(selectedTasks)))
 }
 
 func tasksToMarkdownChecklist(tasks []Task) string {
@@ -1842,7 +1843,7 @@ func (a *TodoApp) buildHelpModal(theme t.ThemeData) t.Widget {
 							[2]string{"space", "Toggle"},
 							[2]string{"e", "Edit"},
 							[2]string{"d", "Archive"},
-							[2]string{"ctrl+d", "Delete forever"},
+							[2]string{"D", "Delete forever"},
 							[2]string{"y", "Copy Markdown"},
 						),
 						column(
