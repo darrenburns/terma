@@ -4,30 +4,20 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/x/ansi"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestCopyToClipboard_WritesOsc52SequenceAndFlushes(t *testing.T) {
-	origWrite := clipboardWriteString
-	origFlush := clipboardFlush
-	t.Cleanup(func() {
-		clipboardWriteString = origWrite
-		clipboardFlush = origFlush
-	})
+func TestClipboardSelectionConstants(t *testing.T) {
+	assert.EqualValues(t, ansi.SystemClipboard, SystemClipboard)
+	assert.EqualValues(t, ansi.PrimaryClipboard, PrimaryClipboard)
+}
 
-	var written string
-	flushCalls := 0
-	clipboardWriteString = func(s string) (int, error) {
-		written = s
-		return len(s), nil
-	}
-	clipboardFlush = func() error {
-		flushCalls++
-		return nil
-	}
+func TestSetClipboard(t *testing.T) {
+	assert.Equal(t, ansi.SetClipboard(SystemClipboard, "hello"), SetClipboard(SystemClipboard, "hello"))
+	assert.Equal(t, ansi.SetClipboard(PrimaryClipboard, "world"), SetClipboard(PrimaryClipboard, "world"))
+}
 
-	err := CopyToClipboard("hello")
-	require.NoError(t, err)
-	require.Equal(t, ansi.SetSystemClipboard("hello"), written)
-	require.Equal(t, 1, flushCalls)
+func TestRequestClipboard(t *testing.T) {
+	assert.Equal(t, ansi.RequestClipboard(SystemClipboard), RequestClipboard(SystemClipboard))
+	assert.Equal(t, ansi.RequestClipboard(PrimaryClipboard), RequestClipboard(PrimaryClipboard))
 }
