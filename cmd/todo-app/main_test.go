@@ -103,10 +103,10 @@ func TestKeybinds_IncludeNewTaskShortcut(t *testing.T) {
 	require.NotNil(t, keybind.Action)
 }
 
-func TestBuildInputRow_NewTaskInputIncludesEscapeToTaskList(t *testing.T) {
+func TestBuildInputRow_NewTaskInputUsesTextAreaAndIncludesEscapeToTaskList(t *testing.T) {
 	app := NewTodoApp()
 
-	widget := app.buildInputRow(terma.ThemeData{})
+	widget := app.buildInputRow(terma.BuildContext{}, terma.ThemeData{})
 	row, ok := widget.(terma.Row)
 	require.True(t, ok)
 	require.Len(t, row.Children, 2)
@@ -114,13 +114,55 @@ func TestBuildInputRow_NewTaskInputIncludesEscapeToTaskList(t *testing.T) {
 	autocomplete, ok := row.Children[1].(terma.Autocomplete)
 	require.True(t, ok)
 
-	input, ok := autocomplete.Child.(terma.TextInput)
+	input, ok := autocomplete.Child.(terma.TextArea)
 	require.True(t, ok)
 
 	keybind, ok := findKeybindByKey(input.ExtraKeybinds, "escape")
 	require.True(t, ok)
 	require.Equal(t, "Tasks", keybind.Name)
 	require.NotNil(t, keybind.Action)
+
+	keybind, ok = findKeybindByKey(input.ExtraKeybinds, "shift+enter")
+	require.True(t, ok)
+	require.Equal(t, "Newline", keybind.Name)
+}
+
+func TestBuildInputRow_NewTaskInputUsesStrongerBackgroundWhenFocused(t *testing.T) {
+	app := NewTodoApp()
+	theme := terma.ThemeData{
+		Background: terma.Hex("#101010"),
+		Surface:    terma.Hex("#202020"),
+	}
+	ctx := terma.NewBuildContext(
+		nil,
+		terma.NewAnySignal[terma.Focusable](testFocusable{id: "new-task-input"}),
+		terma.AnySignal[terma.Widget]{},
+		nil,
+	)
+
+	widget := app.buildInputRow(ctx, theme)
+	row, ok := widget.(terma.Row)
+	require.True(t, ok)
+	require.Equal(t, theme.Background.Blend(theme.Surface, 0.45), row.Style.BackgroundColor)
+
+	autocomplete, ok := row.Children[1].(terma.Autocomplete)
+	require.True(t, ok)
+
+	input, ok := autocomplete.Child.(terma.TextArea)
+	require.True(t, ok)
+	require.Equal(t, theme.Background.Blend(theme.Surface, 0.45), input.Style.BackgroundColor)
+}
+
+func TestIncompleteTodoColors_UseTextColorAndDimmerCircle(t *testing.T) {
+	theme := terma.ThemeData{
+		Background: terma.Hex("#101010"),
+		TextMuted:  terma.Hex("#666666"),
+		Text:       terma.Hex("#eeeeee"),
+	}
+
+	textColor := theme.TextMuted.Blend(theme.Text, 0.35)
+	require.Equal(t, textColor, incompleteTodoTextColor(theme))
+	require.Equal(t, textColor.Blend(theme.Background, 0.2), incompleteTodoCircleColor(theme))
 }
 
 func TestInitialFocusTarget_TaskListWhenActiveListHasTasks(t *testing.T) {

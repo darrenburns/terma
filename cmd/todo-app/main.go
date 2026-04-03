@@ -77,7 +77,7 @@ type TodoApp struct {
 	// Core state
 	taskLists     []*TaskList
 	activeListIdx t.Signal[int]
-	inputState    *t.TextInputState
+	inputState    *t.TextAreaState
 
 	// Move menu state
 	showMoveMenu     t.Signal[bool]
@@ -155,7 +155,7 @@ func NewTodoApp() *TodoApp {
 	app := &TodoApp{
 		taskLists:             []*TaskList{todayList, inboxList},
 		activeListIdx:         t.NewSignal(0),
-		inputState:            t.NewTextInputState(""),
+		inputState:            t.NewTextAreaState(""),
 		showMoveMenu:          t.NewSignal(false),
 		moveMenuState:         t.NewMenuState([]t.MenuItem{}),
 		filterMode:            t.NewSignal(false),
@@ -392,7 +392,7 @@ func (a *TodoApp) buildMainContainer(ctx t.BuildContext, bgColor t.ColorProvider
 			Padding:         t.EdgeInsetsXY(2, 1),
 		},
 		Children: []t.Widget{
-			a.buildInputRow(theme),
+			a.buildInputRow(ctx, theme),
 			a.buildTaskList(ctx),
 		},
 	}
@@ -439,7 +439,10 @@ func (a *TodoApp) listSwitcherSpans(theme t.ThemeData) []t.Span {
 }
 
 // buildInputRow creates the new task input row or filter input row.
-func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
+func (a *TodoApp) buildInputRow(ctx t.BuildContext, theme t.ThemeData) t.Widget {
+	inputFocused := focusedWidgetID(ctx) == "new-task-input"
+	inputBg := todoTextAreaBackground(theme, inputFocused)
+
 	if a.filterMode.Get() {
 		return t.Row{
 			Width: t.Flex(1),
@@ -483,7 +486,7 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 	return t.Row{
 		Width: t.Flex(1),
 		Style: t.Style{
-			BackgroundColor: theme.Surface,
+			BackgroundColor: inputBg,
 			Padding:         t.EdgeInsetsXY(1, 0),
 		},
 		Children: []t.Widget{
@@ -502,18 +505,18 @@ func (a *TodoApp) buildInputRow(theme t.ThemeData) t.Widget {
 				DisableKeysWhenHidden: true,
 				Width:                 t.Flex(1),
 				RenderSuggestion:      tagSuggestionRenderer("new-task-input"),
-				Child: t.TextInput{
+				Child: t.TextArea{
 					ID:          "new-task-input",
 					State:       a.inputState,
 					Placeholder: "What needs to be done?",
 					Highlighter: tagHighlighter(theme.Accent),
 					Width:       t.Flex(1),
 					Style: t.Style{
-						BackgroundColor: theme.Surface,
+						BackgroundColor: inputBg,
 					},
-					OnSubmit: a.addTask,
 					ExtraKeybinds: []t.Keybind{
 						{Key: "enter", Name: "Create", Action: func() { a.addTask(a.inputState.GetText()) }},
+						{Key: "shift+enter", Name: "Newline", Action: func() { a.inputState.ReplaceSelection("\n") }},
 						{Key: "tab", Name: "Tasks", Action: func() {}},
 						{Key: "escape", Name: "Tasks", Action: func() { t.RequestFocus("task-list") }},
 						{Key: "left", Action: a.handleNewTaskInputLeft, Hidden: true},
@@ -591,6 +594,8 @@ func (a *TodoApp) buildTaskList(ctx t.BuildContext) t.Widget {
 func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task, bool, bool) t.Widget {
 	theme := ctx.Theme()
 	editingIdx := a.editingIndex.Get()
+	editInputFocused := focusedWidgetID(ctx) == "edit-input"
+	inputBg := todoTextAreaBackground(theme, editInputFocused)
 
 	return func(task Task, active bool, selected bool) t.Widget {
 		rowID := a.taskRowID(task.ID)
@@ -630,7 +635,7 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 							Highlighter: tagHighlighter(theme.Accent),
 							Width:       t.Flex(1),
 							Style: t.Style{
-								BackgroundColor: theme.Surface,
+								BackgroundColor: inputBg,
 							},
 							Blur: func() {
 								if a.editingIndex.Peek() == idx {
@@ -653,14 +658,14 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 
 		// Normal display mode
 		checkbox := "○"
-		checkboxStyle := t.Style{ForegroundColor: theme.Border}
+		checkboxStyle := t.Style{ForegroundColor: incompleteTodoCircleColor(theme)}
 		if task.Completed {
 			checkbox = "●"
 			checkboxStyle.ForegroundColor = theme.Success
 		}
 
 		prefix := "  "
-		textStyle := t.Style{ForegroundColor: theme.Text}
+		textStyle := t.Style{ForegroundColor: incompleteTodoTextColor(theme)}
 		rowStyle := t.Style{}
 
 		// Determine background based on state (active+focused takes precedence over selected)
@@ -722,6 +727,33 @@ func (a *TodoApp) renderTaskItem(ctx t.BuildContext, listFocused bool) func(Task
 			},
 		}
 	}
+}
+
+func todoTextAreaBackground(theme t.ThemeData, focused bool) t.ColorProvider {
+	alpha := 0.15
+	if focused {
+		alpha = 0.45
+	}
+	return theme.Background.Blend(theme.Surface, alpha)
+}
+
+func incompleteTodoCircleColor(theme t.ThemeData) t.Color {
+	return incompleteTodoTextColor(theme).Blend(theme.Background, 0.2)
+}
+
+func incompleteTodoTextColor(theme t.ThemeData) t.Color {
+	return theme.TextMuted.Blend(theme.Text, 0.35)
+}
+
+func focusedWidgetID(ctx t.BuildContext) string {
+	focused := ctx.Focused()
+	if focused == nil {
+		return ""
+	}
+	if identifiable, ok := focused.(interface{ WidgetID() string }); ok {
+		return identifiable.WidgetID()
+	}
+	return ""
 }
 
 // buildThemePicker creates the theme picker modal with dark/light switcher.
