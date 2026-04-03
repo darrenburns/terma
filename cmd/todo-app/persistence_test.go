@@ -120,7 +120,28 @@ func TestSaveAndLoadState_RoundTrip(t *testing.T) {
 	require.Equal(t, in.SchemaVersion, out.SchemaVersion)
 	require.Equal(t, in.Theme, out.Theme)
 	require.Equal(t, in.ActiveListID, out.ActiveListID)
-	require.Equal(t, in.Lists, out.Lists)
+	require.Len(t, out.Lists, 3)
+	require.Equal(t, in.Lists[0], out.Lists[0])
+	require.Equal(t, in.Lists[1], out.Lists[1])
+	require.Equal(t, archiveListID, out.Lists[2].ID)
+	require.Equal(t, "Archive", out.Lists[2].Name)
+	require.Empty(t, out.Lists[2].Tasks)
+}
+
+func TestNormalizeStateV1_AppendsArchiveListWhenMissing(t *testing.T) {
+	state := &todoStateV1{
+		SchemaVersion: stateSchemaVersion,
+		Theme:         "kanagawa",
+		ActiveListID:  todayListID,
+		Lists: []persistedList{
+			{ID: todayListID, Name: "Today's tasks"},
+			{ID: inboxListID, Name: "Inbox"},
+		},
+	}
+
+	require.NoError(t, normalizeStateV1(state))
+	require.Len(t, state.Lists, 3)
+	require.Equal(t, archiveListID, state.Lists[2].ID)
 }
 
 func TestScheduleSave_DebouncesBurstWrites(t *testing.T) {

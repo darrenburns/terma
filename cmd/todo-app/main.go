@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -15,6 +16,12 @@ import (
 
 // tagPattern matches hashtags: # followed by alphanumeric, underscore, or hyphen
 var tagPattern = regexp.MustCompile(`#[a-zA-Z0-9_-]+`)
+
+const (
+	todayListID   = "today"
+	inboxListID   = "inbox"
+	archiveListID = "archive"
+)
 
 // darkThemeNames are the dark theme names in display order.
 var darkThemeNames = []string{
@@ -139,21 +146,28 @@ func NewTodoApp() *TodoApp {
 	}
 
 	todayList := &TaskList{
-		ID:          "today",
+		ID:          todayListID,
 		Name:        "Today's tasks",
 		Tasks:       t.NewListState(initialTasks),
 		ScrollState: t.NewScrollState(),
 	}
 
 	inboxList := &TaskList{
-		ID:          "inbox",
+		ID:          inboxListID,
 		Name:        "Inbox",
 		Tasks:       t.NewListState([]Task{}),
 		ScrollState: t.NewScrollState(),
 	}
 
+	archiveList := &TaskList{
+		ID:          archiveListID,
+		Name:        "Archive",
+		Tasks:       t.NewListState([]Task{}),
+		ScrollState: t.NewScrollState(),
+	}
+
 	app := &TodoApp{
-		taskLists:             []*TaskList{todayList, inboxList},
+		taskLists:             []*TaskList{todayList, inboxList, archiveList},
 		activeListIdx:         t.NewSignal(0),
 		inputState:            t.NewTextAreaState(""),
 		showMoveMenu:          t.NewSignal(false),
@@ -238,6 +252,32 @@ func (a *TodoApp) taskRowID(taskID string) string {
 // activeList returns the currently active TaskList.
 func (a *TodoApp) activeList() *TaskList {
 	return a.taskLists[a.activeListIdx.Get()]
+}
+
+func (a *TodoApp) archiveList() *TaskList {
+	return a.listByID(archiveListID)
+}
+
+func (a *TodoApp) listByID(id string) *TaskList {
+	for _, list := range a.taskLists {
+		if list.ID == id {
+			return list
+		}
+	}
+	return nil
+}
+
+func (a *TodoApp) listIndexByID(id string) int {
+	for i, list := range a.taskLists {
+		if list.ID == id {
+			return i
+		}
+	}
+	return -1
+}
+
+func (a *TodoApp) isArchiveActiveList() bool {
+	return a.activeList().ID == archiveListID
 }
 
 // allTasks returns tasks from all lists.
@@ -948,6 +988,7 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 	isMoveMenu := a.showMoveMenu.Peek()
 	isFilterMode := a.filterMode.Peek()
 	isHelp := a.showHelp.Peek()
+	isArchive := a.isArchiveActiveList()
 
 	// Help modal - any key closes it
 	if isHelp {
@@ -962,7 +1003,9 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 		return []t.Keybind{
 			{Key: "escape", Name: "Cancel", Action: a.dismissThemePicker},
 			{Key: "left", Name: "Dark", Action: a.showDarkThemes},
+			{Key: "h", Name: "Dark", Action: a.showDarkThemes, Hidden: true},
 			{Key: "right", Name: "Light", Action: a.showLightThemes},
+			{Key: "l", Name: "Light", Action: a.showLightThemes, Hidden: true},
 		}
 	}
 
@@ -975,14 +1018,21 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 
 	// Filter mode has its own keybinds
 	if isFilterMode {
-		return []t.Keybind{
+		keybinds := []t.Keybind{
 			{Key: "escape", Name: "Clear", Action: a.exitFilterMode},
 			{Key: "enter", Name: "Toggle", Action: a.toggleCurrentTask, Hidden: true},
 			{Key: " ", Name: "Toggle", Action: a.toggleCurrentTask},
-			{Key: "d", Name: "Delete", Action: a.deleteCurrentTask},
+			{Key: "y", Name: "Copy", Action: a.copySelectionAsMarkdown},
+			{Key: "ctrl+d", Name: "Delete", Action: a.permanentlyDeleteCurrentTask, Hidden: !isArchive},
+			{Key: "ctrl+h", Name: "Move Left", Action: a.moveSelectedTasksLeft, Hidden: true},
+			{Key: "ctrl+l", Name: "Move Right", Action: a.moveSelectedTasksRight, Hidden: true},
 			{Key: "up", Action: a.navigateUp, Hidden: true},
 			{Key: "down", Action: a.navigateDown, Hidden: true},
 		}
+		if !isArchive {
+			keybinds = append(keybinds, t.Keybind{Key: "d", Name: "Archive", Action: a.archiveCurrentTask})
+		}
+		return append(keybinds, a.listNavigationKeybinds()...)
 	}
 
 	keybinds := []t.Keybind{
@@ -993,7 +1043,10 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 		{Key: "down", Action: a.navigateDown, Hidden: true},
 		{Key: "left", Name: "Prev List", Action: a.switchToPreviousList, Hidden: true},
 		{Key: "right", Name: "Next List", Action: a.switchToNextList, Hidden: true},
+		{Key: "h", Name: "Prev List", Action: a.switchToPreviousList, Hidden: true},
+		{Key: "l", Name: "Next List", Action: a.switchToNextList, Hidden: true},
 	}
+	keybinds = append(keybinds, a.listJumpKeybinds()...)
 
 	if !isEditing {
 		if a.hasTaskSelection() {
@@ -1003,7 +1056,10 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 			t.Keybind{Key: "enter", Name: "Toggle", Action: a.toggleCurrentTask, Hidden: true},
 			t.Keybind{Key: " ", Name: "Toggle", Action: a.toggleCurrentTask},
 			t.Keybind{Key: "e", Name: "Edit", Action: a.startEdit},
-			t.Keybind{Key: "d", Name: "Delete", Action: a.deleteCurrentTask},
+			t.Keybind{Key: "y", Name: "Copy", Action: a.copySelectionAsMarkdown},
+			t.Keybind{Key: "ctrl+d", Name: "Delete", Action: a.permanentlyDeleteCurrentTask, Hidden: !isArchive},
+			t.Keybind{Key: "ctrl+h", Name: "Move Left", Action: a.moveSelectedTasksLeft, Hidden: true},
+			t.Keybind{Key: "ctrl+l", Name: "Move Right", Action: a.moveSelectedTasksRight, Hidden: true},
 			t.Keybind{Key: "m", Name: "Move", Action: a.openMoveMenu},
 			t.Keybind{Key: "t", Name: "Theme", Action: a.openThemePicker},
 			t.Keybind{Key: "/", Name: "Filter", Action: a.enterFilterMode},
@@ -1011,12 +1067,39 @@ func (a *TodoApp) Keybinds() []t.Keybind {
 			t.Keybind{Key: "ctrl+k", Name: "Move Up", Action: a.moveTaskUp, Hidden: true},
 			t.Keybind{Key: "?", Name: "Help", Action: a.openHelp},
 		)
+		if !isArchive {
+			keybinds = append(keybinds, t.Keybind{Key: "d", Name: "Archive", Action: a.archiveCurrentTask})
+		}
 	} else {
 		keybinds = append(keybinds,
 			t.Keybind{Key: "escape", Name: "Cancel", Action: a.cancelEdit},
 		)
 	}
 
+	return keybinds
+}
+
+func (a *TodoApp) listNavigationKeybinds() []t.Keybind {
+	keybinds := []t.Keybind{
+		{Key: "left", Name: "Prev List", Action: a.switchToPreviousList, Hidden: true},
+		{Key: "right", Name: "Next List", Action: a.switchToNextList, Hidden: true},
+		{Key: "h", Name: "Prev List", Action: a.switchToPreviousList, Hidden: true},
+		{Key: "l", Name: "Next List", Action: a.switchToNextList, Hidden: true},
+	}
+	return append(keybinds, a.listJumpKeybinds()...)
+}
+
+func (a *TodoApp) listJumpKeybinds() []t.Keybind {
+	keybinds := make([]t.Keybind, 0, len(a.taskLists))
+	for i := range a.taskLists {
+		listIndex := i
+		keybinds = append(keybinds, t.Keybind{
+			Key:    strconv.Itoa(i + 1),
+			Name:   "List " + strconv.Itoa(i+1),
+			Action: func() { a.jumpToList(listIndex) },
+			Hidden: true,
+		})
+	}
 	return keybinds
 }
 
@@ -1037,33 +1120,50 @@ func (a *TodoApp) clearTaskSelection() {
 }
 
 func (a *TodoApp) switchToPreviousList() {
+	activeIdx := a.activeListIdx.Peek()
+	if activeIdx > 0 {
+		a.jumpToList(activeIdx - 1)
+		return
+	}
+	a.jumpToList(len(a.taskLists) - 1)
+}
+
+func (a *TodoApp) switchToNextList() {
+	activeIdx := a.activeListIdx.Peek()
+	if activeIdx < len(a.taskLists)-1 {
+		a.jumpToList(activeIdx + 1)
+		return
+	}
+	a.jumpToList(0)
+}
+
+func (a *TodoApp) jumpToList(index int) {
+	if index < 0 || index >= len(a.taskLists) {
+		return
+	}
 	if a.editingIndex.Peek() >= 0 {
 		a.cancelEdit()
 	}
-	a.activeListIdx.Update(func(idx int) int {
-		if idx > 0 {
-			return idx - 1
-		}
-		return len(a.taskLists) - 1
-	})
+	a.activeListIdx.Set(index)
 	a.filteredScrollState.SetOffset(0)
 	a.refreshFilteredTasks()
 	a.scheduleSave()
 }
 
-func (a *TodoApp) switchToNextList() {
-	if a.editingIndex.Peek() >= 0 {
-		a.cancelEdit()
+func (a *TodoApp) moveSelectedTasksLeft() {
+	idx := a.activeListIdx.Peek()
+	if idx <= 0 {
+		return
 	}
-	a.activeListIdx.Update(func(idx int) int {
-		if idx < len(a.taskLists)-1 {
-			return idx + 1
-		}
-		return 0
-	})
-	a.filteredScrollState.SetOffset(0)
-	a.refreshFilteredTasks()
-	a.scheduleSave()
+	a.moveCurrentSelectionToList(a.taskLists[idx-1], false)
+}
+
+func (a *TodoApp) moveSelectedTasksRight() {
+	idx := a.activeListIdx.Peek()
+	if idx >= len(a.taskLists)-1 {
+		return
+	}
+	a.moveCurrentSelectionToList(a.taskLists[idx+1], false)
 }
 
 func (a *TodoApp) handleNewTaskInputLeft() {
@@ -1147,30 +1247,60 @@ func (a *TodoApp) buildMoveMenuItems() []t.MenuItem {
 }
 
 func (a *TodoApp) moveTaskToList(targetList *TaskList) {
+	a.moveCurrentSelectionToList(targetList, true)
+}
+
+func (a *TodoApp) currentSelectionState() *t.ListState[Task] {
+	if a.filterMode.Peek() {
+		return a.filteredListState
+	}
+	return a.activeList().Tasks
+}
+
+func (a *TodoApp) currentSelectedTasks() []Task {
+	selectionState := a.currentSelectionState()
+	selectedTasks := selectionState.SelectedItems()
+	if len(selectedTasks) > 0 {
+		return selectedTasks
+	}
+	if task, ok := selectionState.SelectedItem(); ok {
+		return []Task{task}
+	}
+	return nil
+}
+
+func (a *TodoApp) moveCurrentSelectionToList(targetList *TaskList, dismissMenu bool) {
 	if targetList == nil {
-		a.dismissMoveMenu()
+		if dismissMenu {
+			a.dismissMoveMenu()
+		}
 		return
 	}
 
 	sourceList := a.activeList()
 	if sourceList.ID == targetList.ID {
-		a.dismissMoveMenu()
+		if dismissMenu {
+			a.dismissMoveMenu()
+		}
 		return
 	}
 
-	selectionState := sourceList.Tasks
-	if a.filterMode.Peek() {
-		selectionState = a.filteredListState
+	selectedTasks := a.currentSelectedTasks()
+	if len(selectedTasks) == 0 {
+		if dismissMenu {
+			a.dismissMoveMenu()
+		}
+		return
 	}
 
-	selectedTasks := selectionState.SelectedItems()
-	if len(selectedTasks) == 0 {
-		if task, ok := selectionState.SelectedItem(); ok {
-			selectedTasks = []Task{task}
-		}
-	}
-	if len(selectedTasks) == 0 {
+	a.moveTasks(sourceList, targetList, a.currentSelectionState(), selectedTasks)
+	if dismissMenu {
 		a.dismissMoveMenu()
+	}
+}
+
+func (a *TodoApp) moveTasks(sourceList *TaskList, targetList *TaskList, selectionState *t.ListState[Task], selectedTasks []Task) {
+	if sourceList == nil || targetList == nil || selectionState == nil || len(selectedTasks) == 0 {
 		return
 	}
 
@@ -1197,7 +1327,6 @@ func (a *TodoApp) moveTaskToList(targetList *TaskList) {
 	a.refreshTagSuggestions()
 	a.refreshFilteredTasks()
 	a.scheduleSave()
-	a.dismissMoveMenu()
 }
 
 // navigateUp handles up arrow for cross-widget navigation.
@@ -1355,16 +1484,24 @@ func (a *TodoApp) updateTaskTitle(listState *t.ListState[Task], id string, title
 // deleteCurrentTask removes selected tasks.
 // If multiple items are selected, deletes all of them. Otherwise deletes the cursor item.
 func (a *TodoApp) deleteCurrentTask() {
+	a.archiveCurrentTask()
+}
+
+func (a *TodoApp) archiveCurrentTask() {
+	if a.isArchiveActiveList() {
+		return
+	}
+	a.moveCurrentSelectionToList(a.archiveList(), false)
+}
+
+func (a *TodoApp) permanentlyDeleteCurrentTask() {
 	// Use the appropriate list state based on filter mode
 	isFilterMode := a.filterMode.Peek()
-	listState := a.activeList().Tasks
-	if isFilterMode {
-		listState = a.filteredListState
-	}
+	listState := a.currentSelectionState()
 	sourceList := a.activeList().Tasks
 
 	// Check for multi-select: if items are selected, delete all of them
-	selectedTasks := listState.SelectedItems()
+	selectedTasks := a.currentSelectedTasks()
 	if len(selectedTasks) > 0 {
 		// Build a set of IDs to delete
 		idsToDelete := make(map[string]struct{}, len(selectedTasks))
@@ -1383,6 +1520,10 @@ func (a *TodoApp) deleteCurrentTask() {
 
 		listState.ClearSelection()
 		listState.ClearAnchor()
+		if listState != sourceList {
+			sourceList.ClearSelection()
+			sourceList.ClearAnchor()
+		}
 
 		// If in filter mode and no more filtered items, refocus the filter input
 		if isFilterMode && len(a.getFilteredTasks()) == 0 {
@@ -1391,28 +1532,29 @@ func (a *TodoApp) deleteCurrentTask() {
 		a.scheduleSave()
 		return
 	}
+}
 
-	// No selection - delete just the cursor item
-	task, ok := listState.SelectedItem()
-	if !ok {
+func (a *TodoApp) copySelectionAsMarkdown() {
+	selectedTasks := a.currentSelectedTasks()
+	if len(selectedTasks) == 0 {
 		return
 	}
+	_ = t.CopyToClipboard(tasksToMarkdownChecklist(selectedTasks))
+}
 
-	tasks := sourceList.GetItems()
-	for i, tsk := range tasks {
-		if tsk.ID == task.ID {
-			sourceList.RemoveAt(i)
-			a.refreshTagSuggestions()
-			a.refreshFilteredTasks()
-
-			// If in filter mode and no more filtered items, refocus the filter input
-			if isFilterMode && len(a.getFilteredTasks()) == 0 {
-				t.RequestFocus("filter-input")
-			}
-			a.scheduleSave()
-			return
+func tasksToMarkdownChecklist(tasks []Task) string {
+	lines := make([]string, 0, len(tasks))
+	for _, task := range tasks {
+		marker := " "
+		if task.Completed {
+			marker = "x"
 		}
+		title := strings.ReplaceAll(task.Title, "\r\n", "\n")
+		title = strings.ReplaceAll(title, "\r", "\n")
+		title = strings.ReplaceAll(title, "\n", "\n  ")
+		lines = append(lines, fmt.Sprintf("- [%s] %s", marker, title))
 	}
+	return strings.Join(lines, "\n")
 }
 
 // moveTaskUp moves selected tasks up in the list.
@@ -1639,15 +1781,12 @@ func (a *TodoApp) showLightThemes() {
 
 // buildHelpModal creates the keyboard shortcuts help modal.
 func (a *TodoApp) buildHelpModal(theme t.ThemeData) t.Widget {
-	// Helper to create a key-action pair
-	keyCell := func(key, action string) t.Widget {
+	keyAction := func(key, action string) t.Widget {
 		return t.Row{
-			Width:   t.Cells(18),
 			Spacing: 1,
 			Children: []t.Widget{
 				t.Text{
 					Content: key,
-					Width:   t.Cells(7),
 					Style: t.Style{
 						ForegroundColor: theme.Accent,
 						Bold:            true,
@@ -1663,6 +1802,17 @@ func (a *TodoApp) buildHelpModal(theme t.ThemeData) t.Widget {
 		}
 	}
 
+	column := func(items ...[2]string) t.Widget {
+		children := make([]t.Widget, 0, len(items))
+		for _, item := range items {
+			children = append(children, keyAction(item[0], item[1]))
+		}
+		return t.Column{
+			Spacing:  1,
+			Children: children,
+		}
+	}
+
 	return t.Floating{
 		Visible: a.showHelp.Get(),
 		Config: t.FloatConfig{
@@ -1672,7 +1822,7 @@ func (a *TodoApp) buildHelpModal(theme t.ThemeData) t.Widget {
 			BackdropColor: t.Black.WithAlpha(0.3),
 		},
 		Child: t.Column{
-			Width: t.Cells(42),
+			Spacing: 1,
 			Style: t.Style{
 				BackgroundColor: t.NewGradient(theme.Surface.Lighten(0.3), theme.Surface).WithAngle(45),
 				Padding:         t.EdgeInsetsXY(2, 1),
@@ -1686,33 +1836,29 @@ func (a *TodoApp) buildHelpModal(theme t.ThemeData) t.Widget {
 					},
 				},
 				t.Row{
+					Spacing: 4,
 					Children: []t.Widget{
-						keyCell("space", "Toggle"),
-						keyCell("ctrl+k", "Move ↑"),
-					},
-				},
-				t.Row{
-					Children: []t.Widget{
-						keyCell("e", "Edit"),
-						keyCell("ctrl+j", "Move ↓"),
-					},
-				},
-				t.Row{
-					Children: []t.Widget{
-						keyCell("d", "Delete"),
-						keyCell("/", "Filter"),
-					},
-				},
-				t.Row{
-					Children: []t.Widget{
-						keyCell("left/right", "Switch list"),
-						keyCell("m", "Move"),
-					},
-				},
-				t.Row{
-					Children: []t.Widget{
-						keyCell("t", "Theme"),
-						keyCell("q", "Quit"),
+						column(
+							[2]string{"space", "Toggle"},
+							[2]string{"e", "Edit"},
+							[2]string{"d", "Archive"},
+							[2]string{"ctrl+d", "Delete forever"},
+							[2]string{"y", "Copy Markdown"},
+						),
+						column(
+							[2]string{"left/right", "Switch list"},
+							[2]string{"h/l", "Switch list"},
+							[2]string{"1-9", "Jump to list"},
+							[2]string{"ctrl+h/l", "Move to left/right list"},
+							[2]string{"m", "Move menu"},
+						),
+						column(
+							[2]string{"ctrl+j/k", "Reorder"},
+							[2]string{"/", "Filter"},
+							[2]string{"t", "Theme"},
+							[2]string{"?", "Help"},
+							[2]string{"q", "Quit"},
+						),
 					},
 				},
 			},

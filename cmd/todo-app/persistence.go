@@ -162,6 +162,15 @@ func normalizeStateV1(state *todoStateV1) error {
 		}
 	}
 
+	if _, ok := listIDs[archiveListID]; !ok {
+		state.Lists = append(state.Lists, persistedList{
+			ID:    archiveListID,
+			Name:  "Archive",
+			Tasks: []persistedTask{},
+		})
+		listIDs[archiveListID] = struct{}{}
+	}
+
 	if state.ActiveListID == "" {
 		state.ActiveListID = state.Lists[0].ID
 	}

@@ -103,6 +103,14 @@ func TestKeybinds_IncludeNewTaskShortcut(t *testing.T) {
 	require.NotNil(t, keybind.Action)
 }
 
+func TestNewTodoApp_IncludesArchiveList(t *testing.T) {
+	app := NewTodoApp()
+
+	require.Len(t, app.taskLists, 3)
+	require.Equal(t, archiveListID, app.taskLists[2].ID)
+	require.Equal(t, "Archive", app.taskLists[2].Name)
+}
+
 func TestBuildInputRow_NewTaskInputUsesTextAreaAndIncludesEscapeToTaskList(t *testing.T) {
 	app := NewTodoApp()
 
@@ -254,13 +262,16 @@ func TestBuildListSwitcher_CentersActiveListInSequence(t *testing.T) {
 	require.True(t, text.Width.IsFlex())
 	require.Equal(t, 1.0, text.Width.FlexValue())
 	require.Equal(t, terma.TextAlignCenter, text.TextAlign)
-	require.Len(t, text.Spans, 3)
+	require.Len(t, text.Spans, 5)
 	require.Equal(t, app.taskLists[0].Name, text.Spans[0].Text)
 	require.Equal(t, theme.Primary, text.Spans[0].Style.Foreground)
 	require.Equal(t, " · ", text.Spans[1].Text)
 	require.Equal(t, theme.TextMuted.WithAlpha(0.6), text.Spans[1].Style.Foreground)
 	require.Equal(t, app.taskLists[1].Name, text.Spans[2].Text)
 	require.Equal(t, theme.TextMuted.WithAlpha(0.6), text.Spans[2].Style.Foreground)
+	require.Equal(t, " · ", text.Spans[3].Text)
+	require.Equal(t, app.taskLists[2].Name, text.Spans[4].Text)
+	require.Equal(t, theme.TextMuted.WithAlpha(0.6), text.Spans[4].Style.Foreground)
 }
 
 func TestListSwitcherSpans_UpdatesWhenActiveListChanges(t *testing.T) {
@@ -273,12 +284,14 @@ func TestListSwitcherSpans_UpdatesWhenActiveListChanges(t *testing.T) {
 	initial := app.listSwitcherSpans(theme)
 	require.Equal(t, theme.Primary, initial[0].Style.Foreground)
 	require.Equal(t, theme.TextMuted.WithAlpha(0.6), initial[2].Style.Foreground)
+	require.Equal(t, theme.TextMuted.WithAlpha(0.6), initial[4].Style.Foreground)
 
 	app.switchToNextList()
 
 	updated := app.listSwitcherSpans(theme)
 	require.Equal(t, theme.TextMuted.WithAlpha(0.6), updated[0].Style.Foreground)
 	require.Equal(t, theme.Primary, updated[2].Style.Foreground)
+	require.Equal(t, theme.TextMuted.WithAlpha(0.6), updated[4].Style.Foreground)
 }
 
 func TestBuildMainContainer_NormalBorderOmitsActiveListNameTitle(t *testing.T) {
@@ -354,6 +367,104 @@ func TestKeybinds_EscapeOmittedWhenNoSelection(t *testing.T) {
 
 	_, ok := findKeybindByKey(app.Keybinds(), "escape")
 	require.False(t, ok)
+}
+
+func TestKeybinds_IncludeListAliasesAndJumpKeys(t *testing.T) {
+	app := NewTodoApp()
+
+	keybind, ok := findKeybindByKey(app.Keybinds(), "h")
+	require.True(t, ok)
+	require.NotNil(t, keybind.Action)
+
+	keybind, ok = findKeybindByKey(app.Keybinds(), "l")
+	require.True(t, ok)
+	require.NotNil(t, keybind.Action)
+
+	keybind, ok = findKeybindByKey(app.Keybinds(), "3")
+	require.True(t, ok)
+	require.NotNil(t, keybind.Action)
+
+	keybind.Action()
+	require.Equal(t, archiveListID, app.activeList().ID)
+
+	keybind, ok = findKeybindByKey(app.Keybinds(), "y")
+	require.True(t, ok)
+	require.Equal(t, "Copy", keybind.Name)
+}
+
+func TestMoveSelectedTasksRightAndLeft_UsesAdjacentLists(t *testing.T) {
+	app := NewTodoApp()
+	task := app.activeList().Tasks.GetItems()[0]
+	app.activeList().Tasks.SelectIndex(0)
+
+	app.moveSelectedTasksRight()
+	require.Equal(t, task.ID, app.taskLists[1].Tasks.GetItems()[0].ID)
+
+	app.activeListIdx.Set(1)
+	app.activeList().Tasks.SelectIndex(0)
+	app.moveSelectedTasksRight()
+	require.Equal(t, task.ID, app.archiveList().Tasks.GetItems()[0].ID)
+
+	app.activeListIdx.Set(2)
+	app.activeList().Tasks.SelectIndex(0)
+	app.moveSelectedTasksLeft()
+	require.Equal(t, task.ID, app.taskLists[1].Tasks.GetItems()[0].ID)
+}
+
+func TestArchiveCurrentTask_MovesTaskToArchive(t *testing.T) {
+	app := NewTodoApp()
+	task := app.activeList().Tasks.GetItems()[0]
+	app.activeList().Tasks.SelectIndex(0)
+
+	app.archiveCurrentTask()
+
+	require.NotContains(t, collectTaskIDs(app.taskLists[0].Tasks.GetItems()), task.ID)
+	require.Equal(t, task.ID, app.archiveList().Tasks.GetItems()[0].ID)
+}
+
+func TestPermanentlyDeleteCurrentTask_RemovesTaskFromArchive(t *testing.T) {
+	app := NewTodoApp()
+	task := app.activeList().Tasks.GetItems()[0]
+	app.activeList().Tasks.SelectIndex(0)
+	app.archiveCurrentTask()
+
+	app.activeListIdx.Set(2)
+	app.activeList().Tasks.SelectIndex(0)
+	app.permanentlyDeleteCurrentTask()
+
+	require.NotContains(t, collectTaskIDs(app.archiveList().Tasks.GetItems()), task.ID)
+}
+
+func TestTasksToMarkdownChecklist_FormatsSelection(t *testing.T) {
+	app := NewTodoApp()
+	tasks := []Task{
+		app.activeList().Tasks.GetItems()[0],
+		app.activeList().Tasks.GetItems()[2],
+	}
+
+	require.Equal(t, "- [ ] Invent a new color #creative #fun\n- [x] Find out who let the dogs out #pets #mystery", tasksToMarkdownChecklist(tasks))
+}
+
+func TestBuildHelpModal_UsesAutoWidthForPopupAndColumns(t *testing.T) {
+	app := NewTodoApp()
+	widget := app.buildHelpModal(terma.ThemeData{})
+
+	floating, ok := widget.(terma.Floating)
+	require.True(t, ok)
+
+	column, ok := floating.Child.(terma.Column)
+	require.True(t, ok)
+	require.True(t, column.Width.IsUnset())
+
+	contentRow, ok := column.Children[1].(terma.Row)
+	require.True(t, ok)
+	require.Len(t, contentRow.Children, 3)
+
+	for _, child := range contentRow.Children {
+		helpColumn, ok := child.(terma.Column)
+		require.True(t, ok)
+		require.True(t, helpColumn.Width.IsUnset())
+	}
 }
 
 func collectTaskIDs(tasks []Task) []string {
