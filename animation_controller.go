@@ -28,7 +28,6 @@ type AnimationController struct {
 	mu         sync.Mutex
 	animations map[*animationHandle]struct{}
 	ticker     *time.Ticker
-	tickChan   chan time.Time
 	fps        int
 	stopped    bool
 }
@@ -40,7 +39,6 @@ func NewAnimationController(fps int) *AnimationController {
 	}
 	return &AnimationController{
 		animations: make(map[*animationHandle]struct{}),
-		tickChan:   make(chan time.Time, 1),
 		fps:        fps,
 	}
 }
@@ -51,10 +49,10 @@ func (ac *AnimationController) Tick() <-chan time.Time {
 	ac.mu.Lock()
 	defer ac.mu.Unlock()
 
-	if len(ac.animations) == 0 || ac.stopped {
+	if len(ac.animations) == 0 || ac.stopped || ac.ticker == nil {
 		return nil
 	}
-	return ac.tickChan
+	return ac.ticker.C
 }
 
 // Register adds an animation to be managed by the controller.
@@ -161,17 +159,6 @@ func (ac *AnimationController) startTicker() {
 
 	interval := time.Duration(float64(time.Second) / float64(ac.fps))
 	ac.ticker = time.NewTicker(interval)
-
-	// Pump ticker events to tickChan
-	go func() {
-		for t := range ac.ticker.C {
-			select {
-			case ac.tickChan <- t:
-			default:
-				// Drop tick if channel is full (avoid blocking)
-			}
-		}
-	}()
 }
 
 // stopTicker halts the animation tick loop.
