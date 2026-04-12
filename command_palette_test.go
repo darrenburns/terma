@@ -89,6 +89,91 @@ func TestCommandPaletteState_CloseUsesNextFocusOverride(t *testing.T) {
 	}
 }
 
+func TestCommandPaletteState_CloseResetsRootCursorPosition(t *testing.T) {
+	state := NewCommandPaletteState("Commands", []CommandPaletteItem{
+		{Divider: "Group"},
+		{Label: "Open"},
+		{Label: "Save"},
+	})
+
+	root := state.CurrentLevel()
+	if root == nil {
+		t.Fatal("expected root level")
+	}
+
+	root.InputState.SetText("sa")
+	root.InputState.SetSelectionAnchor(0)
+	root.ScrollState.SetOffset(4)
+	root.FilterState.Query.Set("sa")
+	root.ListState.SelectIndex(2)
+
+	state.PushLevel("Nested", []CommandPaletteItem{
+		{Label: "Nested action"},
+	})
+	state.Close()
+	state.Open()
+
+	root = state.CurrentLevel()
+	if root == nil {
+		t.Fatal("expected root level after reopen")
+	}
+	if state.IsNested() {
+		t.Fatal("expected palette to reset to root level")
+	}
+	if got := root.InputState.GetText(); got != "" {
+		t.Fatalf("expected cleared input text, got %q", got)
+	}
+	if got := root.InputState.CursorIndex.Peek(); got != 0 {
+		t.Fatalf("expected input cursor at start, got %d", got)
+	}
+	if got := root.InputState.SelectionAnchor.Peek(); got != -1 {
+		t.Fatalf("expected cleared input selection, got %d", got)
+	}
+	if got := root.FilterState.Query.Peek(); got != "" {
+		t.Fatalf("expected cleared filter query, got %q", got)
+	}
+	if got := root.ScrollState.GetOffset(); got != 0 {
+		t.Fatalf("expected reset scroll offset, got %d", got)
+	}
+	if got := root.ListState.CursorIndex.Peek(); got != 1 {
+		t.Fatalf("expected list cursor to reset to first selectable item, got %d", got)
+	}
+}
+
+func TestCommandPaletteState_CloseKeepsPositionWhenRequested(t *testing.T) {
+	state := NewCommandPaletteState("Commands", []CommandPaletteItem{
+		{Label: "Open"},
+		{Label: "Save"},
+	})
+
+	root := state.CurrentLevel()
+	if root == nil {
+		t.Fatal("expected root level")
+	}
+
+	root.InputState.SetText("sa")
+	root.FilterState.Query.Set("sa")
+	root.ListState.SelectIndex(1)
+
+	state.PushLevel("Nested", []CommandPaletteItem{
+		{Label: "Nested action"},
+	})
+	state.Close(true)
+	state.Open()
+
+	if !state.IsNested() {
+		t.Fatal("expected palette level stack to be preserved")
+	}
+
+	level := state.CurrentLevel()
+	if level == nil {
+		t.Fatal("expected current level after reopen")
+	}
+	if got := level.Title; got != "Nested" {
+		t.Fatalf("expected nested level to remain active, got %q", got)
+	}
+}
+
 func TestCommandPalette_FloatOffset_DefaultTopInset(t *testing.T) {
 	tests := []struct {
 		name     string

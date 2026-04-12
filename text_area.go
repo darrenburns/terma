@@ -563,6 +563,16 @@ func buildTextAreaLayout(graphemes []string, wrap WrapMode, maxWidth, cursorIdx 
 
 				lastSpaceIdx = -1
 				lastSpaceWidth = 0
+
+				// When the current grapheme is the break-space, it already belongs to
+				// the previous line. Avoid counting it again on the new line.
+				if i == breakAt-1 {
+					if cursorIdx == breakAt {
+						cursorLine = lineIndex
+						cursorCol = 0
+					}
+					continue
+				}
 			} else {
 				// Hard wrap at current position
 				flushLine(i)

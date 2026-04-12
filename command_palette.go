@@ -97,13 +97,15 @@ func (s *CommandPaletteState) Open() {
 }
 
 // Close hides the command palette.
-// If keepPosition is false, the palette resets to the root level for the next open.
-func (s *CommandPaletteState) Close(keepPosition bool) {
+// By default, the palette resets to the root level for the next open.
+// Pass true to keep the current position.
+func (s *CommandPaletteState) Close(keepPosition ...bool) {
 	if s == nil {
 		return
 	}
 	s.Visible.Set(false)
-	if !keepPosition {
+	shouldKeepPosition := len(keepPosition) > 0 && keepPosition[0]
+	if !shouldKeepPosition {
 		s.resetToRoot()
 	}
 }
@@ -200,13 +202,7 @@ func (s *CommandPaletteState) SetItems(items []CommandPaletteItem) {
 
 func (s *CommandPaletteState) resetToRoot() {
 	root := s.stack[0]
-	// Clear root input text
-	if root != nil && root.InputState != nil {
-		root.InputState.SetText("")
-		if root.FilterState != nil {
-			root.FilterState.Query.Set("")
-		}
-	}
+	s.resetLevelState(root)
 	if len(s.stack) <= 1 {
 		s.ensureSelectableCursor(root)
 		return
@@ -234,6 +230,39 @@ func (s *CommandPaletteState) ensureSelectableCursor(level *CommandPaletteLevel)
 		if idx == cursor && level.Items[idx].IsSelectable() {
 			return
 		}
+	}
+	if first, ok := firstSelectableIndex(level.Items, view.Indices); ok {
+		level.ListState.SelectIndex(first)
+		return
+	}
+	level.ListState.SelectIndex(view.Indices[0])
+}
+
+func (s *CommandPaletteState) resetLevelState(level *CommandPaletteLevel) {
+	if level == nil {
+		return
+	}
+	if level.InputState != nil {
+		level.InputState.SetText("")
+		level.InputState.ClearSelection()
+	}
+	if level.FilterState != nil {
+		level.FilterState.Query.Set("")
+	}
+	if level.ScrollState != nil {
+		level.ScrollState.SetOffset(0)
+	}
+	s.resetCursorToStart(level)
+}
+
+func (s *CommandPaletteState) resetCursorToStart(level *CommandPaletteLevel) {
+	if level == nil || level.ListState == nil {
+		return
+	}
+	view := commandPaletteFilteredView(level.Items, level.FilterState)
+	if len(view.Indices) == 0 {
+		level.ListState.CursorIndex.Set(0)
+		return
 	}
 	if first, ok := firstSelectableIndex(level.Items, view.Indices); ok {
 		level.ListState.SelectIndex(first)
@@ -874,7 +903,7 @@ func (p CommandPalette) notifyCursorChange() {
 
 func (p CommandPalette) dismiss() {
 	if p.State != nil {
-		p.State.Close(false)
+		p.State.Close()
 	}
 	if p.OnDismiss != nil {
 		p.OnDismiss()
