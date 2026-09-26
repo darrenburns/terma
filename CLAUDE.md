@@ -37,7 +37,8 @@ yourself.
 To check a change in a real app (event loop, key handling, terminal output), build the example and drive
 it headlessly with `scripts/tui-capture.sh`. It runs the binary in a private detached tmux server, sends
 keys, and captures the screen after startup and after each key as `.ansi`, `.svg` and `.png`. Read the
-PNGs to inspect them. Requires `tmux` and `rsvg-convert` (Homebrew: `tmux`, `librsvg`).
+PNGs to inspect them. Programs run with a throwaway `HOME` and XDG directories, so apps that save state
+(such as `cmd/todo-app`) can't touch the user's real files. Requires `tmux` and `rsvg-convert` (Homebrew: `tmux`, `librsvg`).
 
 ```bash
 go build -o /tmp/demo ./cmd/focus-example

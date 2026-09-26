@@ -31,12 +31,17 @@ mkdir -p "$out"
 converter="$out/.ansi-to-svg"
 (cd "$root" && go build -o "$converter" ./cmd/ansi-to-svg)
 
+# Programs run with a throwaway home and XDG directories, so anything they save
+# (settings, app state) never touches the user's real files.
+sandbox=$(mktemp -d)
+mkdir -p "$sandbox/config" "$sandbox/state" "$sandbox/data" "$sandbox/cache"
+
 # A private tmux server keeps the user's sessions untouched. TERM must not start
 # with "tmux" or colour detection ignores COLORTERM and falls back to 256 colours.
 # NO_COLOR is dropped so captures always show the real colours.
 tmux -L "$socket" -f /dev/null new-session -d -s "$session" -x "$width" -y "$height" \
-	"env -u NO_COLOR TERM=xterm-256color COLORTERM=truecolor ${TUI_ENV:-} $bin"
-trap 'tmux -L "$socket" kill-server 2>/dev/null || true' EXIT
+	"env -u NO_COLOR TERM=xterm-256color COLORTERM=truecolor HOME=$sandbox XDG_CONFIG_HOME=$sandbox/config XDG_STATE_HOME=$sandbox/state XDG_DATA_HOME=$sandbox/data XDG_CACHE_HOME=$sandbox/cache ${TUI_ENV:-} $bin"
+trap 'tmux -L "$socket" kill-server 2>/dev/null || true; rm -rf "$sandbox"' EXIT
 
 capture() {
 	local name
