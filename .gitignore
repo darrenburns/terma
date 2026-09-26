@@ -14,6 +14,9 @@ layout/layout_debug.log
 
 # Profiling
 cpu.prof
+snapshot-output/reactivity/
+snapshot-output/tui/
+snapshot-output/evidence/
 
 # Built binaries
 # Binaries from cmd/ examples end up in repo root or current dir

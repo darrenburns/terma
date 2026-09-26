@@ -180,7 +180,9 @@ func (r *WidgetRegistry) FocusableAt(x, y int) *WidgetEntry {
 
 // Reset clears all entries for a new render pass.
 func (r *WidgetRegistry) Reset() {
-	r.entries = r.entries[:0]
+	// A fresh slice, not a truncation: retained nodes keep views of the entries
+	// their subtree recorded and replay them when a frame skips the subtree.
+	r.entries = make([]WidgetEntry, 0, cap(r.entries))
 	r.totalCount = 0
 }
 

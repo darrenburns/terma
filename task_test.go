@@ -14,13 +14,12 @@ func installTestAppRuntime(t *testing.T) context.CancelFunc {
 	t.Helper()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	oldRenderTrigger := renderTrigger
-	renderTrigger = make(chan struct{}, 1)
+	oldRenderTrigger := swapRenderTrigger(make(chan struct{}, 1))
 	setAppRuntimeState(ctx, newDispatchQueue())
 
 	t.Cleanup(func() {
 		clearAppRuntimeState()
-		renderTrigger = oldRenderTrigger
+		swapRenderTrigger(oldRenderTrigger)
 		cancel()
 	})
 
@@ -45,7 +44,7 @@ func TestDispatchQueuesUntilDrained(t *testing.T) {
 	require.Empty(t, order)
 
 	select {
-	case <-renderTrigger:
+	case <-currentRenderTrigger():
 	default:
 		t.Fatal("expected Dispatch to schedule a render")
 	}
@@ -177,4 +176,22 @@ func TestTaskUsesAppLifecycleContext(t *testing.T) {
 			return false
 		}
 	}, time.Second, 10*time.Millisecond)
+}
+
+// Background completions can still schedule a frame while the runtime shuts down.
+func TestScheduleRenderDuringRuntimeTeardown(t *testing.T) {
+	old := currentRenderTrigger()
+	defer func() { swapRenderTrigger(old) }()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for range 1000 {
+			scheduleRender()
+		}
+	}()
+	for range 1000 {
+		swapRenderTrigger(make(chan struct{}, 1))
+		swapRenderTrigger(nil)
+	}
+	<-done
 }

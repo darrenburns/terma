@@ -917,6 +917,23 @@ type Renderer struct {
 	lastLayoutWidth    int
 	lastLayoutHeight   int
 
+	// reflowDamage collects damage while a reflow frame measures the tree;
+	// geometryOnly makes paintRetainedNode measure without drawing.
+	reflowDamage []Rect
+	geometryOnly bool
+	// floatsChanged is set when measuring finds the overlay set differs from
+	// the last frame's, so the whole screen must be repainted.
+	floatsChanged bool
+	// layoutCacheEnabled lets clean subtrees reuse cached layout results.
+	layoutCacheEnabled bool
+
+	// Nodes visited by each whole-tree pass in the last frame, to check that
+	// work follows what changed rather than the size of the tree.
+	lastAssignCount  int
+	lastMeasureCount int
+	lastClearCount   int
+	lastScanCount    int
+
 	lastFrameMode      rendererFrameMode
 	fullRenderCount    int
 	partialRenderCount int

@@ -239,8 +239,8 @@ func TestRenderer_TextInputAutoWidthPromotesLayoutOnlyWhenIntrinsicWidthChanges(
 
 	state.Insert("c")
 	renderer.Update(widget)
-	if renderer.lastFrameMode != rendererFrameFull {
-		t.Fatalf("content width growth should force full render, got %q", renderer.lastFrameMode)
+	if renderer.lastFrameMode != rendererFrameReflow {
+		t.Fatalf("content width growth should force relayout, got %q", renderer.lastFrameMode)
 	}
 	if renderer.lastLayoutCount == 0 {
 		t.Fatal("expected layout work after intrinsic width changed")
@@ -337,8 +337,8 @@ func TestRenderer_SignalTextAutoWidthPromotesLayoutWhenWidthChanges(t *testing.T
 	content.Set("wider")
 	renderer.Update(widget)
 
-	if renderer.lastFrameMode != rendererFrameFull {
-		t.Fatalf("expected full render after SignalText width growth, got %q", renderer.lastFrameMode)
+	if renderer.lastFrameMode != rendererFrameReflow {
+		t.Fatalf("expected relayout after SignalText width growth, got %q", renderer.lastFrameMode)
 	}
 	if renderer.lastLayoutCount == 0 {
 		t.Fatal("expected layout work after SignalText intrinsic width changed")

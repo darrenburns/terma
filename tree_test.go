@@ -1,9 +1,11 @@
 package terma
 
 import (
+	"strings"
 	"testing"
 
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/stretchr/testify/require"
 )
 
 func sampleTreeNodes() []TreeNode[string] {
@@ -274,4 +276,26 @@ func TestTreeOnMouseDownOutsideIndicatorDoesNotToggleExpansion(t *testing.T) {
 	if !state.IsCollapsed([]int{0}) {
 		t.Fatalf("expected node [0] to remain collapsed when clicking outside indicator")
 	}
+}
+
+// A Tree inside a Scrollable with no width sizes itself to its rows, as a List
+// does, instead of collapsing to the width of the row prefixes.
+func TestTreeInAutoWidthScrollableShowsNodes(t *testing.T) {
+	roots := []TreeNode[string]{
+		{Data: "Fruits", Children: []TreeNode[string]{{Data: "Apple"}, {Data: "Banana"}}},
+		{Data: "Vegetables"},
+	}
+	widget := Column{Children: []Widget{
+		Scrollable{ID: "scroll", State: NewScrollState(), Height: Cells(3), Child: Tree[string]{ID: "tree", State: NewTreeState(roots)}},
+	}}
+	buf := RenderToBuffer(widget, 30, 3)
+	var screen strings.Builder
+	for y := 0; y < 3; y++ {
+		for x := 0; x < 30; x++ {
+			screen.WriteString(buf.CellAt(x, y).Content)
+		}
+		screen.WriteString("\n")
+	}
+	require.Contains(t, screen.String(), "Fruits")
+	require.Contains(t, screen.String(), "Apple")
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
 	uv "github.com/charmbracelet/ultraviolet"
@@ -27,6 +28,21 @@ var appRenderer *Renderer
 // renderTrigger signals the event loop to re-render when a signal changes.
 // Buffered with size 1 to avoid blocking signal setters.
 var renderTrigger chan struct{}
+var renderTriggerMu sync.RWMutex
+
+func currentRenderTrigger() chan struct{} {
+	renderTriggerMu.RLock()
+	defer renderTriggerMu.RUnlock()
+	return renderTrigger
+}
+
+func swapRenderTrigger(next chan struct{}) chan struct{} {
+	renderTriggerMu.Lock()
+	defer renderTriggerMu.Unlock()
+	previous := renderTrigger
+	renderTrigger = next
+	return previous
+}
 
 const (
 	clickChainTimeout = 500 * time.Millisecond
@@ -312,7 +328,7 @@ func Run(root Widget) (runErr error) {
 	currentController = animController
 
 	// Create render trigger channel for signal-driven re-renders
-	renderTrigger = make(chan struct{}, 1)
+	swapRenderTrigger(make(chan struct{}, 1))
 
 	// Track event loop goroutine so we can wait for it during shutdown.
 	eventLoopDone := make(chan struct{})
@@ -339,7 +355,7 @@ func Run(root Widget) (runErr error) {
 
 		appCancel = nil
 		appRenderer = nil
-		renderTrigger = nil
+		swapRenderTrigger(nil)
 		currentController = nil
 		clearAppRuntimeState()
 		animController.Stop()
@@ -426,6 +442,8 @@ func Run(root Widget) (runErr error) {
 			modeLabel = "partial repaint"
 		case string(rendererFrameFull):
 			modeLabel = "full render"
+		case string(rendererFrameReflow):
+			modeLabel = "relayout + partial repaint"
 		}
 		statsText := fmt.Sprintf(
 			"last frame: %s | rebuilt %d | relaid out %d | repainted %d",
@@ -697,7 +715,7 @@ func Run(root Widget) (runErr error) {
 			select {
 			case <-ctx.Done():
 				return
-			case <-renderTrigger:
+			case <-currentRenderTrigger():
 				requestRender()
 			case <-animController.Tick():
 				animController.Update()

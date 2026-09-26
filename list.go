@@ -15,6 +15,7 @@ type ListState[T any] struct {
 	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
 
 	itemLayouts       []listItemLayout // Cached layout metrics (per item)
+	revealCursor      func()           // Scrolls the cursor into view; set by the List that shows this state
 	viewIndices       []int            // View index -> source index for filtered views
 	viewIndexBySource map[int]int      // Source index -> view index for filtered views
 	cachedMatches     []MatchResult    // Cached match results from filtering
@@ -161,6 +162,7 @@ func (s *ListState[T]) SelectNext() {
 		}
 		return i
 	})
+	s.keepCursorVisible()
 }
 
 // SelectPrevious moves cursor to the previous item.
@@ -171,11 +173,13 @@ func (s *ListState[T]) SelectPrevious() {
 		}
 		return i
 	})
+	s.keepCursorVisible()
 }
 
 // SelectFirst moves cursor to the first item.
 func (s *ListState[T]) SelectFirst() {
 	s.CursorIndex.Set(0)
+	s.keepCursorVisible()
 }
 
 // SelectLast moves cursor to the last item.
@@ -184,6 +188,7 @@ func (s *ListState[T]) SelectLast() {
 	if len(items) > 0 {
 		s.CursorIndex.Set(len(items) - 1)
 	}
+	s.keepCursorVisible()
 }
 
 // SelectIndex sets cursor to a specific index, clamped to valid range.
@@ -191,6 +196,15 @@ func (s *ListState[T]) SelectIndex(index int) {
 	items := s.Items.Peek()
 	clamped := clampInt(index, 0, len(items)-1)
 	s.CursorIndex.Set(clamped)
+	s.keepCursorVisible()
+}
+
+// keepCursorVisible scrolls the cursor into view in the List showing this
+// state, as the list's own keybindings do when they move the cursor.
+func (s *ListState[T]) keepCursorVisible() {
+	if s.revealCursor != nil {
+		s.revealCursor()
+	}
 }
 
 // clampCursor ensures cursor is within valid bounds after items change.
@@ -444,7 +458,7 @@ type List[T any] struct {
 	OnSelect            func(item T)                                                       // Callback invoked when Enter is pressed on an item
 	OnCursorChange      func(item T)                                                       // Callback invoked when cursor moves to a different item
 	ScrollState         *ScrollState                                                       // Optional state for scroll-into-view
-	RenderItem          func(item T, active bool, selected bool) Widget                    // Function to render each item (uses default if nil)
+	RenderItem          func(item T, active bool, selected bool) Widget                    // Function to render each item (uses default if nil). Called per row; on cursor or selection changes only affected rows are re-rendered, so it should be free of side effects.
 	RenderItemWithMatch func(item T, active bool, selected bool, match MatchResult) Widget // Optional render function with match data
 	Filter              *FilterState                                                       // Optional filter state for matching items
 	MatchItem           func(item T, query string, options FilterOptions) MatchResult      // Optional matcher for filtering/highlighting
@@ -575,21 +589,22 @@ func (w defaultListItemWidget[T]) currentStyle() Style {
 	return style
 }
 
-func (w defaultListItemWidget[T]) paintPrefix(ctx *RenderContext) string {
-	cursorIdx := 0
+// paintState reports whether this row shows the cursor or selection. It
+// subscribes only to changes in this row's answers, so moving the cursor
+// repaints just the rows it leaves and enters.
+func (w defaultListItemWidget[T]) paintState(ctx *RenderContext) (showCursor, selected bool) {
+	active := w.sourceIdx == 0
 	if w.list.State != nil {
-		cursorIdx = w.list.State.CursorIndex.Get()
-	}
-
-	selected := false
-	if w.list.MultiSelect && w.list.State != nil {
-		if selection := w.list.State.Selection.Get(); selection != nil {
-			_, selected = selection[w.sourceIdx]
+		active = Select(w.list.State.CursorIndex, func(cursor int) bool { return cursor == w.sourceIdx })
+		if w.list.MultiSelect {
+			selected = w.list.selectedSelect(w.sourceIdx)
 		}
 	}
+	return active && ctx.IsFocusedID(w.focusID), selected
+}
 
-	focused := ctx.IsFocusedID(w.focusID)
-	showCursor := w.sourceIdx == cursorIdx && focused
+func (w defaultListItemWidget[T]) paintPrefix(ctx *RenderContext) string {
+	showCursor, selected := w.paintState(ctx)
 	if showCursor {
 		return w.list.CursorPrefix
 	}
@@ -600,20 +615,7 @@ func (w defaultListItemWidget[T]) paintPrefix(ctx *RenderContext) string {
 }
 
 func (w defaultListItemWidget[T]) paintStyle(ctx *RenderContext) Style {
-	cursorIdx := 0
-	if w.list.State != nil {
-		cursorIdx = w.list.State.CursorIndex.Get()
-	}
-
-	selected := false
-	if w.list.MultiSelect && w.list.State != nil {
-		if selection := w.list.State.Selection.Get(); selection != nil {
-			_, selected = selection[w.sourceIdx]
-		}
-	}
-
-	focused := ctx.IsFocusedID(w.focusID)
-	showCursor := w.sourceIdx == cursorIdx && focused
+	showCursor, selected := w.paintState(ctx)
 	style := Style{ForegroundColor: w.theme.Text, Width: Flex(1)}
 	if showCursor {
 		style.BackgroundColor = w.theme.ActiveCursor
@@ -762,6 +764,9 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 
 	// Register scroll callbacks for mouse wheel support
 	l.registerScrollCallbacks()
+	// Let cursor moves made through the state (for example from app code)
+	// scroll the cursor into view in this list.
+	l.State.revealCursor = l.scrollCursorIntoView
 
 	// Use default render function if none provided
 	renderItem := l.RenderItem
@@ -811,39 +816,32 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 		}
 	}
 
-	// Get cursor position (subscribes to changes)
-	cursorIdx := l.State.CursorIndex.Get()
-
-	// Get selection state (subscribes to changes)
-	var Selection map[int]struct{}
-	if l.MultiSelect {
-		Selection = l.State.Selection.Get()
-	}
-
-	// Clamp cursor for rendering only; interaction handlers normalize state.
-	cursorIdx = clampInt(cursorIdx, 0, len(items)-1)
-	if _, ok := l.State.viewIndexForSource(cursorIdx); !ok {
-		cursorIdx = filtered.Indices[0]
-	}
-
 	if renderItemWithMatch == nil && renderItem == nil {
 		renderItemWithMatch = l.themedDefaultRenderItem(ctx)
 	}
+	if renderItemWithMatch == nil {
+		renderItemWithMatch = func(item T, active, selected bool, _ MatchResult) Widget {
+			return renderItem(item, active, selected)
+		}
+	}
 
-	// Build children
+	// Each row reads the cursor and selection in its own Build, so moving the
+	// cursor rebuilds only the rows it leaves and enters.
+	firstSource := filtered.Indices[0]
 	children := make([]Widget, len(filtered.Items))
 	for viewIdx, item := range filtered.Items {
-		sourceIdx := filtered.Indices[viewIdx]
-		_, selected := Selection[sourceIdx]
-		active := sourceIdx == cursorIdx
 		match := MatchResult{}
 		if len(filtered.Matches) > 0 {
 			match = filtered.Matches[viewIdx]
 		}
-		if renderItemWithMatch != nil {
-			children[viewIdx] = renderItemWithMatch(item, active, selected, match)
-		} else {
-			children[viewIdx] = renderItem(item, active, selected)
+		children[viewIdx] = &listRow[T]{
+			list:        l,
+			item:        item,
+			sourceIdx:   filtered.Indices[viewIdx],
+			match:       match,
+			itemCount:   len(items),
+			firstSource: firstSource,
+			render:      renderItemWithMatch,
 		}
 	}
 
@@ -866,6 +864,57 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 		},
 		list: l,
 	}
+}
+
+// listRow renders one row of a List with a custom RenderItem.
+type listRow[T any] struct {
+	list        List[T]
+	item        T
+	sourceIdx   int
+	match       MatchResult
+	itemCount   int
+	firstSource int
+	render      func(item T, active, selected bool, match MatchResult) Widget
+	child       Widget
+}
+
+func (r *listRow[T]) Build(BuildContext) Widget {
+	l := r.list
+	active := Select(l.State.CursorIndex, func(cursor int) bool {
+		return l.renderedCursor(cursor, r.itemCount, r.firstSource) == r.sourceIdx
+	})
+	selected := l.MultiSelect && l.selectedSelect(r.sourceIdx)
+	// Keep the rendered item a child so its own Build still runs.
+	r.child = r.render(r.item, active, selected, r.match)
+	return passThrough{child: r.child}
+}
+
+// The parent Column queries its source children for flex/percent dimensions.
+// Keep the rendered child on this shared row so layout sees its latest size,
+// including after a row rebuild beneath a clean Column, without rendering again.
+func (r *listRow[T]) GetContentDimensions() (width, height Dimension) {
+	dims := GetWidgetDimensionSet(r.child)
+	return dims.Width, dims.Height
+}
+
+// renderedCursor is the source index that shows the cursor: the stored cursor,
+// clamped to the items, or the first visible item if it is filtered out.
+// Interaction handlers normalize the stored cursor itself.
+func (l List[T]) renderedCursor(cursor, itemCount, firstSource int) int {
+	cursor = clampInt(cursor, 0, itemCount-1)
+	if _, ok := l.State.viewIndexForSource(cursor); !ok {
+		return firstSource
+	}
+	return cursor
+}
+
+// selectedSelect reports whether sourceIdx is selected, subscribing only to
+// changes in that answer.
+func (l List[T]) selectedSelect(sourceIdx int) bool {
+	return SelectAny(l.State.Selection, func(selection map[int]struct{}) bool {
+		_, ok := selection[sourceIdx]
+		return ok
+	})
 }
 
 // themedDefaultRenderItem returns a themed render function for list items.

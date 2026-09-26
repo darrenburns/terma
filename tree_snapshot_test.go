@@ -50,3 +50,15 @@ func TestSnapshot_Tree_Filter(t *testing.T) {
 	}
 	AssertSnapshot(t, widget, 40, 6, "Filtered view showing Project -> cmd -> main.go with ancestors dimmed and match highlighted")
 }
+
+func TestSnapshot_Tree_InAutoWidthScrollable(t *testing.T) {
+	roots := []TreeNode[string]{
+		{Data: "Fruits", Children: []TreeNode[string]{{Data: "Apple"}, {Data: "Banana"}, {Data: "Cherry"}}},
+		{Data: "Vegetables", Children: []TreeNode[string]{{Data: "Carrot"}}},
+	}
+	widget := Column{Children: []Widget{
+		Text{Content: "Scrollable with no width set:"},
+		Scrollable{ID: "scroll", State: NewScrollState(), Height: Cells(5), Child: Tree[string]{ID: "tree", State: NewTreeState(roots)}},
+	}}
+	AssertSnapshot(t, widget, 32, 6, "Tree sizes to its widest row inside an auto-width Scrollable, with a scrollbar beside it")
+}

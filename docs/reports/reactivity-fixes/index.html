@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terma reactivity fixes — before and after</title>
+<style>
+  :root { color-scheme: light; font-family: system-ui, sans-serif; color: #172334; background: #f3f5f8; }
+  body { max-width: 1150px; margin: 0 auto; padding: 36px 24px 56px; line-height: 1.55; }
+  h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: -.6px; }
+  h2 { margin: 0 0 8px; font-size: 21px; }
+  p { margin: 8px 0 16px; }
+  section { margin-top: 24px; padding: 24px; border: 1px solid #dae1e9; border-radius: 12px; background: white; }
+  .status { display: inline-block; padding: 5px 11px; color: #16603b; background: #e0f4e8; border-radius: 6px; font-weight: 650; }
+  .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  figure { margin: 0; }
+  figcaption { margin: 0 0 8px; font-size: 14px; font-weight: 650; }
+  img { display: block; width: 100%; border-radius: 5px; background: black; }
+  .evidence { margin: 16px 0 0; padding: 12px 16px; background: #eef6ff; border-radius: 6px; }
+  code { font-size: .9em; }
+  pre { overflow: auto; padding: 14px; border-radius: 6px; background: #edf0f4; }
+  .note { font-size: 14px; color: #536175; }
+  @media (max-width: 700px) { .comparison { grid-template-columns: 1fr; } body { padding: 20px 12px; } section { padding: 16px; } }
+</style>
+<header>
+  <h1>Terma reactivity: two regressions fixed</h1>
+  <p>26 September 2026 · <code>reactivity-build-isolation</code> · Before: <code>3f4f5fc</code> · After: fixes in the working tree</p>
+  <span class="status">Regression tests and full Go test suite pass</span>
+</header>
+<section>
+  <h2>1. Custom list rows keep their declared height</h2>
+  <p>Two custom rows with <code>Height: Flex(1)</code> share a ten-line list. The row wrapper now exposes its latest rendered child's dimensions to the parent layout.</p>
+  <div class="comparison">
+    <figure><figcaption>Before — one line per row, eight lines unused</figcaption><img src="list-before.png" alt="Before: thin blue and purple list rows occupy one line each, followed by unused space."></figure>
+    <figure><figcaption>After — five lines per row, all ten lines used</figcaption><img src="list-after.png" alt="After: blue and purple list rows each occupy five lines."></figure>
+  </div>
+  <p class="evidence"><strong>Checked:</strong> equal flex and percentage heights; cursor-dependent heights changing from 7/3 to 3/7. Cursor movement still rebuilds only the affected rows and their children (at most four builds).</p>
+</section>
+<section>
+  <h2>2. Modal backdrop changes repaint the entire screen</h2>
+  <p>Both captures below follow the same <code>Ctrl+B</code> action: change an open modal's backdrop from 50% black to 50% red. Backdrop changes now trigger a full repaint because their effect extends beyond the modal's bounds.</p>
+  <div class="comparison">
+    <figure><figcaption>Before — the backdrop stays gray after Ctrl+B</figcaption><img src="backdrop-before.png" alt="Before: the modal stays open over a stale gray backdrop after requesting red."></figure>
+    <figure><figcaption>After — the whole backdrop turns red</figcaption><img src="backdrop-after.png" alt="After: the same modal stays open over a red backdrop covering the whole screen."></figure>
+  </div>
+  <p class="evidence"><strong>Checked:</strong> the minimal 20×10 reproduction went from <strong>195 mismatched cells to zero</strong> against an independent full render. Tests also cover transparent and theme-default backdrops, and a nested overlay.</p>
+</section>
+<section>
+  <h2>Evidence and reproduction</h2>
+  <p class="note">These are real terminal-screen captures from the same demo in isolated 48×14 tmux sessions. The existing capture script saved ANSI screen contents and rendered them to PNG; they are not Ghostty window screenshots. The before binary was built before applying the fixes. Both versions use identical demo code, terminal dimensions, and key sequences.</p>
+  <p><code>go test ./...</code> passes. The new tests were run before the fixes and reproduced both failures, then passed after the fixes.</p>
+  <pre><code>go test -run 'TestReactivity(CustomListRowDimensions|ModalBackdropColor)$' -v .
+go build -o /tmp/terma-regressions ./cmd/reactivity-regressions
+scripts/tui-capture.sh -s 48x14 -o snapshot-output/tui/list '/tmp/terma-regressions list'
+scripts/tui-capture.sh -s 48x14 -o snapshot-output/tui/backdrop '/tmp/terma-regressions backdrop' C-b</code></pre>
+  <p class="note">Raw ANSI captures, per-frame SVG comparisons, and before/after test logs are saved locally under <code>snapshot-output/evidence/reactivity-fixes/</code>.</p>
+</section>
+</html>

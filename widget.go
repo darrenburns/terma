@@ -154,15 +154,25 @@ type widgetNode struct {
 	widget      Widget
 	eventWidget Widget
 	children    []*widgetNode
+	floats      []FloatEntry // Registrations produced by this node's last Build.
 
 	buildContext BuildContext
 	autoID       string
 	eventID      string
 	identity     string
 
-	layout        layout.ComputedLayout
-	bounds        Rect
-	subtreeBounds Rect
+	layout       layout.ComputedLayout
+	prevBox      layout.BoxModel    // Box when last measured or painted, to detect box-only changes.
+	layoutReused bool               // Its last layout assignment was skipped as unchanged.
+	registered   []WidgetEntry      // Hit-test entries its subtree recorded when last measured or painted.
+	layoutCache  []layoutCacheEntry // Recent results by constraints, valid while the subtree is clean.
+
+	// Cached layout.SizePreserver answers, valid under the same condition.
+	sizePreserveKnown bool
+	preservesWidth    bool
+	preservesHeight   bool
+	bounds            Rect
+	subtreeBounds     Rect
 
 	dirtySelf    atomic.Int32
 	dirtySubtree atomic.Int32
@@ -362,15 +372,22 @@ func (n *widgetNode) recomputeDirtySubtree() dirtyLevel {
 	return level
 }
 
-func (n *widgetNode) clearDirtyRecursive() {
+// clearDirtyRecursive clears the flags of this node and its descendants and
+// returns how many nodes it visited.
+func (n *widgetNode) clearDirtyRecursive() int {
 	if n == nil {
-		return
+		return 0
 	}
+	visited := 1
 	n.dirtySelf.Store(int32(DirtyNone))
 	for _, child := range n.children {
-		child.clearDirtyRecursive()
+		// A node is only dirty beneath ancestors whose subtree flag is set.
+		if child.subtreeDirtyLevel() != DirtyNone {
+			visited += child.clearDirtyRecursive()
+		}
 	}
 	n.dirtySubtree.Store(int32(DirtyNone))
+	return visited
 }
 
 func dirtyLevelForMask(mask dependencyMask) dirtyLevel {

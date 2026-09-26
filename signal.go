@@ -44,6 +44,7 @@ type signalCore[T comparable] struct {
 	mu        sync.Mutex
 	value     T
 	listeners map[*widgetNode]dependencyMask
+	selectors selectorSet[T]
 }
 
 // Signal holds reactive state that automatically tracks dependencies.
@@ -89,21 +90,10 @@ func (s Signal[T]) Set(value T) {
 		return
 	}
 	s.core.value = value
-
-	// Copy listeners to avoid holding lock during markDirty.
-	type listenerEntry struct {
-		node *widgetNode
-		mask dependencyMask
-	}
-	listeners := make([]listenerEntry, 0, len(s.core.listeners))
-	for listener, mask := range s.core.listeners {
-		listeners = append(listeners, listenerEntry{node: listener, mask: mask})
-	}
+	notification := captureNotification(value, s.core.listeners, &s.core.selectors)
 	s.core.mu.Unlock()
 
-	for _, listener := range listeners {
-		listener.node.markDirtyMask(listener.mask)
-	}
+	notification.deliver()
 	recordRenderCause("Signal.Set", value, s.core, 2)
 	scheduleRender()
 }
@@ -140,20 +130,10 @@ func (s Signal[T]) Update(fn func(T) T) {
 		return
 	}
 	s.core.value = newValue
-
-	type listenerEntry struct {
-		node *widgetNode
-		mask dependencyMask
-	}
-	listeners := make([]listenerEntry, 0, len(s.core.listeners))
-	for listener, mask := range s.core.listeners {
-		listeners = append(listeners, listenerEntry{node: listener, mask: mask})
-	}
+	notification := captureNotification(newValue, s.core.listeners, &s.core.selectors)
 	s.core.mu.Unlock()
 
-	for _, listener := range listeners {
-		listener.node.markDirtyMask(listener.mask)
-	}
+	notification.deliver()
 	recordRenderCause("Signal.Update", newValue, s.core, 2)
 	scheduleRender()
 }
@@ -165,11 +145,13 @@ func (s Signal[T]) unsubscribe(node *widgetNode) {
 	s.core.mu.Lock()
 	defer s.core.mu.Unlock()
 	delete(s.core.listeners, node)
+	delete(s.core.selectors.byNode, node)
 }
 
 func (s *signalCore[T]) removeListener(node *widgetNode, mask dependencyMask) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.selectors.remove(node, mask)
 	current := s.listeners[node]
 	next := current &^ mask
 	if next == 0 {
@@ -191,6 +173,7 @@ type anySignalCore[T any] struct {
 	mu        sync.Mutex
 	value     T
 	listeners map[*widgetNode]dependencyMask
+	selectors selectorSet[T]
 }
 
 // AnySignal holds reactive state for non-comparable types (like interfaces).
@@ -231,20 +214,10 @@ func (s AnySignal[T]) Get() T {
 func (s AnySignal[T]) Set(value T) {
 	s.core.mu.Lock()
 	s.core.value = value
-
-	type listenerEntry struct {
-		node *widgetNode
-		mask dependencyMask
-	}
-	listeners := make([]listenerEntry, 0, len(s.core.listeners))
-	for listener, mask := range s.core.listeners {
-		listeners = append(listeners, listenerEntry{node: listener, mask: mask})
-	}
+	notification := captureNotification(value, s.core.listeners, &s.core.selectors)
 	s.core.mu.Unlock()
 
-	for _, listener := range listeners {
-		listener.node.markDirtyMask(listener.mask)
-	}
+	notification.deliver()
 	recordRenderCause("AnySignal.Set", value, s.core, 2)
 	scheduleRender()
 }
@@ -263,21 +236,12 @@ func (s AnySignal[T]) Peek() T {
 func (s AnySignal[T]) Update(fn func(T) T) {
 	s.core.mu.Lock()
 	s.core.value = fn(s.core.value)
-
-	type listenerEntry struct {
-		node *widgetNode
-		mask dependencyMask
-	}
-	listeners := make([]listenerEntry, 0, len(s.core.listeners))
-	for listener, mask := range s.core.listeners {
-		listeners = append(listeners, listenerEntry{node: listener, mask: mask})
-	}
+	newValue := s.core.value
+	notification := captureNotification(newValue, s.core.listeners, &s.core.selectors)
 	s.core.mu.Unlock()
 
-	for _, listener := range listeners {
-		listener.node.markDirtyMask(listener.mask)
-	}
-	recordRenderCause("AnySignal.Update", s.core.value, s.core, 2)
+	notification.deliver()
+	recordRenderCause("AnySignal.Update", newValue, s.core, 2)
 	scheduleRender()
 }
 
@@ -290,6 +254,7 @@ func (s AnySignal[T]) IsValid() bool {
 func (s *anySignalCore[T]) removeListener(node *widgetNode, mask dependencyMask) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.selectors.remove(node, mask)
 	current := s.listeners[node]
 	next := current &^ mask
 	if next == 0 {
@@ -350,9 +315,9 @@ func recordRenderCause(kind string, value any, core any, skip int) {
 // scheduleRender signals the app to re-render.
 // Non-blocking: drops the signal if one is already pending.
 func scheduleRender() {
-	if renderTrigger != nil {
+	if trigger := currentRenderTrigger(); trigger != nil {
 		select {
-		case renderTrigger <- struct{}{}:
+		case trigger <- struct{}{}:
 		default:
 		}
 	}
