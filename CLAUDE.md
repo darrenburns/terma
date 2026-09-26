@@ -11,10 +11,9 @@ This project is not currently in use by any developers, so maintaining backwards
 ## Build Commands
 
 ```bash
-# Run an example.
-# IMPORTANT: You (Claude) CANNOT run the examples in this way.
-# Where you want to run an example, you should instead provide the user with the command you wish
-# to run, and instructions you want them to follow. The user can supply any required log lines to you.
+# Run an example interactively (for the user).
+# IMPORTANT: You (Claude) cannot run examples this way, because they need an interactive terminal.
+# Drive them through tmux instead (see "Driving real apps with tmux" below).
 go run ./cmd/example/main.go
 go run ./cmd/simple-list-example/main.go
 
@@ -29,9 +28,34 @@ go mod tidy
 
 ## Checking your changes / feedback loop
 
-You cannot run examples, but you can run snapshot tests. This means you can add debug logging,
+You can run snapshot tests. This means you can add debug logging,
 write a snapshot test which will exercise the logic and hit the logs, and then you can read the log file
 yourself.
+
+### Driving real apps with tmux
+
+To check a change in a real app (event loop, key handling, terminal output), build the example and drive
+it headlessly with `scripts/tui-capture.sh`. It runs the binary in a private detached tmux server, sends
+keys, and captures the screen after startup and after each key as `.ansi`, `.svg` and `.png`. Read the
+PNGs to inspect them. Requires `tmux` and `rsvg-convert` (Homebrew: `tmux`, `librsvg`).
+
+```bash
+go build -o /tmp/demo ./cmd/focus-example
+scripts/tui-capture.sh -s 100x30 -o snapshot-output/tui/focus /tmp/demo Tab Tab C-q
+# Keys use tmux send-keys syntax: Tab, Enter, Up, C-b, M-x, or literal text.
+# Pass extra environment with TUI_ENV, e.g. the debug overlay's frame/build/layout counts:
+TUI_ENV=TERMA_DEBUG_OVERLAY=1 scripts/tui-capture.sh /tmp/demo C-b
+```
+
+To compare against the previous behaviour, build the same example from a `git worktree` of `HEAD`
+and capture the same key sequence; `cmp` the `.ansi` files to confirm identical output.
+`cmd/ansi-to-svg` does the ANSI-to-SVG conversion and can be used on any `tmux capture-pane -p -e` output.
+
+### Reactivity sequence tests
+
+`reactivity_sequence_test.go` drives state changes through a persistent renderer and compares every
+incremental frame against a forced full render (cells, focus order, hit targets). Use it for any change
+to invalidation or the retained renderer. `TERMA_REACTIVITY_OUTPUT=<dir>` writes expected/actual/diff SVGs.
 
 ## Snapshot Testing
 
