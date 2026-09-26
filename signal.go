@@ -315,9 +315,9 @@ func recordRenderCause(kind string, value any, core any, skip int) {
 // scheduleRender signals the app to re-render.
 // Non-blocking: drops the signal if one is already pending.
 func scheduleRender() {
-	if renderTrigger != nil {
+	if trigger := currentRenderTrigger(); trigger != nil {
 		select {
-		case renderTrigger <- struct{}{}:
+		case trigger <- struct{}{}:
 		default:
 		}
 	}
