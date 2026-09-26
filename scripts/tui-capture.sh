@@ -33,8 +33,9 @@ converter="$out/.ansi-to-svg"
 
 # A private tmux server keeps the user's sessions untouched. TERM must not start
 # with "tmux" or colour detection ignores COLORTERM and falls back to 256 colours.
+# NO_COLOR is dropped so captures always show the real colours.
 tmux -L "$socket" -f /dev/null new-session -d -s "$session" -x "$width" -y "$height" \
-	"env TERM=xterm-256color COLORTERM=truecolor ${TUI_ENV:-} $bin"
+	"env -u NO_COLOR TERM=xterm-256color COLORTERM=truecolor ${TUI_ENV:-} $bin"
 trap 'tmux -L "$socket" kill-server 2>/dev/null || true' EXIT
 
 capture() {
