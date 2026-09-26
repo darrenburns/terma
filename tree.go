@@ -648,37 +648,22 @@ func (w defaultTreeRowWidget[T]) currentPrefixStyle() Style {
 	return styleForTreeNodeContext(w.theme, w.nodeContext(active, selected), focused)
 }
 
-func (w defaultTreeRowWidget[T]) paintRowPrefix(ctx *RenderContext) string {
-	cursorPath := []int(nil)
+// paintState reports whether this row shows the cursor or selection,
+// subscribing only to changes in those answers.
+func (w defaultTreeRowWidget[T]) paintState(ctx *RenderContext) (active, selected, focused bool) {
 	if w.tree.State != nil {
-		cursorPath = w.tree.State.CursorPath.Get()
+		active, selected = w.tree.rowStateSelect(w.entry.path)
 	}
-	selected := false
-	if w.tree.MultiSelect && w.tree.State != nil {
-		if selection := w.tree.State.Selection.Get(); selection != nil {
-			_, selected = selection[w.tree.State.idForPath(w.entry.path)]
-		}
-	}
+	return active, selected, ctx.IsFocusedID(w.focusID)
+}
 
-	active := pathsEqual(w.entry.path, cursorPath)
-	focused := ctx.IsFocusedID(w.focusID)
+func (w defaultTreeRowWidget[T]) paintRowPrefix(ctx *RenderContext) string {
+	active, selected, focused := w.paintState(ctx)
 	return w.rowPrefix(active, selected, focused)
 }
 
 func (w defaultTreeRowWidget[T]) paintPrefixStyle(ctx *RenderContext) Style {
-	cursorPath := []int(nil)
-	if w.tree.State != nil {
-		cursorPath = w.tree.State.CursorPath.Get()
-	}
-	selected := false
-	if w.tree.MultiSelect && w.tree.State != nil {
-		if selection := w.tree.State.Selection.Get(); selection != nil {
-			_, selected = selection[w.tree.State.idForPath(w.entry.path)]
-		}
-	}
-
-	active := pathsEqual(w.entry.path, cursorPath)
-	focused := ctx.IsFocusedID(w.focusID)
+	active, selected, focused := w.paintState(ctx)
 	return styleForTreeNodeContext(w.theme, w.nodeContext(active, selected), focused)
 }
 
@@ -693,22 +678,72 @@ func (w defaultTreeRowWidget[T]) currentContentStyle() Style {
 }
 
 func (w defaultTreeRowWidget[T]) paintContentStyle(ctx *RenderContext) Style {
-	cursorPath := []int(nil)
-	if w.tree.State != nil {
-		cursorPath = w.tree.State.CursorPath.Get()
-	}
-	selected := false
-	if w.tree.MultiSelect && w.tree.State != nil {
-		if selection := w.tree.State.Selection.Get(); selection != nil {
-			_, selected = selection[w.tree.State.idForPath(w.entry.path)]
-		}
-	}
-
-	active := pathsEqual(w.entry.path, cursorPath)
-	focused := ctx.IsFocusedID(w.focusID)
+	active, selected, focused := w.paintState(ctx)
 	style := styleForTreeNodeContext(w.theme, w.nodeContext(active, selected), focused)
 	style.Width = Flex(1)
 	return style
+}
+
+// rowStateSelect reports whether the row at path is active and selected,
+// subscribing only to changes in those answers.
+func (t Tree[T]) rowStateSelect(path []int) (active, selected bool) {
+	active = SelectAny(t.State.CursorPath, func(cursor []int) bool { return pathsEqual(path, cursor) })
+	if t.MultiSelect {
+		id := t.State.idForPath(path)
+		selected = SelectAny(t.State.Selection, func(selection map[string]struct{}) bool {
+			_, ok := selection[id]
+			return ok
+		})
+	}
+	return active, selected
+}
+
+// treeRow renders one row of a Tree with a custom RenderNode.
+type treeRow[T any] struct {
+	tree           Tree[T]
+	index          int
+	entry          treeViewEntry[T]
+	indentation    string
+	indicator      string
+	showGuideLines bool
+	guideSpanStyle SpanStyle
+	widgetFocused  bool
+	render         func(node T, ctx TreeNodeContext, match MatchResult) Widget
+}
+
+func (r treeRow[T]) Build(ctx BuildContext) Widget {
+	t := r.tree
+	active, selected := t.rowStateSelect(r.entry.path)
+	rowPrefix := ""
+	if active && r.widgetFocused {
+		rowPrefix = t.CursorPrefix
+	} else if selected {
+		rowPrefix = t.SelectedPrefix
+	}
+	nodeCtx := TreeNodeContext{
+		Path:             clonePath(r.entry.path),
+		Depth:            r.entry.depth,
+		Expanded:         r.entry.expanded,
+		Expandable:       r.entry.expandable,
+		Active:           active,
+		Selected:         selected,
+		FilteredAncestor: r.entry.ancestor,
+	}
+	nodeWidget := r.render(r.entry.node.Data, nodeCtx, r.entry.match)
+	if r.index < len(t.State.indicatorLayout) {
+		t.State.indicatorLayout[r.index] = treeIndicatorLayout{
+			x:          ansi.StringWidth(rowPrefix) + ansi.StringWidth(r.indentation),
+			width:      ansi.StringWidth(r.indicator),
+			expandable: r.entry.expandable,
+		}
+	}
+	return Row{
+		Spacing: 0,
+		Children: []Widget{
+			Text{Spans: treePrefixSpans(rowPrefix, r.indentation, r.indicator, r.showGuideLines, r.guideSpanStyle), Style: t.styleForContext(ctx, nodeCtx, r.widgetFocused)},
+			nodeWidget,
+		},
+	}
 }
 
 // WidgetID returns the tree widget's unique identifier.
@@ -980,67 +1015,30 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 		}
 	}
 
-	cursorPath := t.State.CursorPath.Get()
-	cursorPath = t.ensureCursor(viewPaths, cursorPath)
-
-	var selection map[string]struct{}
-	if t.MultiSelect {
-		selection = t.State.Selection.Get()
-	}
+	// Correct an invalid cursor, but rebuild the whole tree only when the
+	// cursor's validity changes; each row tracks its own cursor state.
+	t.ensureCursor(viewPaths, t.State.CursorPath.Peek())
+	SelectAny(t.State.CursorPath, func(path []int) bool {
+		_, ok := t.viewIndexForPath(path)
+		return len(path) > 0 && ok
+	})
 
 	if renderNodeWithMatch == nil && renderNode == nil {
 		renderNodeWithMatch = t.themedDefaultRenderNode(ctx)
 	}
+	if renderNodeWithMatch == nil {
+		renderNodeWithMatch = func(node T, nodeCtx TreeNodeContext, _ MatchResult) Widget {
+			return renderNode(node, nodeCtx)
+		}
+	}
 	widgetFocused := ctx.IsFocused(t)
-	cursorPrefix := t.CursorPrefix
-	selectedPrefix := t.SelectedPrefix
 	for i, entry := range entries {
-		active := pathsEqual(entry.path, cursorPath)
-		selected := false
-		if t.MultiSelect {
-			if _, ok := selection[t.State.idForPath(entry.path)]; ok {
-				selected = true
-			}
-		}
-		showCursor := active && widgetFocused
-		rowPrefix := ""
-		if showCursor {
-			rowPrefix = cursorPrefix
-		} else if selected {
-			rowPrefix = selectedPrefix
-		}
-		nodeCtx := TreeNodeContext{
-			Path:             clonePath(entry.path),
-			Depth:            entry.depth,
-			Expanded:         entry.expanded,
-			Expandable:       entry.expandable,
-			Active:           active,
-			Selected:         selected,
-			FilteredAncestor: entry.ancestor,
-		}
-
-		var nodeWidget Widget
-		if renderNodeWithMatch != nil {
-			nodeWidget = renderNodeWithMatch(entry.node.Data, nodeCtx, entry.match)
-		} else {
-			nodeWidget = renderNode(entry.node.Data, nodeCtx)
-		}
-
 		indentation, indicator := t.prefixPartsForEntry(entry, indent, expandIndicator, collapseIndicator, leafIndicator, showGuideLines, lastSiblingByPath)
-		prefixSpans := treePrefixSpans(rowPrefix, indentation, indicator, showGuideLines, guideSpanStyle)
-		prefixStyle := t.styleForContext(ctx, nodeCtx, widgetFocused)
-		indicatorLayout[i] = treeIndicatorLayout{
-			x:          ansi.StringWidth(rowPrefix) + ansi.StringWidth(indentation),
-			width:      ansi.StringWidth(indicator),
-			expandable: entry.expandable,
-		}
-
-		children[i] = Row{
-			Spacing: 0,
-			Children: []Widget{
-				Text{Spans: prefixSpans, Style: prefixStyle},
-				nodeWidget,
-			},
+		children[i] = treeRow[T]{
+			tree: t, index: i, entry: entry,
+			indentation: indentation, indicator: indicator,
+			showGuideLines: showGuideLines, guideSpanStyle: guideSpanStyle,
+			widgetFocused: widgetFocused, render: renderNodeWithMatch,
 		}
 	}
 	t.State.indicatorLayout = indicatorLayout

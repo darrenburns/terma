@@ -223,6 +223,29 @@ focus traps and floats in tree order.
 
 Paint-only updates no longer depend on tree size.
 
+## Table and tree rows
+
+Tables and trees now use the same approach as lists. Default rows and cells
+read the cursor and selection with `Select`/`SelectAny` while painting. With a
+custom `RenderCell` or `RenderNode`, each cell or row is its own widget that
+selects its state in its own `Build`. In a table's per-cell cursor mode, a cell
+watches the cursor column only while the cursor is in its row, so a horizontal
+move notifies two cells and a vertical move the old and new rows.
+
+Custom list rows and table cells are wrapped in a pass-through widget with no
+layout of its own, so a cell in a row made taller by a neighbour still fills
+the full row height.
+
+[Before](benchmarks/reactivity-table-tree-before.txt) and
+[after](benchmarks/reactivity-table-tree-select.txt), same machine.
+
+| Scenario | Before | After | Builds | Damaged cells |
+| --- | ---: | ---: | ---: | ---: |
+| Table cursor, 1,000 rows, default cells | 3,395 µs | 254 µs | 0 | 2,400 → 120 |
+| Table cursor, 1,000 rows, custom cells | 5,006 µs | 1,708 µs | 3,001 → 12 | 2,400 → 120 |
+| Tree cursor, 1,000 nodes, default rows | 1,314 µs | 147 µs | 0 | 4,800 → 240 |
+| Tree cursor, 1,000 nodes, custom rows | 4,337 µs | 544 µs | 3,001 → 6 | 600 → 30 |
+
 ## Correctness checks
 
 `reactivity_sequence_test.go` drives state changes through a persistent renderer

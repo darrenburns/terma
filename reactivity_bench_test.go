@@ -2,6 +2,7 @@ package terma
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	uv "github.com/charmbracelet/ultraviolet"
@@ -63,6 +64,20 @@ func newReactivityBenchRenderer() *Renderer {
 // listener notification and intrinsic-size checks in Set. Setup, initial render,
 // validation, metrics collection, and disposal are outside the timed loop.
 //
+// renderedCells describes every cell, including its style, so a change that is
+// only a colour (such as a cursor highlight) still counts as visible.
+func renderedCells(r *Renderer) string {
+	var b strings.Builder
+	for y := 0; y < r.height; y++ {
+		for x := 0; x < r.width; x++ {
+			if cell := r.terminal.CellAt(x, y); cell != nil {
+				fmt.Fprintf(&b, "%s%v;", cell.Content, cell.Style)
+			}
+		}
+	}
+	return b.String()
+}
+
 // Scenarios alternate between two visible states. Sample both directions before
 // timing to report representative work without instrumenting every timed frame.
 func benchmarkReactiveUpdates(b *testing.B, renderer *Renderer, root Widget, sets int, mutate func(int)) {
@@ -81,7 +96,7 @@ func benchmarkReactiveUpdates(b *testing.B, renderer *Renderer, root Widget, set
 	renderer.Update(root)
 	var builds, layouts, paints, damageCells, full, partial int
 	for i := 0; i < 2; i++ {
-		before := renderer.ScreenText()
+		before := renderedCells(renderer)
 		beforeFull, beforePartial := renderer.fullRenderCount, renderer.partialRenderCount
 		mutate(i)
 		renderer.Update(root)
@@ -90,7 +105,7 @@ func benchmarkReactiveUpdates(b *testing.B, renderer *Renderer, root Widget, set
 		if fullDelta+partialDelta != 1 {
 			b.Fatal("scenario must produce exactly one frame per update")
 		}
-		if renderer.ScreenText() == before {
+		if renderedCells(renderer) == before {
 			b.Fatal("scenario must change visible output on every update")
 		}
 		builds += renderer.lastBuildCount
@@ -199,6 +214,67 @@ func BenchmarkReactivityListCursor(b *testing.B) {
 						state.SelectPrevious()
 					}
 				})
+			})
+		}
+	}
+}
+
+func BenchmarkReactivityTableCursor(b *testing.B) {
+	for _, count := range []int{100, 1000} {
+		for _, rendering := range []string{"default", "custom"} {
+			b.Run(fmt.Sprintf("rows=%d/%s", count, rendering), func(b *testing.B) {
+				rows := make([][]string, count)
+				for i := range rows {
+					rows[i] = []string{fmt.Sprintf("Row %04d", i), "middle", "last"}
+				}
+				state := NewTableState(rows)
+				table := Table[[]string]{
+					ID: "bench-table", State: state, SelectionMode: TableSelectionRow,
+					// A text prefix makes the cursor visible to the text-only check.
+					CursorStyle: CursorStyle{CursorPrefix: "> "},
+					Columns:     []TableColumn{{Width: Cells(20)}, {Width: Cells(20)}, {Width: Cells(20)}},
+				}
+				if rendering == "custom" {
+					table.RenderCell = func(row []string, _, col int, active, _ bool) Widget {
+						prefix := "  "
+						if active {
+							prefix = "> "
+						}
+						return Text{Content: prefix + row[col]}
+					}
+				}
+				renderer := newReactivityBenchRenderer()
+				renderer.focusManager.focusedID = table.ID
+				renderer.focusedSignal.Set(table)
+				benchmarkReactiveUpdates(b, renderer, table, 1, func(i int) { state.CursorIndex.Set(1 - i%2) })
+			})
+		}
+	}
+}
+
+func BenchmarkReactivityTreeCursor(b *testing.B) {
+	for _, count := range []int{100, 1000} {
+		for _, rendering := range []string{"default", "custom"} {
+			b.Run(fmt.Sprintf("nodes=%d/%s", count, rendering), func(b *testing.B) {
+				roots := make([]TreeNode[string], count)
+				for i := range roots {
+					roots[i] = TreeNode[string]{Data: fmt.Sprintf("Node %04d", i)}
+				}
+				state := NewTreeState(roots)
+				tree := Tree[string]{ID: "bench-tree", State: state, CursorStyle: CursorStyle{CursorPrefix: "> "}}
+				if rendering == "custom" {
+					tree.RenderNode = func(node string, ctx TreeNodeContext) Widget {
+						prefix := "  "
+						if ctx.Active {
+							prefix = "> "
+						}
+						return Text{Content: prefix + node}
+					}
+				}
+				renderer := newReactivityBenchRenderer()
+				renderer.focusManager.focusedID = tree.ID
+				renderer.focusedSignal.Set(tree)
+				benchmarkReactiveUpdates(b, renderer, tree, 1, func(i int) { state.CursorPath.Set([]int{1 - i%2}) })
 			})
 		}
 	}

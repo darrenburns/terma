@@ -571,28 +571,24 @@ func (w defaultTableCellWidget[T]) currentStyle() Style {
 	return tableDefaultCellStyle(w.theme, active, selected, focused)
 }
 
-func (w defaultTableCellWidget[T]) paintPrefix(ctx *RenderContext) string {
-	mode := w.table.selectionMode()
-	cursorRow := 0
-	cursorCol := 0
+// paintState reports whether this cell shows the cursor or selection,
+// subscribing only to changes in those answers.
+func (w defaultTableCellWidget[T]) paintState(ctx *RenderContext) (active, selected, focused bool) {
 	if w.table.State != nil {
-		cursorRow = w.table.State.CursorIndex.Get()
-		cursorCol = w.table.State.CursorColumn.Get()
-	}
-
-	selection := map[int]struct{}{}
-	if w.table.MultiSelect && w.table.State != nil {
-		if current := w.table.State.Selection.Get(); current != nil {
-			selection = current
+		identity := func(i int) int { return i }
+		mode := w.table.selectionMode()
+		active = w.table.cellActiveSelect(mode, w.sourceRow, w.colIndex, identity, identity)
+		if w.table.MultiSelect {
+			selected = w.table.cellSelectedSelect(mode, w.sourceRow, w.colIndex)
 		}
+	} else {
+		active = tableCellActive(w.table.selectionMode(), w.sourceRow, w.colIndex, 0, 0)
 	}
+	return active, selected, ctx.IsFocusedID(w.focusID)
+}
 
-	focused := ctx.IsFocusedID(w.focusID)
-	active := tableCellActive(mode, w.sourceRow, w.colIndex, cursorRow, cursorCol)
-	selected := false
-	if w.table.MultiSelect {
-		selected = tableCellSelected(mode, selection, w.sourceRow, w.colIndex, len(w.table.Columns))
-	}
+func (w defaultTableCellWidget[T]) paintPrefix(ctx *RenderContext) string {
+	active, selected, focused := w.paintState(ctx)
 	showCursor := active && focused
 	if showCursor {
 		return w.table.CursorPrefix
@@ -604,28 +600,34 @@ func (w defaultTableCellWidget[T]) paintPrefix(ctx *RenderContext) string {
 }
 
 func (w defaultTableCellWidget[T]) paintStyle(ctx *RenderContext) Style {
-	mode := w.table.selectionMode()
-	cursorRow := 0
-	cursorCol := 0
-	if w.table.State != nil {
-		cursorRow = w.table.State.CursorIndex.Get()
-		cursorCol = w.table.State.CursorColumn.Get()
-	}
-
-	selection := map[int]struct{}{}
-	if w.table.MultiSelect && w.table.State != nil {
-		if current := w.table.State.Selection.Get(); current != nil {
-			selection = current
-		}
-	}
-
-	focused := ctx.IsFocusedID(w.focusID)
-	active := tableCellActive(mode, w.sourceRow, w.colIndex, cursorRow, cursorCol)
-	selected := false
-	if w.table.MultiSelect {
-		selected = tableCellSelected(mode, selection, w.sourceRow, w.colIndex, len(w.table.Columns))
-	}
+	active, selected, focused := w.paintState(ctx)
 	return tableDefaultCellStyle(w.theme, active, selected, focused)
+}
+
+// cellActiveSelect reports whether a cell shows the cursor, subscribing only
+// to changes in that answer. rowFor and colFor map stored cursor values to the
+// rendered ones. In cursor mode a cell only watches the column while the cursor
+// is in its row, so a horizontal move notifies just two cells.
+func (t Table[T]) cellActiveSelect(mode TableSelectionMode, row, col int, rowFor, colFor func(int) int) bool {
+	inRow := func() bool { return Select(t.State.CursorIndex, func(r int) bool { return rowFor(r) == row }) }
+	inCol := func() bool { return Select(t.State.CursorColumn, func(c int) bool { return colFor(c) == col }) }
+	switch mode {
+	case TableSelectionColumn:
+		return inCol()
+	case TableSelectionCursor:
+		return inRow() && inCol()
+	default:
+		return inRow()
+	}
+}
+
+// cellSelectedSelect reports whether a cell is selected, subscribing only to
+// changes in that answer.
+func (t Table[T]) cellSelectedSelect(mode TableSelectionMode, row, col int) bool {
+	columnCount := len(t.Columns)
+	return SelectAny(t.State.Selection, func(selection map[int]struct{}) bool {
+		return tableCellSelected(mode, selection, row, col, columnCount)
+	})
 }
 
 // WidgetID returns the table's unique identifier.
@@ -782,49 +784,41 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 		renderCellWithMatch = t.themedDefaultRenderCell(ctx)
 	}
 
-	cursorRow := 0
-	cursorCol := 0
-	selection := map[int]struct{}{}
-	if len(viewRows) > 0 {
-		cursorRow = t.State.CursorIndex.Get()
-		cursorCol = t.State.CursorColumn.Get()
-		if t.MultiSelect {
-			selection = t.State.Selection.Get()
-		}
-
-		if len(rows) > 0 {
-			cursorRow = clampInt(cursorRow, 0, len(rows)-1)
-		}
-
-		cursorCol = clampInt(cursorCol, 0, columnCount-1)
-
-		if _, ok := t.State.viewIndexForSource(cursorRow); !ok {
-			cursorRow = viewIndices[0]
+	if renderCellWithMatch == nil {
+		renderCellWithMatch = func(row T, rowIndex, colIndex int, active, selected bool, _ MatchResult) Widget {
+			return renderCell(row, rowIndex, colIndex, active, selected)
 		}
 	}
 
+	// Cells read the cursor and selection in their own Build, so moving the
+	// cursor rebuilds only the cells whose state changes. The rendered cursor
+	// is clamped to the rows and columns, and falls back to the first visible
+	// row when the stored row is filtered out.
+	rowCount, firstRow := len(rows), 0
+	if len(viewIndices) > 0 {
+		firstRow = viewIndices[0]
+	}
+	rowFor := func(r int) int {
+		if rowCount > 0 {
+			r = clampInt(r, 0, rowCount-1)
+		}
+		if _, ok := t.State.viewIndexForSource(r); !ok {
+			return firstRow
+		}
+		return r
+	}
+	colFor := func(c int) int { return clampInt(c, 0, columnCount-1) }
 	for viewRowIdx, row := range viewRows {
 		sourceRowIdx := viewIndices[viewRowIdx]
 		for colIdx := 0; colIdx < columnCount; colIdx++ {
-			active := tableCellActive(mode, sourceRowIdx, colIdx, cursorRow, cursorCol)
-			selected := false
-			if t.MultiSelect {
-				selected = tableCellSelected(mode, selection, sourceRowIdx, colIdx, columnCount)
-			}
 			match := MatchResult{}
 			if len(viewMatches) > 0 {
 				match = viewMatches[viewRowIdx][colIdx]
 			}
-			var cell Widget
-			if renderCellWithMatch != nil {
-				cell = renderCellWithMatch(row, sourceRowIdx, colIdx, active, selected, match)
-			} else {
-				cell = renderCell(row, sourceRowIdx, colIdx, active, selected)
-			}
-			if cell == nil {
-				cell = Text{}
-			}
-			children = append(children, cell)
+			children = append(children, tableCell[T]{
+				table: t, mode: mode, row: row, sourceRow: sourceRowIdx, col: colIdx,
+				match: match, rowFor: rowFor, colFor: colFor, render: renderCellWithMatch,
+			})
 		}
 	}
 
@@ -835,6 +829,28 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 		columnCount: columnCount,
 		headerRows:  headerRows,
 	}
+}
+
+// tableCell renders one cell of a Table with a custom RenderCell.
+type tableCell[T any] struct {
+	table          Table[T]
+	mode           TableSelectionMode
+	row            T
+	sourceRow, col int
+	match          MatchResult
+	rowFor, colFor func(int) int
+	render         func(row T, rowIndex, colIndex int, active, selected bool, match MatchResult) Widget
+}
+
+func (c tableCell[T]) Build(BuildContext) Widget {
+	active := c.table.cellActiveSelect(c.mode, c.sourceRow, c.col, c.rowFor, c.colFor)
+	selected := c.table.MultiSelect && c.table.cellSelectedSelect(c.mode, c.sourceRow, c.col)
+	cell := c.render(c.row, c.sourceRow, c.col, active, selected, c.match)
+	if cell == nil {
+		cell = Text{}
+	}
+	// Keep the rendered cell a child so its own Build still runs.
+	return passThrough{child: cell}
 }
 
 // themedDefaultRenderCell returns a themed render function for table cells.

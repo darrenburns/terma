@@ -2,6 +2,7 @@ package terma
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -118,12 +119,17 @@ func (s *reactivitySequence[T]) frame(name string, change func(T)) RenderStats {
 		change(s.actual.root)
 		change(s.expected.root)
 	}
+	framesBefore := s.actual.renderer.fullRenderCount + s.actual.renderer.partialRenderCount
 	s.actual.draw(false)
 	s.expected.draw(true)
 	width, height := s.actual.buffer.Width(), s.actual.buffer.Height()
 	stats := CompareBuffers(s.expected.buffer, s.actual.buffer, width, height)
 	opts := DefaultSVGOptions()
 	work := s.actual.renderer.Stats()
+	if s.actual.renderer.fullRenderCount+s.actual.renderer.partialRenderCount == framesBefore {
+		// Nothing was dirty, so no frame ran; Stats still describes the last one.
+		work = RenderStats{}
+	}
 	s.frames = append(s.frames, SnapshotComparison{
 		Name: name, Passed: stats.MismatchedCells == 0, Stats: stats,
 		Description: fmt.Sprintf("Incremental: %s, builds=%d, layouts=%d, paints=%d. Expected: forced full render.", work.FrameMode, work.BuildCount, work.LayoutCount, work.PaintCount),
@@ -445,13 +451,7 @@ func TestReactivityListCursorAndScroll(t *testing.T) {
 				work := sequence.frame(fmt.Sprintf("Cursor down %d", i+1), func(s *reactivityListScene) { s.list().keyCursorDown() })
 				if i == 0 {
 					// Within the viewport, only the old and new cursor rows change.
-					rows := map[int]bool{}
-					for _, rect := range work.DamagedRects {
-						for y := rect.Y; y < rect.Y+rect.Height; y++ {
-							rows[y] = true
-						}
-					}
-					require.LessOrEqual(t, len(rows), 2, "damage covers at most the two affected rows: %v", work.DamagedRects)
+					require.LessOrEqual(t, damagedRows(work), 2, "damage covers at most the two affected rows: %v", work.DamagedRects)
 					if custom {
 						require.LessOrEqual(t, work.BuildCount, 4, "only the two affected rows rebuild")
 					} else {
@@ -864,7 +864,9 @@ type reactivityCollapseScene struct {
 	state *TreeState[string]
 }
 
-func (s *reactivityCollapseScene) tree() Tree[string] { return Tree[string]{ID: "tree", State: s.state} }
+func (s *reactivityCollapseScene) tree() Tree[string] {
+	return Tree[string]{ID: "tree", State: s.state}
+}
 
 // The tree is a child: a widget returned directly from Build isn't built.
 func (s *reactivityCollapseScene) Build(BuildContext) Widget {
@@ -889,4 +891,192 @@ func TestReactivityTreeCollapseAndExpand(t *testing.T) {
 	sequence.frame("Down to beta", func(s *reactivityCollapseScene) { s.tree().keyCursorDown() })
 	sequence.frame("Collapse beta", func(s *reactivityCollapseScene) { s.tree().collapseOrMoveToParent() })
 	sequence.frame("Toggle beta", func(s *reactivityCollapseScene) { s.tree().toggleExpansion() })
+}
+
+// damagedRows counts distinct screen rows touched by a frame's damage. A full
+// frame repaints everything and records no rectangles.
+func damagedRows(work RenderStats) int {
+	if work.FrameMode == string(rendererFrameFull) {
+		return math.MaxInt
+	}
+	rows := map[int]bool{}
+	for _, rect := range work.DamagedRects {
+		for y := rect.Y; y < rect.Y+rect.Height; y++ {
+			rows[y] = true
+		}
+	}
+	return len(rows)
+}
+
+type reactivityTableScene struct {
+	state  *TableState[[]string]
+	mode   TableSelectionMode
+	custom bool
+	header Signal[string]
+}
+
+func (s *reactivityTableScene) table() Table[[]string] {
+	cols := []TableColumn{{Width: Cells(6)}, {Width: Cells(6)}, {Width: Cells(6)}}
+	table := Table[[]string]{ID: "table", State: s.state, Columns: cols, SelectionMode: s.mode, MultiSelect: true}
+	if s.custom {
+		table.RenderCell = func(row []string, rowIndex, colIndex int, active, selected bool) Widget {
+			marker := " "
+			if active {
+				marker = ">"
+			} else if selected {
+				marker = "*"
+			}
+			return Text{Content: marker + row[colIndex]}
+		}
+	}
+	return table
+}
+
+func (s *reactivityTableScene) Build(BuildContext) Widget {
+	return Column{Children: []Widget{
+		reactivityBuilder{ID: "header", build: func(BuildContext) Widget { return Text{Content: s.header.Get()} }},
+		s.table(),
+	}}
+}
+
+func TestReactivityTableCursorAndSelection(t *testing.T) {
+	modes := map[string]TableSelectionMode{"cursor": TableSelectionCursor, "row": TableSelectionRow, "column": TableSelectionColumn}
+	for name, mode := range modes {
+		for _, custom := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/custom=%v", name, custom), func(t *testing.T) {
+				sequence := newReactivitySequence(t, 24, 9, func() *reactivityTableScene {
+					rows := make([][]string, 6)
+					for i := range rows {
+						rows[i] = []string{fmt.Sprintf("a%d", i), fmt.Sprintf("b%d", i), fmt.Sprintf("c%d", i)}
+					}
+					return &reactivityTableScene{state: NewTableState(rows), mode: mode, custom: custom, header: NewSignal("table")}
+				})
+				sequence.frame("Initial", nil)
+				sequence.focus("table")
+				sequence.frame("Focus table", nil)
+
+				down := sequence.frame("Cursor down", func(s *reactivityTableScene) { s.table().keyCursorDown() })
+				right := sequence.frame("Cursor right", func(s *reactivityTableScene) { s.table().keyCursorRight() })
+				switch mode {
+				case TableSelectionCursor, TableSelectionRow:
+					require.LessOrEqual(t, damagedRows(down), 2, "a vertical move repaints the two affected rows")
+				}
+				if mode == TableSelectionCursor {
+					require.LessOrEqual(t, damagedRows(right), 1, "a horizontal cell move repaints one row")
+				}
+				if custom {
+					// Cells watch their row first, so a vertical move in cursor mode
+					// rebuilds the old and new rows' cells (each a wrapper and a
+					// child), and a horizontal move just the two cells.
+					limits := map[TableSelectionMode]int{TableSelectionCursor: 12, TableSelectionRow: 12, TableSelectionColumn: 0}
+					require.LessOrEqual(t, down.BuildCount, limits[mode], "only affected cells rebuild on a vertical move")
+					if mode == TableSelectionCursor {
+						require.LessOrEqual(t, right.BuildCount, 4, "only the two affected cells rebuild on a horizontal move")
+					}
+				} else {
+					require.Zero(t, down.BuildCount)
+					require.Zero(t, right.BuildCount)
+				}
+
+				sequence.frame("Extend selection", func(s *reactivityTableScene) {
+					switch s.mode {
+					case TableSelectionRow:
+						s.table().shiftRowDown()
+					case TableSelectionColumn:
+						s.table().shiftColumnRight()
+					default:
+						s.table().shiftCellDown()
+					}
+				})
+				// App code clears the selection without moving the cursor.
+				sequence.frame("Selection cleared directly", func(s *reactivityTableScene) { s.state.ClearSelection() })
+				sequence.frame("Plain move", func(s *reactivityTableScene) { s.table().keyCursorUp() })
+				sequence.frame("Unrelated header change", func(s *reactivityTableScene) { s.header.Set("changed") })
+				sequence.frame("Cursor to last", func(s *reactivityTableScene) { s.table().keyCursorToLast() })
+			})
+		}
+	}
+}
+
+type reactivityTreeScene struct {
+	state  *TreeState[string]
+	custom bool
+}
+
+func (s *reactivityTreeScene) tree() Tree[string] {
+	tree := Tree[string]{ID: "tree", State: s.state, MultiSelect: true}
+	if s.custom {
+		tree.RenderNode = func(node string, ctx TreeNodeContext) Widget {
+			marker := " "
+			if ctx.Active {
+				marker = ">"
+			} else if ctx.Selected {
+				marker = "*"
+			}
+			return Text{Content: marker + node}
+		}
+	}
+	return tree
+}
+
+// The tree is a child: a widget returned directly from Build isn't built.
+func (s *reactivityTreeScene) Build(BuildContext) Widget { return Column{Children: []Widget{s.tree()}} }
+
+func TestReactivityTreeCursorAndSelection(t *testing.T) {
+	for _, custom := range []bool{false, true} {
+		t.Run(fmt.Sprintf("custom=%v", custom), func(t *testing.T) {
+			sequence := newReactivitySequence(t, 24, 9, func() *reactivityTreeScene {
+				roots := []TreeNode[string]{
+					{Data: "alpha", Children: []TreeNode[string]{{Data: "a1"}, {Data: "a2"}}},
+					{Data: "beta", Children: []TreeNode[string]{{Data: "b1"}}},
+					{Data: "gamma"},
+					{Data: "delta"},
+				}
+				return &reactivityTreeScene{state: NewTreeState(roots), custom: custom}
+			})
+			sequence.frame("Initial", nil)
+			sequence.focus("tree")
+			sequence.frame("Focus tree", nil)
+			down := sequence.frame("Cursor down", func(s *reactivityTreeScene) { s.tree().keyCursorDown() })
+			require.LessOrEqual(t, damagedRows(down), 2, "a move repaints the two affected rows")
+			if custom {
+				require.LessOrEqual(t, down.BuildCount, 6, "only the two affected rows rebuild (row, prefix, node)")
+			} else {
+				require.Zero(t, down.BuildCount)
+			}
+			sequence.frame("Cursor up", func(s *reactivityTreeScene) { s.tree().keyCursorUp() })
+			sequence.frame("Expand alpha", func(s *reactivityTreeScene) { s.tree().expandOrMoveToChild() })
+			sequence.frame("Into child", func(s *reactivityTreeScene) { s.tree().expandOrMoveToChild() })
+			sequence.frame("Extend selection", func(s *reactivityTreeScene) { s.tree().shiftCursorDown() })
+			sequence.frame("Extend again", func(s *reactivityTreeScene) { s.tree().shiftCursorDown() })
+			sequence.frame("Back to parent", func(s *reactivityTreeScene) { s.tree().collapseOrMoveToParent() })
+			sequence.frame("Collapse", func(s *reactivityTreeScene) { s.tree().collapseOrMoveToParent() })
+			sequence.frame("Cursor to last", func(s *reactivityTreeScene) { s.tree().keyCursorToLast() })
+			// App code points the cursor at a hidden node; a custom-rendered tree
+			// corrects it to the first visible row.
+			// beta is collapsed by now, so its child is hidden.
+			sequence.frame("Cursor set to hidden node", func(s *reactivityTreeScene) { s.state.CursorPath.Set([]int{1, 0}) })
+		})
+	}
+}
+
+// A custom cell in a row made taller by a wrapping neighbour must still fill
+// the whole row height, so a background (such as a highlight) covers it.
+func TestTableCustomCellFillsTallRow(t *testing.T) {
+	state := NewTableState([][]string{{"short", "this note wraps onto a second line"}})
+	table := Table[[]string]{
+		ID: "table", State: state,
+		Columns: []TableColumn{{Width: Cells(8)}, {Width: Cells(16)}},
+		RenderCell: func(row []string, _, col int, _, _ bool) Widget {
+			if col == 1 {
+				return Text{Content: row[col], Wrap: WrapSoft}
+			}
+			return Text{Content: row[col], Style: Style{BackgroundColor: RGB(200, 0, 0)}}
+		},
+	}
+	buf := RenderToBuffer(Column{Children: []Widget{table}}, 30, 4)
+	for y := 0; y < 2; y++ {
+		cell := buf.CellAt(2, y)
+		require.NotNil(t, cell.Style.Bg, "first column, line %d: the highlighted cell must fill the row", y)
+	}
 }

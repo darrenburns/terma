@@ -867,10 +867,7 @@ func (r listRow[T]) Build(BuildContext) Widget {
 	})
 	selected := l.MultiSelect && l.selectedSelect(r.sourceIdx)
 	// Keep the rendered item a child so its own Build still runs.
-	return Column{
-		CrossAlign: CrossAxisStretch,
-		Children:   []Widget{r.render(r.item, active, selected, r.match)},
-	}
+	return passThrough{child: r.render(r.item, active, selected, r.match)}
 }
 
 // renderedCursor is the source index that shows the cursor: the stored cursor,
