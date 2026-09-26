@@ -446,11 +446,9 @@ func TestReactivityListCursorAndScroll(t *testing.T) {
 	}
 }
 
-// Known divergence: ListState cursor setters don't know the list's ScrollState,
-// so a programmatic move past the viewport doesn't scroll until an unrelated
-// full frame runs listContainer.OnLayout, which then snaps the list into view.
+// Moving the cursor through ListState from app code keeps it visible, just as
+// the list's own keybindings do.
 func TestReactivityListProgrammaticCursorScrolls(t *testing.T) {
-	t.Skip("known issue: programmatic ListState cursor moves only scroll on the next full layout")
 	sequence := newReactivitySequence(t, 20, 6, func() *reactivityListScene {
 		items := []string{"one", "two", "three", "four", "five", "six", "seven"}
 		return &reactivityListScene{state: NewListState(items), scroll: NewScrollState(), header: NewSignal("list")}
@@ -459,6 +457,13 @@ func TestReactivityListProgrammaticCursorScrolls(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		sequence.frame(fmt.Sprintf("SelectNext %d", i+1), func(s *reactivityListScene) { s.state.SelectNext() })
 	}
+	sequence.frame("SelectFirst jumps above the viewport", func(s *reactivityListScene) { s.state.SelectFirst() })
+	sequence.frame("SelectLast jumps below it", func(s *reactivityListScene) { s.state.SelectLast() })
+	for i := 0; i < 5; i++ {
+		sequence.frame(fmt.Sprintf("SelectPrevious %d", i+1), func(s *reactivityListScene) { s.state.SelectPrevious() })
+	}
+	sequence.frame("SelectIndex below the viewport", func(s *reactivityListScene) { s.state.SelectIndex(5) })
+	require.Contains(t, sequence.actual.renderer.ScreenText(), "six", "the selected item is on screen")
 }
 
 type reactivityKeybindScene struct {

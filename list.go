@@ -15,6 +15,7 @@ type ListState[T any] struct {
 	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
 
 	itemLayouts       []listItemLayout // Cached layout metrics (per item)
+	revealCursor      func()           // Scrolls the cursor into view; set by the List that shows this state
 	viewIndices       []int            // View index -> source index for filtered views
 	viewIndexBySource map[int]int      // Source index -> view index for filtered views
 	cachedMatches     []MatchResult    // Cached match results from filtering
@@ -161,6 +162,7 @@ func (s *ListState[T]) SelectNext() {
 		}
 		return i
 	})
+	s.keepCursorVisible()
 }
 
 // SelectPrevious moves cursor to the previous item.
@@ -171,11 +173,13 @@ func (s *ListState[T]) SelectPrevious() {
 		}
 		return i
 	})
+	s.keepCursorVisible()
 }
 
 // SelectFirst moves cursor to the first item.
 func (s *ListState[T]) SelectFirst() {
 	s.CursorIndex.Set(0)
+	s.keepCursorVisible()
 }
 
 // SelectLast moves cursor to the last item.
@@ -184,6 +188,7 @@ func (s *ListState[T]) SelectLast() {
 	if len(items) > 0 {
 		s.CursorIndex.Set(len(items) - 1)
 	}
+	s.keepCursorVisible()
 }
 
 // SelectIndex sets cursor to a specific index, clamped to valid range.
@@ -191,6 +196,15 @@ func (s *ListState[T]) SelectIndex(index int) {
 	items := s.Items.Peek()
 	clamped := clampInt(index, 0, len(items)-1)
 	s.CursorIndex.Set(clamped)
+	s.keepCursorVisible()
+}
+
+// keepCursorVisible scrolls the cursor into view in the List showing this
+// state, as the list's own keybindings do when they move the cursor.
+func (s *ListState[T]) keepCursorVisible() {
+	if s.revealCursor != nil {
+		s.revealCursor()
+	}
 }
 
 // clampCursor ensures cursor is within valid bounds after items change.
@@ -750,6 +764,9 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 
 	// Register scroll callbacks for mouse wheel support
 	l.registerScrollCallbacks()
+	// Let cursor moves made through the state (for example from app code)
+	// scroll the cursor into view in this list.
+	l.State.revealCursor = l.scrollCursorIntoView
 
 	// Use default render function if none provided
 	renderItem := l.RenderItem
