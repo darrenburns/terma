@@ -143,6 +143,9 @@ func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []Focus
 	r.lastBuildCount = 0
 	r.lastLayoutCount = 0
 	r.lastPaintCount = 0
+	r.lastAssignCount = 0
+	r.lastMeasureCount = 0
+	r.lastScanCount = 0
 	r.lastDamagedRects = nil
 
 	r.focusCollector.Reset()
@@ -185,13 +188,17 @@ func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []Focus
 
 	focusables = r.focusCollector.Focusables()
 	r.lastFocusables = focusables
-	r.rootNode.clearDirtyRecursive()
+	r.clearDirtyFlags()
+	return focusables, layoutWidth, layoutHeight
+}
+
+func (r *Renderer) clearDirtyFlags() {
+	r.lastClearCount = r.rootNode.clearDirtyRecursive()
 	for _, floatNode := range r.retainedFloats {
 		if floatNode.root != nil {
-			floatNode.root.clearDirtyRecursive()
+			r.lastClearCount += floatNode.root.clearDirtyRecursive()
 		}
 	}
-	return focusables, layoutWidth, layoutHeight
 }
 
 func (r *Renderer) renderPartial(root Widget) (focusables []FocusableEntry, layoutWidth, layoutHeight int) {
@@ -199,6 +206,7 @@ func (r *Renderer) renderPartial(root Widget) (focusables []FocusableEntry, layo
 		return r.renderFull(root)
 	}
 
+	r.lastScanCount = 0
 	damageRects := r.collectDamageRects()
 	if len(damageRects) == 0 {
 		return r.renderFull(root)
@@ -224,12 +232,7 @@ func (r *Renderer) renderPartial(root Widget) (focusables []FocusableEntry, layo
 		r.paintRetainedFloats(ctx, clipped)
 	}
 
-	r.rootNode.clearDirtyRecursive()
-	for _, floatNode := range r.retainedFloats {
-		if floatNode.root != nil {
-			floatNode.root.clearDirtyRecursive()
-		}
-	}
+	r.clearDirtyFlags()
 
 	return r.lastFocusables, r.lastLayoutWidth, r.lastLayoutHeight
 }
@@ -411,6 +414,14 @@ func (r *Renderer) computeRetainedLayout(node *widgetNode, constraints layout.Co
 	r.assignComputedLayout(node, computed)
 }
 
+// sameChildren reports whether two child layout slices are the same slice.
+func sameChildren(a, b []layout.PositionedChild) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	return len(a) == 0 || &a[0] == &b[0]
+}
+
 // widgetLayoutNode builds the widget's own layout node, with its children
 // adapted as retained layout nodes.
 func (r *Renderer) widgetLayoutNode(node *widgetNode) layout.LayoutNode {
@@ -433,8 +444,15 @@ func (r *Renderer) assignComputedLayout(node *widgetNode, computed layout.Comput
 	if node == nil {
 		return
 	}
-	node.prevBox = node.layout.Box
+	// A clean subtree handed back the very result it was last assigned (a
+	// cache hit returns the same Children slice) has nothing to update.
+	if node.subtreeDirtyLevel() == DirtyNone && computed.Box == node.layout.Box && sameChildren(computed.Children, node.layout.Children) {
+		node.layoutReused = true
+		return
+	}
+	node.layoutReused = false
 	node.layout = computed
+	r.lastAssignCount++
 	if observer, ok := node.widget.(LayoutObserver); ok {
 		withSignalRead(node, readPhaseLayout, func() struct{} {
 			observer.OnLayout(node.buildContext, LayoutMetrics{layout: computed})
@@ -447,7 +465,7 @@ func (r *Renderer) assignComputedLayout(node *widgetNode, computed layout.Comput
 		r.assignComputedLayout(node.children[i], computed.Children[i].Layout)
 	}
 	for i := limit; i < len(node.children); i++ {
-		node.children[i].prevBox = node.children[i].layout.Box
+		node.children[i].layoutReused = false
 		node.children[i].layout = layout.ComputedLayout{}
 		node.children[i].updateIntrinsicCache()
 	}
@@ -493,7 +511,18 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 	}
 
 	if r.geometryOnly {
+		// A clean subtree with the same layout in the same place is exactly as
+		// it was: replay its hit-test entries instead of walking it.
+		if recordRegistry && node.layoutReused && node.subtreeDirtyLevel() == DirtyNone && node.bounds == nodeBounds && node.registered != nil {
+			start := len(r.widgetRegistry.entries)
+			r.widgetRegistry.entries = append(r.widgetRegistry.entries, node.registered...)
+			node.registered = r.registeredSince(start)
+			return node.subtreeBounds
+		}
+
 		// Measure only: record where everything is without drawing.
+		r.lastMeasureCount++
+		registryStart := len(r.widgetRegistry.entries)
 		if recordRegistry {
 			r.recordRegistry(node, nodeBounds)
 		}
@@ -507,6 +536,10 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 			scrollable.State.updateLayout(usableBox.Height, box.VirtualHeight)
 		}
 		r.recordReflowDamage(node, nodeBounds, subtreeBounds)
+		if recordRegistry {
+			node.registered = r.registeredSince(registryStart)
+		}
+		node.prevBox = box
 		node.bounds = nodeBounds
 		node.subtreeBounds = subtreeBounds
 		return subtreeBounds
@@ -597,6 +630,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		})
 	}
 
+	registryStart := len(r.widgetRegistry.entries)
 	if recordRegistry {
 		r.recordRegistry(node, nodeBounds)
 	}
@@ -635,9 +669,22 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		}
 	}
 
+	if recordRegistry {
+		node.registered = r.registeredSince(registryStart)
+	}
+	if !partial {
+		node.prevBox = box
+	}
 	node.bounds = nodeBounds
 	node.subtreeBounds = subtreeBounds
 	return subtreeBounds
+}
+
+// registeredSince returns a capacity-limited view of the hit-test entries
+// recorded since start, so later appends never write through it.
+func (r *Renderer) registeredSince(start int) []WidgetEntry {
+	entries := r.widgetRegistry.entries
+	return entries[start:len(entries):len(entries)]
 }
 
 // forEachChildContext derives each child's clipped/scrolled context exactly as
@@ -895,11 +942,15 @@ func (r *Renderer) collectDamageRects() []Rect {
 		if node == nil {
 			return
 		}
+		r.lastScanCount++
 		if node.dirtyLevel() == DirtyPaint && !node.subtreeBounds.IsEmpty() {
 			rects = append(rects, node.subtreeBounds)
 		}
 		for _, child := range node.children {
-			appendDirty(child)
+			// Dirty nodes only lie beneath ancestors whose subtree flag is set.
+			if child.subtreeDirtyLevel() != DirtyNone {
+				appendDirty(child)
+			}
 		}
 	}
 	appendDirty(r.rootNode)

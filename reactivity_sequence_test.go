@@ -133,6 +133,20 @@ func (s *reactivitySequence[T]) frame(name string, change func(T)) RenderStats {
 	})
 	require.Zero(s.t, stats.MismatchedCells, "%s: incremental output differs from full render:\n%s", name, describeMismatches(s.expected.buffer, s.actual.buffer, width, height))
 	require.Equal(s.t, s.expected.focus.FocusedID(), s.actual.focus.FocusedID(), "%s: focused widget", name)
+	// A node left dirty is invisible in the picture but makes later frames do
+	// more work than needed, so every frame must leave the tree clean.
+	var requireClean func(*widgetNode, string)
+	requireClean = func(node *widgetNode, path string) {
+		if node == nil {
+			return
+		}
+		require.Equal(s.t, DirtyNone, node.dirtyLevel(), "%s: node %s left dirty", name, path)
+		require.Equal(s.t, DirtyNone, node.subtreeDirtyLevel(), "%s: node %s subtree left dirty", name, path)
+		for i, child := range node.children {
+			requireClean(child, fmt.Sprintf("%s/%d", path, i))
+		}
+	}
+	requireClean(s.actual.renderer.rootNode, "root")
 	focusOrder := func(entries []FocusableEntry) []string {
 		result := make([]string, len(entries))
 		for i, entry := range entries {
@@ -710,4 +724,138 @@ func TestReactivityReplacementDuringUnrelatedUpdate(t *testing.T) {
 		s.child.id, s.child.content = "b", "much wider text"
 		s.other.Set("two")
 	})
+}
+
+type reactivityWideScene struct {
+	value Signal[string]
+	paint Signal[string]
+}
+
+// Ten rows of ten leaves, one build-read leaf and one paint-read leaf.
+func (s *reactivityWideScene) Build(BuildContext) Widget {
+	rows := make([]Widget, 10)
+	for r := range rows {
+		cells := make([]Widget, 10)
+		for c := range cells {
+			cells[c] = Text{Content: "steady", Style: Style{Width: Cells(7)}}
+		}
+		if r == 4 {
+			cells[3] = reactivityBuildText{value: s.value}
+			cells[6] = reactivityBench(s.paint)
+		}
+		rows[r] = Row{Children: cells}
+	}
+	return Column{Children: rows}
+}
+
+// Work after a one-leaf change must not scale with the rest of the tree.
+func TestReactivityPassesSkipCleanSubtrees(t *testing.T) {
+	sequence := newReactivitySequence(t, 80, 12, func() *reactivityWideScene {
+		return &reactivityWideScene{value: NewSignal("before"), paint: NewSignal("aa")}
+	})
+	sequence.frame("Initial", nil)
+	r := sequence.actual.renderer
+
+	sequence.frame("Build-read leaf changes", func(s *reactivityWideScene) { s.value.Set("after") })
+	require.LessOrEqual(t, r.lastAssignCount, 4, "layouts assigned: root, its row, the leaf")
+	require.LessOrEqual(t, r.lastMeasureCount, 15, "nodes measured: the changed row's cells and its ancestors")
+	require.LessOrEqual(t, r.lastClearCount, 4, "dirty flags cleared along the changed path only")
+
+	sequence.frame("Paint-read leaf changes", func(s *reactivityWideScene) { s.paint.Set("bb") })
+	require.LessOrEqual(t, r.lastScanCount, 4, "damage scan follows the dirty path only")
+	require.LessOrEqual(t, r.lastClearCount, 4)
+}
+
+type reactivityOverlapScene struct {
+	under Signal[string]
+	over  Signal[string]
+}
+
+// Buttons overlap inside a Stack: click targets depend on paint order, which
+// must survive one of them being skipped while the other changes.
+func (s *reactivityOverlapScene) Build(BuildContext) Widget {
+	return Stack{Children: []Widget{
+		reactivityBuilder{ID: "under", build: func(BuildContext) Widget {
+			return Column{Children: []Widget{Button{ID: "under-btn", Label: s.under.Get()}}}
+		}},
+		Positioned{Top: IntPtr(0), Left: IntPtr(3), Child: reactivityBuilder{ID: "over", build: func(BuildContext) Widget {
+			return Column{Children: []Widget{Button{ID: "over-btn", Label: s.over.Get()}}}
+		}}},
+	}}
+}
+
+func TestReactivityClickTargetsKeepPaintOrder(t *testing.T) {
+	sequence := newReactivitySequence(t, 30, 2, func() *reactivityOverlapScene {
+		return &reactivityOverlapScene{under: NewSignal("underneath"), over: NewSignal("top")}
+	})
+	sequence.frame("Initial", nil)
+	sequence.frame("Lower button changes, upper skipped", func(s *reactivityOverlapScene) { s.under.Set("below it") })
+	sequence.frame("Upper button changes, lower skipped", func(s *reactivityOverlapScene) { s.over.Set("upper") })
+}
+
+type reactivityShiftScene struct {
+	lead  Signal[string]
+	share Signal[int]
+}
+
+// A clean nested subtree is moved by a growing sibling, then resized by a
+// change in flexible space, without any change inside it.
+func (s *reactivityShiftScene) Build(BuildContext) Widget {
+	cleanBlock := Column{Children: []Widget{
+		Button{ID: "inner-a", Label: "A"},
+		Row{Children: []Widget{Text{Content: "deep", Style: Style{Width: Flex(1)}}, Button{ID: "inner-b", Label: "B"}}},
+	}}
+	return Column{Children: []Widget{
+		reactivityBuilder{ID: "lead", build: func(BuildContext) Widget {
+			return Text{Content: s.lead.Get(), Wrap: WrapSoft}
+		}},
+		Row{Children: []Widget{
+			reactivityBuilder{ID: "grower", build: func(BuildContext) Widget {
+				return Text{Content: strings.Repeat("=", s.share.Get()), Style: Style{Width: Cells(s.share.Get())}}
+			}},
+			Column{Style: Style{Width: Flex(1)}, Children: []Widget{cleanBlock}},
+		}},
+	}}
+}
+
+func TestReactivityCleanSubtreeMovesAndResizes(t *testing.T) {
+	sequence := newReactivitySequence(t, 20, 6, func() *reactivityShiftScene {
+		return &reactivityShiftScene{lead: NewSignal("one line"), share: NewSignal(4)}
+	})
+	sequence.frame("Initial", nil)
+	sequence.frame("Lead wraps to two lines, pushing the block down", func(s *reactivityShiftScene) {
+		s.lead.Set("this lead text now wraps")
+	})
+	sequence.frame("Sibling widens, shrinking the block", func(s *reactivityShiftScene) { s.share.Set(9) })
+	sequence.frame("Lead shrinks back, pulling the block up", func(s *reactivityShiftScene) { s.lead.Set("short") })
+}
+
+type reactivityShiftedTargetsScene struct {
+	count Signal[int]
+}
+
+// A clean block keeps its place while a sibling before it in paint order
+// records a changing number of click targets, shifting where the block's
+// entries land in the hit-test registry.
+func (s *reactivityShiftedTargetsScene) Build(BuildContext) Widget {
+	return Row{Children: []Widget{
+		reactivityBuilder{ID: "growing", build: func(BuildContext) Widget {
+			buttons := make([]Widget, s.count.Get())
+			for i := range buttons {
+				buttons[i] = Button{ID: fmt.Sprintf("grow-%d", i), Label: "g"}
+			}
+			return Column{Style: Style{Width: Cells(5)}, Children: buttons}
+		}},
+		Column{Children: []Widget{Button{ID: "stay-a", Label: "A"}, Button{ID: "stay-b", Label: "B"}}},
+	}}
+}
+
+func TestReactivitySkippedClickTargetsAfterShift(t *testing.T) {
+	sequence := newReactivitySequence(t, 20, 5, func() *reactivityShiftedTargetsScene {
+		return &reactivityShiftedTargetsScene{count: NewSignal(1)}
+	})
+	sequence.frame("Initial", nil)
+	sequence.frame("More targets before the block", func(s *reactivityShiftedTargetsScene) { s.count.Set(4) })
+	sequence.frame("Fewer targets before the block", func(s *reactivityShiftedTargetsScene) { s.count.Set(2) })
+	sequence.frame("None before the block", func(s *reactivityShiftedTargetsScene) { s.count.Set(0) })
 }

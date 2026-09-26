@@ -924,6 +924,13 @@ type Renderer struct {
 	// layoutCacheEnabled lets clean subtrees reuse cached layout results.
 	layoutCacheEnabled bool
 
+	// Nodes visited by each whole-tree pass in the last frame, to check that
+	// work follows what changed rather than the size of the tree.
+	lastAssignCount  int
+	lastMeasureCount int
+	lastClearCount   int
+	lastScanCount    int
+
 	lastFrameMode      rendererFrameMode
 	fullRenderCount    int
 	partialRenderCount int

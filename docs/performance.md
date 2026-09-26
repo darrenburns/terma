@@ -196,6 +196,33 @@ The remaining cost grows with list length: every row's selector runs on each
 cursor change, and with a custom renderer the list's own layout is recomputed,
 walking every row (each a cache hit). A virtualized list would avoid both.
 
+## Skipping clean subtrees in every pass
+
+The per-frame passes other than building now follow the dirty path:
+
+- **Dirty flag clearing and damage scanning** descend only into subtrees whose
+  dirty flag is set. A node can only be dirty beneath ancestors with the flag.
+- **Layout assignment** stops at a clean node handed back exactly the result it
+  was last assigned (same box and the same cached child layout slice).
+- **The measuring pass** stops at a clean node whose layout was reused and whose
+  position is unchanged. It replays the subtree's hit-test entries from a view
+  kept on the node; the registry allocates a fresh slice each frame so those
+  views stay valid.
+
+The build walk still visits every node, since it also collects focusables,
+focus traps and floats in tree order.
+
+[Raw output](benchmarks/reactivity-skip-clean.txt), same machine and settings.
+
+| Scenario | Baseline | Before | Now |
+| --- | ---: | ---: | ---: |
+| One build-read leaf, 1,000 leaves | 2,111.1 µs | 213.2 µs | 135.5 µs |
+| One paint-read leaf, 1,000 leaves | 7.6 µs | 7.3 µs | 3.0 µs |
+| Custom list cursor, 1,000 items | 2,028.7 µs | 654.8 µs | 499.1 µs |
+| One write, one update (1,000 leaves) | 7.6 µs | 7.5 µs | 3.2 µs |
+
+Paint-only updates no longer depend on tree size.
+
 ## Correctness checks
 
 `reactivity_sequence_test.go` drives state changes through a persistent renderer
