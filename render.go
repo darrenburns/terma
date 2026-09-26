@@ -921,6 +921,9 @@ type Renderer struct {
 	// geometryOnly makes paintRetainedNode measure without drawing.
 	reflowDamage []Rect
 	geometryOnly bool
+	// floatsChanged is set when measuring finds the overlay set differs from
+	// the last frame's, so the whole screen must be repainted.
+	floatsChanged bool
 	// layoutCacheEnabled lets clean subtrees reuse cached layout results.
 	layoutCacheEnabled bool
 

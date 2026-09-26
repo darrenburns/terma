@@ -280,6 +280,44 @@ func BenchmarkReactivityTreeCursor(b *testing.B) {
 	}
 }
 
+// reactivityBenchDialogBody reads a signal inside dialog content.
+type reactivityBenchDialogBody struct {
+	value Signal[string]
+}
+
+func (w reactivityBenchDialogBody) Build(BuildContext) Widget {
+	return Text{Content: w.value.Get(), Style: reactivityBenchStyle()}
+}
+
+func BenchmarkReactivityOverlay(b *testing.B) {
+	for _, target := range []string{"under-dialog", "inside-dialog"} {
+		b.Run(target, func(b *testing.B) {
+			under, inside := NewSignal("before"), NewSignal("before")
+			leaves := reactivityBenchLeaves(1000)
+			leaves[0] = reactivityBuildText{value: under}
+			root := Column{Children: []Widget{
+				Dialog{
+					ID: "bench-dialog", Visible: true, Title: "Dialog",
+					Content: reactivityBenchDialogBody{value: inside},
+					Buttons: []Button{{Label: "OK"}},
+				},
+				reactivityBenchTree(leaves),
+			}}
+			changed := under
+			if target == "inside-dialog" {
+				changed = inside
+			}
+			benchmarkReactiveUpdates(b, newReactivityBenchRenderer(), root, 1, func(i int) {
+				if i%2 == 0 {
+					changed.Set("after")
+				} else {
+					changed.Set("before")
+				}
+			})
+		})
+	}
+}
+
 func BenchmarkReactivityBatch(b *testing.B) {
 	for _, target := range []string{"same-leaf", "distinct-leaves"} {
 		for _, sets := range []int{1, 10, 100} {

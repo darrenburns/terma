@@ -180,6 +180,11 @@ type FloatEntry struct {
 	// Computed position after layout (set during render phase)
 	X, Y          int
 	Width, Height int
+
+	// fresh marks an entry registered by a Build that ran this frame, rather
+	// than replayed from an owner whose build was reused. Only fresh entries
+	// can carry new content, so only they force the overlay to rebuild.
+	fresh bool
 }
 
 // FloatCollector gathers Floating widgets during the build phase

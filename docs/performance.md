@@ -142,8 +142,8 @@ position and the hit-test registry, and collect damage:
   changed (for example a `Scrollable` whose content grew, which changes its
   scrollbar).
 
-Only the damaged areas are cleared and repainted. Frames with floating overlays,
-forced full renders, and resizes still repaint everything.
+Only the damaged areas are cleared and repainted. Forced full renders, resizes,
+and frames that open or close an overlay still repaint everything.
 
 ## Layout cache
 
@@ -245,6 +245,30 @@ the full row height.
 | Table cursor, 1,000 rows, custom cells | 5,006 µs | 1,708 µs | 3,001 → 12 | 2,400 → 120 |
 | Tree cursor, 1,000 nodes, default rows | 1,314 µs | 147 µs | 0 | 4,800 → 240 |
 | Tree cursor, 1,000 nodes, custom rows | 4,337 µs | 544 µs | 3,001 → 6 | 600 → 30 |
+
+## Overlays
+
+Frames with floating overlays (dialogs, menus, tooltips) used to rebuild every
+overlay and repaint the whole screen. Now, while the set of overlays is
+unchanged (same count and modal flags), they take the same partial path:
+
+- An overlay registered by an owner that rebuilt this frame is marked fresh
+  and rebuilt; others keep their build and only rebuild what is dirty inside.
+- Overlays are laid out and positioned again (their anchor may have moved) and
+  measured like the main tree, so their changes and movements become damage.
+- Damaged areas are repainted in order: main tree, modal backdrop, overlays.
+
+Opening or closing an overlay still repaints everything, since a modal
+backdrop covers the whole screen. A nested overlay that appears while placing
+overlays also marks the whole screen damaged.
+
+[Before](benchmarks/reactivity-overlay-before.txt) and
+[after](benchmarks/reactivity-overlay-partial.txt), 1,000 leaves with a dialog open:
+
+| Change | Before | After | Builds | Damaged cells |
+| --- | ---: | ---: | ---: | ---: |
+| Leaf under the dialog | 1,286 µs | 136 µs | 5 → 1 | 4,800 → 12 |
+| Text inside the dialog | 1,259 µs | 112 µs | 4 → 1 | 4,800 → 12 |
 
 ## Correctness checks
 

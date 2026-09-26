@@ -307,32 +307,13 @@ func TestReactivityOverlayOwnedByCleanNode(t *testing.T) {
 	sequence.frame("Open dialog", func(s *reactivityOverlayScene) { s.open.Set(true) })
 	require.Contains(t, sequence.actual.renderer.ScreenText(), "Proceed?")
 	work := sequence.frame("Unrelated change keeps dialog", func(s *reactivityOverlayScene) { s.counter.Set(1) })
-	require.Equal(t, 1, work.BuildCount-reactivityFloatBuilds(sequence.actual.renderer), "only the counter rebuilds in the main tree")
+	require.Equal(t, 1, work.BuildCount, "only the counter rebuilds; the dialog's owner and content are reused")
 	require.Contains(t, sequence.actual.renderer.ScreenText(), "Proceed?")
 	sequence.focus("dialog-btn-1")
 	sequence.frame("Focus moves within dialog", nil)
 	sequence.frame("Close dialog", func(s *reactivityOverlayScene) { s.open.Set(false) })
 	require.NotContains(t, sequence.actual.renderer.ScreenText(), "Proceed?")
 	sequence.frame("Unrelated change after close", func(s *reactivityOverlayScene) { s.counter.Set(2) })
-}
-
-// Float roots are rebuilt every frame, so exclude them from main-tree counts.
-func reactivityFloatBuilds(r *Renderer) int {
-	count := 0
-	var walk func(*widgetNode)
-	walk = func(n *widgetNode) {
-		if n == nil {
-			return
-		}
-		count++
-		for _, child := range n.children {
-			walk(child)
-		}
-	}
-	for _, float := range r.retainedFloats {
-		walk(float.root)
-	}
-	return count
 }
 
 type reactivityReflowScene struct {
@@ -1079,4 +1060,111 @@ func TestTableCustomCellFillsTallRow(t *testing.T) {
 		cell := buf.CellAt(2, y)
 		require.NotNil(t, cell.Style.Bg, "first column, line %d: the highlighted cell must fill the row", y)
 	}
+}
+
+type reactivityFloatsScene struct {
+	bigMenu    Signal[bool]
+	nestedOpen Signal[bool]
+	lead       Signal[string]
+	under      Signal[string]
+	menuOpen   Signal[bool]
+	menuLabel  Signal[string]
+	dialogOpen Signal[bool]
+	inside     Signal[string]
+}
+
+func (s *reactivityFloatsScene) Build(BuildContext) Widget {
+	return Column{Children: []Widget{
+		Row{Spacing: 1, Children: []Widget{
+			reactivityBuilder{ID: "lead", build: func(BuildContext) Widget { return Text{Content: s.lead.Get()} }},
+			Button{ID: "anchor", Label: "Menu"},
+		}},
+		reactivityBuilder{ID: "menu-owner", build: func(BuildContext) Widget {
+			return Column{Children: []Widget{Floating{
+				Visible: s.menuOpen.Get(),
+				Config:  FloatConfig{AnchorID: "anchor", Anchor: AnchorBottomLeft},
+				Child:   s.menuContent(),
+			}}}
+		}},
+		reactivityBuilder{ID: "dialog-owner", build: func(BuildContext) Widget {
+			return Column{Children: []Widget{Dialog{
+				ID: "dialog", Visible: s.dialogOpen.Get(), Title: "Dialog",
+				Content: reactivityBuilder{ID: "dialog-inside", build: func(BuildContext) Widget { return Text{Content: "inside: " + s.inside.Get()} }},
+				Buttons: []Button{{Label: "No"}, {Label: "Yes"}},
+			}}}
+		}},
+		reactivityBuilder{ID: "under", build: func(BuildContext) Widget {
+			return Text{Content: s.under.Get(), Style: Style{Width: Flex(1), BackgroundColor: RGB(20, 60, 20)}}
+		}},
+	}}
+}
+
+// menuContent is either a large or a small menu with different IDs, so
+// switching replaces the overlay's root node. The large one can open a nested
+// overlay of its own.
+func (s *reactivityFloatsScene) menuContent() Widget {
+	if !s.bigMenu.Get() {
+		return Column{ID: "small-menu", Style: Style{BackgroundColor: RGB(90, 40, 40)}, Children: []Widget{Text{Content: "small"}}}
+	}
+	return Column{ID: "big-menu", Style: Style{BackgroundColor: RGB(40, 40, 90)}, Children: []Widget{
+		Button{ID: "menu-item", Label: s.menuLabel.Get()},
+		reactivityBuilder{ID: "menu-inside", build: func(BuildContext) Widget { return Text{Content: s.inside.Get()} }},
+		reactivityBuilder{ID: "nested-owner", build: func(BuildContext) Widget {
+			return Column{Children: []Widget{Floating{
+				Visible: s.nestedOpen.Get(),
+				// Modal, so opening it dims the whole screen: only discovered
+				// while placing overlays, as it is registered by overlay content.
+				Config: FloatConfig{AnchorID: "menu-item", Anchor: AnchorBottomLeft, Offset: Offset{X: 12}, Modal: true},
+				// Nothing focusable inside, so focus doesn't move and trigger
+				// a second, full render that would hide a missed repaint.
+				Child: Text{Content: "nested overlay", Style: Style{BackgroundColor: RGB(90, 90, 40)}},
+			}}}
+		}},
+	}}
+}
+
+// Frames with overlays repaint only damage while the set of overlays is unchanged.
+func TestReactivityOverlaysRepaintOnlyDamage(t *testing.T) {
+	sequence := newReactivitySequence(t, 40, 14, func() *reactivityFloatsScene {
+		return &reactivityFloatsScene{
+			bigMenu: NewSignal(true), nestedOpen: NewSignal(false),
+			lead: NewSignal("x"), under: NewSignal("under one"), menuOpen: NewSignal(false),
+			menuLabel: NewSignal("Item"), dialogOpen: NewSignal(false), inside: NewSignal("a"),
+		}
+	})
+	screen := 40 * 14
+	requirePartial := func(work RenderStats, what string) {
+		t.Helper()
+		require.Equal(t, string(rendererFrameReflow), work.FrameMode, "%s: overlays alone shouldn't force a full repaint", what)
+		area := 0
+		for _, rect := range work.DamagedRects {
+			area += rect.Width * rect.Height
+		}
+		require.Less(t, area, screen, "%s: damage %v", what, work.DamagedRects)
+	}
+
+	sequence.frame("Initial", nil)
+	sequence.frame("Open menu", func(s *reactivityFloatsScene) { s.menuOpen.Set(true) })
+	underMenu := sequence.frame("Change under the menu", func(s *reactivityFloatsScene) { s.under.Set("under two") })
+	requirePartial(underMenu, "under menu")
+	require.Equal(t, 1, underMenu.BuildCount, "the menu's owner reused its build, so the menu isn't rebuilt")
+	requirePartial(sequence.frame("Change inside the menu", func(s *reactivityFloatsScene) { s.inside.Set("bb") }), "inside menu")
+	requirePartial(sequence.frame("Anchor moves, menu follows", func(s *reactivityFloatsScene) { s.lead.Set("a longer lead") }), "anchor moves")
+	requirePartial(sequence.frame("Menu owner rebuilds its content", func(s *reactivityFloatsScene) { s.menuLabel.Set("Renamed item") }), "menu content")
+	sequence.frame("Anchor moves back", func(s *reactivityFloatsScene) { s.lead.Set("x") })
+	sequence.frame("Nested overlay opens inside the menu", func(s *reactivityFloatsScene) { s.nestedOpen.Set(true) })
+	require.Contains(t, sequence.actual.renderer.ScreenText(), "nested overlay")
+	sequence.frame("Nested overlay closes", func(s *reactivityFloatsScene) { s.nestedOpen.Set(false) })
+	requirePartial(sequence.frame("Menu content replaced by a smaller one", func(s *reactivityFloatsScene) { s.bigMenu.Set(false) }), "replaced root")
+	sequence.frame("Menu content restored", func(s *reactivityFloatsScene) { s.bigMenu.Set(true) })
+
+	sequence.frame("Open dialog", func(s *reactivityFloatsScene) { s.dialogOpen.Set(true) })
+	require.Contains(t, sequence.actual.renderer.ScreenText(), "inside: bb")
+	requirePartial(sequence.frame("Change inside both overlays", func(s *reactivityFloatsScene) { s.inside.Set("ccc") }), "inside dialog")
+	requirePartial(sequence.frame("Change under the backdrop", func(s *reactivityFloatsScene) { s.under.Set("under three") }), "under backdrop")
+	sequence.focus("dialog-btn-1")
+	sequence.frame("Focus within dialog", nil)
+	sequence.frame("Close dialog", func(s *reactivityFloatsScene) { s.dialogOpen.Set(false) })
+	sequence.frame("Close menu", func(s *reactivityFloatsScene) { s.menuOpen.Set(false) })
+	requirePartial(sequence.frame("Change with no overlays", func(s *reactivityFloatsScene) { s.under.Set("under four") }), "no overlays")
 }

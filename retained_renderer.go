@@ -172,15 +172,15 @@ func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []Focus
 	r.lastLayoutWidth = layoutWidth
 	r.lastLayoutHeight = layoutHeight
 
-	// Floats are rebuilt and repositioned every frame, so frames that have or
-	// had any still repaint everything. Otherwise repaint only what changed.
-	if rebuildAll || r.floatCollector.Len() > 0 || len(r.retainedFloats) > 0 {
+	// Opening or closing an overlay repaints everything: a modal's backdrop
+	// covers the whole screen. Otherwise repaint only what changed.
+	if rebuildAll || !r.floatSetMatches() {
 		if scr, ok := r.terminal.(uv.Screen); ok {
 			screen.Clear(scr)
 		}
 		ctx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
 		r.paintRetainedNode(ctx, r.rootNode, 0, 0, Rect{}, false, true)
-		r.buildAndPaintFloats(ctx, buildCtx)
+		r.placeFloats(ctx, buildCtx, false)
 	} else {
 		r.lastFrameMode = rendererFrameReflow
 		r.reflowPaint(buildCtx)
@@ -315,7 +315,11 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 		node.widget = built
 		// Floating.Build registers overlays rather than returning them as
 		// children. Keep this node's registrations for frames that reuse Build.
-		node.floats = append(node.floats[:0], r.floatCollector.entries[floatStart:]...)
+		node.floats = node.floats[:0]
+		for i := floatStart; i < len(r.floatCollector.entries); i++ {
+			node.floats = append(node.floats, r.floatCollector.entries[i])
+			r.floatCollector.entries[i].fresh = true
+		}
 		r.lastBuildCount++
 	} else {
 		for _, entry := range node.floats {
@@ -778,17 +782,24 @@ func (r *Renderer) recordReflowDamage(node *widgetNode, bounds, subtreeBounds Re
 func (r *Renderer) reflowPaint(buildCtx BuildContext) {
 	ctx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
 	r.reflowDamage = r.reflowDamage[:0]
+	r.floatsChanged = false
 	r.geometryOnly = true
 	r.paintRetainedNode(ctx, r.rootNode, 0, 0, Rect{}, false, true)
+	r.placeFloats(ctx, buildCtx, true)
 	r.geometryOnly = false
 
-	rects := coalesceDamage(r.reflowDamage, Rect{Width: r.width, Height: r.height})
+	fullScreen := Rect{Width: r.width, Height: r.height}
+	if r.floatsChanged {
+		r.reflowDamage = append(r.reflowDamage, fullScreen)
+	}
+	rects := coalesceDamage(r.reflowDamage, fullScreen)
 	r.lastDamagedRects = rects
 	for _, rect := range rects {
 		r.clearRect(rect)
 		paintCtx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
 		paintCtx.clip = paintCtx.clip.Intersect(rect)
 		r.paintRetainedNode(paintCtx, r.rootNode, 0, 0, rect, true, false)
+		r.paintRetainedFloats(paintCtx, rect)
 	}
 }
 
@@ -827,12 +838,33 @@ func coalesceDamage(rects []Rect, screen Rect) []Rect {
 	return merged
 }
 
-func (r *Renderer) buildAndPaintFloats(ctx *RenderContext, buildCtx BuildContext) {
+// floatSetMatches reports whether this frame's overlays correspond one to one
+// with the last frame's: the same number, with the same modal flags.
+func (r *Renderer) floatSetMatches() bool {
+	if len(r.retainedFloats) != r.floatCollector.Len() {
+		return false
+	}
+	for i, retained := range r.retainedFloats {
+		if retained.entry.Config.Modal != r.floatCollector.entries[i].Config.Modal {
+			return false
+		}
+	}
+	return true
+}
+
+// placeFloats builds, lays out, positions and paints the frame's overlays.
+// When measuring (a reflow frame), overlays whose owner reused its build keep
+// theirs too, and nothing is drawn: positions, hit targets and damage are
+// recorded for the partial painter instead.
+func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measure bool) {
 	oldFloats := r.retainedFloats
 	r.retainedFloats = nil
 	if r.floatCollector.Len() == 0 {
 		for _, old := range oldFloats {
 			if old.root != nil {
+				if measure {
+					r.floatsChanged = true
+				}
 				old.root.dispose()
 			}
 		}
@@ -855,7 +887,11 @@ func (r *Renderer) buildAndPaintFloats(ctx *RenderContext, buildCtx BuildContext
 		if i < len(oldFloats) {
 			oldRoot = oldFloats[i].root
 		}
-		floatRoot := r.buildRetainedNode(oldRoot, child, buildCtx, r.focusCollector, true)
+		floatRoot := r.buildRetainedNode(oldRoot, child, buildCtx, r.focusCollector, !measure || entry.fresh)
+		if measure && oldRoot != nil && floatRoot != oldRoot {
+			// Nothing else records where the replaced overlay was drawn.
+			r.reflowDamage = append(r.reflowDamage, oldRoot.subtreeBounds)
+		}
 		r.computeRetainedLayout(floatRoot, layout.Loose(r.width, r.height))
 
 		floatWidth := floatRoot.layout.Box.MarginBoxWidth()
@@ -878,7 +914,9 @@ func (r *Renderer) buildAndPaintFloats(ctx *RenderContext, buildCtx BuildContext
 
 		if entry.Config.Modal {
 			r.modalCount++
-			r.renderModalBackdrop(ctx, entry.Config.BackdropColor)
+			if !measure {
+				r.renderModalBackdrop(ctx, entry.Config.BackdropColor)
+			}
 
 			focusedID := r.focusManager.FocusedID()
 			alreadyInside := false
@@ -907,6 +945,23 @@ func (r *Renderer) buildAndPaintFloats(ctx *RenderContext, buildCtx BuildContext
 			oldFloats[i].root.dispose()
 		}
 	}
+	if measure && !sameFloatSet(oldFloats, r.retainedFloats) {
+		// Nested overlays (registered by overlay content) appeared,
+		// disappeared or changed modality.
+		r.floatsChanged = true
+	}
+}
+
+func sameFloatSet(a, b []retainedFloat) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].entry.Config.Modal != b[i].entry.Config.Modal {
+			return false
+		}
+	}
+	return true
 }
 
 func (r *Renderer) paintRetainedFloats(ctx *RenderContext, damage Rect) {
