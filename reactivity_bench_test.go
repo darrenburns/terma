@@ -98,7 +98,7 @@ func benchmarkReactiveUpdates(b *testing.B, renderer *Renderer, root Widget, set
 		paints += renderer.lastPaintCount
 		full += fullDelta
 		partial += partialDelta
-		if fullDelta != 0 {
+		if renderer.lastFrameMode == rendererFrameFull {
 			damageCells += reactivityBenchWidth * reactivityBenchHeight
 		} else {
 			viewport := Rect{Width: reactivityBenchWidth, Height: reactivityBenchHeight}

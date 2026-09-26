@@ -426,6 +426,8 @@ func Run(root Widget) (runErr error) {
 			modeLabel = "partial repaint"
 		case string(rendererFrameFull):
 			modeLabel = "full render"
+		case string(rendererFrameReflow):
+			modeLabel = "relayout + partial repaint"
 		}
 		statsText := fmt.Sprintf(
 			"last frame: %s | rebuilt %d | relaid out %d | repainted %d",

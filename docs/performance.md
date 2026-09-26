@@ -56,7 +56,7 @@ direction, so collecting them does not distort the timed loop:
 | Metric | Meaning |
 | --- | --- |
 | `builds/op` | Widget build calls per update |
-| `layouts/op` | Nodes receiving computed layout per update; not every internal measurement operation |
+| `layouts/op` | Layout computations per update, counting cache misses only; a node measured under several constraints counts once per computation. Before the layout cache this counted nodes receiving a layout. |
 | `paints/op` | Retained-node paint visits, including ancestors and repeated visits across damage rectangles |
 | `damage-cells/op` | Sum of viewport-clipped damage rectangle areas; full frames count the whole viewport |
 | `full/op`, `partial/op` | Full and partial frames per update |
@@ -130,6 +130,51 @@ run after any build or layout change. A CPU profile of the 1,000-leaf build
 scenario splits `Update` time roughly 40% paint, 32% layout, and 27% walking the
 retained tree. Custom list renderers still rebuild every row because the list
 itself reads the cursor in `Build()` and passes `active` to each row.
+
+## Partial repaint after relayout
+
+A build or layout change used to clear and repaint the whole screen. These frames
+(`reflow` mode) now measure the tree without drawing, recording every node's
+position and the hit-test registry, and collect damage:
+
+- the old and new area of every invalidated or rebuilt node's subtree;
+- the old and new area of any node that moved, resized, or whose layout box
+  changed (for example a `Scrollable` whose content grew, which changes its
+  scrollbar).
+
+Only the damaged areas are cleared and repainted. Frames with floating overlays,
+forced full renders, and resizes still repaint everything.
+
+## Layout cache
+
+Each retained node caches its last few layout results by constraints. A node
+whose subtree has no build or layout changes reuses a cached result for the same
+constraints without building its layout node or visiting its children.
+Rebuilt nodes are marked changed, since a parent's rebuild can hand them new
+properties without any signal of their own changing. On a cache hit a node keeps
+its layout-phase signal subscriptions, because the reads that created them don't
+run. Forced full renders bypass the cache.
+
+Collected on the same machine and settings as the baseline; medians of five
+samples. Raw output: [partial repaint](benchmarks/reactivity-reflow.txt),
+[layout cache](benchmarks/reactivity-layout-cache.txt).
+
+| Scenario | Baseline | Build isolation | + partial repaint | + layout cache |
+| --- | ---: | ---: | ---: | ---: |
+| One build-read leaf, 10 leaves | 26.43 µs | 19.38 µs | 10.3 µs | 7.2 µs |
+| One build-read leaf, 100 leaves | 266.00 µs | 194.03 µs | 79.5 µs | 26.3 µs |
+| One build-read leaf, 1,000 leaves | 2,111.11 µs | 1,400.10 µs | 757.3 µs | 212.6 µs |
+| Auto-width text changes size, 100 leaves | 264.83 µs | 193.85 µs | 91.9 µs | 38.9 µs |
+| Custom list cursor, 1,000 items | 2,028.68 µs | 1,774.49 µs | 1,452.4 µs | 1,543.6 µs |
+
+A one-leaf change in a 1,000-leaf tree now builds 1 widget, computes 3 layouts
+and repaints 12 cells. What remains is proportional to the tree size: the build
+walk (which also collects focusables and floats), assigning layouts, and the
+measuring pass. Paint-only updates are unchanged.
+
+List cursor movement is not improved. The default renderer's rows all read the
+shared cursor signal while painting, so every visible row repaints; a custom
+`RenderItem` makes the list read the cursor in `Build()`, so every row rebuilds.
 
 ## Correctness checks
 

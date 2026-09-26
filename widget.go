@@ -162,6 +162,8 @@ type widgetNode struct {
 	identity     string
 
 	layout        layout.ComputedLayout
+	prevBox       layout.BoxModel    // Box from the previous layout, to detect box-only changes.
+	layoutCache   []layoutCacheEntry // Recent results by constraints, valid while the subtree is clean.
 	bounds        Rect
 	subtreeBounds Rect
 

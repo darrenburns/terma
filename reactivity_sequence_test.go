@@ -9,6 +9,7 @@ import (
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/darrenburns/terma/layout"
 	"github.com/stretchr/testify/require"
 )
 
@@ -216,6 +217,9 @@ func TestReactivityBuildIsolation(t *testing.T) {
 	sequence.frame("Initial", nil)
 	work := sequence.frame("Only the left widget changes", func(s *reactivityBuildScene) { s.value.Set("after") })
 	require.Equal(t, 1, work.BuildCount, "a leaf's build dependency must not rebuild its parent or sibling")
+	require.Equal(t, "reflow", work.FrameMode)
+	require.Equal(t, 2, work.LayoutCount, "the unchanged sibling reuses its cached layout")
+	require.Equal(t, []Rect{{X: 0, Y: 0, Width: 12, Height: 1}}, work.DamagedRects, "only the rebuilt leaf is repainted")
 	sequence.frame("Shorter text clears the old value", func(s *reactivityBuildScene) { s.value.Set("x") })
 }
 
@@ -323,19 +327,27 @@ func (s *reactivityReflowScene) Build(BuildContext) Widget {
 			}},
 			Text{ID: "neighbor", Content: "neighbor"},
 		}},
+		Row{Spacing: 1, Children: []Widget{
+			// The Text is a child node rebuilt with new content by its parent;
+			// it has no signal of its own, so nothing else marks it changed.
+			reactivityBuilder{ID: "wrapped-label", build: func(BuildContext) Widget {
+				return Column{Children: []Widget{Text{Content: s.label.Get()}}}
+			}},
+			Text{ID: "wrapped-neighbor", Content: "neighbor"},
+		}},
 		Text{Content: "below", Style: Style{Width: Flex(1)}},
 	}}
 }
 
 func TestReactivityAutoSizeReflowsSiblings(t *testing.T) {
-	sequence := newReactivitySequence(t, 40, 4, func() *reactivityReflowScene {
+	sequence := newReactivitySequence(t, 40, 5, func() *reactivityReflowScene {
 		return &reactivityReflowScene{label: NewSignal("short")}
 	})
 	sequence.frame("Initial", nil)
 	sequence.frame("Grow pushes neighbor right", func(s *reactivityReflowScene) { s.label.Set("a much longer label") })
 	sequence.frame("Shrink pulls neighbor left", func(s *reactivityReflowScene) { s.label.Set("x") })
 	sequence.frame("Empty", func(s *reactivityReflowScene) { s.label.Set("") })
-	sequence.resize(12, 4)
+	sequence.resize(12, 5)
 	sequence.frame("Resize narrower", nil)
 	sequence.frame("Grow after resize", func(s *reactivityReflowScene) { s.label.Set("wider than the screen") })
 }
@@ -457,4 +469,134 @@ func TestReactivityKeybindBarFollowsFocus(t *testing.T) {
 	sequence.frame("Focus list shows list keybinds", nil)
 	sequence.focus("button")
 	sequence.frame("Focus button hides list keybinds", nil)
+}
+
+type reactivityScrollGrowthScene struct {
+	count  Signal[int]
+	scroll *ScrollState
+}
+
+func (s *reactivityScrollGrowthScene) Build(BuildContext) Widget {
+	return Column{Children: []Widget{
+		Text{Content: "header"},
+		Scrollable{ID: "scroll", State: s.scroll, Height: Cells(4), Child: reactivityBuilder{ID: "rows", build: func(BuildContext) Widget {
+			rows := make([]Widget, s.count.Get())
+			for i := range rows {
+				// Narrow rows leave the scrollbar column outside their damage.
+				rows[i] = Text{Content: fmt.Sprintf("row %d", i), Style: Style{Width: Cells(6)}}
+			}
+			return Column{Children: rows}
+		}}},
+	}}
+}
+
+// The scrollbar is painted by the Scrollable, which is neither rebuilt nor
+// moved when its content grows; only its layout box changes.
+func TestReactivityScrollbarFollowsContentGrowth(t *testing.T) {
+	sequence := newReactivitySequence(t, 20, 6, func() *reactivityScrollGrowthScene {
+		return &reactivityScrollGrowthScene{count: NewSignal(2), scroll: NewScrollState()}
+	})
+	sequence.frame("Initial", nil)
+	sequence.frame("Overflow shows scrollbar", func(s *reactivityScrollGrowthScene) { s.count.Set(8) })
+	sequence.frame("More content shrinks thumb", func(s *reactivityScrollGrowthScene) { s.count.Set(20) })
+	sequence.frame("Scroll down", func(s *reactivityScrollGrowthScene) { s.scroll.ScrollDown(3) })
+	sequence.frame("Shrink removes scrollbar", func(s *reactivityScrollGrowthScene) { s.count.Set(1) })
+}
+
+type reactivityOverflowScene struct {
+	badge Signal[string]
+	body  Signal[string]
+}
+
+func (s *reactivityOverflowScene) Build(BuildContext) Widget {
+	// The Stack is the root so no ancestor clips the badge overflowing its right edge.
+	return Stack{Children: []Widget{
+		Text{Content: "card", Style: Style{Width: Cells(10), Height: Cells(3)}},
+		Positioned{Top: IntPtr(0), Right: IntPtr(-6), Child: reactivityBench(s.badge)},
+		Positioned{Top: IntPtr(1), Left: IntPtr(0), Child: reactivityBench(s.body)},
+	}}
+}
+
+func reactivityBench(value Signal[string]) Widget {
+	return SignalText(value, func(v string) string { return v })
+}
+
+// Positioned children can overflow the Stack. Repainting one child must not
+// drop the overflowing sibling from the Stack's recorded painted area.
+func TestReactivityStackOverflowAfterPartialRepaint(t *testing.T) {
+	sequence := newReactivitySequence(t, 20, 6, func() *reactivityOverflowScene {
+		return &reactivityOverflowScene{badge: NewSignal("[1]"), body: NewSignal("aa")}
+	})
+	sequence.frame("Initial", nil)
+	require.Contains(t, sequence.actual.renderer.ScreenText(), "[1]", "badge overflows the Stack but stays visible")
+	sequence.frame("Repaint body only", func(s *reactivityOverflowScene) { s.body.Set("bb") })
+	sequence.frame("Repaint overflowing badge", func(s *reactivityOverflowScene) { s.badge.Set("[2]") })
+}
+
+// reactivityRootScene changes its own identity without any parent rebuilding,
+// so the renderer must notice and replace the retained node.
+type reactivityRootScene struct {
+	id   string
+	text Signal[string]
+}
+
+func (s *reactivityRootScene) WidgetID() string { return s.id }
+
+func (s *reactivityRootScene) Build(BuildContext) Widget {
+	return Column{Children: []Widget{
+		reactivityBuilder{ID: "text", build: func(BuildContext) Widget { return Text{Content: s.text.Get()} }},
+	}}
+}
+
+func TestReactivityRootReplacementClearsOldOutput(t *testing.T) {
+	sequence := newReactivitySequence(t, 20, 3, func() *reactivityRootScene {
+		return &reactivityRootScene{id: "first", text: NewSignal("a much longer line")}
+	})
+	sequence.frame("Initial", nil)
+	work := sequence.frame("Replace root with shorter content", func(s *reactivityRootScene) {
+		s.id = "second"
+		s.text.Set("short")
+	})
+	require.Equal(t, 2, work.BuildCount, "the replaced root and its child are built afresh")
+}
+
+// reactivityLayoutReader reads its width while layout is computed (not when
+// its layout node is built, which cache hits can trigger incidentally).
+type reactivityLayoutReader struct {
+	width Signal[int]
+}
+
+func (w reactivityLayoutReader) Build(BuildContext) Widget { return w }
+
+func (w reactivityLayoutReader) BuildLayoutNode(BuildContext) layout.LayoutNode {
+	return &layout.BoxNode{MeasureFunc: func(layout.Constraints) (int, int) { return w.width.Get(), 1 }}
+}
+
+func (w reactivityLayoutReader) Render(ctx *RenderContext) {
+	ctx.DrawText(0, 0, strings.Repeat("#", ctx.Width))
+}
+
+type reactivityLayoutReadScene struct {
+	width Signal[int]
+	other Signal[string]
+}
+
+func (s *reactivityLayoutReadScene) Build(BuildContext) Widget {
+	return Column{Children: []Widget{
+		// A direct child of the root, which recomputes its layout when "other"
+		// changes, so the reader's cached result is consulted.
+		reactivityLayoutReader{width: s.width},
+		reactivityBuilder{ID: "other", build: func(BuildContext) Widget { return Text{Content: s.other.Get()} }},
+	}}
+}
+
+// A layout-phase subscription must survive frames where the reader's layout
+// is reused from the cache and its reads don't run.
+func TestReactivityLayoutReadSurvivesCachedFrames(t *testing.T) {
+	sequence := newReactivitySequence(t, 20, 3, func() *reactivityLayoutReadScene {
+		return &reactivityLayoutReadScene{width: NewSignal(3), other: NewSignal("one")}
+	})
+	sequence.frame("Initial", nil)
+	sequence.frame("Unrelated change reuses reader layout", func(s *reactivityLayoutReadScene) { s.other.Set("two") })
+	sequence.frame("Reader width grows", func(s *reactivityLayoutReadScene) { s.width.Set(8) })
 }

@@ -19,28 +19,79 @@ const (
 	rendererFrameNone    rendererFrameMode = ""
 	rendererFrameFull    rendererFrameMode = "full"
 	rendererFramePartial rendererFrameMode = "partial"
+	// rendererFrameReflow rebuilds and lays out, then repaints only damage.
+	rendererFrameReflow rendererFrameMode = "reflow"
 )
 
-type phaseTrackingLayoutNode struct {
-	node  *widgetNode
-	child layout.LayoutNode
+// retainedLayoutNode adapts a retained widget node for layout. It tracks
+// layout-phase signal reads, and reuses the node's cached results when nothing
+// in its subtree could have changed them. The widget's own layout node (and
+// so its children's) is only built when a result has to be computed.
+type retainedLayoutNode struct {
+	renderer  *Renderer
+	node      *widgetNode
+	cacheable bool
+	raw       layout.LayoutNode
 }
 
-func (p phaseTrackingLayoutNode) ComputeLayout(constraints layout.Constraints) layout.ComputedLayout {
-	return withSignalRead(p.node, readPhaseLayout, func() layout.ComputedLayout {
-		return p.child.ComputeLayout(constraints)
+// maxLayoutCacheEntries bounds per-node caching; containers may measure a
+// child under a few different constraints in one pass.
+const maxLayoutCacheEntries = 4
+
+type layoutCacheEntry struct {
+	constraints layout.Constraints
+	result      layout.ComputedLayout
+}
+
+func (r *Renderer) newRetainedLayoutNode(node *widgetNode) *retainedLayoutNode {
+	// A layout result depends only on constraints and the subtree's widgets
+	// and layout-phase reads; any change there marks the subtree dirty.
+	cacheable := r.layoutCacheEnabled && node.subtreeDirtyLevel() < DirtyLayout
+	if !cacheable {
+		node.layoutCache = node.layoutCache[:0]
+		// Reads are recorded afresh as the layout is recomputed. A cacheable
+		// node keeps its subscriptions, since a hit skips those reads.
+		node.clearDependenciesForPhase(readPhaseLayout)
+	}
+	return &retainedLayoutNode{renderer: r, node: node, cacheable: cacheable}
+}
+
+func (p *retainedLayoutNode) ComputeLayout(constraints layout.Constraints) layout.ComputedLayout {
+	if p.cacheable {
+		for _, entry := range p.node.layoutCache {
+			if entry.constraints == constraints {
+				return entry.result
+			}
+		}
+	}
+	result := withSignalRead(p.node, readPhaseLayout, func() layout.ComputedLayout {
+		return p.child().ComputeLayout(constraints)
 	})
+	p.renderer.lastLayoutCount++
+	cache := p.node.layoutCache
+	if len(cache) == maxLayoutCacheEntries {
+		cache = append(cache[:0], cache[1:]...)
+	}
+	p.node.layoutCache = append(cache, layoutCacheEntry{constraints: constraints, result: result})
+	return result
 }
 
-func (p phaseTrackingLayoutNode) PreservesWidth() bool {
-	if preserver, ok := p.child.(layout.SizePreserver); ok {
+func (p *retainedLayoutNode) child() layout.LayoutNode {
+	if p.raw == nil {
+		p.raw = p.renderer.widgetLayoutNode(p.node)
+	}
+	return p.raw
+}
+
+func (p *retainedLayoutNode) PreservesWidth() bool {
+	if preserver, ok := p.child().(layout.SizePreserver); ok {
 		return preserver.PreservesWidth()
 	}
 	return false
 }
 
-func (p phaseTrackingLayoutNode) PreservesHeight() bool {
-	if preserver, ok := p.child.(layout.SizePreserver); ok {
+func (p *retainedLayoutNode) PreservesHeight() bool {
+	if preserver, ok := p.child().(layout.SizePreserver); ok {
 		return preserver.PreservesHeight()
 	}
 	return false
@@ -99,6 +150,8 @@ func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []Focus
 		return nil, 0, 0
 	}
 
+	// A forced full render recomputes every layout from scratch.
+	r.layoutCacheEnabled = !rebuildAll
 	constraints := layout.Loose(r.width, r.height)
 	r.computeRetainedLayout(r.rootNode, constraints)
 	layoutWidth = r.rootNode.layout.Box.BorderBoxWidth()
@@ -106,13 +159,19 @@ func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []Focus
 	r.lastLayoutWidth = layoutWidth
 	r.lastLayoutHeight = layoutHeight
 
-	if scr, ok := r.terminal.(uv.Screen); ok {
-		screen.Clear(scr)
+	// Floats are rebuilt and repositioned every frame, so frames that have or
+	// had any still repaint everything. Otherwise repaint only what changed.
+	if rebuildAll || r.floatCollector.Len() > 0 || len(r.retainedFloats) > 0 {
+		if scr, ok := r.terminal.(uv.Screen); ok {
+			screen.Clear(scr)
+		}
+		ctx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
+		r.paintRetainedNode(ctx, r.rootNode, 0, 0, Rect{}, false, true)
+		r.buildAndPaintFloats(ctx, buildCtx)
+	} else {
+		r.lastFrameMode = rendererFrameReflow
+		r.reflowPaint(buildCtx)
 	}
-
-	ctx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
-	r.paintRetainedNode(ctx, r.rootNode, 0, 0, Rect{}, false, true)
-	r.buildAndPaintFloats(ctx, buildCtx)
 
 	focusables = r.focusCollector.Focusables()
 	r.lastFocusables = focusables
@@ -205,9 +264,21 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 		node.autoID = ctx.AutoID()
 		node.eventID = eventID
 		node.identity = eventID
+	} else if _, ok := widget.(Identifiable); ok {
+		// The parent's retained build supplied this widget at the same path, so
+		// its auto ID is unchanged, but a pointer widget can change its own ID.
+		if eventID := widgetIdentity(widget, ctx); eventID != node.identity {
+			replaced := node
+			node = newWidgetNode(widget)
+			// The parent isn't repainting, so inherit the old painted area for
+			// the new node's damage to cover.
+			node.bounds, node.subtreeBounds = replaced.bounds, replaced.subtreeBounds
+			replaced.dispose()
+			node.autoID = ctx.AutoID()
+			node.eventID = eventID
+			node.identity = eventID
+		}
 	}
-	// Otherwise the parent's retained build supplied this same widget at the
-	// same path, so its identity is unchanged and needn't be recomputed.
 	eventID := node.eventID
 	rebuild = rebuild || node.dirtyLevel() == DirtyBuild
 
@@ -216,6 +287,10 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 	node.buildContext = ctx
 
 	if rebuild {
+		// Its widget may have new properties even if no signal of its own
+		// changed, so treat it as changed for layout caching and damage.
+		node.setDirtySelf(DirtyBuild)
+		node.setDirtySubtree(DirtyBuild)
 		node.clearDependenciesForPhase(readPhaseBuild)
 		floatStart := r.floatCollector.Len()
 		built := withSignalRead(node, readPhaseBuild, func() Widget {
@@ -311,18 +386,18 @@ func (r *Renderer) computeRetainedLayout(node *widgetNode, constraints layout.Co
 	if node == nil {
 		return
 	}
-	node.clearDependenciesForPhase(readPhaseLayout)
-	layoutNode := r.layoutNodeFor(node)
-	computed := layoutNode.ComputeLayout(constraints)
+	computed := r.newRetainedLayoutNode(node).ComputeLayout(constraints)
 	r.assignComputedLayout(node, computed)
 }
 
-func (r *Renderer) layoutNodeFor(node *widgetNode) layout.LayoutNode {
-	raw := withSignalRead(node, readPhaseLayout, func() layout.LayoutNode {
+// widgetLayoutNode builds the widget's own layout node, with its children
+// adapted as retained layout nodes.
+func (r *Renderer) widgetLayoutNode(node *widgetNode) layout.LayoutNode {
+	return withSignalRead(node, readPhaseLayout, func() layout.LayoutNode {
 		if builder, ok := node.widget.(ContainerLayoutBuilder); ok {
 			children := make([]layout.LayoutNode, len(node.children))
 			for i, child := range node.children {
-				children[i] = buildRetainedChildLayoutNode(child)
+				children[i] = r.newRetainedLayoutNode(child)
 			}
 			return builder.BuildContainerLayoutNode(node.buildContext, children)
 		}
@@ -331,15 +406,14 @@ func (r *Renderer) layoutNodeFor(node *widgetNode) layout.LayoutNode {
 		}
 		return buildFallbackLayoutNode(node.widget, node.buildContext)
 	})
-	return phaseTrackingLayoutNode{node: node, child: raw}
 }
 
 func (r *Renderer) assignComputedLayout(node *widgetNode, computed layout.ComputedLayout) {
 	if node == nil {
 		return
 	}
+	node.prevBox = node.layout.Box
 	node.layout = computed
-	r.lastLayoutCount++
 	if observer, ok := node.widget.(LayoutObserver); ok {
 		withSignalRead(node, readPhaseLayout, func() struct{} {
 			observer.OnLayout(node.buildContext, LayoutMetrics{layout: computed})
@@ -352,31 +426,10 @@ func (r *Renderer) assignComputedLayout(node *widgetNode, computed layout.Comput
 		r.assignComputedLayout(node.children[i], computed.Children[i].Layout)
 	}
 	for i := limit; i < len(node.children); i++ {
+		node.children[i].prevBox = node.children[i].layout.Box
 		node.children[i].layout = layout.ComputedLayout{}
 		node.children[i].updateIntrinsicCache()
 	}
-}
-
-func buildRetainedChildLayoutNode(child *widgetNode) layout.LayoutNode {
-	if child == nil {
-		return &layout.BoxNode{}
-	}
-	child.clearDependenciesForPhase(readPhaseLayout)
-	return withSignalRead(child, readPhaseLayout, func() layout.LayoutNode {
-		var raw layout.LayoutNode
-		if builder, ok := child.widget.(ContainerLayoutBuilder); ok {
-			children := make([]layout.LayoutNode, len(child.children))
-			for i, grandChild := range child.children {
-				children[i] = buildRetainedChildLayoutNode(grandChild)
-			}
-			raw = builder.BuildContainerLayoutNode(child.buildContext, children)
-		} else if builder, ok := child.widget.(LayoutNodeBuilder); ok {
-			raw = builder.BuildLayoutNode(child.buildContext)
-		} else {
-			raw = buildFallbackLayoutNode(child.widget, child.buildContext)
-		}
-		return phaseTrackingLayoutNode{node: child, child: raw}
-	})
 }
 
 func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, screenX, screenY int, damage Rect, partial bool, recordRegistry bool) Rect {
@@ -413,12 +466,32 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		return Rect{}
 	}
 
-	r.lastPaintCount++
-
 	var style Style
 	if styled, ok := node.widget.(Styled); ok {
 		style = styled.GetStyle()
 	}
+
+	if r.geometryOnly {
+		// Measure only: record where everything is without drawing.
+		if recordRegistry {
+			r.recordRegistry(node, nodeBounds)
+		}
+		subtreeBounds := nodeBounds
+		r.forEachChildContext(ctx, node, style, absBorderX, absBorderY, absContentX, absContentY, func(childCtx *RenderContext, child *widgetNode, x, y int) {
+			subtreeBounds = subtreeBounds.Union(r.paintRetainedNode(childCtx, child, x, y, damage, partial, recordRegistry))
+		})
+		if scrollable, ok := node.widget.(Scrollable); ok && scrollable.State != nil {
+			usableBox := box.UsableContentBox()
+			scrollable.State.updateHorizontalLayout(usableBox.Width, box.VirtualWidth)
+			scrollable.State.updateLayout(usableBox.Height, box.VirtualHeight)
+		}
+		r.recordReflowDamage(node, nodeBounds, subtreeBounds)
+		node.bounds = nodeBounds
+		node.subtreeBounds = subtreeBounds
+		return subtreeBounds
+	}
+
+	r.lastPaintCount++
 
 	if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
 		sampleColor := style.BackgroundColor.ColorAt(box.Width, box.Height, 0, 0)
@@ -504,65 +577,18 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 	}
 
 	if recordRegistry {
-		eventWidget := node.eventWidget
-		if eventWidget == nil {
-			eventWidget = node.widget
-		}
-		r.widgetRegistry.Record(node.widget, eventWidget, node.eventID, nodeBounds)
+		r.recordRegistry(node, nodeBounds)
 	}
 
 	subtreeBounds := nodeBounds
-	if len(node.children) > 0 {
-		var childClipCtx *RenderContext
-		_, isStack := node.widget.(Stack)
-		if isStack {
-			childClipCtx = ctx.OverflowSubContext(absBorderX, absBorderY, box.Width, box.Height)
-		} else if box.IsScrollableX() || box.IsScrollableY() {
-			usableBox := box.UsableContentBox()
-			childClipCtx = ctx.ScrolledSubContext(
-				absContentX,
-				absContentY,
-				usableBox.Width,
-				usableBox.Height,
-				box.ScrollOffsetX,
-				box.ScrollOffsetY,
-			)
-		} else {
-			usableBox := box.UsableContentBox()
-			childClipCtx = ctx.SubContext(absContentX, absContentY, usableBox.Width, usableBox.Height)
+	r.forEachChildContext(ctx, node, style, absBorderX, absBorderY, absContentX, absContentY, func(childCtx *RenderContext, child *widgetNode, x, y int) {
+		childBounds := r.paintRetainedNode(childCtx, child, x, y, damage, partial, recordRegistry)
+		if childBounds.IsEmpty() && partial {
+			// Skipped outside the damage; its recorded area is still current.
+			childBounds = child.subtreeBounds
 		}
-
-		if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
-			bg := style.BackgroundColor
-			w, h := box.Width, box.Height
-			originX, originY := trueAbsBorderX, trueAbsBorderY
-			parentCallback := ctx.inheritedBgAt
-
-			childClipCtx.inheritedBgAt = func(absX, absY int) Color {
-				relX := absX - originX
-				relY := absY - originY
-				cellColor := bg.ColorAt(w, h, relX, relY)
-				if !cellColor.IsOpaque() && parentCallback != nil {
-					inherited := parentCallback(absX, absY)
-					if !inherited.IsSet() {
-						inherited = Black
-					}
-					cellColor = cellColor.BlendOver(inherited)
-				}
-				return cellColor
-			}
-		}
-
-		for i, child := range node.children {
-			if i >= len(node.layout.Children) {
-				break
-			}
-			pos := node.layout.Children[i]
-			if childBounds := r.paintRetainedNode(childClipCtx, child, pos.X, pos.Y, damage, partial, recordRegistry); !childBounds.IsEmpty() {
-				subtreeBounds = subtreeBounds.Union(childBounds)
-			}
-		}
-	}
+		subtreeBounds = subtreeBounds.Union(childBounds)
+	})
 
 	if scrollable, ok := node.widget.(Scrollable); ok {
 		if scrollable.State != nil {
@@ -591,6 +617,146 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 	node.bounds = nodeBounds
 	node.subtreeBounds = subtreeBounds
 	return subtreeBounds
+}
+
+// forEachChildContext derives each child's clipped/scrolled context exactly as
+// painting does, so measuring and painting agree on where children land.
+func (r *Renderer) forEachChildContext(ctx *RenderContext, node *widgetNode, style Style, absBorderX, absBorderY, absContentX, absContentY int, visit func(*RenderContext, *widgetNode, int, int)) {
+	if len(node.children) == 0 {
+		return
+	}
+	box := node.layout.Box
+	var childClipCtx *RenderContext
+	if _, isStack := node.widget.(Stack); isStack {
+		childClipCtx = ctx.OverflowSubContext(absBorderX, absBorderY, box.Width, box.Height)
+	} else if box.IsScrollableX() || box.IsScrollableY() {
+		usableBox := box.UsableContentBox()
+		childClipCtx = ctx.ScrolledSubContext(
+			absContentX,
+			absContentY,
+			usableBox.Width,
+			usableBox.Height,
+			box.ScrollOffsetX,
+			box.ScrollOffsetY,
+		)
+	} else {
+		usableBox := box.UsableContentBox()
+		childClipCtx = ctx.SubContext(absContentX, absContentY, usableBox.Width, usableBox.Height)
+	}
+
+	if !r.geometryOnly && style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
+		bg := style.BackgroundColor
+		w, h := box.Width, box.Height
+		originX, originY := ctx.X+absBorderX, ctx.Y+absBorderY
+		parentCallback := ctx.inheritedBgAt
+
+		childClipCtx.inheritedBgAt = func(absX, absY int) Color {
+			relX := absX - originX
+			relY := absY - originY
+			cellColor := bg.ColorAt(w, h, relX, relY)
+			if !cellColor.IsOpaque() && parentCallback != nil {
+				inherited := parentCallback(absX, absY)
+				if !inherited.IsSet() {
+					inherited = Black
+				}
+				cellColor = cellColor.BlendOver(inherited)
+			}
+			return cellColor
+		}
+	}
+
+	for i, child := range node.children {
+		if i >= len(node.layout.Children) {
+			break
+		}
+		pos := node.layout.Children[i]
+		visit(childClipCtx, child, pos.X, pos.Y)
+	}
+}
+
+func (r *Renderer) recordRegistry(node *widgetNode, bounds Rect) {
+	eventWidget := node.eventWidget
+	if eventWidget == nil {
+		eventWidget = node.widget
+	}
+	r.widgetRegistry.Record(node.widget, eventWidget, node.eventID, bounds)
+}
+
+// recordReflowDamage marks what a reflow frame must repaint for this node:
+// its old and new subtree if it was invalidated, otherwise its own area if it
+// moved, resized, or its box changed (for example a scrollbar's extent).
+//
+// Nodes are only rebuilt, added or removed beneath an invalidated ancestor,
+// whose subtree damage already covers them.
+func (r *Renderer) recordReflowDamage(node *widgetNode, bounds, subtreeBounds Rect) {
+	add := func(rect Rect) {
+		if !rect.IsEmpty() {
+			r.reflowDamage = append(r.reflowDamage, rect)
+		}
+	}
+	switch {
+	case node.dirtyLevel() != DirtyNone:
+		add(node.subtreeBounds)
+		add(subtreeBounds)
+	case node.bounds != bounds || node.prevBox != node.layout.Box:
+		add(node.bounds)
+		add(bounds)
+	}
+}
+
+// reflowPaint repaints only what changed after a rebuild and relayout. A
+// measuring pass records every node's new position, the hit-test registry and
+// the damage; the partial painter then redraws just the damaged areas.
+func (r *Renderer) reflowPaint(buildCtx BuildContext) {
+	ctx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
+	r.reflowDamage = r.reflowDamage[:0]
+	r.geometryOnly = true
+	r.paintRetainedNode(ctx, r.rootNode, 0, 0, Rect{}, false, true)
+	r.geometryOnly = false
+
+	rects := coalesceDamage(r.reflowDamage, Rect{Width: r.width, Height: r.height})
+	r.lastDamagedRects = rects
+	for _, rect := range rects {
+		r.clearRect(rect)
+		paintCtx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
+		paintCtx.clip = paintCtx.clip.Intersect(rect)
+		r.paintRetainedNode(paintCtx, r.rootNode, 0, 0, rect, true, false)
+	}
+}
+
+// maxDamageRects bounds how many separate regions are repainted; beyond it
+// one bounding rectangle is cheaper than many tree walks.
+const maxDamageRects = 8
+
+// coalesceDamage clips rects to the screen and merges overlapping ones, so
+// no cell is repainted twice.
+func coalesceDamage(rects []Rect, screen Rect) []Rect {
+	var merged []Rect
+	for _, rect := range rects {
+		rect = rect.Intersect(screen)
+		if rect.IsEmpty() {
+			continue
+		}
+		// Absorb any existing rects this one overlaps, repeating as it grows.
+		for i := 0; i < len(merged); {
+			if merged[i].Intersects(rect) {
+				rect = rect.Union(merged[i])
+				merged = append(merged[:i], merged[i+1:]...)
+				i = 0
+				continue
+			}
+			i++
+		}
+		merged = append(merged, rect)
+	}
+	if len(merged) > maxDamageRects {
+		union := merged[0]
+		for _, rect := range merged[1:] {
+			union = union.Union(rect)
+		}
+		return []Rect{union}
+	}
+	return merged
 }
 
 func (r *Renderer) buildAndPaintFloats(ctx *RenderContext, buildCtx BuildContext) {
