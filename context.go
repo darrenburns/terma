@@ -1,8 +1,7 @@
 package terma
 
 import (
-	"fmt"
-	"strings"
+	"strconv"
 )
 
 // pendingFocusID holds the ID of a widget that should receive focus after the next render.
@@ -55,14 +54,14 @@ func (ctx BuildContext) pathString() string {
 	if len(ctx.path) == 0 {
 		return "0"
 	}
-	var b strings.Builder
+	b := make([]byte, 0, len(ctx.path)*3)
 	for i, idx := range ctx.path {
 		if i > 0 {
-			b.WriteByte('.')
+			b = append(b, '.')
 		}
-		fmt.Fprintf(&b, "%d", idx)
+		b = strconv.AppendInt(b, int64(idx), 10)
 	}
-	return b.String()
+	return string(b)
 }
 
 // PushChild creates a child context with the given index appended to the path.
@@ -103,7 +102,10 @@ func (ctx BuildContext) WithDisabled() BuildContext {
 // IsFocused returns true if the given widget currently has focus.
 // Widgets with an explicit ID are matched by that ID; otherwise the
 // position-based AutoID is used as a fallback.
+// This is a reactive value - reading it during Build() will cause
+// the widget to rebuild when focus changes.
 func (ctx BuildContext) IsFocused(widget Widget) bool {
+	ctx.subscribeToFocus()
 	if ctx.focusManager == nil {
 		return false
 	}
@@ -132,6 +134,15 @@ func (ctx BuildContext) Focused() Focusable {
 	return ctx.focusedSignal.Get()
 }
 
+// subscribeToFocus records a dependency on the focused widget. Focus state is
+// owned by the FocusManager, so reads through it are otherwise invisible to
+// the reactive system and a skipped Build would keep stale focus styling.
+func (ctx BuildContext) subscribeToFocus() {
+	if ctx.focusedSignal.IsValid() {
+		_ = ctx.focusedSignal.Get()
+	}
+}
+
 // FocusedSignal returns the signal holding the focused widget.
 // Useful for more advanced reactive patterns.
 func (ctx BuildContext) FocusedSignal() AnySignal[Focusable] {
@@ -141,7 +152,10 @@ func (ctx BuildContext) FocusedSignal() AnySignal[Focusable] {
 // ActiveKeybinds returns all declarative keybindings currently active
 // based on the focused widget and its ancestors.
 // Useful for displaying available keybindings in a footer or help screen.
+// This is a reactive value - reading it during Build() will cause
+// the widget to rebuild when focus changes.
 func (ctx BuildContext) ActiveKeybinds() []Keybind {
+	ctx.subscribeToFocus()
 	if ctx.focusManager == nil {
 		return nil
 	}

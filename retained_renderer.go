@@ -47,8 +47,8 @@ func (p phaseTrackingLayoutNode) PreservesHeight() bool {
 }
 
 // Update renders the next frame using the retained tree when possible.
-// Paint-only signal changes take the partial repaint fast path; everything
-// else falls back to a normal full build/layout/paint pass.
+// Paint-only signal changes take the partial repaint fast path. Build and
+// layout changes reuse clean builds, then lay out and paint the whole tree.
 func (r *Renderer) Update(root Widget) []FocusableEntry {
 	focusables, _, _ := r.updateInternal(root)
 	return focusables
@@ -59,7 +59,7 @@ func (r *Renderer) updateInternal(root Widget) (focusables []FocusableEntry, lay
 		return r.renderFull(root)
 	}
 	if r.maxDirtyLevel() >= DirtyLayout {
-		return r.renderFull(root)
+		return r.renderFrame(root, false)
 	}
 	if r.hasPaintDirty() {
 		return r.renderPartial(root)
@@ -68,6 +68,14 @@ func (r *Renderer) updateInternal(root Widget) (focusables []FocusableEntry, lay
 }
 
 func (r *Renderer) renderFull(root Widget) (focusables []FocusableEntry, layoutWidth, layoutHeight int) {
+	return r.renderFrame(root, true)
+}
+
+// rebuildAll is used for explicit Render calls and initial/forced frames.
+// Reactive updates rebuild only dirty nodes and descendants whose inputs may
+// have changed when a parent rebuilt. Focus and float collection still traverse
+// the whole tree so their ordering and inherited scopes remain correct.
+func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []FocusableEntry, layoutWidth, layoutHeight int) {
 	r.fullRenderRequired = false
 	r.lastFrameMode = rendererFrameFull
 	r.fullRenderCount++
@@ -82,7 +90,7 @@ func (r *Renderer) renderFull(root Widget) (focusables []FocusableEntry, layoutW
 	r.modalCount = 0
 
 	buildCtx := NewBuildContext(r.focusManager, r.focusedSignal, r.hoveredSignal, r.floatCollector)
-	r.rootNode = r.buildRetainedNode(r.rootNode, root, buildCtx, r.focusCollector)
+	r.rootNode = r.buildRetainedNode(r.rootNode, root, buildCtx, r.focusCollector, rebuildAll)
 
 	if r.rootNode == nil {
 		r.lastFocusables = nil
@@ -157,7 +165,7 @@ func (r *Renderer) renderPartial(root Widget) (focusables []FocusableEntry, layo
 	return r.lastFocusables, r.lastLayoutWidth, r.lastLayoutHeight
 }
 
-func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildContext, fc *FocusCollector) *widgetNode {
+func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildContext, fc *FocusCollector, rebuild bool) *widgetNode {
 	if widget == nil {
 		widget = EmptyWidget{}
 	}
@@ -167,9 +175,9 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 		if w.disabled {
 			ctx = ctx.WithDisabled()
 		}
-		return r.buildRetainedNode(old, w.child, ctx, fc)
+		return r.buildRetainedNode(old, w.child, ctx, fc, rebuild)
 	case inertWrapper:
-		return r.buildRetainedNode(old, w.child, ctx, nil)
+		return r.buildRetainedNode(old, w.child, ctx, nil, rebuild)
 	case FocusTrap:
 		if fc != nil && w.TrapsFocus() {
 			trapID := w.WidgetID()
@@ -180,37 +188,52 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 			defer fc.PopTrap()
 		}
 		if w.Child == nil {
-			return r.buildRetainedNode(old, EmptyWidget{}, ctx, fc)
+			return r.buildRetainedNode(old, EmptyWidget{}, ctx, fc, rebuild)
 		}
-		return r.buildRetainedNode(old, w.Child, ctx, fc)
+		return r.buildRetainedNode(old, w.Child, ctx, fc, rebuild)
 	}
 
-	eventID := widgetIdentity(widget, ctx)
 	node := old
-	if node == nil || node.identity != eventID {
-		if old != nil {
-			old.dispose()
+	if rebuild || node == nil {
+		eventID := widgetIdentity(widget, ctx)
+		if node == nil || node.identity != eventID {
+			if old != nil {
+				old.dispose()
+			}
+			node = newWidgetNode(widget)
 		}
-		node = newWidgetNode(widget)
-	} else if old != nil {
-		old.clearDependenciesForPhase(readPhaseBuild)
+		node.autoID = ctx.AutoID()
+		node.eventID = eventID
+		node.identity = eventID
 	}
+	// Otherwise the parent's retained build supplied this same widget at the
+	// same path, so its identity is unchanged and needn't be recomputed.
+	eventID := node.eventID
+	rebuild = rebuild || node.dirtyLevel() == DirtyBuild
 
 	node.source = widget
 	node.eventWidget = widget
-	node.autoID = ctx.AutoID()
-	node.eventID = eventID
-	node.identity = eventID
 	node.buildContext = ctx
 
-	built := withSignalRead(node, readPhaseBuild, func() Widget {
-		return widget.Build(ctx)
-	})
-	if built == nil {
-		built = EmptyWidget{}
+	if rebuild {
+		node.clearDependenciesForPhase(readPhaseBuild)
+		floatStart := r.floatCollector.Len()
+		built := withSignalRead(node, readPhaseBuild, func() Widget {
+			return widget.Build(ctx)
+		})
+		if built == nil {
+			built = EmptyWidget{}
+		}
+		node.widget = built
+		// Floating.Build registers overlays rather than returning them as
+		// children. Keep this node's registrations for frames that reuse Build.
+		node.floats = append(node.floats[:0], r.floatCollector.entries[floatStart:]...)
+		r.lastBuildCount++
+	} else {
+		for _, entry := range node.floats {
+			r.floatCollector.Add(entry)
+		}
 	}
-	node.widget = built
-	r.lastBuildCount++
 
 	var ancestorsPushed bool
 	if fc != nil {
@@ -228,7 +251,15 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 		defer fc.PopAncestor()
 	}
 
-	childWidgets := extractChildren(built)
+	childWidgets := extractChildren(node.widget)
+	if !rebuild {
+		// The retained build still supplies the same children and wrappers.
+		// Walk them to reach dirty descendants and recollect focus scopes.
+		for i, childWidget := range childWidgets {
+			node.children[i] = r.buildRetainedNode(node.children[i], childWidget, ctx.PushChild(i), fc, false)
+		}
+		return node
+	}
 	oldChildren := make(map[string]*widgetNode, len(node.children))
 	for _, child := range node.children {
 		oldChildren[child.identity] = child
@@ -238,7 +269,7 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 	for i, childWidget := range childWidgets {
 		childCtx := ctx.PushChild(i)
 		childID := widgetIdentity(childWidget, childCtx)
-		childNode := r.buildRetainedNode(oldChildren[childID], childWidget, childCtx, fc)
+		childNode := r.buildRetainedNode(oldChildren[childID], childWidget, childCtx, fc, true)
 		if childNode == nil {
 			continue
 		}
@@ -590,7 +621,7 @@ func (r *Renderer) buildAndPaintFloats(ctx *RenderContext, buildCtx BuildContext
 		if i < len(oldFloats) {
 			oldRoot = oldFloats[i].root
 		}
-		floatRoot := r.buildRetainedNode(oldRoot, child, buildCtx, r.focusCollector)
+		floatRoot := r.buildRetainedNode(oldRoot, child, buildCtx, r.focusCollector, true)
 		r.computeRetainedLayout(floatRoot, layout.Loose(r.width, r.height))
 
 		floatWidth := floatRoot.layout.Box.MarginBoxWidth()

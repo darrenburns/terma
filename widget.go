@@ -154,6 +154,7 @@ type widgetNode struct {
 	widget      Widget
 	eventWidget Widget
 	children    []*widgetNode
+	floats      []FloatEntry // Registrations produced by this node's last Build.
 
 	buildContext BuildContext
 	autoID       string

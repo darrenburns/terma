@@ -60,7 +60,6 @@ func (a *App) Keybinds() []t.Keybind {
 func (a *App) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
 	running := a.running.Get()
-	showBanner := a.showBanner.Get()
 	overlayEnabled := os.Getenv("TERMA_DEBUG_OVERLAY") != ""
 
 	children := []t.Widget{
@@ -82,7 +81,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 			Style:   t.Style{ForegroundColor: theme.TextMuted},
 		},
 		overlayNotice(theme, overlayEnabled),
-		buildPhaseBanner(theme, showBanner),
+		bannerProbe{show: a.showBanner},
 		panel(theme, "Fixed-width TextInput", t.Column{
 			Spacing: 1,
 			Children: []t.Widget{
@@ -211,10 +210,20 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 	}
 }
 
+// bannerProbe reads showBanner in its own Build, so toggling the banner
+// rebuilds only this widget rather than the whole app.
+type bannerProbe struct {
+	show t.Signal[bool]
+}
+
+func (b bannerProbe) Build(ctx t.BuildContext) t.Widget {
+	return buildPhaseBanner(ctx.Theme(), b.show.Get())
+}
+
 func buildPhaseBanner(theme t.ThemeData, visible bool) t.Widget {
 	if !visible {
 		return t.Text{
-			Content: "Build-phase banner is hidden. Press `ctrl+b` to insert a widget from Build() and force a full render.",
+			Content: "Build-phase banner is hidden. Press `ctrl+b` to change this widget from its own Build(). Only it should rebuild.",
 			Wrap:    t.WrapSoft,
 			Style: t.Style{
 				ForegroundColor: theme.Surface2.AutoText(),
@@ -225,7 +234,7 @@ func buildPhaseBanner(theme t.ThemeData, visible bool) t.Widget {
 	}
 
 	return t.Text{
-		Content: "Build-phase banner is visible. This widget was conditionally inserted from Build(), so toggling it should produce a full render.",
+		Content: "Build-phase banner is visible. Only this widget read the signal, so the overlay should report build=1 while the rest of the tree is reused.",
 		Wrap:    t.WrapSoft,
 		Style: t.Style{
 			ForegroundColor: theme.Warning.AutoText(),
