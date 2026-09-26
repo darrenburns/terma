@@ -2,6 +2,7 @@ package terma
 
 import (
 	"fmt"
+	"reflect"
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/screen"
@@ -312,6 +313,12 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 		if built == nil {
 			built = EmptyWidget{}
 		}
+		if needsOwnNode(built, widget) {
+			// A composite returned directly from Build only works once its own
+			// Build runs (a Dialog registers its overlay, a Button builds its
+			// label), so it gets a node of its own beneath this one.
+			built = passThrough{child: built}
+		}
 		node.widget = built
 		// Floating.Build registers overlays rather than returning them as
 		// children. Keep this node's registrations for frames that reuse Build.
@@ -387,6 +394,18 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 
 	node.children = children
 	return node
+}
+
+// needsOwnNode reports whether a widget returned from Build is a composite that
+// must be built itself. Widgets that lay out or render themselves are used as
+// the node's output directly. A widget returning its own type is treated as
+// final, so self-returning widgets aren't wrapped again and again.
+func needsOwnNode(built, source Widget) bool {
+	switch built.(type) {
+	case Renderable, LayoutNodeBuilder, ContainerLayoutBuilder, ChildProvider:
+		return false
+	}
+	return reflect.TypeOf(built) != reflect.TypeOf(source)
 }
 
 func widgetIdentity(widget Widget, ctx BuildContext) string {

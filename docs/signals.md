@@ -14,8 +14,6 @@ A build-phase change rebuilds only the subscribed widget and the widgets it retu
 
 Because clean widgets are not rebuilt, `Build()` must read changing state through signals (or state objects built on signals). A plain struct field that changes without a signal write will not be picked up, even if some other part of the app rebuilds in the same frame. `ctx.IsFocused()`, `ctx.Focused()`, `ctx.IsHovered()`, `ctx.ActiveKeybinds()` and `ctx.Theme()` are all reactive.
 
-A widget returned directly from `Build()` is used for layout and painting but its own `Build()` is not called. Place composite widgets such as `Dialog` or `Floating` inside a container (for example as a child of a `Column`) so they are built.
-
 ## Choosing The Right Phase
 
 As a rule:

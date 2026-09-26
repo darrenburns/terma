@@ -285,8 +285,6 @@ type reactivityOverlayScene struct {
 func (s *reactivityOverlayScene) Build(BuildContext) Widget {
 	return Column{Children: []Widget{
 		reactivityBuilder{ID: "dialog-owner", build: func(BuildContext) Widget {
-			// A widget returned directly from Build is never built itself, so
-			// the Dialog must be a child for its Build to register the overlay.
 			return Column{Children: []Widget{Dialog{
 				ID: "dialog", Visible: s.open.Get(), Title: "Confirm",
 				Content: Text{Content: "Proceed?"},
@@ -854,7 +852,6 @@ func (s *reactivityCollapseScene) tree() Tree[string] {
 	return Tree[string]{ID: "tree", State: s.state}
 }
 
-// The tree is a child: a widget returned directly from Build isn't built.
 func (s *reactivityCollapseScene) Build(BuildContext) Widget {
 	return Column{Children: []Widget{s.tree()}}
 }
@@ -1005,7 +1002,6 @@ func (s *reactivityTreeScene) tree() Tree[string] {
 	return tree
 }
 
-// The tree is a child: a widget returned directly from Build isn't built.
 func (s *reactivityTreeScene) Build(BuildContext) Widget { return Column{Children: []Widget{s.tree()}} }
 
 func TestReactivityTreeCursorAndSelection(t *testing.T) {
@@ -1172,4 +1168,62 @@ func TestReactivityOverlaysRepaintOnlyDamage(t *testing.T) {
 	sequence.frame("Close dialog", func(s *reactivityFloatsScene) { s.dialogOpen.Set(false) })
 	sequence.frame("Close menu", func(s *reactivityFloatsScene) { s.menuOpen.Set(false) })
 	requirePartial(sequence.frame("Change with no overlays", func(s *reactivityFloatsScene) { s.under.Set("under four") }), "no overlays")
+}
+
+type reactivityDirectScene struct {
+	open  Signal[bool]
+	items *ListState[string]
+	label Signal[string]
+}
+
+// Each builder returns a composite widget directly, rather than as a child.
+func (s *reactivityDirectScene) Build(BuildContext) Widget {
+	return Column{Children: []Widget{
+		reactivityBuilder{ID: "direct-button", build: func(BuildContext) Widget {
+			return Button{ID: "button", Label: s.label.Get()}
+		}},
+		reactivityBuilder{ID: "direct-list", build: func(BuildContext) Widget {
+			return List[string]{ID: "list", State: s.items}
+		}},
+		reactivityBuilder{ID: "direct-trap", build: func(BuildContext) Widget {
+			return FocusTrap{ID: "trap", Child: Text{Content: "inside trap"}}
+		}},
+		reactivityBuilder{ID: "direct-dialog", build: func(BuildContext) Widget {
+			return Dialog{ID: "dialog", Visible: s.open.Get(), Title: "Direct", Content: Text{Content: "direct dialog"}}
+		}},
+		reactivityBuilder{ID: "direct-positioned", build: func(BuildContext) Widget {
+			// Returns a widget whose Build returns itself; must not recurse.
+			return Positioned{Child: Text{Content: "positioned"}}
+		}},
+	}}
+}
+
+// A widget returned directly from Build is built itself, so it works just as
+// it would as a child: a Dialog registers its overlay, a Button is focusable
+// and a List renders its items.
+func TestReactivityWidgetReturnedFromBuildIsBuilt(t *testing.T) {
+	sequence := newReactivitySequence(t, 30, 10, func() *reactivityDirectScene {
+		return &reactivityDirectScene{open: NewSignal(false), items: NewListState([]string{"alpha", "beta"}), label: NewSignal("Press")}
+	})
+	sequence.frame("Initial", nil)
+	screen := sequence.actual.renderer.ScreenText()
+	require.Contains(t, screen, "Press", "the Button builds its label")
+	require.Contains(t, screen, "alpha", "the List renders its items")
+	require.Contains(t, screen, "inside trap", "the FocusTrap renders its child")
+	focusable := map[string]bool{}
+	for _, entry := range sequence.actual.focusables {
+		focusable[entry.ID] = true
+	}
+	require.True(t, focusable["button"], "the Button is focusable: %v", sequence.actual.focusables)
+	require.True(t, focusable["list"], "the List is focusable: %v", sequence.actual.focusables)
+
+	sequence.frame("Relabel button", func(s *reactivityDirectScene) { s.label.Set("Pressed") })
+	sequence.focus("list")
+	sequence.frame("Focus list", nil)
+	sequence.frame("List cursor down", func(s *reactivityDirectScene) {
+		List[string]{ID: "list", State: s.items}.keyCursorDown()
+	})
+	sequence.frame("Open dialog", func(s *reactivityDirectScene) { s.open.Set(true) })
+	require.Contains(t, sequence.actual.renderer.ScreenText(), "direct dialog", "the Dialog registers its overlay")
+	sequence.frame("Close dialog", func(s *reactivityDirectScene) { s.open.Set(false) })
 }
