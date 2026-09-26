@@ -7,6 +7,8 @@ require (
 	github.com/charmbracelet/ultraviolet v0.0.0-20251217160852-6b0c0e26fad9
 	github.com/charmbracelet/x/ansi v0.11.3
 	github.com/charmbracelet/x/term v0.2.2
+	github.com/creack/pty v1.1.24
+	github.com/gorilla/websocket v1.5.3
 	github.com/stretchr/testify v1.11.1
 )
 

@@ -36,6 +36,16 @@ Terma is a Go module for terminal UI widgets plus many runnable demos. Use this 
 - When UI changes are intentional, update snapshots via `UPDATE_SNAPSHOTS=1`.
 - Keep snapshot test names stable; they map directly to golden filenames.
 
+### Browser Verification for Agents
+
+Browser verification is one of the primary ways agents should verify their work on Terma. Agents cannot use computer-use tools with native terminals; `terma-browser` makes real TUI apps available to those tools through a browser.
+
+- For changes to rendering, layout, focus, or interaction, run a relevant app through `go run ./cmd/terma-browser -- go run ./cmd/todo-app` (replace the demo with one that exercises the change).
+- Read [Browser Testing](docs/browser-testing.md) for the launch, sizing, and computer-use workflow. Open the printed URL, including its token fragment, in the computer-use browser.
+- Exercise the changed behavior with keyboard and mouse input, then inspect screenshots and accessible terminal text to confirm the expected result. Verify visual changes at the default viewport size; use fixed terminal dimensions when comparing screenshots.
+- Use browser verification alongside appropriate Go tests and snapshots. Report what was actually verified, and state any blocker if browser verification could not be completed.
+- Close test tabs and stop the launcher when finished. Use test data for apps that persist changes.
+
 ## Commit & Pull Request Guidelines
 - Recent history uses short, imperative summaries (for example: “Use autocomplete in edit mode”).
 - Keep commits focused and prefer one logical change per commit.

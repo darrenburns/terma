@@ -38,6 +38,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Browser Testing: browser-testing.md
   - Widgets:
     - Overview: widgets/index.md
     - Custom Widgets: widgets/custom-widgets.md

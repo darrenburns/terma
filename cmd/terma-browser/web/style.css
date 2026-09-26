@@ -1,0 +1,9 @@
+html, body { margin: 0; height: 100%; background: #101216; color: #dce2ec; font: 14px system-ui, sans-serif; }
+body { display: flex; flex-direction: column; }
+header { display: flex; align-items: center; gap: 20px; padding: 10px 16px; border-bottom: 1px solid #303640; }
+#status { flex: 1; color: #adb7c6; }
+button { background: #242b35; color: inherit; border: 1px solid #4a5565; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+#terminal { flex: 1; min-height: 0; overflow: auto; padding: 8px; }
+/* Accessibility rows can be wider than their rendered cells. Keep their text
+   available to assistive tools without creating a horizontal page scrollbar. */
+.xterm .xterm-accessibility { overflow: hidden; }
