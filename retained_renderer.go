@@ -84,17 +84,27 @@ func (p *retainedLayoutNode) child() layout.LayoutNode {
 }
 
 func (p *retainedLayoutNode) PreservesWidth() bool {
-	if preserver, ok := p.child().(layout.SizePreserver); ok {
-		return preserver.PreservesWidth()
-	}
-	return false
+	width, _ := p.sizePreserve()
+	return width
 }
 
 func (p *retainedLayoutNode) PreservesHeight() bool {
-	if preserver, ok := p.child().(layout.SizePreserver); ok {
-		return preserver.PreservesHeight()
+	_, height := p.sizePreserve()
+	return height
+}
+
+// sizePreserve answers from the node's cached flags when its subtree is clean,
+// so asking doesn't force building its layout node.
+func (p *retainedLayoutNode) sizePreserve() (width, height bool) {
+	node := p.node
+	if !p.cacheable || !node.sizePreserveKnown {
+		node.preservesWidth, node.preservesHeight = false, false
+		if preserver, ok := p.child().(layout.SizePreserver); ok {
+			node.preservesWidth, node.preservesHeight = preserver.PreservesWidth(), preserver.PreservesHeight()
+		}
+		node.sizePreserveKnown = true
 	}
-	return false
+	return node.preservesWidth, node.preservesHeight
 }
 
 // Update renders the next frame using the retained tree when possible.

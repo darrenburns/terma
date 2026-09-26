@@ -172,9 +172,29 @@ and repaints 12 cells. What remains is proportional to the tree size: the build
 walk (which also collects focusables and floats), assigning layouts, and the
 measuring pass. Paint-only updates are unchanged.
 
-List cursor movement is not improved. The default renderer's rows all read the
-shared cursor signal while painting, so every visible row repaints; a custom
-`RenderItem` makes the list read the cursor in `Build()`, so every row rebuilds.
+## List rows and `Select`
+
+List rows used to subscribe to the whole cursor signal, so every visible row
+repainted on each cursor move, and with a custom `RenderItem` every row rebuilt.
+Rows now use `Select` (and `SelectAny` for the selection), which notifies a
+subscriber only when its projected answer ("am I the active row?") changes. With
+a custom `RenderItem`, each row is its own widget that selects its state in its
+own `Build`, so only the rows the cursor leaves and enters rebuild. Rows cache
+their `SizePreserver` answers alongside cached layouts, so recomputing the list's
+layout doesn't rebuild every row's layout node.
+
+[Raw output](benchmarks/reactivity-select.txt), same machine and settings.
+
+| Scenario | Baseline | Before `Select` | Now | Builds | Damage |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Default list cursor, 100 items | 434.5 µs | 431.9 µs | 30.4 µs | 0 | 2 rows |
+| Default list cursor, 1,000 items | 688.7 µs | 712.9 µs | 76.9 µs | 0 | 2 rows |
+| Custom list cursor, 100 items | 531.5 µs | 496.0 µs | 91.9 µs | 4 | 2 rows |
+| Custom list cursor, 1,000 items | 2,028.7 µs | 1,543.6 µs | 654.8 µs | 4 | 2 rows |
+
+The remaining cost grows with list length: every row's selector runs on each
+cursor change, and with a custom renderer the list's own layout is recomputed,
+walking every row (each a cache hit). A virtualized list would avoid both.
 
 ## Correctness checks
 

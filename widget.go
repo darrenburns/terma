@@ -161,11 +161,16 @@ type widgetNode struct {
 	eventID      string
 	identity     string
 
-	layout        layout.ComputedLayout
-	prevBox       layout.BoxModel    // Box from the previous layout, to detect box-only changes.
-	layoutCache   []layoutCacheEntry // Recent results by constraints, valid while the subtree is clean.
-	bounds        Rect
-	subtreeBounds Rect
+	layout      layout.ComputedLayout
+	prevBox     layout.BoxModel    // Box from the previous layout, to detect box-only changes.
+	layoutCache []layoutCacheEntry // Recent results by constraints, valid while the subtree is clean.
+
+	// Cached layout.SizePreserver answers, valid under the same condition.
+	sizePreserveKnown bool
+	preservesWidth    bool
+	preservesHeight   bool
+	bounds            Rect
+	subtreeBounds     Rect
 
 	dirtySelf    atomic.Int32
 	dirtySubtree atomic.Int32

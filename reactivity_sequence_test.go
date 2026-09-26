@@ -388,16 +388,19 @@ type reactivityListScene struct {
 	state  *ListState[string]
 	scroll *ScrollState
 	custom bool
+	multi  bool
 	header Signal[string]
 }
 
 func (s *reactivityListScene) list() List[string] {
-	list := List[string]{ID: "list", State: s.state, ScrollState: s.scroll}
+	list := List[string]{ID: "list", State: s.state, ScrollState: s.scroll, MultiSelect: s.multi}
 	if s.custom {
 		list.RenderItem = func(item string, active, selected bool) Widget {
 			prefix := "  "
 			if active {
 				prefix = "> "
+			} else if selected {
+				prefix = "* "
 			}
 			return Text{Content: prefix + item}
 		}
@@ -425,7 +428,22 @@ func TestReactivityListCursorAndScroll(t *testing.T) {
 			sequence.frame("Focus list", nil)
 			for i := 0; i < 5; i++ {
 				// Drive the list through its own keybinding, as a user would.
-				sequence.frame(fmt.Sprintf("Cursor down %d", i+1), func(s *reactivityListScene) { s.list().keyCursorDown() })
+				work := sequence.frame(fmt.Sprintf("Cursor down %d", i+1), func(s *reactivityListScene) { s.list().keyCursorDown() })
+				if i == 0 {
+					// Within the viewport, only the old and new cursor rows change.
+					rows := map[int]bool{}
+					for _, rect := range work.DamagedRects {
+						for y := rect.Y; y < rect.Y+rect.Height; y++ {
+							rows[y] = true
+						}
+					}
+					require.LessOrEqual(t, len(rows), 2, "damage covers at most the two affected rows: %v", work.DamagedRects)
+					if custom {
+						require.LessOrEqual(t, work.BuildCount, 4, "only the two affected rows rebuild")
+					} else {
+						require.Zero(t, work.BuildCount)
+					}
+				}
 			}
 			sequence.frame("Header change", func(s *reactivityListScene) { s.header.Set("changed") })
 			sequence.frame("Replace items", func(s *reactivityListScene) { s.state.SetItems([]string{"alpha", "beta"}) })
@@ -599,4 +617,27 @@ func TestReactivityLayoutReadSurvivesCachedFrames(t *testing.T) {
 	sequence.frame("Initial", nil)
 	sequence.frame("Unrelated change reuses reader layout", func(s *reactivityLayoutReadScene) { s.other.Set("two") })
 	sequence.frame("Reader width grows", func(s *reactivityLayoutReadScene) { s.width.Set(8) })
+}
+
+func TestReactivityListMultiSelect(t *testing.T) {
+	for _, custom := range []bool{false, true} {
+		t.Run(fmt.Sprintf("custom=%v", custom), func(t *testing.T) {
+			sequence := newReactivitySequence(t, 20, 6, func() *reactivityListScene {
+				items := []string{"one", "two", "three", "four", "five", "six", "seven"}
+				return &reactivityListScene{state: NewListState(items), scroll: NewScrollState(), custom: custom, multi: true, header: NewSignal("list")}
+			})
+			sequence.frame("Initial", nil)
+			sequence.focus("list")
+			sequence.frame("Focus list", nil)
+			sequence.frame("Extend selection", func(s *reactivityListScene) { s.list().shiftCursorDown() })
+			sequence.frame("Extend again", func(s *reactivityListScene) { s.list().shiftCursorDown() })
+			sequence.frame("Shrink selection", func(s *reactivityListScene) { s.list().shiftCursorUp() })
+			sequence.frame("Plain move clears selection", func(s *reactivityListScene) { s.list().keyCursorDown() })
+			sequence.frame("Select past viewport", func(s *reactivityListScene) {
+				for i := 0; i < 4; i++ {
+					s.list().shiftCursorDown()
+				}
+			})
+		})
+	}
 }
