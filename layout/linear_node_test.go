@@ -1391,15 +1391,15 @@ func TestLinearNode_ExpandFlags(t *testing.T) {
 	})
 }
 
-func TestLinearNode_FlexInUnboundedContext_ReturnsZero(t *testing.T) {
-	// Following Flutter/CSS behavior: Flex dimensions in unbounded contexts
-	// return a default size (0) instead of panicking. Flex has no meaningful
-	// natural size in infinite space.
+func TestLinearNode_FlexInUnboundedContext_UsesNaturalSize(t *testing.T) {
+	// With no limit on the main axis there is no free space to share out, so a
+	// flex child takes its natural size, as a CSS flex item does in a container
+	// sized to its content, instead of collapsing to zero.
 
-	t.Run("Column with unbounded height - flex child gets zero height", func(t *testing.T) {
+	t.Run("Column with unbounded height - flex child keeps its natural height", func(t *testing.T) {
 		col := &ColumnNode{
 			Children: []LayoutNode{
-				box(10, 20),                          // Fixed child
+				box(10, 20),                           // Fixed child
 				&FlexNode{Flex: 1, Child: box(10, 5)}, // Flex child
 			},
 		}
@@ -1407,17 +1407,16 @@ func TestLinearNode_FlexInUnboundedContext_ReturnsZero(t *testing.T) {
 			MinWidth: 0, MaxWidth: 100,
 			MinHeight: 0, MaxHeight: maxInt,
 		})
-		// Container shrink-wraps to fixed content only
 		assert.Equal(t, 10, result.Box.Width)
-		assert.Equal(t, 20, result.Box.Height, "Column should shrink-wrap to fixed content")
-		// Flex child gets zero allocation
-		assert.Equal(t, 0, result.Children[1].Layout.Box.Height, "Flex child should have zero height")
+		assert.Equal(t, 25, result.Box.Height, "Column should fit both children")
+		assert.Equal(t, 5, result.Children[1].Layout.Box.Height, "Flex child should keep its natural height")
+		assert.Equal(t, 20, result.Children[1].Y)
 	})
 
-	t.Run("Row with unbounded width - flex child gets zero width", func(t *testing.T) {
+	t.Run("Row with unbounded width - flex child keeps its natural width", func(t *testing.T) {
 		row := &RowNode{
 			Children: []LayoutNode{
-				box(20, 10),                          // Fixed child
+				box(20, 10),                           // Fixed child
 				&FlexNode{Flex: 1, Child: box(5, 10)}, // Flex child
 			},
 		}
@@ -1425,11 +1424,23 @@ func TestLinearNode_FlexInUnboundedContext_ReturnsZero(t *testing.T) {
 			MinWidth: 0, MaxWidth: maxInt,
 			MinHeight: 0, MaxHeight: 100,
 		})
-		// Container shrink-wraps to fixed content only
-		assert.Equal(t, 20, result.Box.Width, "Row should shrink-wrap to fixed content")
+		assert.Equal(t, 25, result.Box.Width, "Row should fit both children")
 		assert.Equal(t, 10, result.Box.Height)
-		// Flex child gets zero allocation
-		assert.Equal(t, 0, result.Children[1].Layout.Box.Width, "Flex child should have zero width")
+		assert.Equal(t, 5, result.Children[1].Layout.Box.Width, "Flex child should keep its natural width")
+		assert.Equal(t, 20, result.Children[1].X)
+	})
+
+	t.Run("Several flex children each keep their own natural size", func(t *testing.T) {
+		row := &RowNode{
+			Children: []LayoutNode{
+				&FlexNode{Flex: 1, Child: box(12, 3)},
+				&FlexNode{Flex: 1, Child: box(2, 3)},
+			},
+		}
+		result := row.ComputeLayout(Constraints{MaxWidth: maxInt, MaxHeight: 100})
+		assert.Equal(t, 14, result.Box.Width)
+		assert.Equal(t, 12, result.Children[0].Layout.Box.Width, "not an even split of the total")
+		assert.Equal(t, 2, result.Children[1].Layout.Box.Width)
 	})
 
 	t.Run("Column with unbounded height after inset subtraction", func(t *testing.T) {
@@ -1444,14 +1455,13 @@ func TestLinearNode_FlexInUnboundedContext_ReturnsZero(t *testing.T) {
 			MinWidth: 0, MaxWidth: 100,
 			MinHeight: 0, MaxHeight: maxInt - 20, // Simulates padding/border subtracted
 		})
-		// Flex child gets zero allocation
-		assert.Equal(t, 0, result.Box.Height, "Container should have zero height with only flex children")
+		assert.Equal(t, 5, result.Box.Height, "Container should fit the flex child's natural height")
 	})
 
 	t.Run("Column with bounded height expands flex children", func(t *testing.T) {
 		col := &ColumnNode{
 			Children: []LayoutNode{
-				box(10, 20),                          // Fixed child: 20 tall
+				box(10, 20),                           // Fixed child: 20 tall
 				&FlexNode{Flex: 1, Child: box(10, 5)}, // Flex child
 			},
 		}
@@ -1465,7 +1475,7 @@ func TestLinearNode_FlexInUnboundedContext_ReturnsZero(t *testing.T) {
 	t.Run("Row with bounded width expands flex children", func(t *testing.T) {
 		row := &RowNode{
 			Children: []LayoutNode{
-				box(20, 10),                          // Fixed child: 20 wide
+				box(20, 10),                           // Fixed child: 20 wide
 				&FlexNode{Flex: 1, Child: box(5, 10)}, // Flex child
 			},
 		}
@@ -1476,7 +1486,7 @@ func TestLinearNode_FlexInUnboundedContext_ReturnsZero(t *testing.T) {
 		assert.Equal(t, 80, result.Children[1].Layout.Box.Width, "Flex child should expand in bounded context")
 	})
 
-	t.Run("Only flex children in unbounded context - container collapses to zero", func(t *testing.T) {
+	t.Run("Only flex children in unbounded context - container fits their natural sizes", func(t *testing.T) {
 		col := &ColumnNode{
 			Children: []LayoutNode{
 				&FlexNode{Flex: 1, Child: box(10, 5)},
@@ -1487,7 +1497,7 @@ func TestLinearNode_FlexInUnboundedContext_ReturnsZero(t *testing.T) {
 			MinWidth: 0, MaxWidth: 100,
 			MinHeight: 0, MaxHeight: maxInt,
 		})
-		// With no fixed content, container collapses
-		assert.Equal(t, 0, result.Box.Height, "Container with only flex children in unbounded context should be zero")
+		assert.Equal(t, 10, result.Box.Height, "Container should fit both flex children")
+		assert.Equal(t, 5, result.Children[1].Y)
 	})
 }

@@ -107,6 +107,7 @@ type fixedLayoutInfo struct {
 	hasFlex           bool      // True if any child is a FlexNode
 	isFlexChild       []bool    // Per-child: true if it's a FlexNode
 	flexValues        []float64 // Per-child: Flex value (0 for non-flex)
+	naturalFlex       bool      // Unbounded main axis: flex children already have their natural size
 }
 
 // effectiveConstraints combines parent constraints with node's own min/max constraints.
@@ -180,15 +181,15 @@ func (l *LinearNode) measureNonFlexChildren(contentConstraints Constraints) ([]C
 			info.flexValues[i] = flexVal
 			info.totalFlex += flexVal
 
-			// In unbounded contexts (e.g. Scrollable measuring with infinite height),
-			// Flex has no meaningful natural size. We treat flex children as zero-size
-			// during measurement - they will get proper allocation in the flex distribution
-			// phase if constraints become bounded. This follows Flutter/CSS behavior.
+			// In unbounded contexts (e.g. a Scrollable measuring content of unset
+			// size) there is no free space to share out, so a flex child takes its
+			// natural size, as a CSS flex item does in a container sized to its
+			// content. Treating it as zero-size would collapse its content.
 			_, mainMax := l.mainConstraint(contentConstraints)
 			if isUnbounded(mainMax) {
-				// Flex child in unbounded context: treat as zero-size
-				// The child will collapse to its minimum content size
-				info.totalFlexMax += 0
+				info.naturalFlex = true
+				childLayouts[i] = flex.Child.ComputeLayout(l.makeChildConstraints(contentConstraints))
+				info.totalFlexMax += l.mainSize(childLayouts[i].Box.MarginBoxWidth(), childLayouts[i].Box.MarginBoxHeight())
 				continue
 			}
 
@@ -263,7 +264,7 @@ func (l *LinearNode) measureFlexChildren(
 	info fixedLayoutInfo,
 	contentConstraints Constraints,
 ) {
-	if !info.hasFlex || info.totalFlex == 0 {
+	if !info.hasFlex || info.totalFlex == 0 || info.naturalFlex {
 		return
 	}
 
