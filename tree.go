@@ -877,6 +877,9 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 	t.State.nodeID = t.NodeID
 
 	nodes := t.State.Nodes.Get()
+	// Which rows are visible depends on collapsed state, which the tree reads
+	// with Peek while flattening; subscribe so expanding or collapsing rebuilds.
+	_ = t.State.Collapsed.Get()
 	query, options := filterStateValues(t.Filter)
 	entries := t.buildViewEntries(nodes, query, options)
 

@@ -859,3 +859,34 @@ func TestReactivitySkippedClickTargetsAfterShift(t *testing.T) {
 	sequence.frame("Fewer targets before the block", func(s *reactivityShiftedTargetsScene) { s.count.Set(2) })
 	sequence.frame("None before the block", func(s *reactivityShiftedTargetsScene) { s.count.Set(0) })
 }
+
+type reactivityCollapseScene struct {
+	state *TreeState[string]
+}
+
+func (s *reactivityCollapseScene) tree() Tree[string] { return Tree[string]{ID: "tree", State: s.state} }
+
+// The tree is a child: a widget returned directly from Build isn't built.
+func (s *reactivityCollapseScene) Build(BuildContext) Widget {
+	return Column{Children: []Widget{s.tree()}}
+}
+
+func TestReactivityTreeCollapseAndExpand(t *testing.T) {
+	sequence := newReactivitySequence(t, 24, 8, func() *reactivityCollapseScene {
+		roots := []TreeNode[string]{
+			{Data: "alpha", Children: []TreeNode[string]{{Data: "a1"}, {Data: "a2"}}},
+			{Data: "beta", Children: []TreeNode[string]{{Data: "b1"}}},
+			{Data: "gamma"},
+		}
+		return &reactivityCollapseScene{state: NewTreeState(roots)}
+	})
+	sequence.frame("Initial", nil)
+	sequence.focus("tree")
+	sequence.frame("Focus tree", nil)
+	sequence.frame("Collapse alpha", func(s *reactivityCollapseScene) { s.tree().collapseOrMoveToParent() })
+	sequence.frame("Expand alpha", func(s *reactivityCollapseScene) { s.tree().expandOrMoveToChild() })
+	sequence.frame("Collapse alpha again", func(s *reactivityCollapseScene) { s.tree().collapseOrMoveToParent() })
+	sequence.frame("Down to beta", func(s *reactivityCollapseScene) { s.tree().keyCursorDown() })
+	sequence.frame("Collapse beta", func(s *reactivityCollapseScene) { s.tree().collapseOrMoveToParent() })
+	sequence.frame("Toggle beta", func(s *reactivityCollapseScene) { s.tree().toggleExpansion() })
+}
