@@ -641,3 +641,73 @@ func TestReactivityListMultiSelect(t *testing.T) {
 		})
 	}
 }
+
+// reactivitySwappable is a retained pointer widget that can change its own ID.
+type reactivitySwappable struct {
+	id   string
+	text Signal[string]
+}
+
+func (w *reactivitySwappable) WidgetID() string { return w.id }
+
+func (w *reactivitySwappable) Build(BuildContext) Widget {
+	return Text{Content: w.text.Get()}
+}
+
+type reactivitySwapScene struct {
+	child *reactivitySwappable
+}
+
+func (s *reactivitySwapScene) Build(BuildContext) Widget {
+	return Row{Spacing: 1, Children: []Widget{s.child, Text{Content: "neighbor"}}}
+}
+
+// Replacing a child beneath a clean parent must keep it connected: its later
+// signal changes have to reach the renderer, and the parent can't reuse a
+// layout computed for the old child.
+func TestReactivityReplacedChildStaysConnected(t *testing.T) {
+	sequence := newReactivitySequence(t, 30, 2, func() *reactivitySwapScene {
+		return &reactivitySwapScene{child: &reactivitySwappable{id: "a", text: NewSignal("short")}}
+	})
+	sequence.frame("Initial", nil)
+	sequence.frame("Child replaces itself with wider content", func(s *reactivitySwapScene) {
+		s.child.id = "b"
+		s.child.text.Set("much wider text")
+	})
+	sequence.frame("Replaced child's own signal changes", func(s *reactivitySwapScene) {
+		s.child.text.Set("x")
+	})
+}
+
+// reactivityPlainSwappable changes its ID and content without any signal, so
+// only the renderer noticing the new identity can pick the change up.
+type reactivityPlainSwappable struct {
+	id      string
+	content string
+}
+
+func (w *reactivityPlainSwappable) WidgetID() string          { return w.id }
+func (w *reactivityPlainSwappable) Build(BuildContext) Widget { return Text{Content: w.content} }
+
+type reactivityPlainSwapScene struct {
+	child *reactivityPlainSwappable
+	other Signal[string]
+}
+
+func (s *reactivityPlainSwapScene) Build(BuildContext) Widget {
+	return Column{Children: []Widget{
+		Row{Spacing: 1, Children: []Widget{s.child, Text{Content: "neighbor"}}},
+		reactivityBuilder{ID: "other", build: func(BuildContext) Widget { return Text{Content: s.other.Get()} }},
+	}}
+}
+
+func TestReactivityReplacementDuringUnrelatedUpdate(t *testing.T) {
+	sequence := newReactivitySequence(t, 30, 3, func() *reactivityPlainSwapScene {
+		return &reactivityPlainSwapScene{child: &reactivityPlainSwappable{id: "a", content: "short"}, other: NewSignal("one")}
+	})
+	sequence.frame("Initial", nil)
+	sequence.frame("Unrelated update while the child replaces itself wider", func(s *reactivityPlainSwapScene) {
+		s.child.id, s.child.content = "b", "much wider text"
+		s.other.Set("two")
+	})
+}

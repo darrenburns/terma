@@ -341,7 +341,18 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 		// The retained build still supplies the same children and wrappers.
 		// Walk them to reach dirty descendants and recollect focus scopes.
 		for i, childWidget := range childWidgets {
-			node.children[i] = r.buildRetainedNode(node.children[i], childWidget, ctx.PushChild(i), fc, false)
+			previous := node.children[i]
+			child := r.buildRetainedNode(previous, childWidget, ctx.PushChild(i), fc, false)
+			if child != previous {
+				// A child replaced itself beneath this clean node. Connect it so
+				// its signal changes reach the renderer, and mark the ancestors
+				// changed so none reuses a layout computed for the old child.
+				child.parent = node
+				for ancestor := node; ancestor != nil; ancestor = ancestor.parent {
+					ancestor.setDirtySubtree(DirtyBuild)
+				}
+			}
+			node.children[i] = child
 		}
 		return node
 	}
