@@ -834,7 +834,7 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 		if len(filtered.Matches) > 0 {
 			match = filtered.Matches[viewIdx]
 		}
-		children[viewIdx] = listRow[T]{
+		children[viewIdx] = &listRow[T]{
 			list:        l,
 			item:        item,
 			sourceIdx:   filtered.Indices[viewIdx],
@@ -875,16 +875,26 @@ type listRow[T any] struct {
 	itemCount   int
 	firstSource int
 	render      func(item T, active, selected bool, match MatchResult) Widget
+	child       Widget
 }
 
-func (r listRow[T]) Build(BuildContext) Widget {
+func (r *listRow[T]) Build(BuildContext) Widget {
 	l := r.list
 	active := Select(l.State.CursorIndex, func(cursor int) bool {
 		return l.renderedCursor(cursor, r.itemCount, r.firstSource) == r.sourceIdx
 	})
 	selected := l.MultiSelect && l.selectedSelect(r.sourceIdx)
 	// Keep the rendered item a child so its own Build still runs.
-	return passThrough{child: r.render(r.item, active, selected, r.match)}
+	r.child = r.render(r.item, active, selected, r.match)
+	return passThrough{child: r.child}
+}
+
+// The parent Column queries its source children for flex/percent dimensions.
+// Keep the rendered child on this shared row so layout sees its latest size,
+// including after a row rebuild beneath a clean Column, without rendering again.
+func (r *listRow[T]) GetContentDimensions() (width, height Dimension) {
+	dims := GetWidgetDimensionSet(r.child)
+	return dims.Width, dims.Height
 }
 
 // renderedCursor is the source index that shows the cursor: the stored cursor,

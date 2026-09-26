@@ -858,13 +858,13 @@ func coalesceDamage(rects []Rect, screen Rect) []Rect {
 }
 
 // floatSetMatches reports whether this frame's overlays correspond one to one
-// with the last frame's: the same number, with the same modal flags.
+// with the last frame's: the same number, with the same backdrops.
 func (r *Renderer) floatSetMatches() bool {
 	if len(r.retainedFloats) != r.floatCollector.Len() {
 		return false
 	}
 	for i, retained := range r.retainedFloats {
-		if retained.entry.Config.Modal != r.floatCollector.entries[i].Config.Modal {
+		if !sameFloatBackdrop(retained.entry.Config, r.floatCollector.entries[i].Config) {
 			return false
 		}
 	}
@@ -966,7 +966,7 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 	}
 	if measure && !sameFloatSet(oldFloats, r.retainedFloats) {
 		// Nested overlays (registered by overlay content) appeared,
-		// disappeared or changed modality.
+		// disappeared or changed backdrop.
 		r.floatsChanged = true
 	}
 }
@@ -976,11 +976,17 @@ func sameFloatSet(a, b []retainedFloat) bool {
 		return false
 	}
 	for i := range a {
-		if a[i].entry.Config.Modal != b[i].entry.Config.Modal {
+		if !sameFloatBackdrop(a[i].entry.Config, b[i].entry.Config) {
 			return false
 		}
 	}
 	return true
+}
+
+// A modal backdrop covers the whole screen, so its changes cannot be repaired
+// by repainting just the overlay content's damage. Non-modal colors are unused.
+func sameFloatBackdrop(a, b FloatConfig) bool {
+	return a.Modal == b.Modal && (!a.Modal || a.BackdropColor == b.BackdropColor)
 }
 
 func (r *Renderer) paintRetainedFloats(ctx *RenderContext, damage Rect) {
