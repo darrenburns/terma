@@ -1,26 +1,19 @@
-package main
+// Package listdemo demonstrates List and the ListState modification APIs.
+package listdemo
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"runtime/pprof"
 	"strings"
 
 	t "github.com/darrenburns/terma"
+	"github.com/darrenburns/terma/cmd/internal/demokit"
 )
 
-// Theme names for cycling
-var themeNames = []string{
-	t.ThemeNameRosePine,
-	t.ThemeNameDracula,
-	t.ThemeNameTokyoNight,
-	t.ThemeNameCatppuccin,
-	t.ThemeNameGruvbox,
-	t.ThemeNameNord,
-	t.ThemeNameSolarized,
-	t.ThemeNameKanagawa,
-	t.ThemeNameMonokai,
+// Info describes the demo for the gallery.
+var Info = demokit.Info{
+	Key:         "list",
+	Title:       "List",
+	Description: "Append, insert, delete, filter and multi-select in a ListState",
 }
 
 var initialItems = []string{"Apple", "Banana", "Cherry"}
@@ -45,19 +38,20 @@ type ListDemo struct {
 	filterState      *t.FilterState
 	filterInputState *t.TextInputState
 	counter          int // For generating unique item names
-	themeIndex       t.Signal[int]
 }
 
-func NewListDemo() *ListDemo {
+// New creates the demo.
+func New() demokit.Demo {
 	return &ListDemo{
 		listState:        t.NewListState(append([]string(nil), initialItems...)),
 		scrollState:      t.NewScrollState(),
 		filterState:      t.NewFilterState(),
 		filterInputState: t.NewTextInputState(""),
 		counter:          len(initialItems), // Start after initial items
-		themeIndex:       t.NewSignal(0),
 	}
 }
+
+func (d *ListDemo) InitialFocus() string { return "demo-list" }
 
 func (d *ListDemo) nextItem() string {
 	d.counter++
@@ -68,14 +62,6 @@ func (d *ListDemo) appendItems(n int) {
 	for i := 0; i < n; i++ {
 		d.listState.Append(d.nextItem())
 	}
-}
-
-func (d *ListDemo) cycleTheme() {
-	d.themeIndex.Update(func(i int) int {
-		next := (i + 1) % len(themeNames)
-		t.SetTheme(themeNames[next])
-		return next
-	})
 }
 
 func (d *ListDemo) Keybinds() []t.Keybind {
@@ -98,7 +84,7 @@ func (d *ListDemo) Keybinds() []t.Keybind {
 		}},
 		{Key: "escape", Name: "Deselect", Action: d.listState.ClearSelection, Hidden: true},
 		{Key: "/", Name: "Filter", Action: func() { t.RequestFocus("list-filter-input") }},
-		{Key: "t", Name: "Theme", Action: d.cycleTheme},
+		{Key: "t", Name: "Theme", Action: demokit.NextTheme},
 	}
 }
 
@@ -111,16 +97,9 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 			BackgroundColor: theme.Background,
 		},
 		Top: []t.Widget{
-			header{themeName: themeNames[d.themeIndex.Get()]},
+			demokit.Header{Title: "List Playground", Tagline: "Live edits to a ListState"},
 		},
-		Bottom: []t.Widget{
-			t.KeybindBar{
-				Style: t.Style{
-					BackgroundColor: theme.Surface,
-					Padding:         t.EdgeInsetsXY(1, 0),
-				},
-			},
-		},
+		Bottom: []t.Widget{demokit.Footer(theme)},
 		Body: t.Row{
 			Width:   t.Flex(1),
 			Height:  t.Flex(1),
@@ -135,7 +114,7 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 					Spacing: 1,
 					Children: []t.Widget{
 						filterPanel{demo: d},
-						fill(listPanel{demo: d}),
+						demokit.Fill(listPanel{demo: d}),
 					},
 				},
 				t.Column{
@@ -144,59 +123,12 @@ func (d *ListDemo) Build(ctx t.BuildContext) t.Widget {
 					Spacing: 1,
 					Children: []t.Widget{
 						statsPanel{demo: d},
-						fill(selectionPanel{demo: d}),
+						demokit.Fill(selectionPanel{demo: d}),
 						keysPanel{},
 					},
 				},
 			},
 		},
-	}
-}
-
-// header is the title bar across the top of the screen.
-type header struct {
-	themeName string
-}
-
-func (h header) Build(ctx t.BuildContext) t.Widget {
-	theme := ctx.Theme()
-	return t.Row{
-		Width: t.Flex(1),
-		Style: t.Style{
-			BackgroundColor: theme.Surface,
-			Padding:         t.EdgeInsetsXY(1, 0),
-		},
-		Children: []t.Widget{
-			t.ParseMarkupToText("[b $Primary]≡ List Playground[/]  [$TextMuted]Live edits to a ListState[/]", theme),
-			t.Spacer{Width: t.Flex(1)},
-			t.ParseMarkupToText(fmt.Sprintf("[$TextMuted]theme[/] [b $Accent]%s[/]", h.themeName), theme),
-		},
-	}
-}
-
-// fill gives a component the remaining space in its Column. Rows and Columns
-// read Flex from their direct children, so a component's own Flex(1) needs a
-// plain wrapper to take effect.
-func fill(child t.Widget) t.Widget {
-	return t.Column{
-		Width:    t.Flex(1),
-		Height:   t.Flex(1),
-		Children: []t.Widget{child},
-	}
-}
-
-// panelStyle is the bordered look shared by every panel in the demo.
-func panelStyle(theme t.ThemeData, title string, focused bool) t.Style {
-	color := theme.Border
-	titleColor := "$TextMuted"
-	if focused {
-		color = theme.FocusRing
-		titleColor = "$FocusRing"
-	}
-	return t.Style{
-		BackgroundColor: theme.Background,
-		Border:          t.RoundedBorder(color, t.BorderTitleMarkup(fmt.Sprintf("[b %s] %s [/]", titleColor, title))),
-		Padding:         t.EdgeInsetsXY(1, 0),
 	}
 }
 
@@ -237,7 +169,7 @@ func (f filterPanel) Build(ctx t.BuildContext) t.Widget {
 	return t.Row{
 		Width:   t.Flex(1),
 		Spacing: 1,
-		Style:   panelStyle(theme, "Filter", ctx.IsFocused(input)),
+		Style:   demokit.PanelStyle(theme, "Filter", ctx.IsFocused(input)),
 		Children: []t.Widget{
 			t.ParseMarkupToText("[$Accent]⌕[/]", theme),
 			input,
@@ -276,7 +208,7 @@ func (l listPanel) Build(ctx t.BuildContext) t.Widget {
 	return t.Column{
 		Width:  t.Flex(1),
 		Height: t.Flex(1),
-		Style:  panelStyle(theme, "Items", ctx.IsFocused(list)),
+		Style:  demokit.PanelStyle(theme, "Items", ctx.IsFocused(list)),
 		Children: []t.Widget{
 			t.ShowWhen(empty != nil, empty),
 			t.Scrollable{
@@ -321,23 +253,12 @@ func (s statsPanel) Build(ctx t.BuildContext) t.Widget {
 
 	return t.Column{
 		Width: t.Flex(1),
-		Style: panelStyle(theme, "Overview", false),
+		Style: demokit.PanelStyle(theme, "Overview", false),
 		Children: []t.Widget{
-			statRow(theme, "Items", fmt.Sprintf("[b $Primary]%d[/]", len(items))),
-			statRow(theme, "Showing", fmt.Sprintf("[b %s]%d[/]", shownColor, len(view))),
-			statRow(theme, "Selected", fmt.Sprintf("[b $Secondary]%d[/]", selected)),
-			statRow(theme, "Cursor", fmt.Sprintf("[b $Info]%s[/]", position)),
-		},
-	}
-}
-
-func statRow(theme t.ThemeData, label, valueMarkup string) t.Widget {
-	return t.Row{
-		Width: t.Flex(1),
-		Children: []t.Widget{
-			t.Text{Content: label, Style: t.Style{ForegroundColor: theme.TextMuted}},
-			t.Spacer{Width: t.Flex(1)},
-			t.ParseMarkupToText(valueMarkup, theme),
+			demokit.StatRow(theme, "Items", fmt.Sprintf("[b $Primary]%d[/]", len(items))),
+			demokit.StatRow(theme, "Showing", fmt.Sprintf("[b %s]%d[/]", shownColor, len(view))),
+			demokit.StatRow(theme, "Selected", fmt.Sprintf("[b $Secondary]%d[/]", selected)),
+			demokit.StatRow(theme, "Cursor", fmt.Sprintf("[b $Info]%s[/]", position)),
 		},
 	}
 }
@@ -375,7 +296,7 @@ func (s selectionPanel) Build(ctx t.BuildContext) t.Widget {
 	return t.Column{
 		Width:    t.Flex(1),
 		Height:   t.Flex(1),
-		Style:    panelStyle(theme, "Selection", false),
+		Style:    demokit.PanelStyle(theme, "Selection", false),
 		Children: []t.Widget{content},
 	}
 }
@@ -390,7 +311,7 @@ func (keysPanel) Build(ctx t.BuildContext) t.Widget {
 	}
 	return t.Column{
 		Width: t.Flex(1),
-		Style: panelStyle(theme, "Keys", false),
+		Style: demokit.PanelStyle(theme, "Keys", false),
 		Children: []t.Widget{
 			key("↑↓ jk", "$Info", "move cursor"),
 			key("⇧↑↓", "$Secondary", "extend selection"),
@@ -412,24 +333,4 @@ func visibleIndices(items []string, filter *t.FilterState) []int {
 	return t.ApplyFilter(items, query, func(item string, q string) t.MatchResult {
 		return t.MatchString(item, q, options)
 	}).Indices
-}
-
-func main() {
-	f, err := os.Create("cpu.prof")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	if err := pprof.StartCPUProfile(f); err != nil {
-		log.Fatal(err)
-	}
-	defer pprof.StopCPUProfile()
-
-	t.SetTheme(themeNames[0])
-	app := NewListDemo()
-	t.RequestFocus("demo-list")
-	_ = t.InitLogger()
-	if err := t.Run(app); err != nil {
-		log.Fatal(err)
-	}
 }
