@@ -63,13 +63,23 @@ func RenderToBufferWithSize(widget Widget, width, height int) (buf *uv.Buffer, l
 	renderer := NewRenderer(buf, width, height, focusManager, focusedSignal, hoveredSignal)
 
 	// First render pass: collect focusables
+	pendingFocusID = ""
 	focusables := renderer.Render(widget)
 	focusManager.SetFocusables(focusables)
+	// Apply focus requests made while rendering, as the app does: an open
+	// modal pulls focus inside itself.
+	if pendingFocusID != "" {
+		focusManager.FocusByID(pendingFocusID)
+		pendingFocusID = ""
+	}
 
 	// Update the focused signal so widgets can see focus state
 	focusedSignal.Set(focusManager.Focused())
 
-	// Second render pass: render with focus established
+	// Second render pass: render with focus established. A terminal is
+	// cleared before a full render; a bare buffer must be cleared here, or
+	// cells only the first pass drew would show through.
+	buf.Clear()
 	layoutWidth, layoutHeight = renderer.RenderWithSize(widget)
 
 	return buf, layoutWidth, layoutHeight

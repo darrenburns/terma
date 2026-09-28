@@ -1,5 +1,7 @@
 package terma
 
+import "slices"
+
 // Offset represents X, Y coordinates for positioning.
 type Offset struct {
 	X, Y int
@@ -185,6 +187,13 @@ type FloatEntry struct {
 	// than replayed from an owner whose build was reused. Only fresh entries
 	// can carry new content, so only they force the overlay to rebuild.
 	fresh bool
+
+	// topmost keeps the overlay above every other, whenever they were
+	// registered (see raiseTopmost). Jump mode's labels use it.
+	topmost bool
+	// captureKey, if set on the top overlay, receives every key press before
+	// the focused widget does. The overlay doesn't need to take focus.
+	captureKey func(KeyEvent) bool
 }
 
 // FloatCollector gathers Floating widgets during the build phase
@@ -226,6 +235,38 @@ func (c *FloatCollector) TopModal() *FloatEntry {
 		}
 	}
 	return nil
+}
+
+// raiseTopmost moves topmost entries after all others, keeping the order
+// within each group.
+func (c *FloatCollector) raiseTopmost() {
+	slices.SortStableFunc(c.entries, func(a, b FloatEntry) int {
+		switch {
+		case a.topmost == b.topmost:
+			return 0
+		case a.topmost:
+			return 1
+		default:
+			return -1
+		}
+	})
+}
+
+// deferTopmost moves entry i to the end if it is topmost and an ordinary
+// entry follows it: one registered by overlay content placed after i was
+// raised. It reports whether it moved the entry.
+func (c *FloatCollector) deferTopmost(i int) bool {
+	if !c.entries[i].topmost {
+		return false
+	}
+	for _, later := range c.entries[i+1:] {
+		if !later.topmost {
+			entry := c.entries[i]
+			c.entries = append(slices.Delete(c.entries, i, i+1), entry)
+			return true
+		}
+	}
+	return false
 }
 
 // Reset clears all entries for a new render pass.

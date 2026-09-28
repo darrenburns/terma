@@ -63,7 +63,8 @@ type RenderContext struct {
 	// painted (and so damages when they change) are clipped to it, so content
 	// scrolled out of view never causes repaints.
 	visible Rect
-	// Focus collector for gathering focusable widgets
+	// Focus collector holding the frame's focusables, in focus order. Overlays
+	// drawn from what is beneath them (jump mode's labels) read it.
 	focusCollector *FocusCollector
 	// Focus manager for checking focus state
 	focusManager *FocusManager

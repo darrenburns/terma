@@ -162,6 +162,7 @@ func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []Focus
 
 	buildCtx := NewBuildContext(r.focusManager, r.focusedSignal, r.hoveredSignal, r.floatCollector)
 	r.rootNode = r.buildRetainedNode(r.rootNode, root, buildCtx, r.focusCollector, rebuildAll)
+	r.floatCollector.raiseTopmost()
 
 	if r.rootNode == nil {
 		r.lastFocusables = nil
@@ -185,7 +186,7 @@ func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []Focus
 		if scr, ok := r.terminal.(uv.Screen); ok {
 			screen.Clear(scr)
 		}
-		ctx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
+		ctx := NewRenderContext(r.terminal, r.width, r.height, r.focusCollector, r.focusManager, buildCtx, r.widgetRegistry)
 		r.paintRetainedNode(ctx, r.rootNode, 0, 0, Rect{}, false, true)
 		r.placeFloats(ctx, buildCtx, false)
 	} else {
@@ -233,7 +234,7 @@ func (r *Renderer) renderPartial(root Widget) (focusables []FocusableEntry, layo
 			continue
 		}
 		r.clearRect(clipped)
-		ctx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
+		ctx := NewRenderContext(r.terminal, r.width, r.height, r.focusCollector, r.focusManager, buildCtx, r.widgetRegistry)
 		ctx.clip = ctx.clip.Intersect(clipped)
 		r.paintRetainedNode(ctx, r.rootNode, 0, 0, clipped, true, false)
 		r.paintRetainedFloats(ctx, clipped)
@@ -347,6 +348,7 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 			defer fc.PopTrap()
 		}
 		fc.Collect(widget, node.autoID, ctx)
+		fc.CollectGlobalKeybinds(widget, ctx)
 		if fc.ShouldTrackAncestor(widget) {
 			fc.PushAncestor(widget)
 			ancestorsPushed = true
@@ -840,7 +842,7 @@ func (r *Renderer) recordReflowDamage(node *widgetNode, bounds, subtreeBounds, v
 // measuring pass records every node's new position, the hit-test registry and
 // the damage; the partial painter then redraws just the damaged areas.
 func (r *Renderer) reflowPaint(buildCtx BuildContext) {
-	ctx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
+	ctx := NewRenderContext(r.terminal, r.width, r.height, r.focusCollector, r.focusManager, buildCtx, r.widgetRegistry)
 	r.reflowDamage = r.reflowDamage[:0]
 	r.floatsChanged = false
 	r.geometryOnly = true
@@ -849,14 +851,16 @@ func (r *Renderer) reflowPaint(buildCtx BuildContext) {
 	r.geometryOnly = false
 
 	fullScreen := Rect{Width: r.width, Height: r.height}
-	if r.floatsChanged {
+	// A topmost overlay (jump mode's labels) is drawn from where everything
+	// beneath it is, so any change beneath can move what it shows.
+	if r.floatsChanged || (len(r.reflowDamage) > 0 && r.hasTopmostFloat()) {
 		r.reflowDamage = append(r.reflowDamage, fullScreen)
 	}
 	rects := coalesceDamage(r.reflowDamage, fullScreen)
 	r.lastDamagedRects = rects
 	for _, rect := range rects {
 		r.clearRect(rect)
-		paintCtx := NewRenderContext(r.terminal, r.width, r.height, nil, r.focusManager, buildCtx, r.widgetRegistry)
+		paintCtx := NewRenderContext(r.terminal, r.width, r.height, r.focusCollector, r.focusManager, buildCtx, r.widgetRegistry)
 		paintCtx.clip = paintCtx.clip.Intersect(rect)
 		r.paintRetainedNode(paintCtx, r.rootNode, 0, 0, rect, true, false)
 		r.paintRetainedFloats(paintCtx, rect)
@@ -941,6 +945,10 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 	}
 
 	for i := 0; i < len(r.floatCollector.entries); i++ {
+		if r.floatCollector.deferTopmost(i) {
+			i--
+			continue
+		}
 		entry := r.floatCollector.entries[i]
 		focusableCountBefore := r.focusCollector.Len()
 		child := entry.Child
@@ -1040,6 +1048,22 @@ func sameFloatSet(a, b []retainedFloat) bool {
 // by repainting just the overlay content's damage. Non-modal colors are unused.
 func sameFloatBackdrop(a, b FloatConfig) bool {
 	return a.Modal == b.Modal && (!a.Modal || a.BackdropColor == b.BackdropColor)
+}
+
+func (r *Renderer) hasTopmostFloat() bool {
+	for _, floatNode := range r.retainedFloats {
+		if floatNode.entry.topmost {
+			return true
+		}
+	}
+	return false
+}
+
+// captureKey offers a key press to the top overlay, if it captures keys.
+// It reports whether the key was taken.
+func (r *Renderer) captureKey(event KeyEvent) bool {
+	top := r.TopFloat()
+	return top != nil && top.captureKey != nil && top.captureKey(event)
 }
 
 func (r *Renderer) paintRetainedFloats(ctx *RenderContext, damage Rect) {

@@ -48,6 +48,7 @@ nav:
     - Checkbox: widgets/checkbox.md
     - CommandPalette: widgets/commandpalette.md
     - FocusTrap: widgets/focustrap.md
+    - Jumper: widgets/jumper.md
     - KeybindBar: widgets/keybindbar.md
     - List: widgets/list.md
     - Menu: widgets/menu.md

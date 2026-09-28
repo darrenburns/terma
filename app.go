@@ -542,10 +542,6 @@ func Run(root Widget) (runErr error) {
 		Log("Render complete in %.3fms, %d widgets registered", float64(elapsed.Microseconds())/1000.0, len(renderer.widgetRegistry.entries))
 	}
 
-	// Get root's key handling interfaces (if any) for the no-focusables case
-	rootHandler, _ := root.(KeyHandler)
-	rootKeybindProvider, _ := root.(KeybindProvider)
-
 	var (
 		lastRender    time.Time
 		renderPending bool
@@ -715,31 +711,13 @@ func Run(root Widget) (runErr error) {
 						continue
 					}
 
-					// Check for Escape to dismiss floats
-					if ev.MatchString("escape") {
-						if topFloat := renderer.TopFloat(); topFloat != nil {
-							if topFloat.Config.shouldDismissOnEsc() && topFloat.Config.OnDismiss != nil {
-								topFloat.Config.OnDismiss()
-								requestRender()
-								continue
-							}
-						}
+					// Keys are routed by what's on screen: a key that opened jump
+					// mode or a dialog, or moved focus, must be drawn before the
+					// next key is routed, even when it arrives within a frame.
+					if renderPending {
+						renderNow()
 					}
-
-					// Route key event through focus manager (bubbles through widget tree)
-					keyEvent := KeyEvent{event: ev}
-					handled := focusManager.HandleKey(keyEvent)
-
-					// If not handled, try root's keybindings and handler directly
-					// (handles case when there are no focusable widgets)
-					if !handled {
-						if rootKeybindProvider != nil {
-							handled = matchKeybind(keyEvent, rootKeybindProvider.Keybinds())
-						}
-						if !handled && rootHandler != nil {
-							rootHandler.OnKey(keyEvent)
-						}
-					}
+					dispatchKey(renderer, focusManager, root, KeyEvent{event: ev})
 
 					// Re-render after key press (for signal updates and focus changes)
 					requestRender()
@@ -772,6 +750,40 @@ func Run(root Widget) (runErr error) {
 
 	<-ctx.Done()
 	return runErr
+}
+
+// dispatchKey routes a key press. An overlay capturing keys (jump mode) takes
+// it first; then Escape dismisses the top overlay if it allows that; then it
+// goes to the focused widget, bubbling up through its ancestors; then to
+// global keybinds (Jumper's toggle key), which work even with focus in an
+// overlay; and finally to the root widget, which handles keys when nothing is
+// focused.
+func dispatchKey(renderer *Renderer, focusManager *FocusManager, root Widget, event KeyEvent) {
+	if renderer.captureKey(event) {
+		return
+	}
+
+	if event.MatchString("escape") {
+		if topFloat := renderer.TopFloat(); topFloat != nil {
+			if topFloat.Config.shouldDismissOnEsc() && topFloat.Config.OnDismiss != nil {
+				topFloat.Config.OnDismiss()
+				return
+			}
+		}
+	}
+
+	if focusManager.HandleKey(event) {
+		return
+	}
+	if matchKeybind(event, renderer.focusCollector.globalKeybinds) {
+		return
+	}
+	if provider, ok := root.(KeybindProvider); ok && matchKeybind(event, provider.Keybinds()) {
+		return
+	}
+	if handler, ok := root.(KeyHandler); ok {
+		handler.OnKey(event)
+	}
 }
 
 // exportScreenToFile saves the current screen content to a timestamped file.

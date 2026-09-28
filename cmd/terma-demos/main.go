@@ -6,6 +6,7 @@ import (
 	"github.com/darrenburns/terma/cmd/internal/demokit"
 	"github.com/darrenburns/terma/cmd/internal/demos/checkboxdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/dialogdemo"
+	"github.com/darrenburns/terma/cmd/internal/demos/jumpdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/listdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/menudemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/palettedemo"
@@ -36,6 +37,7 @@ var demos = []Entry{
 	{Info: palettedemo.Info, Command: "./cmd/command-palette-example", New: palettedemo.New},
 	{Info: dialogdemo.Info, Command: "./cmd/dialog-example", New: dialogdemo.New},
 	{Info: progressdemo.Info, Command: "./cmd/progressbar-example", New: progressdemo.New},
+	{Info: jumpdemo.Info, Command: "./cmd/jump-example", New: jumpdemo.New},
 }
 
 func main() {

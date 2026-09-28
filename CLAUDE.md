@@ -233,6 +233,7 @@ func main() {
 | `KeybindBar` | Displays active keybinds from focused widget | `Style`, `FormatKey` |
 | `Spacer` | Flexible empty space for layout control | `Width`, `Height` (default Flex(1)) |
 | `FocusTrap` | Constrains Tab/Shift+Tab cycling to its subtree | `ID` (required), `Active`, `Child` |
+| `Jumper` | Jump mode: ctrl+o overlays key labels that move focus to their widget | `State` (required), `Targets` (static key→ID), `Dynamic` (Vimium-style hints on list/tree/table rows, tabs, `Jumpable`s), `Child` |
 
 ### Spacing: Prefer `Spacing` Field Over `Spacer` Widget
 
@@ -341,6 +342,17 @@ FocusTrap{
 // KeybindBar at bottom of app
 KeybindBar{
     Style: Style{BackgroundColor: theme.Surface},
+}
+
+// Jumper - ctrl+o shows key labels; typing one focuses its widget
+Jumper{
+    State: a.jump, // NewJumpState()
+    Targets: []JumpTarget{
+        {Key: "1", ID: "sidebar"},             // static: key -> widget ID
+        {Key: "s", ID: "send", Action: a.send}, // run an action instead of focusing
+    },
+    Dynamic: true, // also hint each list/tree/table row and tab in view (Vimium-style)
+    Child:   body,
 }
 
 // Stack with overlapping children (first child at bottom, last on top)
