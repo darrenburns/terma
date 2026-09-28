@@ -339,17 +339,17 @@ func mouseMenuScene(t *testing.T, onSelect func(MenuItem)) (*clickScene, *MenuSt
 	return scene, state
 }
 
-func TestMenuClick_HighlightsAndDoubleClickSelects(t *testing.T) {
+func TestMenuClick_ChoosesItem(t *testing.T) {
 	var selected []string
 	scene, state := mouseMenuScene(t, func(item MenuItem) { selected = append(selected, item.Label) })
 
-	scene.click(2, 1, 0)
+	scene.press(2, 1, 0)
 	assert.Equal(t, 1, state.CursorIndex())
-	assert.Empty(t, selected, "a single click only moves the cursor")
-	scene.snapshot("TestMenuClick_HighlightsAndDoubleClickSelects", "Clicking Save highlights it")
+	assert.Empty(t, selected, "pressing only moves the cursor")
+	scene.snapshot("TestMenuClick_ChoosesItem", "Pressing Save highlights it")
 
-	scene.click(2, 1, 0)
-	assert.Equal(t, []string{"Save"}, selected)
+	scene.release(2, 1)
+	assert.Equal(t, []string{"Save"}, selected, "releasing over the item chooses it")
 }
 
 func TestMenuClick_IgnoresDividersAndDisabledItems(t *testing.T) {
@@ -358,21 +358,39 @@ func TestMenuClick_IgnoresDividersAndDisabledItems(t *testing.T) {
 
 	scene.click(2, 2, 0)
 	scene.click(2, 3, 0)
-	scene.click(2, 3, 0)
 
 	assert.Equal(t, 0, state.CursorIndex())
 	assert.Empty(t, selected)
 }
 
-func TestMenuDrag_MovesCursor(t *testing.T) {
-	scene, state := mouseMenuScene(t, nil)
+func TestMenuDrag_ReleaseChoosesItemUnderPointer(t *testing.T) {
+	var selected []string
+	scene, state := mouseMenuScene(t, func(item MenuItem) { selected = append(selected, item.Label) })
 
 	scene.press(2, 0, 0)
 	scene.move(2, 3) // Disabled: the cursor stays put.
 	assert.Equal(t, 0, state.CursorIndex())
 	scene.move(2, 4)
-	scene.release(2, 4)
 	assert.Equal(t, 4, state.CursorIndex())
+	assert.Empty(t, selected)
+
+	scene.release(2, 4)
+	assert.Equal(t, []string{"Close"}, selected)
+}
+
+func TestMenuDrag_ReleaseOffItemsChoosesNothing(t *testing.T) {
+	var selected []string
+	scene, state := mouseMenuScene(t, func(item MenuItem) { selected = append(selected, item.Label) })
+
+	scene.press(2, 1, 0)
+	scene.move(18, 1) // Beside the menu.
+	scene.release(18, 1)
+	scene.press(2, 1, 0)
+	scene.move(2, 3)
+	scene.release(2, 3) // Over the disabled item.
+
+	assert.Equal(t, 1, state.CursorIndex())
+	assert.Empty(t, selected)
 }
 
 func TestCommandPaletteClick_KeepsInputFocusAndDoubleClickRuns(t *testing.T) {

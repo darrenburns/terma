@@ -38,8 +38,8 @@ type MenuState struct {
 	openSubmenu  Signal[int] // Index of item with open submenu (-1 if none)
 	submenuState *MenuState  // State for the open submenu (recursive)
 
-	itemLayouts []listItemLayout // Cached vertical extent of each item
-	dragging    bool             // A press on an item is held, so pointer motion moves the cursor
+	itemBounds []Rect // Cached bounds of each item, in content coordinates
+	dragging   bool   // A press on an item is held, so pointer motion moves the cursor
 }
 
 // NewMenuState creates a new MenuState with the given items.
@@ -292,19 +292,19 @@ func (c menuContent) ownsDescendantPointer() {}
 
 // OnLayout records where each item sits, skipping the open submenu's child.
 func (c menuContent) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
-	layouts := make([]listItemLayout, 0, len(c.menu.State.Items()))
+	bounds := make([]Rect, 0, len(c.menu.State.Items()))
 	for i, child := range c.Children {
 		if _, submenu := child.(Menu); submenu {
 			continue
 		}
-		bounds, _ := metrics.ChildBounds(i)
-		layouts = append(layouts, listItemLayout{y: bounds.Y, height: bounds.Height})
+		b, _ := metrics.ChildBounds(i)
+		bounds = append(bounds, b)
 	}
-	c.menu.State.itemLayouts = layouts
+	c.menu.State.itemBounds = bounds
 }
 
-// OnMouseDown moves the cursor to the clicked item and chooses it on
-// double-click, as enter does.
+// OnMouseDown moves the cursor to the pressed item. The item is chosen when
+// the button is released over it (see OnMouseUp).
 func (c menuContent) OnMouseDown(event MouseEvent) {
 	state := c.menu.State
 	state.dragging = false
@@ -317,9 +317,6 @@ func (c menuContent) OnMouseDown(event MouseEvent) {
 		RequestFocus(c.menu.ID)
 	}
 	state.dragging = event.Button == uv.MouseLeft
-	if event.ClickCount == 2 {
-		c.menu.selectCurrent()
-	}
 }
 
 // OnMouseMove drags the cursor to the item under the pointer.
@@ -332,21 +329,41 @@ func (c menuContent) OnMouseMove(event MouseEvent) {
 	}
 }
 
-// OnMouseUp ends a drag.
-func (c menuContent) OnMouseUp(MouseEvent) {
-	c.menu.State.dragging = false
+// OnMouseUp chooses the item under the pointer, as enter does, when a press
+// on an item is released over one: a click, or a drag from one item to
+// another. Releasing anywhere else chooses nothing.
+func (c menuContent) OnMouseUp(event MouseEvent) {
+	state := c.menu.State
+	dragging := state.dragging
+	state.dragging = false
+	if !dragging {
+		return
+	}
+	index, ok := c.itemAt(event, false)
+	if !ok || !state.itemBounds[index].Contains(c.contentX(event), c.contentY(event)) {
+		return
+	}
+	c.menu.moveCursorTo(index)
+	c.menu.selectCurrent()
 }
 
-// itemAt returns the selectable item under the pointer. With clamp, a pointer
-// above or below the items gives the first or last.
+// itemAt returns the selectable item on the pointer's row. With clamp, a
+// pointer above or below the items gives the first or last.
 func (c menuContent) itemAt(event MouseEvent, clamp bool) (int, bool) {
 	items := c.menu.State.Items()
-	layouts := c.menu.State.itemLayouts
-	y := event.LocalY - c.Style.Border.Width() - c.Style.Padding.Top
-	index, ok := spanAt(min(len(items), len(layouts)), func(i int) (int, int) {
-		return layouts[i].y, layouts[i].height
-	}, y, clamp)
+	bounds := c.menu.State.itemBounds
+	index, ok := spanAt(min(len(items), len(bounds)), func(i int) (int, int) {
+		return bounds[i].Y, bounds[i].Height
+	}, c.contentY(event), clamp)
 	return index, ok && items[index].IsSelectable()
+}
+
+func (c menuContent) contentX(event MouseEvent) int {
+	return event.LocalX - c.Style.Border.Width() - c.Style.Padding.Left
+}
+
+func (c menuContent) contentY(event MouseEvent) int {
+	return event.LocalY - c.Style.Border.Width() - c.Style.Padding.Top
 }
 
 func (m Menu) submenuID() string {
