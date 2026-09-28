@@ -25,6 +25,7 @@ type TreeState[T any] struct {
 	Selection  AnySignal[map[string]struct{}] // Selected node identifiers
 
 	anchorPath      []int
+	dragging        bool // A press on a node is held, so pointer motion moves the cursor
 	viewPaths       [][]int
 	viewIndexByPath map[string]int
 	rowLayouts      []treeRowLayout
@@ -775,15 +776,20 @@ func (t Tree[T]) IsFocusable() bool {
 	return !t.DisableFocus
 }
 
-// OnMouseDown moves the cursor to the clicked node.
+func (t Tree[T]) ownsDescendantPointer() {}
+
+// OnMouseDown moves the cursor to the clicked node, extends the selection on
+// shift+click in multi-select mode, toggles expansion when the expand
+// indicator is clicked, and selects the node on double-click elsewhere.
+// Implements the MouseDownHandler interface.
 func (t Tree[T]) OnMouseDown(event MouseEvent) {
 	if t.State == nil {
 		return
 	}
+	t.State.dragging = false
 
 	localX := event.LocalX - t.Style.Border.Width() - t.Style.Padding.Left
-	localY := event.LocalY - t.Style.Border.Width() - t.Style.Padding.Top
-	viewIdx, ok := t.viewIndexFromMouseY(localY)
+	viewIdx, ok := t.viewIndexFromMouseY(t.contentY(event), false)
 	if !ok {
 		return
 	}
@@ -798,10 +804,50 @@ func (t Tree[T]) OnMouseDown(event MouseEvent) {
 
 	if t.shouldToggleExpansionFromClick(viewIdx, localX, path) {
 		t.togglePathExpansion(path)
+		return
+	}
+	t.State.dragging = event.Button == uv.MouseLeft
+	if event.ClickCount == 2 {
+		t.selectNode()
 	}
 }
 
-func (t Tree[T]) viewIndexFromMouseY(localY int) (int, bool) {
+// OnMouseMove drags the cursor to the node under the pointer while a press
+// on a node is held, extending the selection from the pressed node in
+// multi-select mode. Dragging past either end scrolls.
+// Implements the MouseMoveHandler interface.
+func (t Tree[T]) OnMouseMove(event MouseEvent) {
+	if t.State == nil || !t.State.dragging {
+		return
+	}
+	viewIdx, ok := t.viewIndexFromMouseY(t.contentY(event), true)
+	if !ok {
+		return
+	}
+	path := t.viewPaths()[viewIdx]
+	if pathsEqual(path, t.State.CursorPath.Peek()) {
+		return
+	}
+	t.setCursorFromMousePath(path, t.MultiSelect)
+}
+
+// OnMouseUp ends a drag begun on a node.
+// Implements the MouseUpHandler interface.
+func (t Tree[T]) OnMouseUp(event MouseEvent) {
+	if t.State != nil {
+		t.State.dragging = false
+	}
+}
+
+// contentY converts a mouse event's local Y to a row within the tree content.
+func (t Tree[T]) contentY(event MouseEvent) int {
+	return event.LocalY - t.Style.Border.Width() - t.Style.Padding.Top
+}
+
+// viewIndexFromMouseY returns the view index of the node at content row
+// localY. With clamp, rows above or below the nodes give the first or last
+// node and a gap between nodes gives the one above it.
+func (t Tree[T]) viewIndexFromMouseY(localY int, clamp bool) (int, bool) {
 	if t.State == nil {
 		return 0, false
 	}
@@ -810,18 +856,15 @@ func (t Tree[T]) viewIndexFromMouseY(localY int) (int, bool) {
 		return 0, false
 	}
 
-	if len(t.State.rowLayouts) > 0 {
-		for i, layout := range t.State.rowLayouts {
-			if layout.height <= 0 {
-				continue
-			}
-			if localY >= layout.y && localY < layout.y+layout.height {
-				return i, true
-			}
-		}
-		return 0, false
+	if layouts := t.State.rowLayouts; len(layouts) > 0 {
+		return spanAt(min(len(layouts), len(view)), func(i int) (int, int) {
+			return layouts[i].y, layouts[i].height
+		}, localY, clamp)
 	}
 
+	if clamp {
+		return clampInt(localY, 0, len(view)-1), true
+	}
 	if localY < 0 || localY >= len(view) {
 		return 0, false
 	}

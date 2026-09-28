@@ -79,6 +79,21 @@ func (d DirectoryTree) Keybinds() []Keybind {
 	return d.resolvedTree().Keybinds()
 }
 
+// OnMouseDown moves the cursor, toggles expansion or selects, as Tree does.
+func (d DirectoryTree) OnMouseDown(event MouseEvent) {
+	d.resolvedTree().OnMouseDown(event)
+}
+
+// OnMouseMove drags the cursor, as Tree does.
+func (d DirectoryTree) OnMouseMove(event MouseEvent) {
+	d.resolvedTree().OnMouseMove(event)
+}
+
+// OnMouseUp ends a drag, as Tree does.
+func (d DirectoryTree) OnMouseUp(event MouseEvent) {
+	d.resolvedTree().OnMouseUp(event)
+}
+
 func (d DirectoryTree) resolvedTree() Tree[DirectoryEntry] {
 	tree := d.Tree
 	if tree.NodeID == nil {
