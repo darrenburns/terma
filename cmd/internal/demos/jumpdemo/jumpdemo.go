@@ -4,6 +4,7 @@ package jumpdemo
 
 import (
 	"fmt"
+	"strings"
 
 	t "github.com/darrenburns/terma"
 	"github.com/darrenburns/terma/cmd/internal/demokit"
@@ -21,8 +22,8 @@ var Info = demokit.Info{
 //
 //	ctrl+o    - Enter (or leave) jump mode
 //	1-6       - The static jump map: collections, method, URL, send, body, response
-//	a, s, d…  - Dynamic hints on everything else in view, once enabled
-//	ctrl+y    - Turn dynamic hints on or off
+//	a, s, d…  - Dynamic hints on everything else in view: tabs, buttons, options
+//	ctrl+y    - Turn dynamic hints off (static keys only, like Posting) or on
 //	backspace - Undo the last character of a two-character hint
 //	escape    - Leave jump mode without jumping
 type JumpDemo struct {
@@ -36,6 +37,9 @@ type JumpDemo struct {
 	response    *t.ListState[string]
 	method      t.Signal[int]
 	sent        t.Signal[int]
+	requestTab  t.Signal[string]
+	view        t.Signal[string]
+	status      t.Signal[string]
 }
 
 var methods = []string{"GET", "POST", "PUT", "DELETE"}
@@ -44,7 +48,7 @@ var methods = []string{"GET", "POST", "PUT", "DELETE"}
 func New() demokit.Demo {
 	return &JumpDemo{
 		jump:    t.NewJumpState(),
-		dynamic: t.NewCheckboxState(false),
+		dynamic: t.NewCheckboxState(true),
 		follow:  t.NewCheckboxState(true),
 		verify:  t.NewCheckboxState(true),
 		collections: t.NewListState([]string{
@@ -54,8 +58,11 @@ func New() demokit.Demo {
 		url:      t.NewTextInputState("https://jsonplaceholder.typicode.com/users"),
 		body:     t.NewTextAreaState("{\n  \"name\": \"Ada Lovelace\"\n}"),
 		response: t.NewListState([]string{"Press 4 in jump mode to send."}),
-		method:   t.NewSignal(0),
-		sent:     t.NewSignal(0),
+		method:     t.NewSignal(0),
+		sent:       t.NewSignal(0),
+		requestTab: t.NewSignal("Body"),
+		view:       t.NewSignal("Pretty"),
+		status:     t.NewSignal(""),
 	}
 }
 
@@ -140,7 +147,11 @@ type header struct {
 }
 
 func (h header) Build(ctx t.BuildContext) t.Widget {
-	mode := "[$TextMuted]press[/] [b $Accent]ctrl+o[/] [$TextMuted]to jump[/]"
+	hints := "static + dynamic"
+	if !h.demo.dynamic.Checked.Get() {
+		hints = "static only"
+	}
+	mode := fmt.Sprintf("[$TextMuted]press[/] [b $Accent]ctrl+o[/] [$TextMuted]to jump · hints:[/] [b]%s[/]", hints)
 	if h.demo.jump.IsActive() {
 		mode = "[b $Accent]jump mode[/] [$TextMuted]type a label · esc to cancel[/]"
 		if typed := h.demo.jump.Typed(); typed != "" {
@@ -151,12 +162,17 @@ func (h header) Build(ctx t.BuildContext) t.Widget {
 }
 
 func (d *JumpDemo) collectionsPanel(ctx t.BuildContext) t.Widget {
-	list := t.List[string]{ID: "collections", State: d.collections}
+	list := t.List[string]{ID: "collections", State: d.collections, Height: t.Flex(1)}
 	return t.Column{
-		Width:    t.Cells(26),
-		Height:   t.Flex(1),
-		Style:    demokit.PanelStyle(ctx.Theme(), "1 Collections", ctx.IsFocused(list)),
-		Children: []t.Widget{list},
+		Width:  t.Cells(26),
+		Height: t.Flex(1),
+		Style:  demokit.PanelStyle(ctx.Theme(), "1 Collections", ctx.IsFocused(list)),
+		Children: []t.Widget{
+			list,
+			t.Button{ID: "new-request", Label: "+ New request", OnPress: func() {
+				d.collections.SetItems(append(d.collections.GetItems(), "untitled"))
+			}},
+		},
 	}
 }
 
@@ -180,21 +196,50 @@ func (d *JumpDemo) urlBar(ctx t.BuildContext) t.Widget {
 func (d *JumpDemo) bodyPanel(ctx t.BuildContext) t.Widget {
 	body := t.TextArea{ID: "body", State: d.body, Style: t.Style{Width: t.Flex(1), Height: t.Flex(1)}}
 	return t.Column{
-		Width:    t.Flex(1),
-		Height:   t.Flex(1),
-		Style:    demokit.PanelStyle(ctx.Theme(), "5 Body", ctx.IsFocused(body)),
-		Children: []t.Widget{body},
+		Width:   t.Flex(1),
+		Height:  t.Flex(1),
+		Spacing: 1,
+		Style:   demokit.PanelStyle(ctx.Theme(), "5 "+d.requestTab.Get(), ctx.IsFocused(body)),
+		Children: []t.Widget{
+			// No static keys here: dynamic hints reach these.
+			buttonRow("tab", []string{"Body", "Headers", "Query"}, d.requestTab.Set),
+			body,
+		},
 	}
 }
 
 func (d *JumpDemo) responsePanel(ctx t.BuildContext) t.Widget {
-	response := t.List[string]{ID: "response", State: d.response}
-	return t.Column{
-		Width:    t.Flex(1),
-		Height:   t.Flex(1),
-		Style:    demokit.PanelStyle(ctx.Theme(), "6 Response", ctx.IsFocused(response)),
-		Children: []t.Widget{response},
+	response := t.List[string]{ID: "response", State: d.response, Height: t.Flex(1)}
+	title := "6 Response · " + d.view.Get()
+	if status := d.status.Get(); status != "" {
+		title += " · " + status
 	}
+	return t.Column{
+		Width:   t.Flex(1),
+		Height:  t.Flex(1),
+		Spacing: 1,
+		Style:   demokit.PanelStyle(ctx.Theme(), title, ctx.IsFocused(response)),
+		Children: []t.Widget{
+			buttonRow("view", []string{"Pretty", "Raw"}, d.view.Set),
+			response,
+			buttonRow("action", []string{"Copy", "Save"}, func(action string) {
+				d.status.Set(map[string]string{"Copy": "copied", "Save": "saved"}[action])
+			}),
+		},
+	}
+}
+
+// buttonRow is a row of buttons, each calling onPress with its label.
+func buttonRow(idPrefix string, labels []string, onPress func(string)) t.Widget {
+	buttons := make([]t.Widget, len(labels))
+	for i, label := range labels {
+		buttons[i] = t.Button{
+			ID:      idPrefix + "-" + strings.ToLower(label),
+			Label:   label,
+			OnPress: func() { onPress(label) },
+		}
+	}
+	return t.Row{Spacing: 1, Children: buttons}
 }
 
 func (d *JumpDemo) optionsPanel(ctx t.BuildContext) t.Widget {
