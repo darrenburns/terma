@@ -52,5 +52,12 @@ Browser verification is one of the primary ways agents should verify their work 
 - PRs should include a concise summary, test results, and note any snapshot updates.
 - If UI output changes, include a brief description and reference the updated snapshots.
 
+## Releasing
+Releases are plain semver git tags on `main` (no GitHub Releases or changelog). While Terma is pre-1.0, bump the minor version for normal releases and the patch version for fix-only releases.
+1. Make sure your `main` is clean and matches `origin/main`, the `CI` workflow passed on it (`gh run list --branch main --workflow CI --limit 1`), and `go test ./...` passes.
+2. Find the latest version with `git tag --sort=-v:refname | head -1` and choose the next one.
+3. Tag the commit and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+4. Verify: `curl https://proxy.golang.org/github.com/darrenburns/terma/@v/vX.Y.Z.info` returns the tagged commit hash (this request also makes the proxy fetch the new version), and `curl https://proxy.golang.org/github.com/darrenburns/terma/@latest` reports `vX.Y.Z`. pkg.go.dev lists the version a few minutes later.
+
 ## Debugging & Configuration Tips
 - `TERMA_DEBUG_OVERLAY=1` shows the live render overlay and last render cause.
