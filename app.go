@@ -44,10 +44,7 @@ func swapRenderTrigger(next chan struct{}) chan struct{} {
 	return previous
 }
 
-const (
-	clickChainTimeout = 500 * time.Millisecond
-	defaultFPS        = 60
-)
+const defaultFPS = 60
 
 var terminalEnableSequences = []string{
 	ansi.SetModeMouseNormal,
@@ -64,6 +61,8 @@ var terminalDisableSequences = []string{
 	ansi.ResetModeMouseButtonEvent,
 	ansi.ResetModeMouseNormal,
 	ansi.ResetModeMouseExtSgr,
+	// Switched on later if the terminal supports it (see pixelPointer).
+	ansi.ResetModeMouseExtSgrPixel,
 }
 
 func writeTerminalSequences(writeString func(string) (int, error), sequences []string) {
@@ -128,7 +127,6 @@ func disableTerminalInputModes(writeString func(string) (int, error), enableKitt
 			ansi.ResetModeMouseX10,
 			ansi.ResetModeMouseExtUtf8,
 			ansi.ResetModeMouseExtUrxvt,
-			ansi.ResetModeMouseExtSgrPixel,
 			ansi.ResetModeBracketedPaste,
 			ansi.ResetModeCursorKeys,
 			ansi.ResetModeKeyboardAction,
@@ -165,71 +163,6 @@ func restoreTTYState(f *os.File, state *term.State) {
 		return
 	}
 	_ = term.Restore(f.Fd(), state)
-}
-
-type mouseClickTracker struct {
-	lastClickTime time.Time
-	lastTargetID  string
-	lastButton    uv.MouseButton
-	lastX, lastY  int
-	clickCount    int
-
-	lastDownTargetID string
-	lastDownButton   uv.MouseButton
-	lastDownCount    int
-}
-
-type mouseDragState struct {
-	isDragging    bool
-	dragWidgetID  string
-	pressedButton uv.MouseButton
-}
-
-func (t *mouseClickTracker) nextClick(targetID string, button uv.MouseButton, x, y int, now time.Time) int {
-	samePosition := targetID == t.lastTargetID && button == t.lastButton && x == t.lastX && y == t.lastY
-	if samePosition && now.Sub(t.lastClickTime) <= clickChainTimeout {
-		t.clickCount++
-	} else {
-		t.clickCount = 1
-	}
-	t.lastTargetID = targetID
-	t.lastButton = button
-	t.lastX = x
-	t.lastY = y
-	t.lastClickTime = now
-
-	t.lastDownTargetID = targetID
-	t.lastDownButton = button
-	t.lastDownCount = t.clickCount
-
-	return t.clickCount
-}
-
-func (t *mouseClickTracker) releaseCount(targetID string, button uv.MouseButton) int {
-	if targetID == t.lastDownTargetID && (button == t.lastDownButton || button == uv.MouseNone) {
-		return t.lastDownCount
-	}
-	return 1
-}
-
-func buildMouseEvent(m uv.Mouse, entry *WidgetEntry, clickCount int) MouseEvent {
-	widgetID := ""
-	localX, localY := m.X, m.Y
-	if entry != nil {
-		widgetID = entry.ID
-		localX = m.X - entry.Bounds.X
-		localY = m.Y - entry.Bounds.Y
-	}
-	return MouseEvent{
-		X:          m.X,
-		Y:          m.Y,
-		LocalX:     localX,
-		LocalY:     localY,
-		Button:     m.Button,
-		Mod:        m.Mod,
-		ClickCount: clickCount,
-		WidgetID:   widgetID,
-	}
 }
 
 // Quit exits the running application gracefully.
@@ -280,6 +213,9 @@ func Run(root Widget) (runErr error) {
 
 	// Enable input reporting modes used by Terma (mouse + Kitty keyboard).
 	enableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard)
+	// Ask whether the mouse can be reported in pixels; see pixelPointer.
+	pointer := newPixelPointer()
+	_, _ = t.WriteString(pointer.query())
 
 	// shutdownTerminal restores the terminal to its normal state.
 	// Safe to call multiple times (Shutdown is idempotent).
@@ -507,8 +443,7 @@ func Run(root Widget) (runErr error) {
 
 	renderInterval := time.Second / time.Duration(defaultFPS)
 	lastModalCount := 0
-	hoverState := &hoverTracker{}
-	var resolveHoverTarget hoverTargetResolver
+	mouse := newMouseRouter(renderer, focusManager, hoveredSignal)
 
 	// Render and update focusables
 	display := func() {
@@ -563,7 +498,7 @@ func Run(root Widget) (runErr error) {
 
 		// Reconcile hover after render so enter/leave transitions still fire when
 		// layout changes under a stationary pointer.
-		if hoverState.Reconcile(resolveHoverTarget, hoveredSignal) {
+		if mouse.reconcileHover() {
 			renderer.Update(root)
 		}
 		// Position terminal cursor for IME support (emoji picker, input methods)
@@ -588,52 +523,6 @@ func Run(root Widget) (runErr error) {
 		}
 
 		Log("Render complete in %.3fms, %d widgets registered", float64(elapsed.Microseconds())/1000.0, len(renderer.widgetRegistry.entries))
-	}
-
-	clickTracker := &mouseClickTracker{}
-	dragState := &mouseDragState{}
-
-	resolveMouseTarget := func(x, y int, allowDismiss bool) (*WidgetEntry, bool) {
-		// Check if click is on a float
-		if renderer.FloatAt(x, y) != nil {
-			return renderer.WidgetAt(x, y), false
-		}
-
-		// Click is outside all floats - check for dismissal or modal blocking
-		if renderer.HasFloats() {
-			if allowDismiss {
-				topFloat := renderer.TopFloat()
-				if topFloat != nil && topFloat.Config.shouldDismissOnClickOutside() && topFloat.Config.OnDismiss != nil {
-					topFloat.Config.OnDismiss()
-					return nil, true
-				}
-			}
-
-			// For modal floats, block the click from reaching underlying widgets
-			if renderer.HasModalFloat() {
-				return nil, true
-			}
-		}
-
-		return renderer.WidgetAt(x, y), false
-	}
-
-	resolveHoverTarget = func(x, y int) *WidgetEntry {
-		entry, blocked := resolveMouseTarget(x, y, false)
-		if blocked {
-			return nil
-		}
-		return entry
-	}
-
-	// focusAt finds the innermost focusable widget at (x, y) and focuses it.
-	// This is separate from WidgetAt because the clicked widget (for OnClick)
-	// may be different from the focusable widget (e.g., clicking Text inside a List).
-	focusAt := func(x, y int) {
-		entry := renderer.FocusableAt(x, y)
-		if entry != nil {
-			focusManager.FocusByID(entry.ID)
-		}
 	}
 
 	// Get root's key handling interfaces (if any) for the no-focusables case
@@ -728,6 +617,27 @@ func Run(root Widget) (runErr error) {
 				if !ok {
 					return
 				}
+				// Motion can arrive faster than it is handled (the terminal
+				// reports every cell crossed, or every pixel with pixel
+				// reporting); only the latest position matters. The pixel
+				// pointer ignores mouse events, so it can't change mid-burst.
+				if motion, isMotion := ev.(uv.MouseMotionEvent); isMotion {
+					latest, next := coalesceMouseMotion(motion, termEvents)
+					if mouse.motion(pointer.locateMotion(latest)) {
+						requestRender()
+					}
+					if next == nil {
+						continue
+					}
+					ev = next
+				}
+				if seq := pointer.handle(ev); seq != "" {
+					_, _ = t.WriteString(seq)
+					_ = t.Flush()
+				}
+				// Pixel positions become cells, keeping the pointer's place
+				// within its cell for widgets that track it precisely.
+				ev, subX, subY := pointer.locateEvent(ev)
 				switch ev := ev.(type) {
 				case uv.WindowSizeEvent:
 					_ = t.Resize(ev.Width, ev.Height)
@@ -736,6 +646,8 @@ func Run(root Widget) (runErr error) {
 					height = ev.Height
 					t.Erase()
 					requestRender()
+				case uv.WindowPixelSizeEvent, uv.ModeReportEvent:
+					// Only used to set up pixel mouse reporting (above).
 				case uv.KeyPressEvent:
 					// Check for app-level quit keys
 					if ev.MatchString("ctrl+c") {
@@ -770,6 +682,9 @@ func Run(root Widget) (runErr error) {
 
 						// Re-enable mouse tracking
 						enableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard)
+						if pointer.enabled {
+							_, _ = t.WriteString(ansi.SetModeMouseExtSgrPixel)
+						}
 
 						// Redraw the screen
 						requestRender()
@@ -806,120 +721,22 @@ func Run(root Widget) (runErr error) {
 					requestRender()
 
 				case uv.MouseClickEvent:
-					Log("MouseClickEvent at X=%d Y=%d Button=%v", ev.X, ev.Y, ev.Button)
-
-					entry, handled := resolveMouseTarget(ev.X, ev.Y, true)
-					if handled {
-						Log("  Mouse click handled by float logic")
-						requestRender()
-						continue
-					}
-
-					if entry != nil {
-						Log("  Found widget: ID=%q Type=%T", entry.ID, entry.EventWidget)
-						focusEntry := renderer.FocusableAt(ev.X, ev.Y)
-						focusAt(ev.X, ev.Y)
-						clickCount := clickTracker.nextClick(entry.ID, ev.Button, ev.X, ev.Y, time.Now())
-						mouseEvent := buildMouseEvent(uv.Mouse(ev), entry, clickCount)
-
-						// Set drag state for mouse move tracking
-						dragState.isDragging = true
-						dragState.dragWidgetID = entry.ID
-						dragState.pressedButton = ev.Button
-
-						if downHandler, ok := entry.EventWidget.(MouseDownHandler); ok {
-							Log("  Widget has OnMouseDown")
-							downHandler.OnMouseDown(mouseEvent)
-						}
-
-						// Also notify the focused widget when a non-focusable child was clicked.
-						// This lets focusable widgets (Tree/TextInput/TextArea, etc.) handle cursor placement.
-						if focusEntry != nil && focusEntry != entry {
-							focusMouseEvent := buildMouseEvent(uv.Mouse(ev), focusEntry, clickCount)
-							if downHandler, ok := focusEntry.EventWidget.(MouseDownHandler); ok {
-								Log("  Focused widget has OnMouseDown")
-								downHandler.OnMouseDown(focusMouseEvent)
-							}
-						}
-
-						if clickable, ok := entry.EventWidget.(Clickable); ok {
-							Log("  Widget is Clickable, calling OnClick")
-							clickable.OnClick(mouseEvent)
-						} else {
-							Log("  Widget is NOT Clickable")
-						}
-					} else {
-						Log("  No widget found at position")
-						LogWidgetRegistry(renderer.widgetRegistry)
-					}
-
-					// Re-render after click
+					mouse.press(ev, subX, subY, time.Now())
 					requestRender()
 
 				case uv.MouseReleaseEvent:
-					Log("MouseReleaseEvent at X=%d Y=%d Button=%v", ev.X, ev.Y, ev.Button)
-
-					// Clear drag state
-					dragState.isDragging = false
-					dragState.dragWidgetID = ""
-					dragState.pressedButton = uv.MouseNone
-
-					entry, handled := resolveMouseTarget(ev.X, ev.Y, false)
-					if handled {
-						Log("  Mouse release blocked by float logic")
-						requestRender()
-						continue
-					}
-
-					if entry != nil {
-						Log("  Found widget: ID=%q Type=%T", entry.ID, entry.EventWidget)
-						clickCount := clickTracker.releaseCount(entry.ID, ev.Button)
-						mouseEvent := buildMouseEvent(uv.Mouse(ev), entry, clickCount)
-
-						if upHandler, ok := entry.EventWidget.(MouseUpHandler); ok {
-							Log("  Widget has OnMouseUp")
-							upHandler.OnMouseUp(mouseEvent)
-						}
-					} else {
-						Log("  No widget found at position")
-					}
-
-					// Re-render after mouse up
+					mouse.release(ev, subX, subY)
 					requestRender()
 
 				case uv.MouseMotionEvent:
-					// Log("MouseMotionEvent at X=%d Y=%d", ev.X, ev.Y)
-
-					// Handle drag - dispatch to the widget that received the mouse down
-					if dragState.isDragging && dragState.dragWidgetID != "" {
-						if dragEntry := renderer.WidgetByID(dragState.dragWidgetID); dragEntry != nil {
-							if moveHandler, ok := dragEntry.EventWidget.(MouseMoveHandler); ok {
-								// Build mouse event with local coordinates relative to the drag widget
-								localX := ev.X - dragEntry.Bounds.X
-								localY := ev.Y - dragEntry.Bounds.Y
-								mouseEvent := MouseEvent{
-									X:          ev.X,
-									Y:          ev.Y,
-									LocalX:     localX,
-									LocalY:     localY,
-									Button:     dragState.pressedButton,
-									Mod:        ev.Mod,
-									ClickCount: 1,
-									WidgetID:   dragEntry.ID,
-								}
-								moveHandler.OnMouseMove(mouseEvent)
-								display()
-							}
-						}
-					}
-
-					if hoverState.UpdatePointer(ev.X, ev.Y, ev.Mod, ev.Button, resolveHoverTarget, hoveredSignal) {
+					if mouse.motion(ev, subX, subY) {
 						requestRender()
 					}
 
 				case uv.MouseWheelEvent:
-					dispatchMouseWheel(renderer, ev.X, ev.Y, ev.Button)
-					requestRender()
+					if mouse.wheel(ev) {
+						requestRender()
+					}
 
 				default:
 					// Log other event types for debugging
@@ -931,31 +748,6 @@ func Run(root Widget) (runErr error) {
 
 	<-ctx.Done()
 	return runErr
-}
-
-// dispatchMouseWheel routes wheel events to scrollable widgets under the cursor.
-// Scrollables are tried from innermost to outermost until one handles the event.
-func dispatchMouseWheel(renderer *Renderer, x int, y int, button uv.MouseButton) bool {
-	if renderer == nil {
-		return false
-	}
-	for _, scrollable := range renderer.ScrollablesAt(x, y) {
-		var handled bool
-		switch button {
-		case uv.MouseWheelUp:
-			handled = scrollable.ScrollUp(1)
-		case uv.MouseWheelDown:
-			handled = scrollable.ScrollDown(1)
-		case uv.MouseWheelLeft:
-			handled = scrollable.ScrollLeft(1)
-		case uv.MouseWheelRight:
-			handled = scrollable.ScrollRight(1)
-		}
-		if handled {
-			return true
-		}
-	}
-	return false
 }
 
 // exportScreenToFile saves the current screen content to a timestamped file.

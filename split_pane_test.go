@@ -69,7 +69,7 @@ func TestSplitPane_DisableFocus(t *testing.T) {
 
 func TestSplitPane_DraggingUsesFocusDividerColors(t *testing.T) {
 	state := NewSplitPaneState(0.5)
-	state.dragging = true
+	state.setDragging(true)
 
 	unfocusedColor := RGB(255, 0, 0)
 	focusedColor := RGB(0, 255, 0)

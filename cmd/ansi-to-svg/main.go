@@ -30,9 +30,13 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	lines := strings.Split(string(input), "\n")
+	for i, line := range lines {
+		lines[i] = expandTabs(line)
+	}
 	// capture-pane ends lines with plain newlines; the styled-string parser
 	// needs carriage returns too to start each line at column zero.
-	text := strings.ReplaceAll(string(input), "\n", "\r\n")
+	text := strings.Join(lines, "\r\n")
 
 	buf := uv.NewBuffer(*width, *height)
 	uv.NewStyledString(text).Draw(screen{buf}, buf.Bounds())
@@ -41,4 +45,25 @@ func main() {
 	// shared edges draws faint seams between cells when rasterised to PNG.
 	svg = strings.Replace(svg, "<style>", "<style>\n    rect { shape-rendering: crispEdges; }", 1)
 	fmt.Print(svg)
+}
+
+// expandTabs replaces each tab with spaces up to the next 8-column tab stop.
+// tmux captures a tab when the program used one to move the cursor; the
+// styled-string parser would otherwise draw it as a single cell and shift the
+// rest of the line left. The spaces take the style in effect at the tab, which
+// is the style the skipped cells were last painted with.
+func expandTabs(line string) string {
+	if !strings.Contains(line, "\t") {
+		return line
+	}
+	var b strings.Builder
+	for _, r := range line {
+		if r != '\t' {
+			b.WriteRune(r)
+			continue
+		}
+		col := ansi.StringWidth(b.String())
+		b.WriteString(strings.Repeat(" ", 8-col%8))
+	}
+	return b.String()
 }

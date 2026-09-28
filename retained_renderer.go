@@ -12,6 +12,9 @@ import (
 type retainedFloat struct {
 	entry FloatEntry
 	root  *widgetNode
+	// The overlay's hit-test entries are registry entries [registryStart, registryEnd).
+	registryStart int
+	registryEnd   int
 }
 
 type rendererFrameMode string
@@ -36,8 +39,10 @@ type retainedLayoutNode struct {
 }
 
 // maxLayoutCacheEntries bounds per-node caching; containers may measure a
-// child under a few different constraints in one pass.
-const maxLayoutCacheEntries = 4
+// child under a few different constraints in one pass. A Scrollable whose
+// content overflows measures it under five, and must find all of them cached
+// or every scroll step lays its whole content out again.
+const maxLayoutCacheEntries = 8
 
 type layoutCacheEntry struct {
 	constraints layout.Constraints
@@ -208,8 +213,8 @@ func (r *Renderer) renderPartial(root Widget) (focusables []FocusableEntry, layo
 	}
 
 	r.lastScanCount = 0
-	damageRects := r.collectDamageRects()
-	if len(damageRects) == 0 {
+	damageRects, found := r.collectDamageRects()
+	if !found {
 		return r.renderFull(root)
 	}
 
@@ -536,9 +541,9 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 	if r.geometryOnly {
 		// A clean subtree with the same layout in the same place is exactly as
 		// it was: replay its hit-test entries instead of walking it.
-		if recordRegistry && node.layoutReused && node.subtreeDirtyLevel() == DirtyNone && node.bounds == nodeBounds && node.registered != nil {
+		if recordRegistry && node.layoutReused && node.subtreeDirtyLevel() == DirtyNone && node.bounds == nodeBounds && node.hitClip == ctx.clip && node.registered != nil {
 			start := len(r.widgetRegistry.entries)
-			r.widgetRegistry.entries = append(r.widgetRegistry.entries, node.registered...)
+			r.widgetRegistry.appendEntries(node.registered)
 			node.registered = r.registeredSince(start)
 			return node.subtreeBounds
 		}
@@ -547,20 +552,22 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		r.lastMeasureCount++
 		registryStart := len(r.widgetRegistry.entries)
 		if recordRegistry {
-			r.recordRegistry(node, nodeBounds)
+			r.recordRegistry(node, nodeBounds, ctx.clip)
 		}
 		subtreeBounds := nodeBounds
 		r.forEachChildContext(ctx, node, style, absBorderX, absBorderY, absContentX, absContentY, func(childCtx *RenderContext, child *widgetNode, x, y int) {
 			subtreeBounds = subtreeBounds.Union(r.paintRetainedNode(childCtx, child, x, y, damage, partial, recordRegistry))
 		})
+		subtreeBounds = subtreeBounds.Intersect(ctx.visible)
 		if scrollable, ok := node.widget.(Scrollable); ok && scrollable.State != nil {
 			usableBox := box.UsableContentBox()
 			scrollable.State.updateHorizontalLayout(usableBox.Width, box.VirtualWidth)
 			scrollable.State.updateLayout(usableBox.Height, box.VirtualHeight)
 		}
-		r.recordReflowDamage(node, nodeBounds, subtreeBounds)
+		r.recordReflowDamage(node, nodeBounds, subtreeBounds, ctx.visible)
 		if recordRegistry {
 			node.registered = r.registeredSince(registryStart)
+			node.hitClip = ctx.clip
 		}
 		node.prevBox = box
 		node.bounds = nodeBounds
@@ -655,7 +662,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 
 	registryStart := len(r.widgetRegistry.entries)
 	if recordRegistry {
-		r.recordRegistry(node, nodeBounds)
+		r.recordRegistry(node, nodeBounds, ctx.clip)
 	}
 
 	subtreeBounds := nodeBounds
@@ -667,6 +674,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		}
 		subtreeBounds = subtreeBounds.Union(childBounds)
 	})
+	subtreeBounds = subtreeBounds.Intersect(ctx.visible)
 
 	if scrollable, ok := node.widget.(Scrollable); ok {
 		if scrollable.State != nil {
@@ -676,7 +684,6 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		}
 
 		if box.IsScrollableY() && !scrollable.DisableScroll {
-			focused := ctx.focusManager != nil && ctx.IsFocused(node.widget)
 			scrollbarCtx := ctx.SubContext(absContentX, absContentY, box.ContentWidth(), box.ContentHeight())
 			if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
 				bg := style.BackgroundColor
@@ -688,12 +695,20 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 					return bg.ColorAt(w, h, relX, relY)
 				}
 			}
-			scrollable.renderScrollbar(scrollbarCtx, box.ScrollOffsetY, focused)
+			// The scrollbar's reads (the exact scroll position, and focus for
+			// the thumb colour) are this node's paint dependencies, so changing
+			// them repaints just the scrollbar (see scrollbarDamage).
+			withSignalRead(node, readPhasePaint, func() struct{} {
+				focused := scrollable.IsFocusable() && ctx.focusManager != nil && ctx.IsFocused(node.widget)
+				scrollable.renderScrollbar(scrollbarCtx, box.ScrollOffsetY, focused)
+				return struct{}{}
+			})
 		}
 	}
 
 	if recordRegistry {
 		node.registered = r.registeredSince(registryStart)
+		node.hitClip = ctx.clip
 	}
 	if !partial {
 		node.prevBox = box
@@ -765,12 +780,14 @@ func (r *Renderer) forEachChildContext(ctx *RenderContext, node *widgetNode, sty
 	}
 }
 
-func (r *Renderer) recordRegistry(node *widgetNode, bounds Rect) {
+// recordRegistry records the node as a hit target. clip is the area it may
+// draw in, so only the part of it actually on screen receives pointer events.
+func (r *Renderer) recordRegistry(node *widgetNode, bounds, clip Rect) {
 	eventWidget := node.eventWidget
 	if eventWidget == nil {
 		eventWidget = node.widget
 	}
-	r.widgetRegistry.Record(node.widget, eventWidget, node.eventID, bounds)
+	r.widgetRegistry.Record(node.widget, eventWidget, node.eventID, bounds, bounds.Intersect(clip))
 }
 
 // recordReflowDamage marks what a reflow frame must repaint for this node:
@@ -779,10 +796,21 @@ func (r *Renderer) recordRegistry(node *widgetNode, bounds Rect) {
 //
 // Nodes are only rebuilt, added or removed beneath an invalidated ancestor,
 // whose subtree damage already covers them.
-func (r *Renderer) recordReflowDamage(node *widgetNode, bounds, subtreeBounds Rect) {
+//
+// Damage is clipped to what the node can show, so scrolling doesn't repaint
+// around the viewport where scrolled-out content would lie. If that visible
+// area itself moved, the ancestor whose box changed damages the old one.
+func (r *Renderer) recordReflowDamage(node *widgetNode, bounds, subtreeBounds, visible Rect) {
 	add := func(rect Rect) {
+		rect = rect.Intersect(visible)
 		if !rect.IsEmpty() {
 			r.reflowDamage = append(r.reflowDamage, rect)
+		}
+	}
+	if node.dirtyLevel() == DirtyPaint && node.bounds == bounds && node.prevBox == node.layout.Box {
+		if rect, ok := scrollbarDamage(node); ok {
+			add(rect)
+			return
 		}
 	}
 	switch {
@@ -952,10 +980,13 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 			}
 		}
 
+		registryStart := len(r.widgetRegistry.entries)
 		r.paintRetainedNode(ctx, floatRoot, x, y, Rect{}, false, true)
 		r.retainedFloats = append(r.retainedFloats, retainedFloat{
-			entry: entry,
-			root:  floatRoot,
+			entry:         entry,
+			root:          floatRoot,
+			registryStart: registryStart,
+			registryEnd:   len(r.widgetRegistry.entries),
 		})
 	}
 
@@ -1015,16 +1046,25 @@ func (r *Renderer) clearRect(rect Rect) {
 	}
 }
 
-func (r *Renderer) collectDamageRects() []Rect {
-	var rects []Rect
+// collectDamageRects returns the areas that paint-dirty nodes cover, and
+// whether any were found. A dirty node that isn't visible (for example one
+// scrolled out of view) has nothing to repaint.
+func (r *Renderer) collectDamageRects() (rects []Rect, found bool) {
 	appendDirty := func(node *widgetNode) {}
 	appendDirty = func(node *widgetNode) {
 		if node == nil {
 			return
 		}
 		r.lastScanCount++
-		if node.dirtyLevel() == DirtyPaint && !node.subtreeBounds.IsEmpty() {
-			rects = append(rects, node.subtreeBounds)
+		if node.dirtyLevel() == DirtyPaint {
+			found = true
+			rect, ok := scrollbarDamage(node)
+			if !ok {
+				rect = node.subtreeBounds
+			}
+			if !rect.IsEmpty() {
+				rects = append(rects, rect)
+			}
 		}
 		for _, child := range node.children {
 			// Dirty nodes only lie beneath ancestors whose subtree flag is set.
@@ -1037,7 +1077,31 @@ func (r *Renderer) collectDamageRects() []Rect {
 	for _, floatNode := range r.retainedFloats {
 		appendDirty(floatNode.root)
 	}
-	return rects
+	return rects, found
+}
+
+// scrollbarDamage returns the scrollbar column of a Scrollable node, which is
+// all that its own paint-phase changes can alter: it only reads signals while
+// drawing its scrollbar. Moving the thumb by less than a line therefore
+// repaints one column instead of everything the Scrollable contains.
+func scrollbarDamage(node *widgetNode) (Rect, bool) {
+	if _, ok := node.widget.(Scrollable); !ok {
+		return Rect{}, false
+	}
+	box := node.layout.Box
+	if !box.IsScrollableY() || box.ContentWidth() <= 0 {
+		return Rect{}, false
+	}
+	borderX, borderY := box.BorderOrigin()
+	contentX, contentY := box.ContentOrigin()
+	column := Rect{
+		X:      node.bounds.X + contentX - borderX + box.ContentWidth() - 1,
+		Y:      node.bounds.Y + contentY - borderY,
+		Width:  1,
+		Height: box.ContentHeight(),
+	}
+	// The recorded subtree area is clipped to what is visible.
+	return column.Intersect(node.subtreeBounds), true
 }
 
 func (r *Renderer) maxDirtyLevel() dirtyLevel {

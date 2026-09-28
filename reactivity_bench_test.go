@@ -318,6 +318,49 @@ func BenchmarkReactivityOverlay(b *testing.B) {
 	}
 }
 
+// benchScrollScene puts a scrolling list of rows between a header and footer.
+func benchScrollScene(scroll *ScrollState, rows int) Widget {
+	children := make([]Widget, rows)
+	for i := range children {
+		children[i] = Text{Content: fmt.Sprintf("Row %04d", i), Style: Style{Height: Cells(1)}}
+	}
+	return Column{Children: []Widget{
+		Text{Content: "header"},
+		Scrollable{ID: "bench-scroll", State: scroll, Height: Cells(30), Child: Column{Children: children}},
+		Text{Content: "footer"},
+	}}
+}
+
+func BenchmarkReactivityScroll(b *testing.B) {
+	for _, rows := range []int{100, 1000} {
+		b.Run(fmt.Sprintf("line/rows=%d", rows), func(b *testing.B) {
+			scroll := NewScrollState()
+			benchmarkReactiveUpdates(b, newReactivityBenchRenderer(), benchScrollScene(scroll, rows), 1, func(i int) {
+				if i%2 == 0 {
+					scroll.ScrollDown(1)
+				} else {
+					scroll.ScrollUp(1)
+				}
+			})
+		})
+	}
+	// Dragging the thumb less than a line moves only the thumb.
+	b.Run("sub-line/rows=40", func(b *testing.B) {
+		scroll := NewScrollState()
+		root := benchScrollScene(scroll, 40)
+		renderer := newReactivityBenchRenderer()
+		renderer.Update(root)
+		scroll.setPosition(5.4)
+		benchmarkReactiveUpdates(b, renderer, root, 2, func(i int) {
+			if i%2 == 0 {
+				scroll.setPosition(5.1)
+			} else {
+				scroll.setPosition(5.4)
+			}
+		})
+	})
+}
+
 func BenchmarkReactivityBatch(b *testing.B) {
 	for _, target := range []string{"same-leaf", "distinct-leaves"} {
 		for _, sets := range []int{1, 10, 100} {

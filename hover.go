@@ -18,6 +18,12 @@ type hoverTracker struct {
 	pointerKnown  bool
 }
 
+// pointerChanged reports whether the pointer is in a different cell, or has
+// different modifiers or buttons, from when it was last recorded.
+func (h *hoverTracker) pointerChanged(x, y int, mod uv.KeyMod, button uv.MouseButton) bool {
+	return !h.pointerKnown || x != h.pointerX || y != h.pointerY || mod != h.pointerMod || button != h.pointerButton
+}
+
 // UpdatePointer records the latest pointer state, resolves the hover target,
 // and emits hover transition events if needed.
 func (h *hoverTracker) UpdatePointer(x, y int, mod uv.KeyMod, button uv.MouseButton, resolve hoverTargetResolver, hoveredSignal AnySignal[Widget]) bool {

@@ -11,6 +11,9 @@ type CommandPaletteDemo struct {
 	palette *t.CommandPaletteState
 	status  t.Signal[string]
 	preview t.Signal[string]
+	// themeBeforePreview is restored if the Themes level is left without
+	// choosing a theme. Empty while no preview is showing.
+	themeBeforePreview string
 }
 
 const themesPaletteTitle = "Themes"
@@ -24,10 +27,22 @@ func NewCommandPaletteDemo() *CommandPaletteDemo {
 	app.palette = t.NewCommandPaletteState("Commands", []t.CommandPaletteItem{
 		{Label: "New File", Hint: "Ctrl+N", Action: app.selectAction("New File")},
 		{Label: "Open File", Hint: "Ctrl+O", Action: app.selectAction("Open File")},
+		{Label: "Save", Hint: "Ctrl+S", Action: app.selectAction("Save")},
+		{Label: "Save As", Hint: "Ctrl+Shift+S", Action: app.selectAction("Save As")},
 		{Divider: "Edit"},
 		{Label: "Cut", Hint: "Ctrl+X", Action: app.selectAction("Cut")},
 		{Label: "Copy", Hint: "Ctrl+C", Action: app.selectAction("Copy")},
 		{Label: "Paste", Hint: "Ctrl+V", Action: app.selectAction("Paste")},
+		{Label: "Find in Files", Hint: "Ctrl+Shift+F", Action: app.selectAction("Find in Files")},
+		{Divider: "View"},
+		{Label: "Toggle Sidebar", Hint: "Ctrl+B", Action: app.selectAction("Toggle Sidebar")},
+		{
+			Label:      "Toggle Word Wrap",
+			Hint:       "Alt+Z",
+			FilterText: "Toggle Word Wrap soft wrap long lines",
+			Action:     app.selectAction("Toggle Word Wrap"),
+		},
+		{Label: "Profile Settings", Action: app.selectAction("Profile Settings")},
 		{
 			Label:         themesPaletteTitle,
 			ChildrenTitle: themesPaletteTitle,
@@ -59,6 +74,7 @@ func (a *CommandPaletteDemo) selectAction(label string) func() {
 func (a *CommandPaletteDemo) selectThemeAction(themeName, label string) func() {
 	return func() {
 		t.SetTheme(themeName)
+		a.themeBeforePreview = ""
 		a.status.Set("Selected: Theme " + label)
 		a.palette.Close(false)
 	}
@@ -76,6 +92,7 @@ func (a *CommandPaletteDemo) themeItems() []t.CommandPaletteItem {
 			items = append(items, t.CommandPaletteItem{
 				Label:      label,
 				FilterText: label + " " + name,
+				Current:    name == t.CurrentThemeName(),
 				Data:       name,
 				Action:     a.selectThemeAction(name, label),
 			})
@@ -99,6 +116,7 @@ func themeDisplayName(name string) string {
 
 func (a *CommandPaletteDemo) togglePalette() {
 	if a.palette.Visible.Peek() {
+		a.restoreTheme()
 		a.palette.Close(false)
 		return
 	}
@@ -111,14 +129,26 @@ func (a *CommandPaletteDemo) Keybinds() []t.Keybind {
 	}
 }
 
+// handleCursorChange previews the theme under the cursor in the Themes level,
+// and restores the original theme once the cursor leaves it.
 func (a *CommandPaletteDemo) handleCursorChange(item t.CommandPaletteItem) {
 	a.preview.Set(item.Label)
 	level := a.palette.CurrentLevel()
-	if level == nil || level.Title != themesPaletteTitle {
+	themeName, isTheme := item.Data.(string)
+	if level == nil || level.Title != themesPaletteTitle || !isTheme {
+		a.restoreTheme()
 		return
 	}
-	if themeName, ok := item.Data.(string); ok {
-		t.SetTheme(themeName)
+	if a.themeBeforePreview == "" {
+		a.themeBeforePreview = t.CurrentThemeName()
+	}
+	t.SetTheme(themeName)
+}
+
+func (a *CommandPaletteDemo) restoreTheme() {
+	if a.themeBeforePreview != "" {
+		t.SetTheme(a.themeBeforePreview)
+		a.themeBeforePreview = ""
 	}
 }
 
@@ -171,6 +201,7 @@ func (a *CommandPaletteDemo) Build(ctx t.BuildContext) t.Widget {
 				State:          a.palette,
 				Position:       t.FloatPositionTopCenter,
 				OnCursorChange: a.handleCursorChange,
+				OnDismiss:      a.restoreTheme,
 			},
 		},
 	}

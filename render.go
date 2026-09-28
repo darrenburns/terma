@@ -58,6 +58,11 @@ type RenderContext struct {
 	Width, Height int
 	// Clip rect in absolute screen coordinates - all drawing is clipped to this rect
 	clip Rect
+	// visible is the clip rect before any repaint area is applied to it: all
+	// that this widget could ever show. The areas the renderer records as
+	// painted (and so damages when they change) are clipped to it, so content
+	// scrolled out of view never causes repaints.
+	visible Rect
 	// Focus collector for gathering focusable widgets
 	focusCollector *FocusCollector
 	// Focus manager for checking focus state
@@ -85,6 +90,7 @@ func NewRenderContext(terminal CellBuffer, width, height int, fc *FocusCollector
 		Width:          width,
 		Height:         height,
 		clip:           Rect{X: 0, Y: 0, Width: width, Height: height},
+		visible:        Rect{X: 0, Y: 0, Width: width, Height: height},
 		focusCollector: fc,
 		focusManager:   fm,
 		buildContext:   bc,
@@ -130,6 +136,7 @@ func (ctx *RenderContext) SubContext(xOffset, yOffset, width, height int) *Rende
 		Width:          width,
 		Height:         height,
 		clip:           newClip,
+		visible:        ctx.visible.Intersect(childBounds),
 		focusCollector: ctx.focusCollector,
 		focusManager:   ctx.focusManager,
 		buildContext:   ctx.buildContext,
@@ -164,6 +171,7 @@ func (ctx *RenderContext) OverflowSubContext(xOffset, yOffset, width, height int
 		Width:          width,
 		Height:         height,
 		clip:           ctx.clip, // Don't intersect - allow overflow
+		visible:        ctx.visible,
 		focusCollector: ctx.focusCollector,
 		focusManager:   ctx.focusManager,
 		buildContext:   ctx.buildContext,
@@ -207,6 +215,7 @@ func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, sc
 		Width:          width,
 		Height:         height,
 		clip:           newClip,
+		visible:        ctx.visible.Intersect(viewportBounds),
 		focusCollector: ctx.focusCollector,
 		focusManager:   ctx.focusManager,
 		buildContext:   ctx.buildContext,
@@ -1206,12 +1215,13 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 	if eventWidget == nil {
 		eventWidget = tree.Widget
 	}
-	r.widgetRegistry.Record(tree.Widget, eventWidget, tree.EventID, Rect{
+	bounds := Rect{
 		X:      trueAbsBorderX,
 		Y:      trueAbsBorderY,
 		Width:  box.Width,
 		Height: box.Height,
-	})
+	}
+	r.widgetRegistry.Record(tree.Widget, eventWidget, tree.EventID, bounds, bounds.Intersect(ctx.clip))
 
 	// 5. Render children at their computed positions
 	// If tree.Children is empty but widget has children, the widget handles them in Render() (fallback)
@@ -1311,16 +1321,31 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 	}
 }
 
+// pointerLayer returns the range of registry entries that can take pointer
+// input at (x, y): the topmost overlay's under the point, else the main
+// tree's. Nothing beneath an overlay is reachable through it.
+func (r *Renderer) pointerLayer(x, y int) (lo, hi int) {
+	if i := r.floatIndexAt(x, y); i >= 0 {
+		return r.retainedFloats[i].registryStart, r.retainedFloats[i].registryEnd
+	}
+	if len(r.retainedFloats) > 0 {
+		return 0, r.retainedFloats[0].registryStart
+	}
+	return 0, len(r.widgetRegistry.entries)
+}
+
 // WidgetAt returns the topmost widget at the given terminal coordinates.
 // Returns nil if no widget is at that position.
 func (r *Renderer) WidgetAt(x, y int) *WidgetEntry {
-	return r.widgetRegistry.WidgetAt(x, y)
+	lo, hi := r.pointerLayer(x, y)
+	return r.widgetRegistry.widgetAtIn(x, y, lo, hi)
 }
 
 // FocusableAt returns the innermost focusable widget at the given coordinates.
 // Returns nil if no focusable widget is at that position.
 func (r *Renderer) FocusableAt(x, y int) *WidgetEntry {
-	return r.widgetRegistry.FocusableAt(x, y)
+	lo, hi := r.pointerLayer(x, y)
+	return r.widgetRegistry.focusableAtIn(x, y, lo, hi)
 }
 
 // WidgetByID returns the widget entry with the given ID.
@@ -1332,13 +1357,18 @@ func (r *Renderer) WidgetByID(id string) *WidgetEntry {
 // ScrollableAt returns the innermost Scrollable widget at the given coordinates.
 // Returns nil if no Scrollable is at that position.
 func (r *Renderer) ScrollableAt(x, y int) *Scrollable {
-	return r.widgetRegistry.ScrollableAt(x, y)
+	scrollables := r.ScrollablesAt(x, y)
+	if len(scrollables) == 0 {
+		return nil
+	}
+	return scrollables[0]
 }
 
 // ScrollablesAt returns all Scrollable widgets at the given coordinates,
 // ordered from innermost to outermost.
 func (r *Renderer) ScrollablesAt(x, y int) []*Scrollable {
-	return r.widgetRegistry.ScrollablesAt(x, y)
+	lo, hi := r.pointerLayer(x, y)
+	return r.widgetRegistry.scrollablesAtIn(x, y, lo, hi)
 }
 
 // renderFloats renders all floating widgets collected during the build phase.
@@ -1487,15 +1517,23 @@ func (r *Renderer) HasFloats() bool {
 // FloatAt returns the topmost float entry containing the point (x, y).
 // Returns nil if no float contains the point.
 func (r *Renderer) FloatAt(x, y int) *FloatEntry {
+	if i := r.floatIndexAt(x, y); i >= 0 {
+		return &r.retainedFloats[i].entry
+	}
+	return nil
+}
+
+// floatIndexAt returns the index of the topmost float containing (x, y), or -1.
+func (r *Renderer) floatIndexAt(x, y int) int {
 	// Search back-to-front (topmost floats are last)
 	for i := len(r.retainedFloats) - 1; i >= 0; i-- {
 		entry := &r.retainedFloats[i].entry
 		if x >= entry.X && x < entry.X+entry.Width &&
 			y >= entry.Y && y < entry.Y+entry.Height {
-			return entry
+			return i
 		}
 	}
-	return nil
+	return -1
 }
 
 // TopFloat returns the topmost (last registered) float entry, or nil if none.
