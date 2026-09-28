@@ -930,6 +930,15 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 		return
 	}
 
+	// Only the topmost modal pulls focus into itself. If every open modal did,
+	// two of them would take focus from each other on every frame.
+	topModal := -1
+	for i, entry := range r.floatCollector.entries {
+		if entry.Config.Modal {
+			topModal = i
+		}
+	}
+
 	for i := 0; i < len(r.floatCollector.entries); i++ {
 		entry := r.floatCollector.entries[i]
 		focusableCountBefore := r.focusCollector.Len()
@@ -978,7 +987,7 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 			}
 
 			focusedID := r.focusManager.FocusedID()
-			alreadyInside := false
+			alreadyInside := i != topModal
 			for _, fe := range r.focusCollector.Focusables()[focusableCountBefore:] {
 				if fe.ID == focusedID {
 					alreadyInside = true
