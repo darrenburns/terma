@@ -33,7 +33,24 @@ Run `go run ./cmd/jump-example` to try it.
 - If `Action` is set, it runs instead of moving focus, for example to switch tabs or press a button. The label still appears on the widget with `ID`.
 - A key can be longer than one character (`"gt"`). It is typed one character at a time. Don't let one key be a prefix of another.
 
-**Dynamic hints** (`Dynamic: true`) label every other focusable widget in view, so nothing needs declaring up front. This works like Vimium:
+**Dynamic hints** (`Dynamic: true`) are for what can't be given a key in advance, because it comes from data. Every **item** in view gets its own hint, the way Vimium labels every link on a page:
+
+| Widget | Each hint lands on | Jumping to it |
+|--------|--------------------|---------------|
+| `List` | a visible row | moves the cursor there (as a click does) and focuses the list |
+| `Tree` | a visible node | moves the cursor there and focuses the tree |
+| `Table` | a visible row, or a cell in cursor selection mode | moves the cursor there and focuses the table |
+| `TabBar` | a tab | activates it |
+
+Rows scrolled out of view get no hint. Any other focusable widget without a static key gets a hint of its own.
+
+To make your own data-driven widgets jump targets (cards, links, search results), implement `Jumpable`. Jumping calls `Jump()`, then focuses the focusable widget that contains the item, if there is one:
+
+```go
+func (c ResultCard) Jump() { c.results.Select(c.index) }
+```
+
+How hints are generated works like Vimium:
 
 - Hints are made from `Hints` (default `asdfghjklqwertyuiopzxcvbnm`, home row first).
 - Hints are as short as the number of targets allows.
@@ -41,7 +58,7 @@ Run `go run ./cmd/jump-example` to try it.
 - No hint starts with another hint or with a static key, so typing one always leads to exactly one target.
 - With more targets than characters, some hints get two characters. The labels narrow as each character is typed, and `backspace` undoes the last one.
 
-The two combine: static keys keep their meaning, and dynamic hints cover everything else.
+The two combine. Static keys go to the fixed landmarks of your layout, and dynamic hints go to whatever content happens to be on screen. A list can have both: a static key on the list itself, and a hint on each row.
 
 ## Behaviour
 
@@ -58,7 +75,7 @@ The two combine: static keys keep their meaning, and dynamic hints cover everyth
 |-------|---------|
 | `State` | Required. `*JumpState` from `NewJumpState()` |
 | `Targets` | Static jump map: `[]JumpTarget{Key, ID, Action}` |
-| `Dynamic` | Label every other focusable widget in view with a generated hint |
+| `Dynamic` | Hint every List/Tree/Table row, tab and `Jumpable` in view, and any focusable widget without a static key |
 | `Hints` | Characters dynamic hints are made from |
 | `Key` | Toggle key, default `ctrl+o` |
 | `Child` | The content. `Jumper` never affects layout |

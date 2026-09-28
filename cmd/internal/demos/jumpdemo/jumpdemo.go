@@ -4,7 +4,6 @@ package jumpdemo
 
 import (
 	"fmt"
-	"strings"
 
 	t "github.com/darrenburns/terma"
 	"github.com/darrenburns/terma/cmd/internal/demokit"
@@ -18,69 +17,97 @@ var Info = demokit.Info{
 }
 
 // JumpDemo is a small API client laid out like Posting. Press ctrl+o to show
-// the jump labels, then a label's key to move focus there.
+// the jump labels, then a label's key to jump there.
+//
+// The panels have static keys (1-6), which never change, so they can be
+// learned. Everything that comes from data - each request in the
+// collection, each row of the response, each tab - gets a dynamic hint
+// (a, s, d...), because nobody could have assigned it a key in advance.
 //
 //	ctrl+o    - Enter (or leave) jump mode
-//	1-6       - The static jump map: collections, method, URL, send, body, response
-//	a, s, d…  - Dynamic hints on everything else in view: tabs, buttons, options
+//	1-6       - Static keys: collection, method, URL, send, request, response
+//	a, s, d…  - Dynamic hints on the requests, response rows and tabs in view
 //	ctrl+y    - Turn dynamic hints off (static keys only, like Posting) or on
 //	backspace - Undo the last character of a two-character hint
 //	escape    - Leave jump mode without jumping
 type JumpDemo struct {
-	jump        *t.JumpState
-	dynamic     *t.CheckboxState
-	follow      *t.CheckboxState
-	verify      *t.CheckboxState
-	collections *t.ListState[string]
-	url         *t.TextInputState
-	body        *t.TextAreaState
-	response    *t.ListState[string]
-	method      t.Signal[int]
-	sent        t.Signal[int]
-	requestTab  t.Signal[string]
-	view        t.Signal[string]
-	status      t.Signal[string]
+	jump           *t.JumpState
+	dynamic        *t.CheckboxState
+	requests       *t.ListState[request]
+	requestsScroll *t.ScrollState
+	url            *t.TextInputState
+	method         t.Signal[string]
+	tabs           *t.TabState
+	body           *t.TextAreaState
+	users          *t.TableState[user]
+	usersScroll    *t.ScrollState
+	sent           t.Signal[int]
 }
 
-var methods = []string{"GET", "POST", "PUT", "DELETE"}
+type request struct {
+	method, path string
+}
+
+func (r request) String() string { return fmt.Sprintf("%-6s %s", r.method, r.path) }
+
+type user struct {
+	id   int
+	name string
+}
+
+var names = []string{
+	"Leanne Graham", "Ervin Howell", "Clementine Bauch", "Patricia Lebsack", "Chelsey Dietrich",
+	"Dennis Schulist", "Kurtis Weissnat", "Nicholas Runolfsdottir", "Glenna Reichert", "Clementina DuBuque",
+	"Ada Lovelace", "Grace Hopper", "Alan Turing", "Edsger Dijkstra", "Barbara Liskov",
+}
 
 // New creates the demo.
 func New() demokit.Demo {
-	return &JumpDemo{
+	d := &JumpDemo{
 		jump:    t.NewJumpState(),
 		dynamic: t.NewCheckboxState(true),
-		follow:  t.NewCheckboxState(true),
-		verify:  t.NewCheckboxState(true),
-		collections: t.NewListState([]string{
-			"users / list", "users / get", "users / create", "users / delete",
-			"posts / list", "posts / search", "comments / list", "health",
+		requests: t.NewListState([]request{
+			{"GET", "/users"}, {"GET", "/users/1"}, {"POST", "/users"}, {"PUT", "/users/1"},
+			{"DELETE", "/users/1"}, {"GET", "/posts"}, {"GET", "/posts?userId=1"}, {"POST", "/posts"},
+			{"GET", "/comments"}, {"GET", "/albums"}, {"GET", "/photos"}, {"GET", "/todos"},
+			{"GET", "/todos?completed=true"}, {"GET", "/health"}, {"GET", "/version"},
+			{"GET", "/metrics"}, {"POST", "/login"}, {"POST", "/logout"},
 		}),
-		url:        t.NewTextInputState("https://jsonplaceholder.typicode.com/users"),
-		body:       t.NewTextAreaState("{\n  \"name\": \"Ada Lovelace\"\n}"),
-		response:   t.NewListState([]string{"Press 4 in jump mode to send."}),
-		method:     t.NewSignal(0),
-		sent:       t.NewSignal(0),
-		requestTab: t.NewSignal("Body"),
-		view:       t.NewSignal("Pretty"),
-		status:     t.NewSignal(""),
+		requestsScroll: t.NewScrollState(),
+		url:            t.NewTextInputState(""),
+		method:         t.NewSignal("GET"),
+		tabs: t.NewTabState([]t.Tab{
+			{Key: "body", Label: "Body"}, {Key: "headers", Label: "Headers"},
+			{Key: "query", Label: "Query"}, {Key: "auth", Label: "Auth"},
+		}),
+		body:        t.NewTextAreaState("{\n  \"name\": \"Ada Lovelace\"\n}"),
+		users:       t.NewTableState[user](nil),
+		usersScroll: t.NewScrollState(),
+		sent:        t.NewSignal(0),
 	}
+	d.load(d.requests.GetItems()[0])
+	d.send()
+	return d
 }
 
 func (d *JumpDemo) InitialFocus() string { return "url" }
 
+// load puts a request from the collection into the URL bar.
+func (d *JumpDemo) load(r request) {
+	d.method.Set(r.method)
+	d.url.SetText("https://jsonplaceholder.typicode.com" + r.path)
+}
+
+// send fills the response table with (made up) users, in a different order
+// each time.
 func (d *JumpDemo) send() {
 	count := d.sent.Peek() + 1
 	d.sent.Set(count)
-	d.response.SetItems([]string{
-		fmt.Sprintf("%s %s", methods[d.method.Peek()], d.url.GetText()),
-		fmt.Sprintf("HTTP/1.1 200 OK   (request #%d)", count),
-		"content-type: application/json",
-		"",
-		"[",
-		"  { \"id\": 1, \"name\": \"Leanne Graham\" },",
-		"  { \"id\": 2, \"name\": \"Ervin Howell\" }",
-		"]",
-	})
+	users := make([]user, len(names))
+	for i, name := range names {
+		users[(i+count-1)%len(names)] = user{id: i + 1, name: name}
+	}
+	d.users.SetRows(users)
 }
 
 func (d *JumpDemo) Keybinds() []t.Keybind {
@@ -96,15 +123,15 @@ func (d *JumpDemo) Build(ctx t.BuildContext) t.Widget {
 		State: d.jump,
 		// The static jump map: the same key always reaches the same place.
 		Targets: []t.JumpTarget{
-			{Key: "1", ID: "collections"},
+			{Key: "1", ID: "requests"},
 			{Key: "2", ID: "method"},
 			{Key: "3", ID: "url"},
 			// An action runs instead of moving focus.
 			{Key: "4", ID: "send", Action: d.send},
 			{Key: "5", ID: "body"},
-			{Key: "6", ID: "response"},
+			{Key: "6", ID: "users"},
 		},
-		// Label everything else in view, Vimium style.
+		// Label the requests, response rows and tabs in view, Vimium style.
 		Dynamic: d.dynamic.Checked.Get(),
 		Child: t.Dock{
 			Style:  t.Style{BackgroundColor: theme.Background},
@@ -116,7 +143,7 @@ func (d *JumpDemo) Build(ctx t.BuildContext) t.Widget {
 				Spacing: 1,
 				Style:   t.Style{Padding: t.EdgeInsetsXY(1, 1)},
 				Children: []t.Widget{
-					d.collectionsPanel(ctx),
+					d.requestsPanel(ctx),
 					t.Column{
 						Width:   t.Flex(1),
 						Height:  t.Flex(1),
@@ -128,11 +155,10 @@ func (d *JumpDemo) Build(ctx t.BuildContext) t.Widget {
 								Height:  t.Flex(1),
 								Spacing: 1,
 								Children: []t.Widget{
-									d.bodyPanel(ctx),
+									d.requestPanel(ctx),
 									d.responsePanel(ctx),
 								},
 							},
-							d.optionsPanel(ctx),
 						},
 					},
 				},
@@ -161,97 +187,89 @@ func (h header) Build(ctx t.BuildContext) t.Widget {
 	return demokit.Header{Title: "Jump Mode", Tagline: "Inspired by Posting and Vimium", Right: mode}
 }
 
-func (d *JumpDemo) collectionsPanel(ctx t.BuildContext) t.Widget {
-	list := t.List[string]{ID: "collections", State: d.collections, Height: t.Flex(1)}
-	return t.Column{
-		Width:  t.Cells(26),
+func (d *JumpDemo) requestsPanel(ctx t.BuildContext) t.Widget {
+	list := t.List[request]{
+		ID:             "requests",
+		State:          d.requests,
+		ScrollState:    d.requestsScroll,
+		OnCursorChange: d.load,
+	}
+	return t.Scrollable{
+		State:  d.requestsScroll,
+		Width:  t.Cells(30),
 		Height: t.Flex(1),
-		Style:  demokit.PanelStyle(ctx.Theme(), "1 Collections", ctx.IsFocused(list)),
-		Children: []t.Widget{
-			list,
-			t.Button{ID: "new-request", Label: "+ New request", OnPress: func() {
-				d.collections.SetItems(append(d.collections.GetItems(), "untitled"))
-			}},
-		},
+		Style:  demokit.PanelStyle(ctx.Theme(), "1 Collection", ctx.IsFocused(list)),
+		Child:  list,
 	}
 }
 
 func (d *JumpDemo) urlBar(ctx t.BuildContext) t.Widget {
-	theme := ctx.Theme()
 	url := t.TextInput{ID: "url", State: d.url, Style: t.Style{Width: t.Flex(1)}, OnSubmit: func(string) { d.send() }}
 	return t.Row{
 		Width:   t.Flex(1),
 		Spacing: 1,
-		Style:   demokit.PanelStyle(theme, "2 Method · 3 URL · 4 Send", ctx.IsFocused(url)),
+		Style:   demokit.PanelStyle(ctx.Theme(), "2 Method · 3 URL · 4 Send", ctx.IsFocused(url)),
 		Children: []t.Widget{
-			t.Button{ID: "method", Label: methods[d.method.Get()], OnPress: func() {
-				d.method.Update(func(i int) int { return (i + 1) % len(methods) })
-			}},
+			t.Button{ID: "method", Label: d.method.Get(), OnPress: d.cycleMethod},
 			url,
 			t.Button{ID: "send", Label: "Send", Variant: t.ButtonPrimary, OnPress: d.send},
 		},
 	}
 }
 
-func (d *JumpDemo) bodyPanel(ctx t.BuildContext) t.Widget {
+func (d *JumpDemo) cycleMethod() {
+	methods := []string{"GET", "POST", "PUT", "DELETE"}
+	for i, m := range methods {
+		if m == d.method.Peek() {
+			d.method.Set(methods[(i+1)%len(methods)])
+			return
+		}
+	}
+	d.method.Set(methods[0])
+}
+
+func (d *JumpDemo) requestPanel(ctx t.BuildContext) t.Widget {
 	body := t.TextArea{ID: "body", State: d.body, Style: t.Style{Width: t.Flex(1), Height: t.Flex(1)}}
 	return t.Column{
 		Width:   t.Flex(1),
 		Height:  t.Flex(1),
 		Spacing: 1,
-		Style:   demokit.PanelStyle(ctx.Theme(), "5 "+d.requestTab.Get(), ctx.IsFocused(body)),
+		Style:   demokit.PanelStyle(ctx.Theme(), "5 Request", ctx.IsFocused(body)),
 		Children: []t.Widget{
-			// No static keys here: dynamic hints reach these.
-			buttonRow("tab", []string{"Body", "Headers", "Query"}, d.requestTab.Set),
+			t.TabBar{ID: "request-tabs", State: d.tabs},
 			body,
 		},
 	}
 }
 
 func (d *JumpDemo) responsePanel(ctx t.BuildContext) t.Widget {
-	response := t.List[string]{ID: "response", State: d.response, Height: t.Flex(1)}
-	title := "6 Response · " + d.view.Get()
-	if status := d.status.Get(); status != "" {
-		title += " · " + status
-	}
-	return t.Column{
-		Width:   t.Flex(1),
-		Height:  t.Flex(1),
-		Spacing: 1,
-		Style:   demokit.PanelStyle(ctx.Theme(), title, ctx.IsFocused(response)),
-		Children: []t.Widget{
-			buttonRow("view", []string{"Pretty", "Raw"}, d.view.Set),
-			response,
-			buttonRow("action", []string{"Copy", "Save"}, func(action string) {
-				d.status.Set(map[string]string{"Copy": "copied", "Save": "saved"}[action])
-			}),
-		},
-	}
-}
-
-// buttonRow is a row of buttons, each calling onPress with its label.
-func buttonRow(idPrefix string, labels []string, onPress func(string)) t.Widget {
-	buttons := make([]t.Widget, len(labels))
-	for i, label := range labels {
-		buttons[i] = t.Button{
-			ID:      idPrefix + "-" + strings.ToLower(label),
-			Label:   label,
-			OnPress: func() { onPress(label) },
-		}
-	}
-	return t.Row{Spacing: 1, Children: buttons}
-}
-
-func (d *JumpDemo) optionsPanel(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
-	return t.Row{
-		Width:   t.Flex(1),
-		Spacing: 2,
-		Style:   demokit.PanelStyle(theme, "Options", false),
-		Children: []t.Widget{
-			&t.Checkbox{ID: "dynamic", State: d.dynamic, Label: "Dynamic hints"},
-			&t.Checkbox{ID: "follow", State: d.follow, Label: "Follow redirects"},
-			&t.Checkbox{ID: "verify", State: d.verify, Label: "Verify TLS"},
+	table := t.Table[user]{
+		ID:            "users",
+		State:         d.users,
+		ScrollState:   d.usersScroll,
+		SelectionMode: t.TableSelectionRow,
+		Columns:       []t.TableColumn{{Width: t.Cells(4)}, {Width: t.Flex(1)}},
+		RenderCell: func(u user, row, col int, active, selected bool) t.Widget {
+			style := t.Style{Width: t.Flex(1)}
+			if active {
+				style.BackgroundColor = theme.ActiveCursor
+				style.ForegroundColor = theme.SelectionText
+			}
+			if col == 0 {
+				if !active {
+					style.ForegroundColor = theme.TextMuted
+				}
+				return t.Text{Content: fmt.Sprint(u.id), Style: style}
+			}
+			return t.Text{Content: u.name, Style: style}
 		},
+	}
+	return t.Scrollable{
+		State:  d.usersScroll,
+		Width:  t.Flex(1),
+		Height: t.Flex(1),
+		Style:  demokit.PanelStyle(theme, fmt.Sprintf("6 Response · 200 OK · #%d", d.sent.Get()), ctx.IsFocused(table)),
+		Child:  table,
 	}
 }

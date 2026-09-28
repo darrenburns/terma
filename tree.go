@@ -1834,3 +1834,9 @@ func indexForPath(view [][]int, path []int) (int, bool) {
 	}
 	return 0, false
 }
+
+// Jump moves the cursor to this node, for jump mode (see Jumpable).
+func (w defaultTreeRowWidget[T]) Jump() { w.tree.setCursorFromMousePath(w.entry.path, false) }
+
+// Jump moves the cursor to this node, for jump mode (see Jumpable).
+func (r treeRow[T]) Jump() { r.tree.setCursorFromMousePath(r.entry.path, false) }

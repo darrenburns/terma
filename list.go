@@ -1497,3 +1497,26 @@ func (l List[T]) CursorItem() T {
 	}
 	return zero
 }
+
+// Jump moves the cursor to this row, for jump mode (see Jumpable).
+func (w defaultListItemWidget[T]) Jump() { w.list.jumpTo(w.sourceIdx) }
+
+// Jump moves the cursor to this row, for jump mode (see Jumpable).
+func (r *listRow[T]) Jump() { r.list.jumpTo(r.sourceIdx) }
+
+// jumpTo moves the cursor to an item as clicking it does, without selecting it.
+func (l List[T]) jumpTo(sourceIdx int) {
+	if l.State == nil {
+		return
+	}
+	previous := l.State.CursorIndex.Peek()
+	if l.MultiSelect {
+		l.State.ClearSelection()
+		l.State.ClearAnchor()
+	}
+	l.State.SelectIndex(sourceIdx)
+	l.scrollCursorIntoView()
+	if l.State.CursorIndex.Peek() != previous {
+		l.notifyCursorChange()
+	}
+}

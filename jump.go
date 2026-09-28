@@ -30,6 +30,24 @@ type JumpTarget struct {
 	Action func()
 }
 
+// Jumpable is implemented by the items inside a widget that dynamic jump
+// hints label one by one: List rows, Tree nodes, Table rows (or cells, in
+// cursor selection mode) and tabs. These are what dynamic hints are for,
+// content that isn't known until the app runs.
+//
+// Typing an item's hint calls Jump, then focuses the focusable widget
+// holding the item, such as its List. Implement Jumpable on your own widgets
+// to make them jump targets; Jump might select a card or open a link.
+type Jumpable interface {
+	Jump()
+}
+
+// jumpOptional lets a Jumpable decline a hint in its current configuration,
+// as a table cell outside the first column does in row selection mode.
+type jumpOptional interface {
+	jumpable() bool
+}
+
 // JumpState holds the state of jump mode for a Jumper.
 // Create it with NewJumpState and keep it for the life of the app.
 type JumpState struct {
@@ -140,11 +158,14 @@ func (s *JumpState) jump(label jumpLabel) {
 //
 //   - Targets is a static jump map. Each key always leads to the same widget,
 //     so it can be learned: "1" for the sidebar, "u" for the URL bar.
-//   - Dynamic labels every other focusable widget in view with a generated
-//     hint, so nothing needs to be declared up front. Hints are made from
-//     Hints, are as short as the number of targets allows, and are assigned
-//     in reading order. Longer hints are typed one character at a time, with
-//     the labels narrowing as you go.
+//   - Dynamic labels what is on screen that no key could be assigned to in
+//     advance, as Vimium does with links: each visible row of a List, Tree
+//     or Table, each tab, and anything else implementing Jumpable, plus any
+//     other focusable widget without a static key. Jumping to a row moves
+//     the cursor there and focuses its list. Hints are made from Hints, are
+//     as short as the number of targets allows, and are assigned in reading
+//     order. Longer hints are typed one character at a time, with the labels
+//     narrowing as you go.
 //
 // Only widgets that are on screen are labelled. While focus is inside a
 // modal (or any focus trap), only targets inside it are labelled. The overlay
@@ -166,7 +187,8 @@ func (s *JumpState) jump(label jumpLabel) {
 type Jumper struct {
 	State   *JumpState   // Required
 	Targets []JumpTarget // Static jump map
-	// Dynamic labels every focusable widget in view that isn't in Targets.
+	// Dynamic labels the rows, tabs and other Jumpable items in view, and
+	// any other focusable widget that isn't in Targets.
 	Dynamic bool
 	// Hints are the characters dynamic hints are made from.
 	// Defaults to DefaultJumpHints.
@@ -381,9 +403,16 @@ func resolveJumpLabels(j Jumper, registry *WidgetRegistry, focusables []Focusabl
 			continue
 		}
 		label := jumpLabel{key: target.Key, action: target.Action, at: widget.Visible}
+		_, isItem := widget.EventWidget.(Jumpable)
 		switch {
 		case isCandidate(target.ID):
 			label.focusID = target.ID
+		case target.Action == nil && isItem:
+			item, ok := jumpItem(widget, candidates, onScreen, trapID)
+			if !ok {
+				continue
+			}
+			label.action = item.action
 		case target.Action == nil:
 			// A container: jump to the first focusable inside it.
 			for _, entry := range candidates {
@@ -409,9 +438,24 @@ func resolveJumpLabels(j Jumper, registry *WidgetRegistry, focusables []Focusabl
 	if !j.Dynamic {
 		return labels
 	}
+
+	// Items in view (list rows, tree nodes, tabs) are labelled one by one,
+	// in place of the widget holding them: that is content nobody could have
+	// mapped to a key in advance.
 	var dynamic []jumpLabel
+	holders := make(map[string]bool)
+	for i := range registry.entries {
+		entry := &registry.entries[i]
+		if taken[entry.ID] {
+			continue
+		}
+		if item, ok := jumpItem(entry, candidates, onScreen, trapID); ok {
+			dynamic = append(dynamic, item)
+			holders[item.focusID] = true
+		}
+	}
 	for _, entry := range candidates {
-		if !taken[entry.ID] {
+		if !taken[entry.ID] && !holders[entry.ID] {
 			dynamic = append(dynamic, jumpLabel{focusID: entry.ID, at: onScreen[entry.ID].Visible})
 		}
 	}
@@ -431,6 +475,42 @@ func resolveJumpLabels(j Jumper, registry *WidgetRegistry, focusables []Focusabl
 		labels = append(labels, dynamic[i])
 	}
 	return labels
+}
+
+// jumpItem resolves a Jumpable on screen. Jumping calls Jump, then focuses
+// the innermost focusable holding the item, reported as the label's
+// focusID. An item outside every focusable is only reachable while no focus
+// trap is active.
+func jumpItem(entry *WidgetEntry, candidates []FocusableEntry, onScreen map[string]*WidgetEntry, trapID string) (jumpLabel, bool) {
+	item, ok := entry.EventWidget.(Jumpable)
+	if !ok || entry.Visible.IsEmpty() {
+		return jumpLabel{}, false
+	}
+	if optional, ok := item.(jumpOptional); ok && !optional.jumpable() {
+		return jumpLabel{}, false
+	}
+	holder := ""
+	holderArea := 0
+	for _, candidate := range candidates {
+		bounds := onScreen[candidate.ID].Bounds
+		area := bounds.Width * bounds.Height
+		if containsRect(bounds, entry.Visible) && (holder == "" || area < holderArea) {
+			holder, holderArea = candidate.ID, area
+		}
+	}
+	if holder == "" && trapID != "" {
+		return jumpLabel{}, false
+	}
+	return jumpLabel{
+		focusID: holder,
+		at:      entry.Visible,
+		action: func() {
+			item.Jump()
+			if holder != "" {
+				RequestFocus(holder)
+			}
+		},
+	}, true
 }
 
 func containsRect(outer, inner Rect) bool {

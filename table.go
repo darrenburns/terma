@@ -1970,3 +1970,42 @@ func (t Table[T]) setSelectionBox(viewIndices []int, anchorRow, anchorCol, rowId
 	}
 	t.State.Selection.Set(sel)
 }
+
+// Jump moves the cursor to this cell's row (and column, in cursor selection
+// mode), for jump mode (see Jumpable).
+func (w defaultTableCellWidget[T]) Jump()          { w.table.jumpTo(w.sourceRow, w.colIndex) }
+func (w defaultTableCellWidget[T]) jumpable() bool { return w.table.cellJumpable(w.colIndex) }
+
+// Jump moves the cursor to this cell's row (and column, in cursor selection
+// mode), for jump mode (see Jumpable).
+func (c tableCell[T]) Jump()          { c.table.jumpTo(c.sourceRow, c.col) }
+func (c tableCell[T]) jumpable() bool { return c.table.cellJumpable(c.col) }
+
+// cellJumpable reports whether jump mode labels the cell in column col: every
+// cell when the cursor is a cell, the first cell of each row when it is a
+// row, and none when it is a column.
+func (t Table[T]) cellJumpable(col int) bool {
+	switch t.selectionMode() {
+	case TableSelectionCursor:
+		return true
+	case TableSelectionRow:
+		return col == 0
+	}
+	return false
+}
+
+// jumpTo moves the cursor to a cell for jump mode.
+func (t Table[T]) jumpTo(sourceRow, col int) {
+	if t.State == nil {
+		return
+	}
+	previous := t.State.CursorIndex.Peek()
+	t.State.SelectIndex(sourceRow)
+	if t.selectionMode() == TableSelectionCursor {
+		t.State.SelectColumn(col)
+	}
+	t.scrollCursorIntoView()
+	if t.State.CursorIndex.Peek() != previous {
+		t.notifyCursorChange()
+	}
+}

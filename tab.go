@@ -526,6 +526,7 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 	for _, tab := range tabs {
 		isActive := tab.Key == activeKey
 		tabKey := tab.Key
+		activate := t.makeSelectAction(tabKey)
 
 		// Determine style
 		var style Style
@@ -566,15 +567,13 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 			children = append(children, Row{
 				Style: Style{BackgroundColor: style.BackgroundColor},
 				Children: []Widget{
-					Text{
-						Content: tab.Label,
-						Style:   labelStyle,
-						Click: func(MouseEvent) {
-							t.State.SetActiveKey(tabKey)
-							if t.OnTabChange != nil {
-								t.OnTabChange(tabKey)
-							}
+					tabLabel{
+						Text: Text{
+							Content: tab.Label,
+							Style:   labelStyle,
+							Click:   func(MouseEvent) { activate() },
 						},
+						activate: activate,
 					},
 					Text{
 						Content: "×",
@@ -591,15 +590,13 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 			})
 		} else {
 			// Tab without close button
-			children = append(children, Text{
-				Content: tab.Label,
-				Style:   style,
-				Click: func(MouseEvent) {
-					t.State.SetActiveKey(tabKey)
-					if t.OnTabChange != nil {
-						t.OnTabChange(tabKey)
-					}
+			children = append(children, tabLabel{
+				Text: Text{
+					Content: tab.Label,
+					Style:   style,
+					Click:   func(MouseEvent) { activate() },
 				},
+				activate: activate,
 			})
 		}
 	}
@@ -723,3 +720,12 @@ func (t TabView) Build(ctx BuildContext) Widget {
 		},
 	}
 }
+
+// tabLabel is a tab's clickable label, which jump mode can also activate.
+type tabLabel struct {
+	Text
+	activate func()
+}
+
+// Jump activates the tab, for jump mode (see Jumpable).
+func (l tabLabel) Jump() { l.activate() }
