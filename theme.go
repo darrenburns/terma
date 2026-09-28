@@ -22,11 +22,17 @@ const (
 	ThemeNameCyberdeck     = "cyberdeck"
 	ThemeNameNeonReef      = "neon-reef"
 	ThemeNameUnderstory    = "understory"
-	ThemeNameDwarven = "dwarven"
-	ThemeNameAbyss   = "abyss"
-	ThemeNameAmber   = "amber"
-	ThemeNameVelvet  = "velvet"
-	ThemeNamePhosphor = "phosphor"
+	ThemeNameDwarven       = "dwarven"
+	ThemeNameAbyss         = "abyss"
+	ThemeNameAmber         = "amber"
+	ThemeNameVelvet        = "velvet"
+	ThemeNamePhosphor      = "phosphor"
+	ThemeNameMoonstone     = "moonstone"
+	ThemeNameBonsai        = "bonsai"
+	ThemeNameGarnet        = "garnet"
+	ThemeNameKintsugi      = "kintsugi"
+	ThemeNameAmethyst      = "amethyst"
+	ThemeNameLantern       = "lantern"
 
 	// Light themes
 	ThemeNameRosePineDawn    = "rose-pine-dawn"
@@ -1147,7 +1153,6 @@ var amberThemeData = ThemeData{
 	Link: Hex("#d8c090"),
 }
 
-
 // velvetThemeData - Rich plum and magenta with gold accents on velvety darks
 var velvetThemeData = ThemeData{
 	Name: ThemeNameVelvet,
@@ -1246,6 +1251,299 @@ var phosphorThemeData = ThemeData{
 	Link: Hex("#30a840"),
 }
 
+// moonstoneThemeData - Blue slate, moonlit lavender, sea glass and warm peach
+var moonstoneThemeData = ThemeData{
+	Name: ThemeNameMoonstone,
+
+	Primary:   Hex("#a7b8ff"), // Moonlit lavender
+	Secondary: Hex("#83d5ce"), // Sea glass
+	Accent:    Hex("#efbd93"), // Warm peach
+
+	Background:   Hex("#171c2b"), // Blue slate
+	Surface:      Hex("#20283b"), // Slate
+	SurfaceHover: Hex("#303d54"), // Lighter slate
+	Surface2:     Hex("#283248"),
+	Surface3:     Hex("#343f55"),
+
+	Text:            Hex("#e4e9f2"),
+	TextMuted:       Hex("#9aaac1"),
+	TextOnPrimary:   Hex("#07070a"),
+	TextOnSecondary: Hex("#050908"),
+	TextOnAccent:    Hex("#0a0806"),
+	TextDisabled:    Hex("#65758f"),
+
+	Border:    Hex("#46516b"),
+	FocusRing: Hex("#a7b8ff"),
+
+	Error:   Hex("#f18f9b"),
+	Warning: Hex("#e9cc87"),
+	Success: Hex("#a6d49a"),
+	Info:    Hex("#8fcaed"),
+
+	TextOnError:   Hex("#0a0606"),
+	TextOnWarning: Hex("#090805"),
+	TextOnSuccess: Hex("#070806"),
+	TextOnInfo:    Hex("#060809"),
+
+	ActiveCursor:  Hex("#a7b8ff"),
+	Selection:     Hex("#a7b8ff").WithAlpha(DefaultSelectionAlpha),
+	SelectionText: Hex("#07070a"),
+
+	ScrollbarTrack: Hex("#20283b"),
+	ScrollbarThumb: Hex("#65758f"),
+
+	Overlay: Hex("#171c2b").WithAlpha(0.85),
+
+	Placeholder: Hex("#9aaac1"),
+	Cursor:      Hex("#a7b8ff"),
+
+	Link: Hex("#a7b8ff"),
+}
+
+// bonsaiThemeData - Forest charcoal, fresh sage, jade and fired copper
+var bonsaiThemeData = ThemeData{
+	Name: ThemeNameBonsai,
+
+	Primary:   Hex("#b8ce83"), // Fresh sage
+	Secondary: Hex("#80c6b2"), // Jade
+	Accent:    Hex("#eca982"), // Fired copper
+
+	Background:   Hex("#181e1b"), // Forest charcoal
+	Surface:      Hex("#212b25"), // Moss shade
+	SurfaceHover: Hex("#344137"), // Lighter moss
+	Surface2:     Hex("#2a352d"),
+	Surface3:     Hex("#374238"),
+
+	Text:            Hex("#e5e6d7"),
+	TextMuted:       Hex("#a7b29e"),
+	TextOnPrimary:   Hex("#070805"),
+	TextOnSecondary: Hex("#050807"),
+	TextOnAccent:    Hex("#090705"),
+	TextDisabled:    Hex("#6d7d6e"),
+
+	Border:    Hex("#475849"),
+	FocusRing: Hex("#b8ce83"),
+
+	Error:   Hex("#eb9894"),
+	Warning: Hex("#e2c383"),
+	Success: Hex("#98c889"),
+	Info:    Hex("#92c0cd"),
+
+	TextOnError:   Hex("#090606"),
+	TextOnWarning: Hex("#090805"),
+	TextOnSuccess: Hex("#060805"),
+	TextOnInfo:    Hex("#060808"),
+
+	ActiveCursor:  Hex("#b8ce83"),
+	Selection:     Hex("#b8ce83").WithAlpha(DefaultSelectionAlpha),
+	SelectionText: Hex("#070805"),
+
+	ScrollbarTrack: Hex("#212b25"),
+	ScrollbarThumb: Hex("#6d7d6e"),
+
+	Overlay: Hex("#181e1b").WithAlpha(0.85),
+
+	Placeholder: Hex("#a7b29e"),
+	Cursor:      Hex("#b8ce83"),
+
+	Link: Hex("#b8ce83"),
+}
+
+// garnetThemeData - Dark burgundy, antique rose, lavender and champagne
+var garnetThemeData = ThemeData{
+	Name: ThemeNameGarnet,
+
+	Primary:   Hex("#eda4b1"), // Antique rose
+	Secondary: Hex("#b7abe8"), // Lavender
+	Accent:    Hex("#edca99"), // Champagne
+
+	Background:   Hex("#24191e"), // Dark burgundy
+	Surface:      Hex("#302127"), // Burgundy
+	SurfaceHover: Hex("#49343c"), // Lighter burgundy
+	Surface2:     Hex("#3a2931"),
+	Surface3:     Hex("#49343c"),
+
+	Text:            Hex("#efe0dd"),
+	TextMuted:       Hex("#c0a6ac"),
+	TextOnPrimary:   Hex("#090707"),
+	TextOnSecondary: Hex("#070709"),
+	TextOnAccent:    Hex("#090806"),
+	TextDisabled:    Hex("#876973"),
+
+	Border:    Hex("#63454f"),
+	FocusRing: Hex("#eda4b1"),
+
+	Error:   Hex("#ef9790"),
+	Warning: Hex("#e4c284"),
+	Success: Hex("#a4c7a1"),
+	Info:    Hex("#98cbd2"),
+
+	TextOnError:   Hex("#0a0606"),
+	TextOnWarning: Hex("#090805"),
+	TextOnSuccess: Hex("#070806"),
+	TextOnInfo:    Hex("#060808"),
+
+	ActiveCursor:  Hex("#eda4b1"),
+	Selection:     Hex("#eda4b1").WithAlpha(DefaultSelectionAlpha),
+	SelectionText: Hex("#090707"),
+
+	ScrollbarTrack: Hex("#302127"),
+	ScrollbarThumb: Hex("#876973"),
+
+	Overlay: Hex("#24191e").WithAlpha(0.85),
+
+	Placeholder: Hex("#c0a6ac"),
+	Cursor:      Hex("#eda4b1"),
+
+	Link: Hex("#eda4b1"),
+}
+
+// kintsugiThemeData - Glazed charcoal, gold seams, indigo glaze and persimmon
+var kintsugiThemeData = ThemeData{
+	Name: ThemeNameKintsugi,
+
+	Primary:   Hex("#e2b964"), // Gold seam
+	Secondary: Hex("#93aee0"), // Indigo glaze
+	Accent:    Hex("#ef9471"), // Persimmon
+
+	Background:   Hex("#1b1a18"), // Glazed charcoal
+	Surface:      Hex("#242220"), // Charcoal
+	SurfaceHover: Hex("#38352f"), // Lighter charcoal
+	Surface2:     Hex("#2c2a26"),
+	Surface3:     Hex("#36332e"),
+
+	Text:            Hex("#ece6da"),
+	TextMuted:       Hex("#aca496"),
+	TextOnPrimary:   Hex("#090704"),
+	TextOnSecondary: Hex("#060709"),
+	TextOnAccent:    Hex("#0a0605"),
+	TextDisabled:    Hex("#756e62"),
+
+	Border:    Hex("#4d4942"),
+	FocusRing: Hex("#e2b964"),
+
+	Error:   Hex("#e8818f"),
+	Warning: Hex("#e5d49b"),
+	Success: Hex("#9fc8a6"),
+	Info:    Hex("#86c3c6"),
+
+	TextOnError:   Hex("#090506"),
+	TextOnWarning: Hex("#090806"),
+	TextOnSuccess: Hex("#060807"),
+	TextOnInfo:    Hex("#050808"),
+
+	ActiveCursor:  Hex("#e2b964"),
+	Selection:     Hex("#e2b964").WithAlpha(DefaultSelectionAlpha),
+	SelectionText: Hex("#090704"),
+
+	ScrollbarTrack: Hex("#242220"),
+	ScrollbarThumb: Hex("#756e62"),
+
+	Overlay: Hex("#1b1a18").WithAlpha(0.85),
+
+	Placeholder: Hex("#aca496"),
+	Cursor:      Hex("#e2b964"),
+
+	Link: Hex("#e2b964"),
+}
+
+// amethystThemeData - Violet dusk, amethyst, clear sky and butter yellow
+var amethystThemeData = ThemeData{
+	Name: ThemeNameAmethyst,
+
+	Primary:   Hex("#c09cf5"), // Amethyst
+	Secondary: Hex("#8ec5f2"), // Clear sky
+	Accent:    Hex("#ecd28c"), // Butter yellow
+
+	Background:   Hex("#1c1624"), // Violet dusk
+	Surface:      Hex("#241d2e"), // Dusk
+	SurfaceHover: Hex("#382e46"), // Lighter dusk
+	Surface2:     Hex("#2b2336"),
+	Surface3:     Hex("#352c42"),
+
+	Text:            Hex("#ebe4f2"),
+	TextMuted:       Hex("#aa9dbb"),
+	TextOnPrimary:   Hex("#08060a"),
+	TextOnSecondary: Hex("#06080a"),
+	TextOnAccent:    Hex("#090806"),
+	TextDisabled:    Hex("#736786"),
+
+	Border:    Hex("#4c405c"),
+	FocusRing: Hex("#c09cf5"),
+
+	Error:   Hex("#f08394"),
+	Warning: Hex("#f2ad7c"),
+	Success: Hex("#a8d59a"),
+	Info:    Hex("#8fd6cc"),
+
+	TextOnError:   Hex("#0a0506"),
+	TextOnWarning: Hex("#0a0705"),
+	TextOnSuccess: Hex("#070906"),
+	TextOnInfo:    Hex("#060908"),
+
+	ActiveCursor:  Hex("#c09cf5"),
+	Selection:     Hex("#c09cf5").WithAlpha(DefaultSelectionAlpha),
+	SelectionText: Hex("#08060a"),
+
+	ScrollbarTrack: Hex("#241d2e"),
+	ScrollbarThumb: Hex("#736786"),
+
+	Overlay: Hex("#1c1624").WithAlpha(0.85),
+
+	Placeholder: Hex("#aa9dbb"),
+	Cursor:      Hex("#c09cf5"),
+
+	Link: Hex("#c09cf5"),
+}
+
+// lanternThemeData - Indigo night, lantern amber, river cyan and blossom pink
+var lanternThemeData = ThemeData{
+	Name: ThemeNameLantern,
+
+	Primary:   Hex("#f6ab6c"), // Lantern amber
+	Secondary: Hex("#86cfe0"), // River cyan
+	Accent:    Hex("#f297b5"), // Blossom pink
+
+	Background:   Hex("#17152b"), // Indigo night
+	Surface:      Hex("#201d37"), // Night
+	SurfaceHover: Hex("#322e4f"), // Lighter night
+	Surface2:     Hex("#282441"),
+	Surface3:     Hex("#332f4d"),
+
+	Text:            Hex("#e9e5f4"),
+	TextMuted:       Hex("#a7a1c4"),
+	TextOnPrimary:   Hex("#0a0704"),
+	TextOnSecondary: Hex("#050809"),
+	TextOnAccent:    Hex("#0a0607"),
+	TextDisabled:    Hex("#6f6992"),
+
+	Border:    Hex("#48426a"),
+	FocusRing: Hex("#f6ab6c"),
+
+	Error:   Hex("#f07a82"),
+	Warning: Hex("#f3d27c"),
+	Success: Hex("#b3d68a"),
+	Info:    Hex("#b7a3f0"),
+
+	TextOnError:   Hex("#0a0505"),
+	TextOnWarning: Hex("#0a0805"),
+	TextOnSuccess: Hex("#070906"),
+	TextOnInfo:    Hex("#07070a"),
+
+	ActiveCursor:  Hex("#f6ab6c"),
+	Selection:     Hex("#f6ab6c").WithAlpha(DefaultSelectionAlpha),
+	SelectionText: Hex("#0a0704"),
+
+	ScrollbarTrack: Hex("#201d37"),
+	ScrollbarThumb: Hex("#6f6992"),
+
+	Overlay: Hex("#17152b").WithAlpha(0.85),
+
+	Placeholder: Hex("#a7a1c4"),
+	Cursor:      Hex("#f6ab6c"),
+
+	Link: Hex("#f6ab6c"),
+}
 
 // ============================================================================
 // Light Theme Definitions
@@ -1728,11 +2026,17 @@ var themeRegistry = map[string]ThemeData{
 	ThemeNameCyberdeck:     cyberdeckThemeData,
 	ThemeNameNeonReef:      neonReefThemeData,
 	ThemeNameUnderstory:    understoryThemeData,
-	ThemeNameDwarven:     dwarvenThemeData,
-	ThemeNameAbyss:     abyssThemeData,
-	ThemeNameAmber:     amberThemeData,
-	ThemeNameVelvet:    velvetThemeData,
+	ThemeNameDwarven:       dwarvenThemeData,
+	ThemeNameAbyss:         abyssThemeData,
+	ThemeNameAmber:         amberThemeData,
+	ThemeNameVelvet:        velvetThemeData,
 	ThemeNamePhosphor:      phosphorThemeData,
+	ThemeNameMoonstone:     moonstoneThemeData,
+	ThemeNameBonsai:        bonsaiThemeData,
+	ThemeNameGarnet:        garnetThemeData,
+	ThemeNameKintsugi:      kintsugiThemeData,
+	ThemeNameAmethyst:      amethystThemeData,
+	ThemeNameLantern:       lanternThemeData,
 	// Light themes
 	ThemeNameRosePineDawn:    rosePineDawnThemeData,
 	ThemeNameDraculaLight:    draculaLightThemeData,
