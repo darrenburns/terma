@@ -176,7 +176,7 @@ func (c Color) Luminance() float64 {
 	bLinear := linearize(float64(c.b) / 255)
 
 	// Apply luminance weights
-	return 0.2126*rLinear + 0.7152*gLinear + 0.0722*bLinear
+	return float64(0.2126*rLinear) + float64(0.7152*gLinear) + float64(0.0722*bLinear)
 }
 
 // ContrastRatio returns the WCAG contrast ratio between two colors.
@@ -284,10 +284,10 @@ func (c Color) Blend(other Color, ratio float64) Color {
 	ratio = clamp01(ratio)
 	invRatio := 1 - ratio
 
-	r := uint8(math.Round(float64(c.r)*invRatio + float64(other.r)*ratio))
-	g := uint8(math.Round(float64(c.g)*invRatio + float64(other.g)*ratio))
-	b := uint8(math.Round(float64(c.b)*invRatio + float64(other.b)*ratio))
-	a := c.a*invRatio + other.a*ratio
+	r := uint8(math.Round(mixChannels(float64(c.r), invRatio, float64(other.r), ratio)))
+	g := uint8(math.Round(mixChannels(float64(c.g), invRatio, float64(other.g), ratio)))
+	b := uint8(math.Round(mixChannels(float64(c.b), invRatio, float64(other.b), ratio)))
+	a := mixChannels(c.a, invRatio, other.a, ratio)
 
 	return RGBA(r, g, b, a)
 }
@@ -313,11 +313,20 @@ func (c Color) BlendOver(bg Color) Color {
 
 	invAlpha := 1 - c.a
 
-	r := uint8(math.Round(float64(c.r)*c.a + float64(bg.r)*invAlpha))
-	g := uint8(math.Round(float64(c.g)*c.a + float64(bg.g)*invAlpha))
-	b := uint8(math.Round(float64(c.b)*c.a + float64(bg.b)*invAlpha))
+	r := uint8(math.Round(mixChannels(float64(c.r), c.a, float64(bg.r), invAlpha)))
+	g := uint8(math.Round(mixChannels(float64(c.g), c.a, float64(bg.g), invAlpha)))
+	b := uint8(math.Round(mixChannels(float64(c.b), c.a, float64(bg.b), invAlpha)))
 
 	return RGB(r, g, b)
+}
+
+// mixChannels returns a*wa + b*wb, rounding each product before the sum.
+// Go may fuse a multiply and an add into one instruction (arm64 does, amd64
+// doesn't), which rounds once instead of twice; a result near .5 can then
+// round to a different channel value on each architecture. The explicit
+// conversions forbid fusing, so colors are identical everywhere.
+func mixChannels(a, wa, b, wb float64) float64 {
+	return float64(a*wa) + float64(b*wb)
 }
 
 // AutoText returns a text color that is readable against this background color.
@@ -412,7 +421,7 @@ func (g Gradient) ColorAt(width, height, x, y int) Color {
 	p00 := 0.0
 	p10 := w * sinA
 	p01 := h * cosA
-	p11 := w*sinA + h*cosA
+	p11 := float64(w*sinA) + float64(h*cosA)
 
 	minProj := min(p00, p10, p01, p11)
 	maxProj := max(p00, p10, p01, p11)
@@ -423,7 +432,7 @@ func (g Gradient) ColorAt(width, height, x, y int) Color {
 	}
 
 	// Project current position and normalize to [0, 1]
-	proj := float64(x)*sinA + float64(y)*cosA
+	proj := float64(float64(x)*sinA) + float64(float64(y)*cosA)
 	t := (proj - minProj) / (maxProj - minProj)
 
 	// Clamp t to [0, 1]
@@ -571,9 +580,9 @@ func hslToRGB(h, s, l float64) (r, g, b uint8) {
 	if l < 0.5 {
 		q = l * (1 + s)
 	} else {
-		q = l + s - l*s
+		q = l + s - float64(l*s)
 	}
-	p := 2*l - q
+	p := float64(2*l) - q
 
 	h = h / 360
 
@@ -594,13 +603,13 @@ func hueToRGB(p, q, t float64) float64 {
 	}
 
 	if t < 1.0/6.0 {
-		return p + (q-p)*6*t
+		return p + float64((q-p)*6*t)
 	}
 	if t < 1.0/2.0 {
 		return q
 	}
 	if t < 2.0/3.0 {
-		return p + (q-p)*(2.0/3.0-t)*6
+		return p + float64((q-p)*(2.0/3.0-t)*6)
 	}
 	return p
 }
