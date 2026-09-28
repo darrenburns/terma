@@ -83,9 +83,12 @@ type mouseRouter struct {
 
 	// pressed is set from a press until its release. captureID is the widget
 	// that took it, if any: a press can also dismiss an overlay or land on a
-	// modal's backdrop, and then its release goes nowhere.
+	// modal's backdrop, and then its release goes nowhere. ownerID is the
+	// focusable or pointerOwner around it that was also told of the press
+	// (such as the List owning a pressed row), and it follows the drag too.
 	pressed       bool
 	captureID     string
+	ownerID       string
 	captureButton uv.MouseButton
 }
 
@@ -137,10 +140,19 @@ func (m *mouseRouter) captured() *WidgetEntry {
 	return m.renderer.WidgetByID(m.captureID)
 }
 
+// capturedOwner returns the owner sharing the pointer capture, if any.
+func (m *mouseRouter) capturedOwner() *WidgetEntry {
+	if m.ownerID == "" {
+		return nil
+	}
+	return m.renderer.WidgetByID(m.ownerID)
+}
+
 // subX and subY place the pointer within its cell (see MouseEvent.SubCellX).
 func (m *mouseRouter) press(ev uv.MouseClickEvent, subX, subY float64, now time.Time) {
 	m.pressed = true
 	m.captureID = ""
+	m.ownerID = ""
 	m.captureButton = ev.Button
 
 	entry, consumed := m.target(ev.X, ev.Y, true)
@@ -163,11 +175,13 @@ func (m *mouseRouter) press(ev uv.MouseClickEvent, subX, subY float64, now time.
 	if handler, ok := entry.EventWidget.(MouseDownHandler); ok {
 		handler.OnMouseDown(event)
 	}
-	// Also notify the focused widget when a non-focusable child was pressed.
-	// This lets focusable widgets (Tree/TextInput/TextArea, etc.) handle cursor placement.
-	if focusEntry != nil && focusEntry != entry {
-		if handler, ok := focusEntry.EventWidget.(MouseDownHandler); ok {
-			handler.OnMouseDown(buildMouseEvent(uv.Mouse(ev), subX, subY, focusEntry, clickCount))
+	// Also notify the owner of the pressed widget: the innermost focusable or
+	// pointerOwner around it. This lets widgets whose parts are separate
+	// widgets (List rows, TextInput text, etc.) place their cursor.
+	if owner := m.renderer.PointerOwnerAt(ev.X, ev.Y); owner != nil && owner != entry {
+		m.ownerID = owner.ID
+		if handler, ok := owner.EventWidget.(MouseDownHandler); ok {
+			handler.OnMouseDown(buildMouseEvent(uv.Mouse(ev), subX, subY, owner, clickCount))
 		}
 	}
 	if clickable, ok := entry.EventWidget.(Clickable); ok {
@@ -179,23 +193,35 @@ func (m *mouseRouter) press(ev uv.MouseClickEvent, subX, subY float64, now time.
 // drag released over another widget still ends where it started.
 func (m *mouseRouter) release(ev uv.MouseReleaseEvent, subX, subY float64) {
 	pressed := m.pressed
+	pressedID := m.captureID
 	entry := m.captured()
+	owner := m.capturedOwner()
 	m.pressed = false
 	m.captureID = ""
+	m.ownerID = ""
 	m.captureButton = uv.MouseNone
 
 	if !pressed {
 		// The press wasn't reported (e.g. it happened before the app started).
 		var consumed bool
-		if entry, consumed = m.target(ev.X, ev.Y, false); consumed {
+		// A disabled widget absorbs the release, as it does the press.
+		if entry, consumed = m.target(ev.X, ev.Y, false); consumed || entry == nil || entry.Disabled {
 			return
 		}
+		pressedID = entry.ID
 	}
-	if entry == nil || entry.Disabled {
-		return
+	// The pressed widget may be gone (e.g. a row scrolled out of a List)
+	// while its owner remains, and the owner still needs the release.
+	clickCount := m.clicks.releaseCount(pressedID, ev.Button)
+	if entry != nil {
+		if handler, ok := entry.EventWidget.(MouseUpHandler); ok {
+			handler.OnMouseUp(buildMouseEvent(uv.Mouse(ev), subX, subY, entry, clickCount))
+		}
 	}
-	if handler, ok := entry.EventWidget.(MouseUpHandler); ok {
-		handler.OnMouseUp(buildMouseEvent(uv.Mouse(ev), subX, subY, entry, m.clicks.releaseCount(entry.ID, ev.Button)))
+	if owner != nil && owner != entry {
+		if handler, ok := owner.EventWidget.(MouseUpHandler); ok {
+			handler.OnMouseUp(buildMouseEvent(uv.Mouse(ev), subX, subY, owner, clickCount))
+		}
 	}
 }
 
@@ -208,10 +234,20 @@ func (m *mouseRouter) motion(ev uv.MouseMotionEvent, subX, subY float64) bool {
 			// e.g. it happened outside the terminal window.
 			m.release(uv.MouseReleaseEvent{X: ev.X, Y: ev.Y, Button: m.captureButton, Mod: ev.Mod}, subX, subY)
 			changed = true
-		} else if entry := m.captured(); entry != nil {
-			if handler, ok := entry.EventWidget.(MouseMoveHandler); ok {
-				handler.OnMouseMove(buildMouseEvent(uv.Mouse{X: ev.X, Y: ev.Y, Button: m.captureButton, Mod: ev.Mod}, subX, subY, entry, 1))
-				changed = true
+		} else {
+			pointer := uv.Mouse{X: ev.X, Y: ev.Y, Button: m.captureButton, Mod: ev.Mod}
+			entry := m.captured()
+			if entry != nil {
+				if handler, ok := entry.EventWidget.(MouseMoveHandler); ok {
+					handler.OnMouseMove(buildMouseEvent(pointer, subX, subY, entry, 1))
+					changed = true
+				}
+			}
+			if owner := m.capturedOwner(); owner != nil && owner != entry {
+				if handler, ok := owner.EventWidget.(MouseMoveHandler); ok {
+					handler.OnMouseMove(buildMouseEvent(pointer, subX, subY, owner, 1))
+					changed = true
+				}
 			}
 		}
 	}

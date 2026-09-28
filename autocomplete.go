@@ -944,13 +944,15 @@ func (a Autocomplete) buildPopup(ctx BuildContext, visible bool) Widget {
 	floatConfig := a.buildFloatConfig(anchorID)
 
 	// Create the suggestion list
+	// Focus stays in the input: the list takes clicks without taking focus.
 	list := List[Suggestion]{
-		ID:          a.ID + "-list",
-		State:       a.State.listState,
-		ScrollState: a.State.scrollState,
-		Filter:      a.State.filterState,
-		MatchItem:   suggestionMatchItem,
-		OnSelect:    a.selectSuggestion,
+		ID:           a.ID + "-list",
+		DisableFocus: true,
+		State:        a.State.listState,
+		ScrollState:  a.State.scrollState,
+		Filter:       a.State.filterState,
+		MatchItem:    suggestionMatchItem,
+		OnSelect:     a.selectSuggestion,
 		RenderItemWithMatch: func(item Suggestion, active bool, selected bool, match MatchResult) Widget {
 			if a.RenderSuggestion != nil {
 				return a.RenderSuggestion(item, active, match, ctx)

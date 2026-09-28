@@ -619,16 +619,22 @@ func (r commandPaletteResults) Build(ctx BuildContext) Widget {
 		}
 	}
 
+	// Focus stays in the input: the list takes clicks without taking focus.
 	return List[CommandPaletteItem]{
 		ID:                  p.listID(),
+		DisableFocus:        true,
 		State:               level.ListState,
 		ScrollState:         level.ScrollState,
 		Filter:              level.FilterState,
 		MatchItem:           commandPaletteMatchItem,
 		RenderItemWithMatch: p.renderItem(ctx),
+		OnSelect: func(CommandPaletteItem) {
+			p.selectCurrent()
+		},
 		OnCursorChange: func(item CommandPaletteItem) {
 			p.notifyCursorChange()
 		},
+		pointerTargetable: CommandPaletteItem.IsSelectable,
 		Style: Style{
 			BackgroundColor: theme.Surface,
 		},

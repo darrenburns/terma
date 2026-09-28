@@ -39,6 +39,7 @@ For substring matching in the original item order instead, set `level.FilterStat
 - Every change to the query moves the cursor to the top result.
 - With an empty query the cursor rests on the level's `Current` item if it has one, otherwise on the first selectable item. Mark the item that represents the current value (the active theme, say) with `Current: true` so a level opens on it rather than on its first item. This matters when `OnCursorChange` previews the item under the cursor.
 - Up/Down (or Ctrl+P/Ctrl+N) move between selectable items, skipping dividers and disabled items. Home/End jump to the first and last.
+- Clicking an item moves the cursor to it, and double-clicking chooses it, as Enter does. Focus stays in the search input throughout.
 
 ## Nested levels
 

@@ -98,6 +98,9 @@ List[string]{
 | Click | Focus the list and move the cursor to the item |
 | Double-click | Trigger OnSelect |
 | Shift+click | Extend selection to the item (MultiSelect) |
+| Drag | Move the cursor with the pointer; with MultiSelect, select the items from the pressed one to the pointer. Dragging past either end scrolls |
+
+A list with `DisableFocus` still responds to the mouse, but leaves focus where it was.
 
 ## Basic Usage
 

@@ -197,6 +197,16 @@ You can render prefixes with `CursorPrefix` and `SelectedPrefix`. By default no 
 | Shift + Up/Down | Extend selection (multi-select) |
 | Shift + Home/End | Extend selection to start/end |
 
+## Mouse
+
+| Action | Effect |
+|--------|--------|
+| Click | Focus the tree and move the cursor to the node |
+| Click on the expand indicator | Toggle expand/collapse |
+| Double-click | Trigger `OnSelect` |
+| Shift + click | Extend selection to the node (multi-select) |
+| Drag | Move the cursor with the pointer; with multi-select, select the nodes from the pressed one to the pointer. Dragging past either end scrolls |
+
 ## Scroll Integration
 
 Wrap the tree in a `Scrollable` and share a `ScrollState`:

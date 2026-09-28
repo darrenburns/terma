@@ -238,6 +238,29 @@ func (r *WidgetRegistry) focusableAtIn(x, y, lo, hi int) *WidgetEntry {
 	})
 }
 
+// pointerOwner is implemented by widgets that take the presses, drags and
+// releases landing on their descendants, whether or not they can be focused.
+// Collections implement it: each row is a separate widget, but the cursor and
+// selection belong to the collection.
+type pointerOwner interface {
+	ownsDescendantPointer()
+}
+
+// pointerOwnerAtIn returns the innermost widget visible at (x, y) that is
+// focusable or a pointerOwner.
+func (r *WidgetRegistry) pointerOwnerAtIn(x, y, lo, hi int) *WidgetEntry {
+	return r.topmostIn(x, y, lo, hi, func(entry *WidgetEntry) bool {
+		if entry.Disabled {
+			return false
+		}
+		if _, ok := entry.EventWidget.(pointerOwner); ok {
+			return true
+		}
+		focusable, ok := entry.EventWidget.(Focusable)
+		return ok && focusable.IsFocusable()
+	})
+}
+
 // Reset clears all entries for a new render pass.
 func (r *WidgetRegistry) Reset() {
 	// A fresh slice, not a truncation: retained nodes keep views of the entries
