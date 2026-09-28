@@ -1072,6 +1072,39 @@ func TestReactivityViewportResizeUpdatesClickTargets(t *testing.T) {
 	sequence.frame("Viewport grows", func(s *reactivityViewportScene) { s.footerLines.Set(2) })
 }
 
+type reactivitySplitPaneScene struct {
+	state *SplitPaneState
+}
+
+func (s *reactivitySplitPaneScene) pane() SplitPane {
+	return SplitPane{
+		ID:                     "split",
+		State:                  s.state,
+		DisableFocus:           true,
+		DividerForeground:      RGB(255, 0, 0),
+		DividerFocusForeground: RGB(0, 255, 0),
+		First:                  Text{Content: "left"},
+		Second:                 Text{Content: "right", Width: Flex(1)},
+	}
+}
+
+func (s *reactivitySplitPaneScene) Build(BuildContext) Widget { return s.pane() }
+
+// The divider takes its focus colours from the press, before it moves, and
+// loses them on release, even though neither changes the layout.
+func TestReactivitySplitPaneDividerHighlightFollowsPress(t *testing.T) {
+	sequence := newReactivitySequence(t, 21, 3, func() *reactivitySplitPaneScene {
+		return &reactivitySplitPaneScene{state: NewSplitPaneState(0.5)}
+	})
+	sequence.frame("Initial", nil)
+	dividerX := sequence.actual.root.state.layoutCache.dividerPos
+	divider := MouseEvent{LocalX: dividerX, LocalY: 1, Button: uv.MouseLeft}
+	stats := sequence.frame("Press divider", func(s *reactivitySplitPaneScene) { s.pane().OnMouseDown(divider) })
+	require.NotEmpty(t, stats.DamagedRects, "the press repaints the divider")
+	require.Zero(t, stats.BuildCount)
+	sequence.frame("Release divider", func(s *reactivitySplitPaneScene) { s.pane().OnMouseUp(divider) })
+}
+
 type reactivityCollapseScene struct {
 	state *TreeState[string]
 }

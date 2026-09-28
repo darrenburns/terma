@@ -18,7 +18,9 @@ const splitPaneKeyStep = 0.05
 type SplitPaneState struct {
 	DividerPosition Signal[float64] // 0.0-1.0
 
-	dragging   bool
+	// dragging is set while the divider is held. Render reads it, so pressing
+	// and releasing the divider repaint it.
+	dragging   Signal[bool]
 	dragOffset int
 
 	layoutCache splitPaneLayoutCache
@@ -44,6 +46,19 @@ func NewSplitPaneState(initialPosition float64) *SplitPaneState {
 	}
 	return &SplitPaneState{
 		DividerPosition: NewSignal(initialPosition),
+		dragging:        NewSignal(false),
+	}
+}
+
+// isDragging reports whether the divider is held, subscribing when called
+// during a build or render.
+func (s *SplitPaneState) isDragging() bool {
+	return s != nil && s.dragging.IsValid() && s.dragging.Get()
+}
+
+func (s *SplitPaneState) setDragging(dragging bool) {
+	if s != nil && s.dragging.IsValid() {
+		s.dragging.Set(dragging)
 	}
 }
 
@@ -244,11 +259,11 @@ func (s SplitPane) OnMouseDown(event MouseEvent) {
 		return
 	}
 	if !s.isOnDivider(event, cache) {
-		s.State.dragging = false
+		s.State.setDragging(false)
 		return
 	}
 
-	s.State.dragging = true
+	s.State.setDragging(true)
 	coord := s.contentCoord(event, cache)
 	s.State.dragOffset = coord - cache.dividerPos
 }
@@ -258,7 +273,7 @@ func (s SplitPane) OnMouseMove(event MouseEvent) {
 	if s.MouseMove != nil {
 		s.MouseMove(event)
 	}
-	if s.State == nil || !s.State.dragging {
+	if !s.State.isDragging() {
 		return
 	}
 	cache := s.State.layoutCache
@@ -287,9 +302,7 @@ func (s SplitPane) OnMouseUp(event MouseEvent) {
 	if s.MouseUp != nil {
 		s.MouseUp(event)
 	}
-	if s.State != nil {
-		s.State.dragging = false
-	}
+	s.State.setDragging(false)
 }
 
 // OnHover is called on hover enter/leave transitions.
@@ -472,7 +485,7 @@ func (s SplitPane) Render(ctx *RenderContext) {
 	}
 
 	dividerHighlighted := ctx.IsFocused(s)
-	if s.State != nil && s.State.dragging {
+	if s.State.isDragging() {
 		// Keep focus colors while the divider is actively being dragged.
 		dividerHighlighted = true
 	}

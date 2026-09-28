@@ -187,11 +187,11 @@ func TestMouseRouter_SplitPaneDragReleasedOverAPaneEnds(t *testing.T) {
 	dividerX := computeSplitPaneMetrics(21, pane.dividerSize(), pane.minPaneSize(), state.GetPosition()).offset
 
 	router.press(uv.MouseClickEvent{X: dividerX, Y: 1, Button: uv.MouseLeft}, 0.5, 0.5, time.Now())
-	require.True(t, state.dragging)
+	require.True(t, state.isDragging())
 	router.motion(uv.MouseMotionEvent{X: dividerX + 4, Y: 1, Button: uv.MouseLeft}, 0.5, 0.5)
 	router.release(uv.MouseReleaseEvent{X: dividerX + 4, Y: 1, Button: uv.MouseLeft}, 0.5, 0.5)
 
-	assert.False(t, state.dragging, "the divider stays highlighted if its release is lost")
+	assert.False(t, state.isDragging(), "the divider stays highlighted if its release is lost")
 	assert.Greater(t, state.GetPosition(), 0.5)
 }
 
