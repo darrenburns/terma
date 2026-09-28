@@ -202,6 +202,12 @@ func (s *CommandPaletteState) SetItems(items []CommandPaletteItem) {
 	if level.ListState != nil {
 		level.ListState.SetItems(items)
 	}
+	if !s.Visible.Peek() {
+		// Items set before opening place the cursor as opening does: on the
+		// Current item when there is one.
+		s.resetCursor(level)
+		return
+	}
 	s.ensureSelectableCursor(level)
 }
 

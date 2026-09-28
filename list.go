@@ -38,6 +38,7 @@ func NewListState[T any](initialItems []T) *ListState[T] {
 }
 
 // SetItems replaces all items and clamps cursor to valid range.
+// Selected indices past the end of the new items are dropped.
 func (s *ListState[T]) SetItems(items []T) {
 	if items == nil {
 		items = []T{}
@@ -45,6 +46,7 @@ func (s *ListState[T]) SetItems(items []T) {
 	s.Items.Set(items)
 	s.resetFilterCache()
 	s.clampCursor()
+	s.remapSelection(func(i int) (int, bool) { return i, i < len(items) })
 }
 
 // GetItems returns the current list data (without subscribing to changes).
@@ -66,27 +68,18 @@ func (s *ListState[T]) Append(item T) {
 }
 
 // Prepend adds an item to the beginning of the list.
+// The cursor and selection stay on the same items.
 func (s *ListState[T]) Prepend(item T) {
-	s.Items.Update(func(items []T) []T {
-		return append([]T{item}, items...)
-	})
-	s.resetFilterCache()
-	// Adjust cursor to keep same item selected
-	s.CursorIndex.Update(func(i int) int {
-		return i + 1
-	})
+	s.InsertAt(0, item)
 }
 
 // InsertAt inserts an item at the specified index.
 // If index is out of bounds, it's clamped to valid range.
+// The cursor and selection stay on the same items.
 func (s *ListState[T]) InsertAt(index int, item T) {
+	hadItems := len(s.Items.Peek()) > 0
 	s.Items.Update(func(items []T) []T {
-		if index < 0 {
-			index = 0
-		}
-		if index > len(items) {
-			index = len(items)
-		}
+		index = clampInt(index, 0, len(items))
 		// Make room for new item
 		items = append(items, item) // Extend slice
 		copy(items[index+1:], items[index:])
@@ -96,13 +89,20 @@ func (s *ListState[T]) InsertAt(index int, item T) {
 	s.resetFilterCache()
 	// Adjust cursor if insertion was at or before cursor
 	cursorIdx := s.CursorIndex.Peek()
-	if index <= cursorIdx {
+	if hadItems && index <= cursorIdx {
 		s.CursorIndex.Set(cursorIdx + 1)
 	}
+	s.remapSelection(func(i int) (int, bool) {
+		if i >= index {
+			return i + 1, true
+		}
+		return i, true
+	})
 }
 
 // RemoveAt removes the item at the specified index.
 // Returns true if an item was removed, false if index was out of bounds.
+// The removed item leaves the selection; other selected items stay selected.
 func (s *ListState[T]) RemoveAt(index int) bool {
 	items := s.Items.Peek()
 	if index < 0 || index >= len(items) {
@@ -113,19 +113,34 @@ func (s *ListState[T]) RemoveAt(index int) bool {
 	})
 	s.resetFilterCache()
 	s.clampCursor()
+	s.remapSelection(func(i int) (int, bool) {
+		switch {
+		case i == index:
+			return 0, false
+		case i > index:
+			return i - 1, true
+		default:
+			return i, true
+		}
+	})
 	return true
 }
 
 // RemoveWhere removes all items matching the predicate.
 // Returns the number of items removed.
+// Removed items leave the selection; other selected items stay selected.
 func (s *ListState[T]) RemoveWhere(predicate func(T) bool) int {
 	removed := 0
+	var newIndex []int // Old index -> new index, or -1 if removed
 	s.Items.Update(func(items []T) []T {
+		newIndex = make([]int, len(items))
 		result := make([]T, 0, len(items))
-		for _, item := range items {
+		for i, item := range items {
 			if !predicate(item) {
+				newIndex[i] = len(result)
 				result = append(result, item)
 			} else {
+				newIndex[i] = -1
 				removed++
 			}
 		}
@@ -133,16 +148,53 @@ func (s *ListState[T]) RemoveWhere(predicate func(T) bool) int {
 	})
 	if removed > 0 {
 		s.resetFilterCache()
+		s.remapSelection(func(i int) (int, bool) {
+			if i < 0 || i >= len(newIndex) || newIndex[i] < 0 {
+				return 0, false
+			}
+			return newIndex[i], true
+		})
 	}
 	s.clampCursor()
 	return removed
 }
 
-// Clear removes all items from the list.
+// Clear removes all items from the list, along with the selection.
 func (s *ListState[T]) Clear() {
 	s.Items.Set([]T{})
 	s.resetFilterCache()
 	s.CursorIndex.Set(0)
+	s.ClearSelection()
+	s.ClearAnchor()
+}
+
+// remapSelection moves the selection and shift-select anchor after items are
+// inserted or removed, so they stay on the same items. mapIndex returns an
+// index's new position, or false if its item is gone.
+func (s *ListState[T]) remapSelection(mapIndex func(int) (int, bool)) {
+	if s.anchorIndex != nil {
+		if idx, ok := mapIndex(*s.anchorIndex); ok {
+			s.anchorIndex = &idx
+		} else {
+			s.anchorIndex = nil
+		}
+	}
+
+	sel := s.Selection.Peek()
+	changed := false
+	next := make(map[int]struct{}, len(sel))
+	for idx := range sel {
+		newIdx, ok := mapIndex(idx)
+		if !ok || newIdx != idx {
+			changed = true
+		}
+		if ok {
+			next[newIdx] = struct{}{}
+		}
+	}
+	if changed {
+		s.Selection.Set(next)
+	}
 }
 
 // SelectedItem returns the currently selected item (if any).

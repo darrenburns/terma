@@ -165,6 +165,20 @@ func restoreTTYState(f *os.File, state *term.State) {
 	_ = term.Restore(f.Fd(), state)
 }
 
+// startTerminal starts the terminal with hard-tab cursor movement disabled on
+// the given ttys. See disableHardTabs.
+func startTerminal(t *uv.Terminal, ttys ...*os.File) error {
+	restores := make([]func(), 0, len(ttys))
+	for _, f := range ttys {
+		restores = append(restores, disableHardTabs(f))
+	}
+	err := t.Start()
+	for i := len(restores) - 1; i >= 0; i-- {
+		restores[i]()
+	}
+	return err
+}
+
 // Quit exits the running application gracefully.
 // This performs the same teardown as pressing Ctrl+C.
 func Quit() {
@@ -203,7 +217,8 @@ func Run(root Widget) (runErr error) {
 		restoreTTYState(os.Stdout, origStdoutState)
 	}
 
-	if err := t.Start(); err != nil {
+	if err := startTerminal(t, os.Stdin, os.Stdout); err != nil {
+		restoreOriginalTTY()
 		return err
 	}
 	// Keep Kitty keyboard protocol disabled by default, but allow explicit opt-in.

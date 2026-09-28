@@ -581,6 +581,13 @@ State is preserved across switches via Signals and State objects held by the App
 
 Working examples in `cmd/*/main.go`. Start with `cmd/simple-list-example/TUTORIAL.md` for a comprehensive walkthrough.
 
+The main widget demos (list, table, tree, tabs, text input, dialog, ...) live as packages under
+`cmd/internal/demos/<name>`, share helpers from `cmd/internal/demokit` (panel style, header, theme
+cycling, the `Demo` interface), and are collected in one app: `go run ./cmd/terma-demos` (ctrl+g
+switches demo). Each also keeps a small `cmd/<name>/main.go` so it still runs on its own. To add a
+demo, create a package exporting `Info` and `New() demokit.Demo`, then register it in
+`cmd/terma-demos/main.go`.
+
 ## Debugging
 
 ### Logging
