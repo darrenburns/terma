@@ -164,18 +164,18 @@ func (ctx BuildContext) ActiveKeybinds() []Keybind {
 
 // IsHovered returns true if the given widget is currently being hovered.
 // The widget must implement Identifiable for hover comparison.
+// This is a reactive value, but only the widgets whose answer changes are
+// rebuilt: moving between two widgets notifies just those two.
 func (ctx BuildContext) IsHovered(widget Widget) bool {
-	hoveredID := ctx.HoveredID()
-	if hoveredID == "" {
+	// Compare by ID to avoid issues with incomparable types (e.g., slices in Column)
+	identifiable, ok := widget.(Identifiable)
+	if !ok || identifiable.WidgetID() == "" || !ctx.hoveredSignal.IsValid() {
 		return false
 	}
-
-	// Compare by ID to avoid issues with incomparable types (e.g., slices in Column)
-	if identifiable, ok := widget.(Identifiable); ok {
-		return identifiable.WidgetID() == hoveredID
-	}
-
-	return false
+	id := identifiable.WidgetID()
+	return SelectAny(ctx.hoveredSignal, func(hovered Widget) bool {
+		return hoveredWidgetID(hovered) == id
+	})
 }
 
 // Hovered returns the currently hovered widget, or nil if none.
@@ -195,10 +195,10 @@ func (ctx BuildContext) HoveredID() string {
 	if !ctx.hoveredSignal.IsValid() {
 		return ""
 	}
-	hovered := ctx.hoveredSignal.Get()
-	if hovered == nil {
-		return ""
-	}
+	return hoveredWidgetID(ctx.hoveredSignal.Get())
+}
+
+func hoveredWidgetID(hovered Widget) string {
 	if identifiable, ok := hovered.(Identifiable); ok {
 		return identifiable.WidgetID()
 	}
