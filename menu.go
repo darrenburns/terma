@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -36,6 +37,9 @@ type MenuState struct {
 	cursorIndex  Signal[int]
 	openSubmenu  Signal[int] // Index of item with open submenu (-1 if none)
 	submenuState *MenuState  // State for the open submenu (recursive)
+
+	itemBounds []Rect // Cached bounds of each item, in content coordinates
+	dragging   bool   // A press on an item is held, so pointer motion moves the cursor
 }
 
 // NewMenuState creates a new MenuState with the given items.
@@ -258,12 +262,108 @@ func (m Menu) buildMenuContent(ctx BuildContext) Widget {
 
 	menuStyle := m.menuStyle(ctx)
 	menuStyle.Width = itemWidth
-	return Column{
-		ID:         m.ID + "-content",
-		CrossAlign: CrossAxisStretch,
-		Style:      menuStyle,
-		Children:   children,
+	return menuContent{
+		Column: Column{
+			ID:         m.ID + "-content",
+			CrossAlign: CrossAxisStretch,
+			Style:      menuStyle,
+			Children:   children,
+		},
+		menu: m,
 	}
+}
+
+// menuContent is the column of menu items. It takes pointer input for the
+// menu, which is a Floating and so has no area of its own to be clicked.
+type menuContent struct {
+	Column
+	menu Menu
+}
+
+func (c menuContent) Build(BuildContext) Widget {
+	return c
+}
+
+func (c menuContent) ChildWidgets() []Widget {
+	return c.Children
+}
+
+func (c menuContent) ownsDescendantPointer() {}
+
+// OnLayout records where each item sits, skipping the open submenu's child.
+func (c menuContent) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
+	bounds := make([]Rect, 0, len(c.menu.State.Items()))
+	for i, child := range c.Children {
+		if _, submenu := child.(Menu); submenu {
+			continue
+		}
+		b, _ := metrics.ChildBounds(i)
+		bounds = append(bounds, b)
+	}
+	c.menu.State.itemBounds = bounds
+}
+
+// OnMouseDown moves the cursor to the pressed item. The item is chosen when
+// the button is released over it (see OnMouseUp).
+func (c menuContent) OnMouseDown(event MouseEvent) {
+	state := c.menu.State
+	state.dragging = false
+	index, ok := c.itemAt(event, false)
+	if !ok {
+		return
+	}
+	c.menu.moveCursorTo(index)
+	if c.menu.ID != "" {
+		RequestFocus(c.menu.ID)
+	}
+	state.dragging = event.Button == uv.MouseLeft
+}
+
+// OnMouseMove drags the cursor to the item under the pointer.
+func (c menuContent) OnMouseMove(event MouseEvent) {
+	if !c.menu.State.dragging {
+		return
+	}
+	if index, ok := c.itemAt(event, true); ok {
+		c.menu.moveCursorTo(index)
+	}
+}
+
+// OnMouseUp chooses the item under the pointer, as enter does, when a press
+// on an item is released over one: a click, or a drag from one item to
+// another. Releasing anywhere else chooses nothing.
+func (c menuContent) OnMouseUp(event MouseEvent) {
+	state := c.menu.State
+	dragging := state.dragging
+	state.dragging = false
+	if !dragging {
+		return
+	}
+	index, ok := c.itemAt(event, false)
+	if !ok || !state.itemBounds[index].Contains(c.contentX(event), c.contentY(event)) {
+		return
+	}
+	c.menu.moveCursorTo(index)
+	c.menu.selectCurrent()
+}
+
+// itemAt returns the selectable item on the pointer's row. With clamp, a
+// pointer above or below the items gives the first or last.
+func (c menuContent) itemAt(event MouseEvent, clamp bool) (int, bool) {
+	items := c.menu.State.Items()
+	bounds := c.menu.State.itemBounds
+	index, ok := spanAt(min(len(items), len(bounds)), func(i int) (int, int) {
+		return bounds[i].Y, bounds[i].Height
+	}, c.contentY(event), clamp)
+	return index, ok && items[index].IsSelectable()
+}
+
+func (c menuContent) contentX(event MouseEvent) int {
+	return event.LocalX - c.Style.Border.Width() - c.Style.Padding.Left
+}
+
+func (c menuContent) contentY(event MouseEvent) int {
+	return event.LocalY - c.Style.Border.Width() - c.Style.Padding.Top
 }
 
 func (m Menu) submenuID() string {
@@ -438,6 +538,16 @@ func (m Menu) moveLast() {
 			return
 		}
 	}
+}
+
+// moveCursorTo puts the cursor on an item, closing a submenu opened from
+// another.
+func (m Menu) moveCursorTo(index int) {
+	if m.State.cursorIndex.Peek() == index {
+		return
+	}
+	m.State.SetCursorIndex(index)
+	m.closeOpenSubmenuIfNeeded(index)
 }
 
 func (m Menu) closeOpenSubmenuIfNeeded(cursorIdx int) {

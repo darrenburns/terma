@@ -141,11 +141,11 @@ func (a *CommandPaletteDemo) selectAction(label string) func() {
 	return a.run(label, nil)
 }
 
-func (a *CommandPaletteDemo) selectThemeAction(themeName, label string) func() {
-	return a.run("Theme "+label, func() {
+func (a *CommandPaletteDemo) selectTheme(themeName string) {
+	a.run("Theme "+t.ThemeDisplayName(themeName), func() {
 		t.SetTheme(themeName)
 		a.themeBeforePreview = ""
-	})
+	})()
 }
 
 func (a *CommandPaletteDemo) record(entry activityEntry) {
@@ -162,53 +162,7 @@ func (a *CommandPaletteDemo) record(entry activityEntry) {
 }
 
 func (a *CommandPaletteDemo) themeItems() []t.CommandPaletteItem {
-	items := make([]t.CommandPaletteItem, 0, 40)
-	addGroup := func(title string, names []string) {
-		if len(names) == 0 {
-			return
-		}
-		items = append(items, t.CommandPaletteItem{Divider: title})
-		for _, name := range names {
-			label := themeDisplayName(name)
-			items = append(items, t.CommandPaletteItem{
-				Label:      label,
-				FilterText: label + " " + name,
-				HintWidget: themeSwatch(name),
-				Current:    name == t.CurrentThemeName(),
-				Data:       name,
-				Action:     a.selectThemeAction(name, label),
-			})
-		}
-	}
-	addGroup("Dark Themes", t.DarkThemeNames())
-	addGroup("Light Themes", t.LightThemeNames())
-	return items
-}
-
-// themeSwatch returns a hint widget showing a few of the theme's own colours.
-func themeSwatch(name string) func() t.Widget {
-	return func() t.Widget {
-		data, ok := t.GetTheme(name)
-		if !ok {
-			return t.EmptyWidget{}
-		}
-		spans := make([]t.Span, 0, 4)
-		for _, c := range []t.Color{data.Primary, data.Secondary, data.Accent, data.Background} {
-			spans = append(spans, t.Span{Text: "●", Style: t.SpanStyle{Foreground: c}})
-		}
-		return t.Text{Spans: spans}
-	}
-}
-
-func themeDisplayName(name string) string {
-	parts := strings.Split(name, "-")
-	for i, part := range parts {
-		if part == "" {
-			continue
-		}
-		parts[i] = strings.ToUpper(part[:1]) + part[1:]
-	}
-	return strings.Join(parts, " ")
+	return t.ThemePaletteItems(a.selectTheme)
 }
 
 func (a *CommandPaletteDemo) togglePalette() {

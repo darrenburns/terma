@@ -1351,6 +1351,14 @@ func (r *Renderer) FocusableAt(x, y int) *WidgetEntry {
 	return r.widgetRegistry.focusableAtIn(x, y, lo, hi)
 }
 
+// PointerOwnerAt returns the innermost widget at the given coordinates that
+// is focusable or takes the pointer input landing on its descendants (such
+// as a List, whose rows are separate widgets). Returns nil if there is none.
+func (r *Renderer) PointerOwnerAt(x, y int) *WidgetEntry {
+	lo, hi := r.pointerLayer(x, y)
+	return r.widgetRegistry.pointerOwnerAtIn(x, y, lo, hi)
+}
+
 // WidgetByID returns the widget entry with the given ID.
 // Returns nil if no widget has that ID.
 func (r *Renderer) WidgetByID(id string) *WidgetEntry {

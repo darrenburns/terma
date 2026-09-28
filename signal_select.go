@@ -101,8 +101,19 @@ func captureNotification[T any](value T, listeners map[*widgetNode]dependencyMas
 	}
 	if len(selectors.byNode) > 0 {
 		n.selectors = make([]nodeSelectors[T], 0, len(selectors.byNode))
+		selectorCount := 0
+		for _, list := range selectors.byNode {
+			selectorCount += len(list)
+		}
+		// Snapshot into one buffer instead of allocating a slice for every row.
+		// The copy is still necessary: subscriptions can be compacted or replaced
+		// after the signal lock is released and before delivery finishes.
+		snapshot := make([]signalSelector[T], selectorCount)
+		offset := 0
 		for node, list := range selectors.byNode {
-			n.selectors = append(n.selectors, nodeSelectors[T]{node: node, selectors: append([]signalSelector[T](nil), list...)})
+			end := offset + copy(snapshot[offset:], list)
+			n.selectors = append(n.selectors, nodeSelectors[T]{node: node, selectors: snapshot[offset:end:end]})
+			offset = end
 		}
 	}
 	return n

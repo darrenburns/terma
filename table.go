@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"sort"
 
+	uv "github.com/charmbracelet/ultraviolet"
+
 	"github.com/darrenburns/terma/layout"
 )
 
@@ -18,15 +20,17 @@ type TableState[T any] struct {
 	Selection    AnySignal[map[int]struct{}] // Selected indices (row/column/cell based on selection mode)
 
 	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
+	dragging    bool // A press on a cell is held, so pointer motion moves the cursor
 
 	lastSelectionMode TableSelectionMode
 	hasSelectionMode  bool
 	columnCount       int // Column count of the Table showing this state, for decoding cell selections
 
-	rowLayouts        []tableRowLayout  // Cached layout metrics (per row)
-	revealed          cursorReveal[int] // Where the cursor was last scrolled into view
-	viewIndices       []int             // View index -> source index for filtered views
-	viewIndexBySource map[int]int       // Source index -> view index for filtered views
+	rowLayouts        []tableRowLayout    // Cached layout metrics (per row)
+	columnLayouts     []tableColumnLayout // Cached horizontal extent of each column
+	revealed          cursorReveal[int]   // Where the cursor was last scrolled into view
+	viewIndices       []int               // View index -> source index for filtered views
+	viewIndexBySource map[int]int         // Source index -> view index for filtered views
 }
 
 // NewTableState creates a new TableState with the given initial rows.
@@ -502,14 +506,14 @@ type Table[T any] struct {
 	Filter              *FilterState                                                                                  // Optional filter state for matching rows
 	MatchCell           func(row T, rowIndex int, colIndex int, query string, options FilterOptions) MatchResult      // Optional matcher per cell
 	RenderHeader        func(colIndex int) Widget                                                                     // Optional header renderer (takes precedence over column headers)
-	OnSelect            func(row T)                                                                                   // Callback invoked when Enter is pressed on a row
+	OnSelect            func(row T)                                                                                   // Callback invoked when Enter is pressed on a row or a row is double-clicked
 	OnCursorChange      func(row T)                                                                                   // Callback invoked when cursor moves to a different row
 	ScrollState         *ScrollState                                                                                  // Optional state for scroll-into-view
 	RowHeight           int                                                                                           // Optional uniform row height override (default 0 = layout metrics / fallback 1)
 	ColumnSpacing       int                                                                                           // Space between columns
 	RowSpacing          int                                                                                           // Space between rows
 	SelectionMode       TableSelectionMode                                                                            // Cursor/selection highlight mode (row/column/cursor)
-	MultiSelect         bool                                                                                          // Enable multi-select mode (shift+move to extend)
+	MultiSelect         bool                                                                                          // Enable multi-select mode (shift+move, shift+click or drag to extend)
 	Width               Dimension                                                                                     // Deprecated: use Style.Width
 	Height              Dimension                                                                                     // Deprecated: use Style.Height
 	Style               Style                                                                                         // Optional styling
@@ -522,6 +526,11 @@ type Table[T any] struct {
 type tableRowLayout struct {
 	y      int
 	height int
+}
+
+type tableColumnLayout struct {
+	x     int
+	width int
 }
 
 type tableContainer[T any] struct {
@@ -552,6 +561,7 @@ func (c tableContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 	if c.State == nil || c.columnCount == 0 || c.rowCount == 0 {
 		if c.State != nil {
 			c.State.rowLayouts = nil
+			c.State.columnLayouts = nil
 		}
 		return
 	}
@@ -559,16 +569,21 @@ func (c tableContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 	count := metrics.ChildCount()
 	if count == 0 {
 		c.State.rowLayouts = nil
+		c.State.columnLayouts = nil
 		return
 	}
 
 	rowLayouts := make([]tableRowLayout, c.rowCount)
 	seen := make([]bool, c.rowCount)
+	columnLayouts := make([]tableColumnLayout, c.columnCount)
 
 	for i := 0; i < count; i++ {
 		bounds, ok := metrics.ChildBounds(i)
 		if !ok {
 			continue
+		}
+		if col := i % c.columnCount; i < c.columnCount || columnLayouts[col].width == 0 {
+			columnLayouts[col] = tableColumnLayout{x: bounds.X, width: bounds.Width}
 		}
 		row := i / c.columnCount
 		dataRow := row - c.headerRows
@@ -594,6 +609,7 @@ func (c tableContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 	}
 
 	c.State.rowLayouts = rowLayouts
+	c.State.columnLayouts = columnLayouts
 	if c.selectionMode() != TableSelectionColumn {
 		c.revealMovedCursor()
 	}
@@ -748,17 +764,120 @@ func (t Table[T]) OnClick(event MouseEvent) {
 	}
 }
 
-// OnMouseDown is called when the mouse is pressed on the widget.
+func (t Table[T]) ownsDescendantPointer() {}
+
+// OnMouseDown moves the cursor to the clicked cell, extends the selection on
+// shift+click in multi-select mode, and selects the row on double-click.
 // Implements the MouseDownHandler interface.
 func (t Table[T]) OnMouseDown(event MouseEvent) {
+	t.handleMouseDown(event)
 	if t.MouseDown != nil {
 		t.MouseDown(event)
 	}
 }
 
-// OnMouseUp is called when the mouse is released on the widget.
+func (t Table[T]) handleMouseDown(event MouseEvent) {
+	if t.State == nil {
+		return
+	}
+	t.State.dragging = false
+	viewRow, col, ok := t.cellFromMouse(event, false)
+	if !ok {
+		return
+	}
+	previous := t.State.CursorIndex.Peek()
+
+	if t.MultiSelect && event.Mod.Contains(uv.ModShift) {
+		t.extendSelectionTo(viewRow, col)
+	} else {
+		if t.MultiSelect {
+			t.State.ClearSelection()
+			t.State.ClearAnchor()
+		}
+		t.moveCursorTo(viewRow, col)
+	}
+	t.State.dragging = event.Button == uv.MouseLeft
+
+	if t.State.CursorIndex.Peek() != previous {
+		t.notifyCursorChange()
+	}
+	if event.ClickCount == 2 {
+		t.selectRow()
+	}
+}
+
+// OnMouseMove drags the cursor to the cell under the pointer while a press on
+// a cell is held, extending the selection from the pressed cell in
+// multi-select mode. Dragging past the top or bottom scrolls.
+// Implements the MouseMoveHandler interface.
+func (t Table[T]) OnMouseMove(event MouseEvent) {
+	if t.State == nil || !t.State.dragging {
+		return
+	}
+	viewRow, col, ok := t.cellFromMouse(event, true)
+	if !ok {
+		return
+	}
+	previous := t.State.CursorIndex.Peek()
+	if t.MultiSelect {
+		t.extendSelectionTo(viewRow, col)
+	} else {
+		t.moveCursorTo(viewRow, col)
+	}
+	if t.State.CursorIndex.Peek() != previous {
+		t.notifyCursorChange()
+	}
+}
+
+// moveCursorTo puts the cursor on a cell, given by view row and column.
+func (t Table[T]) moveCursorTo(viewRow, col int) {
+	t.setCursorToViewIndex(viewRow)
+	if t.selectionMode() != TableSelectionRow {
+		t.State.CursorColumn.Set(col)
+	}
+	t.scrollCursorIntoView()
+}
+
+// extendSelectionTo moves the cursor to a cell, selecting the rows, columns
+// or cells between it and the anchor, as the selection mode dictates.
+func (t Table[T]) extendSelectionTo(viewRow, col int) {
+	columnCount := len(t.Columns)
+	switch t.selectionMode() {
+	case TableSelectionRow:
+		t.handleShiftMoveRowTo(viewRow)
+	case TableSelectionColumn:
+		t.handleShiftMoveColumnTo(col, columnCount)
+	default:
+		t.handleShiftMoveCellTo(viewRow, col, columnCount)
+	}
+}
+
+// cellFromMouse returns the view row and column of the cell under the
+// pointer. With clamp, a pointer outside the cells gives the nearest one.
+func (t Table[T]) cellFromMouse(event MouseEvent, clamp bool) (viewRow, col int, ok bool) {
+	rows, columns := t.State.rowLayouts, t.State.columnLayouts
+	rowCount := min(len(rows), len(t.viewIndices()))
+	if rowCount == 0 || len(columns) != len(t.Columns) {
+		return 0, 0, false
+	}
+	inset := t.Style.Border.Width()
+	y := event.LocalY - inset - t.Style.Padding.Top
+	viewRow, ok = spanAt(rowCount, func(i int) (int, int) { return rows[i].y, rows[i].height }, y, clamp)
+	if !ok {
+		return 0, 0, false
+	}
+	x := event.LocalX - inset - t.Style.Padding.Left
+	// Clamped, so a click in the gap between columns picks the column before it.
+	col, ok = spanAt(len(columns), func(i int) (int, int) { return columns[i].x, columns[i].width }, x, true)
+	return viewRow, col, ok
+}
+
+// OnMouseUp ends a drag begun on a cell.
 // Implements the MouseUpHandler interface.
 func (t Table[T]) OnMouseUp(event MouseEvent) {
+	if t.State != nil {
+		t.State.dragging = false
+	}
 	if t.MouseUp != nil {
 		t.MouseUp(event)
 	}
