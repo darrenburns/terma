@@ -289,6 +289,30 @@ func TestSnapshot_CommandPalette_Basic(t *testing.T) {
 	AssertSnapshot(t, widget, 80, 24, "Command palette with filter text, divider, disabled item, and hint widget")
 }
 
+func TestSnapshot_CommandPalette_DividerHeaders(t *testing.T) {
+	items := []CommandPaletteItem{
+		{Divider: "File"},
+		{Label: "New File", Hint: "Ctrl+N", Description: "Create an empty buffer"},
+		{Label: "Open File", Hint: "Ctrl+O", Description: "Open from disk"},
+		{Divider: "Edit"},
+		{Label: "Cut", Hint: "Ctrl+X", Description: "Move selection to clipboard"},
+		{Divider: ""},
+		{Label: "Preferences"},
+	}
+
+	state := NewCommandPaletteState("Commands", items)
+	state.Visible.Set(true)
+
+	widget := CommandPalette{
+		ID:       "palette-divider-headers",
+		State:    state,
+		Position: FloatPositionTopLeft,
+		Offset:   Offset{X: 2, Y: 1},
+	}
+
+	AssertSnapshot(t, widget, 80, 24, "Titled dividers 'File' and 'Edit' render bold in the primary text colour, distinct from the muted descriptions and hints; an untitled divider renders as a plain line")
+}
+
 func TestSnapshot_CommandPalette_Nested(t *testing.T) {
 	state := NewCommandPaletteState("Commands", []CommandPaletteItem{
 		{Label: "Theme"},
