@@ -1,0 +1,21 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/darrenburns/terma
+cpu: Apple M4 Pro
+BenchmarkReactivityScroll/line/rows=100-14         	    2000	     64253 ns/op	         0 builds/op	       270.0 damage-cells/op	         1.000 full/op	         2.000 layouts/op	        33.00 paints/op	         0 partial/op	         1.000 sets/op	   65191 B/op	    1010 allocs/op
+BenchmarkReactivityScroll/line/rows=100-14         	    2000	     62831 ns/op	         0 builds/op	       270.0 damage-cells/op	         1.000 full/op	         2.000 layouts/op	        33.00 paints/op	         0 partial/op	         1.000 sets/op	   65188 B/op	    1010 allocs/op
+BenchmarkReactivityScroll/line/rows=100-14         	    2000	     62233 ns/op	         0 builds/op	       270.0 damage-cells/op	         1.000 full/op	         2.000 layouts/op	        33.00 paints/op	         0 partial/op	         1.000 sets/op	   65185 B/op	    1010 allocs/op
+BenchmarkReactivityScroll/line/rows=100-14         	    2000	     61646 ns/op	         0 builds/op	       270.0 damage-cells/op	         1.000 full/op	         2.000 layouts/op	        33.00 paints/op	         0 partial/op	         1.000 sets/op	   65184 B/op	    1010 allocs/op
+BenchmarkReactivityScroll/line/rows=100-14         	    2000	     60040 ns/op	         0 builds/op	       270.0 damage-cells/op	         1.000 full/op	         2.000 layouts/op	        33.00 paints/op	         0 partial/op	         1.000 sets/op	   65184 B/op	    1010 allocs/op
+BenchmarkReactivityScroll/line/rows=1000-14        	    2000	    209301 ns/op	         0 builds/op	       270.0 damage-cells/op	         1.000 full/op	         2.000 layouts/op	        33.00 paints/op	         0 partial/op	         1.000 sets/op	  192387 B/op	    3708 allocs/op
+BenchmarkReactivityScroll/line/rows=1000-14        	    2000	    207975 ns/op	         0 builds/op	       270.0 damage-cells/op	         1.000 full/op	         2.000 layouts/op	        33.00 paints/op	         0 partial/op	         1.000 sets/op	  192384 B/op	    3708 allocs/op
+BenchmarkReactivityScroll/line/rows=1000-14        	    2000	    209895 ns/op	         0 builds/op	       270.0 damage-cells/op	         1.000 full/op	         2.000 layouts/op	        33.00 paints/op	         0 partial/op	         1.000 sets/op	  192384 B/op	    3708 allocs/op
+BenchmarkReactivityScroll/line/rows=1000-14        	    2000	    216360 ns/op	         0 builds/op	       270.0 damage-cells/op	         1.000 full/op	         2.000 layouts/op	        33.00 paints/op	         0 partial/op	         1.000 sets/op	  192384 B/op	    3708 allocs/op
+BenchmarkReactivityScroll/line/rows=1000-14        	    2000	    210731 ns/op	         0 builds/op	       270.0 damage-cells/op	         1.000 full/op	         2.000 layouts/op	        33.00 paints/op	         0 partial/op	         1.000 sets/op	  192384 B/op	    3708 allocs/op
+BenchmarkReactivityScroll/sub-line/rows=40-14      	    2000	      3724 ns/op	         0 builds/op	        30.00 damage-cells/op	         0 full/op	         0 layouts/op	         2.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5380 B/op	     100 allocs/op
+BenchmarkReactivityScroll/sub-line/rows=40-14      	    2000	      3826 ns/op	         0 builds/op	        30.00 damage-cells/op	         0 full/op	         0 layouts/op	         2.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5380 B/op	     100 allocs/op
+BenchmarkReactivityScroll/sub-line/rows=40-14      	    2000	      3748 ns/op	         0 builds/op	        30.00 damage-cells/op	         0 full/op	         0 layouts/op	         2.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5380 B/op	     100 allocs/op
+BenchmarkReactivityScroll/sub-line/rows=40-14      	    2000	      3876 ns/op	         0 builds/op	        30.00 damage-cells/op	         0 full/op	         0 layouts/op	         2.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5380 B/op	     100 allocs/op
+BenchmarkReactivityScroll/sub-line/rows=40-14      	    2000	      3913 ns/op	         0 builds/op	        30.00 damage-cells/op	         0 full/op	         0 layouts/op	         2.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5380 B/op	     100 allocs/op
+PASS
+ok  	github.com/darrenburns/terma	3.163s

@@ -1,6 +1,10 @@
 package terma
 
-import "testing"
+import (
+	"fmt"
+	"math"
+	"testing"
+)
 
 func TestNewScrollState_IsPinnedTrue(t *testing.T) {
 	s := NewScrollState()
@@ -243,7 +247,7 @@ func TestScrollState_UpdateLayout_DoesNotAutoScrollOnFirstRender(t *testing.T) {
 	}
 }
 
-func TestScrollState_UpdateLayout_DoesNotAutoScrollWhenContentShrinks(t *testing.T) {
+func TestScrollState_UpdateLayout_StaysAtBottomWhenContentShrinks(t *testing.T) {
 	s := NewScrollState()
 	s.PinToBottom = true
 	s.isPinned = true
@@ -254,10 +258,23 @@ func TestScrollState_UpdateLayout_DoesNotAutoScrollWhenContentShrinks(t *testing
 	// Content shrinks
 	s.updateLayout(10, 20)
 
-	// Should NOT auto-scroll when content shrinks
-	// Offset stays at 20 (will be clamped elsewhere)
-	if s.Offset.Peek() != 20 {
-		t.Errorf("expected offset to stay at 20, got %d", s.Offset.Peek())
+	// Pinned content stays at the (new) bottom, as the layout shows it.
+	if s.Offset.Peek() != 10 {
+		t.Errorf("expected offset=10 at the new bottom, got %d", s.Offset.Peek())
+	}
+}
+
+func TestScrollState_UpdateLayout_DoesNotAutoScrollWhenNotAtBottom(t *testing.T) {
+	s := NewScrollState()
+	s.PinToBottom = true
+	s.isPinned = true // Engaged initially, but content started out taller than the viewport
+	s.viewportHeight = 10
+	s.contentHeight = 20
+
+	s.updateLayout(10, 25)
+
+	if s.Offset.Peek() != 0 {
+		t.Errorf("expected offset to stay at 0 until scrolled to the bottom, got %d", s.Offset.Peek())
 	}
 }
 
@@ -456,5 +473,132 @@ func TestScrollable_DragScrollbar_UsesContentOffsets(t *testing.T) {
 	scrollable.OnMouseDown(MouseEvent{LocalX: 11, LocalY: 1}) // contentOffsetX + (contentWidth-1)
 	if !state.scrollbarDragging {
 		t.Fatal("expected dragging to start when clicking on offset scrollbar column")
+	}
+}
+
+// With a pixel-precise pointer, the thumb stays under the point where it was
+// grabbed, to the eighth of a cell, while content moves by whole lines.
+func TestScrollable_DragScrollbar_FollowsSubCellPointer(t *testing.T) {
+	state := NewScrollState()
+	state.updateLayout(10, 40) // max offset = 30
+	state.layoutCache = scrollableLayoutCache{
+		valid:         true,
+		contentWidth:  10,
+		contentHeight: 10,
+		scrollableY:   true,
+	}
+	scrollable := Scrollable{State: state}
+
+	// The thumb is 2.5 cells long and can travel 7.5 cells. Grab it 1.25
+	// cells down.
+	scrollable.OnMouseDown(MouseEvent{LocalX: 9, LocalY: 1, SubCellY: 0.25})
+	if !state.scrollbarDragging {
+		t.Fatal("expected dragging to start on the thumb")
+	}
+
+	for step := 1; step <= 24; step++ {
+		pointer := 1.25 + float64(step)/scrollbarSubCellCount
+		cell := math.Floor(pointer)
+		scrollable.OnMouseMove(MouseEvent{LocalX: 9, LocalY: int(cell), SubCellY: pointer - cell})
+
+		thumb, _ := scrollable.scrollbarThumb(state.layoutCache)
+		if thumb.start != step {
+			t.Fatalf("step %d: thumb starts %d eighths down, expected it under the pointer at %d", step, thumb.start, step)
+		}
+		position := state.position.Peek()
+		if want := float64(step) / 2; math.Abs(position-want) > 1e-9 {
+			t.Fatalf("step %d: expected exact position %.2f, got %.4f", step, want, position)
+		}
+		if state.GetOffset() != int(math.Round(position)) {
+			t.Fatalf("step %d: offset %d is not position %.2f rounded", step, state.GetOffset(), position)
+		}
+	}
+}
+
+func TestScrollState_ThumbPositionFollowsExactPosition(t *testing.T) {
+	s := NewScrollState()
+	s.updateLayout(10, 40) // max offset = 30
+
+	s.setPosition(3.4)
+	if s.GetOffset() != 3 || s.thumbPosition(3) != 3.4 {
+		t.Fatalf("expected offset 3 with the thumb at 3.4, got offset %d, thumb %.2f", s.GetOffset(), s.thumbPosition(3))
+	}
+
+	s.SetOffset(7)
+	if s.thumbPosition(7) != 7 {
+		t.Errorf("SetOffset should put the thumb at the whole line, got %.2f", s.thumbPosition(7))
+	}
+
+	s.setPosition(5.6)
+	s.Offset.Set(12) // Moved without going through ScrollState
+	if s.thumbPosition(12) != 12 {
+		t.Errorf("a stale exact position should be ignored, got %.2f", s.thumbPosition(12))
+	}
+
+	s.setPosition(99)
+	if s.GetOffset() != 30 || s.position.Peek() != 30 {
+		t.Errorf("expected position clamped to 30, got offset %d, position %.2f", s.GetOffset(), s.position.Peek())
+	}
+}
+
+// The thumb's length is computed once from the track and content heights, so
+// it never changes size as it moves.
+func TestScrollbarThumb_KeepsItsLengthAsItMoves(t *testing.T) {
+	for _, tc := range []struct{ track, content int }{{10, 23}, {6, 40}, {20, 21}, {5, 1000}, {3, 4}, {1, 50}} {
+		maxScroll := tc.content - tc.track
+		first := newScrollbarThumb(0, maxScroll, tc.track, tc.content)
+		if first.start != 0 || first.length < scrollbarSubCellCount {
+			t.Fatalf("track %d, content %d: bad thumb at top: %+v", tc.track, tc.content, first)
+		}
+		previous := 0
+		for step := 0; step <= maxScroll*scrollbarSubCellCount; step++ {
+			thumb := newScrollbarThumb(float64(step)/scrollbarSubCellCount, maxScroll, tc.track, tc.content)
+			if thumb.length != first.length {
+				t.Fatalf("track %d, content %d: length %d at step %d, expected %d", tc.track, tc.content, thumb.length, step, first.length)
+			}
+			if thumb.start < previous {
+				t.Fatalf("track %d, content %d: thumb moved backwards at step %d", tc.track, tc.content, step)
+			}
+			previous = thumb.start
+		}
+		last := newScrollbarThumb(float64(maxScroll), maxScroll, tc.track, tc.content)
+		if last.start+last.length != tc.track*scrollbarSubCellCount {
+			t.Errorf("track %d, content %d: thumb should end at the bottom, got %+v", tc.track, tc.content, last)
+		}
+	}
+}
+
+type scrollbarRows struct{ count int }
+
+func (r scrollbarRows) Build(BuildContext) Widget {
+	rows := make([]Widget, r.count)
+	for i := range rows {
+		rows[i] = Text{Content: fmt.Sprintf("row %d", i)}
+	}
+	return Column{Children: rows}
+}
+
+func TestSnapshot_Scrollbar_ThumbPositions(t *testing.T) {
+	state := NewScrollState()
+	widget := Scrollable{
+		State:  state,
+		Height: Cells(6),
+		Style:  Style{Border: RoundedBorder(Hex("#6e6a86")), Padding: EdgeInsetsXY(1, 0)},
+		Child:  scrollbarRows{count: 10},
+	}
+	RenderToBuffer(widget, 14, 8) // Lays out the content, so positions can be set.
+
+	for _, tc := range []struct {
+		name     string
+		position float64
+		desc     string
+	}{
+		{"top", 0, "Thumb at the top of the track"},
+		{"third_line", 1.0 / 3, "Scrolled a third of a line: content unmoved, thumb moved by its share"},
+		{"between_lines", 2.6, "Content at line 3, thumb between the positions for lines 2 and 3"},
+		{"bottom", 4, "Thumb at the bottom, the same length as at the top"},
+	} {
+		state.setPosition(tc.position)
+		AssertSnapshotNamed(t, "scrollbar_thumb_"+tc.name, widget, 14, 8, tc.desc)
 	}
 }

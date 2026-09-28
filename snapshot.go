@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	uv "github.com/charmbracelet/ultraviolet"
 )
@@ -188,6 +189,11 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 				continue
 			}
 
+			if writeBlockElement(&sb, cell, float64(opts.Padding)+float64(x)*opts.CellWidth, rowY, opts.CellWidth, cellHeight, opts.Background) {
+				x++
+				continue
+			}
+
 			// Check if cell has styling that requires spaces to be rendered in text spans
 			// (reverse swaps fg/bg so needs text span; underline needs text span for decoration)
 			// Background colors are handled in first pass and don't need spaces in text spans
@@ -221,6 +227,9 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 			for x < width {
 				nextCell := buf.CellAt(x, y)
 				if nextCell == nil || nextCell.Content == "" {
+					break
+				}
+				if _, _, _, _, ok := blockElementBox(nextCell.Content); ok {
 					break
 				}
 				nextFg := FromANSI(nextCell.Style.Fg)
@@ -307,6 +316,52 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 
 	sb.WriteString("</svg>\n")
 	return sb.String()
+}
+
+// blockElementBox returns the part of a cell that a block element fills, as
+// fractions of the cell measured from its top-left corner.
+func blockElementBox(content string) (x, y, width, height float64, ok bool) {
+	r, size := utf8.DecodeRuneInString(content)
+	if size == 0 || size != len(content) {
+		return 0, 0, 0, 0, false
+	}
+	switch {
+	case r >= '▁' && r <= '█': // Lower one eighth up to full block
+		height = float64(r-'▁'+1) / 8
+		return 0, 1 - height, 1, height, true
+	case r >= '▉' && r <= '▏': // Left seven eighths down to left one eighth
+		return 0, 0, float64('▏'-r+1) / 8, 1, true
+	}
+	return 0, 0, 0, 0, false
+}
+
+// writeBlockElement draws a block element cell as rectangles, as terminals
+// draw them, rather than as a font glyph that needn't fill its share of the
+// cell exactly. It reports whether the cell was a block element.
+func writeBlockElement(sb *strings.Builder, cell *uv.Cell, cellX, cellY, cellWidth, cellHeight float64, pageBg Color) bool {
+	bx, by, bw, bh, ok := blockElementBox(cell.Content)
+	if !ok {
+		return false
+	}
+	fg, bg := FromANSI(cell.Style.Fg), FromANSI(cell.Style.Bg)
+	if cell.Style.Attrs&uv.AttrReverse != 0 {
+		// The first pass leaves reversed cells' backgrounds to be drawn here.
+		fg, bg = bg, fg
+		if !fg.IsSet() {
+			fg = pageBg
+		}
+		if !bg.IsSet() {
+			bg = RGB(255, 255, 255)
+		}
+		fmt.Fprintf(sb, "  <rect x=\"%.2f\" y=\"%.2f\" width=\"%.2f\" height=\"%.2f\" fill=\"%s\"/>\n",
+			cellX, cellY, cellWidth, cellHeight, bg.Hex())
+	}
+	if !fg.IsSet() {
+		fg = RGB(255, 255, 255)
+	}
+	fmt.Fprintf(sb, "  <rect x=\"%.2f\" y=\"%.2f\" width=\"%.2f\" height=\"%.2f\" fill=\"%s\"/>\n",
+		cellX+bx*cellWidth, cellY+by*cellHeight, bw*cellWidth, bh*cellHeight, fg.Hex())
+	return true
 }
 
 // sameStyle checks if two uv.Style values have the same attributes (ignoring colors).

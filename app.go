@@ -64,6 +64,8 @@ var terminalDisableSequences = []string{
 	ansi.ResetModeMouseButtonEvent,
 	ansi.ResetModeMouseNormal,
 	ansi.ResetModeMouseExtSgr,
+	// Switched on later if the terminal supports it (see pixelPointer).
+	ansi.ResetModeMouseExtSgrPixel,
 }
 
 func writeTerminalSequences(writeString func(string) (int, error), sequences []string) {
@@ -128,7 +130,6 @@ func disableTerminalInputModes(writeString func(string) (int, error), enableKitt
 			ansi.ResetModeMouseX10,
 			ansi.ResetModeMouseExtUtf8,
 			ansi.ResetModeMouseExtUrxvt,
-			ansi.ResetModeMouseExtSgrPixel,
 			ansi.ResetModeBracketedPaste,
 			ansi.ResetModeCursorKeys,
 			ansi.ResetModeKeyboardAction,
@@ -212,7 +213,7 @@ func (t *mouseClickTracker) releaseCount(targetID string, button uv.MouseButton)
 	return 1
 }
 
-func buildMouseEvent(m uv.Mouse, entry *WidgetEntry, clickCount int) MouseEvent {
+func buildMouseEvent(m uv.Mouse, subX, subY float64, entry *WidgetEntry, clickCount int) MouseEvent {
 	widgetID := ""
 	localX, localY := m.X, m.Y
 	if entry != nil {
@@ -229,6 +230,8 @@ func buildMouseEvent(m uv.Mouse, entry *WidgetEntry, clickCount int) MouseEvent 
 		Mod:        m.Mod,
 		ClickCount: clickCount,
 		WidgetID:   widgetID,
+		SubCellX:   subX,
+		SubCellY:   subY,
 	}
 }
 
@@ -280,6 +283,9 @@ func Run(root Widget) (runErr error) {
 
 	// Enable input reporting modes used by Terma (mouse + Kitty keyboard).
 	enableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard)
+	// Ask whether the mouse can be reported in pixels; see pixelPointer.
+	pointer := newPixelPointer()
+	_, _ = t.WriteString(pointer.query())
 
 	// shutdownTerminal restores the terminal to its normal state.
 	// Safe to call multiple times (Shutdown is idempotent).
@@ -728,6 +734,13 @@ func Run(root Widget) (runErr error) {
 				if !ok {
 					return
 				}
+				if seq := pointer.handle(ev); seq != "" {
+					_, _ = t.WriteString(seq)
+					_ = t.Flush()
+				}
+				// Pixel positions become cells, keeping the pointer's place
+				// within its cell for widgets that track it precisely.
+				ev, subX, subY := pointer.locateEvent(ev)
 				switch ev := ev.(type) {
 				case uv.WindowSizeEvent:
 					_ = t.Resize(ev.Width, ev.Height)
@@ -736,6 +749,8 @@ func Run(root Widget) (runErr error) {
 					height = ev.Height
 					t.Erase()
 					requestRender()
+				case uv.WindowPixelSizeEvent, uv.ModeReportEvent:
+					// Only used to set up pixel mouse reporting (above).
 				case uv.KeyPressEvent:
 					// Check for app-level quit keys
 					if ev.MatchString("ctrl+c") {
@@ -770,6 +785,9 @@ func Run(root Widget) (runErr error) {
 
 						// Re-enable mouse tracking
 						enableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard)
+						if pointer.enabled {
+							_, _ = t.WriteString(ansi.SetModeMouseExtSgrPixel)
+						}
 
 						// Redraw the screen
 						requestRender()
@@ -820,7 +838,7 @@ func Run(root Widget) (runErr error) {
 						focusEntry := renderer.FocusableAt(ev.X, ev.Y)
 						focusAt(ev.X, ev.Y)
 						clickCount := clickTracker.nextClick(entry.ID, ev.Button, ev.X, ev.Y, time.Now())
-						mouseEvent := buildMouseEvent(uv.Mouse(ev), entry, clickCount)
+						mouseEvent := buildMouseEvent(uv.Mouse(ev), subX, subY, entry, clickCount)
 
 						// Set drag state for mouse move tracking
 						dragState.isDragging = true
@@ -835,7 +853,7 @@ func Run(root Widget) (runErr error) {
 						// Also notify the focused widget when a non-focusable child was clicked.
 						// This lets focusable widgets (Tree/TextInput/TextArea, etc.) handle cursor placement.
 						if focusEntry != nil && focusEntry != entry {
-							focusMouseEvent := buildMouseEvent(uv.Mouse(ev), focusEntry, clickCount)
+							focusMouseEvent := buildMouseEvent(uv.Mouse(ev), subX, subY, focusEntry, clickCount)
 							if downHandler, ok := focusEntry.EventWidget.(MouseDownHandler); ok {
 								Log("  Focused widget has OnMouseDown")
 								downHandler.OnMouseDown(focusMouseEvent)
@@ -874,7 +892,7 @@ func Run(root Widget) (runErr error) {
 					if entry != nil {
 						Log("  Found widget: ID=%q Type=%T", entry.ID, entry.EventWidget)
 						clickCount := clickTracker.releaseCount(entry.ID, ev.Button)
-						mouseEvent := buildMouseEvent(uv.Mouse(ev), entry, clickCount)
+						mouseEvent := buildMouseEvent(uv.Mouse(ev), subX, subY, entry, clickCount)
 
 						if upHandler, ok := entry.EventWidget.(MouseUpHandler); ok {
 							Log("  Widget has OnMouseUp")
@@ -906,14 +924,22 @@ func Run(root Widget) (runErr error) {
 									Mod:        ev.Mod,
 									ClickCount: 1,
 									WidgetID:   dragEntry.ID,
+									SubCellX:   subX,
+									SubCellY:   subY,
 								}
 								moveHandler.OnMouseMove(mouseEvent)
-								display()
+								// Coalesced like any other render: pixel reporting
+								// can send many motion events per frame.
+								requestRender()
 							}
 						}
 					}
 
-					if hoverState.UpdatePointer(ev.X, ev.Y, ev.Mod, ev.Button, resolveHoverTarget, hoveredSignal) {
+					// Pixel reporting also sends motion within a cell. The hover
+					// target can't change until the pointer changes cell or a
+					// frame is drawn, and every frame reconciles hover itself.
+					if hoverState.pointerChanged(ev.X, ev.Y, ev.Mod, ev.Button) &&
+						hoverState.UpdatePointer(ev.X, ev.Y, ev.Mod, ev.Button, resolveHoverTarget, hoveredSignal) {
 						requestRender()
 					}
 

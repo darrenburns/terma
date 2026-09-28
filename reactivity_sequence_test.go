@@ -519,6 +519,159 @@ func TestReactivityScrollbarFollowsContentGrowth(t *testing.T) {
 	sequence.frame("Shrink removes scrollbar", func(s *reactivityScrollGrowthScene) { s.count.Set(1) })
 }
 
+type reactivityScrollbarScene struct {
+	scroll *ScrollState
+	count  Signal[int]
+	first  Signal[string]
+}
+
+func (s *reactivityScrollbarScene) Build(BuildContext) Widget {
+	return Column{Children: []Widget{
+		Button{ID: "button", Label: "Button"},
+		Scrollable{ID: "scroll", State: s.scroll, Focusable: true, Height: Cells(6), Child: reactivityBuilder{ID: "rows", build: func(BuildContext) Widget {
+			rows := make([]Widget, s.count.Get())
+			rows[0] = reactivityBench(s.first)
+			for i := 1; i < len(rows); i++ {
+				rows[i] = Text{Content: fmt.Sprintf("row %d", i)}
+			}
+			return Column{Children: rows}
+		}}},
+		Text{Content: "footer"},
+	}}
+}
+
+func newReactivityScrollbarScene(count int) func() *reactivityScrollbarScene {
+	return func() *reactivityScrollbarScene {
+		return &reactivityScrollbarScene{scroll: NewScrollState(), count: NewSignal(count), first: NewSignal("row 0")}
+	}
+}
+
+// reactivityScrollableNode finds the scene's Scrollable in the incremental renderer.
+func reactivityScrollableNode(t *testing.T, sequence *reactivitySequence[*reactivityScrollbarScene]) *widgetNode {
+	t.Helper()
+	var find func(*widgetNode) *widgetNode
+	find = func(node *widgetNode) *widgetNode {
+		if _, ok := node.widget.(Scrollable); ok {
+			return node
+		}
+		for _, child := range node.children {
+			if found := find(child); found != nil {
+				return found
+			}
+		}
+		return nil
+	}
+	node := find(sequence.actual.renderer.rootNode)
+	require.NotNil(t, node)
+	return node
+}
+
+// Moving the exact scroll position within a line moves the thumb but not the
+// content, so only the scrollbar column is repainted, with no build or layout.
+func TestReactivityScrollbarMovesWithinLineRepaintingOnlyScrollbar(t *testing.T) {
+	sequence := newReactivitySequence(t, 20, 9, newReactivityScrollbarScene(10))
+	sequence.frame("Initial", nil)
+	node := reactivityScrollableNode(t, sequence)
+	column, ok := scrollbarDamage(node)
+	require.True(t, ok)
+	viewport := node.bounds
+
+	requireScrollbarOnly := func(name string, stats RenderStats) {
+		t.Helper()
+		require.Equal(t, string(rendererFramePartial), stats.FrameMode, name)
+		require.Equal(t, []Rect{column}, stats.DamagedRects, name)
+		require.Zero(t, stats.BuildCount, name)
+		require.Zero(t, stats.LayoutCount, name)
+	}
+
+	contentText := func() string {
+		lines := strings.Split(sequence.actual.renderer.ScreenText(), "\n")
+		for i, line := range lines {
+			lines[i] = string([]rune(line)[:column.X])
+		}
+		return strings.Join(lines, "\n")
+	}
+	before := contentText()
+	requireScrollbarOnly("thumb moves", sequence.frame("Scroll 0.4 lines", func(s *reactivityScrollbarScene) { s.scroll.setPosition(0.4) }))
+	require.Equal(t, before, contentText(), "content has not moved")
+
+	stats := sequence.frame("Scroll 0.8 lines: content moves a line", func(s *reactivityScrollbarScene) { s.scroll.setPosition(0.8) })
+	require.Equal(t, string(rendererFrameReflow), stats.FrameMode)
+	for _, rect := range stats.DamagedRects {
+		require.Equal(t, rect, rect.Intersect(viewport), "scrolling repaints only the viewport, not what lies above or below it")
+	}
+
+	requireScrollbarOnly("thumb moves", sequence.frame("Scroll 1.2 lines", func(s *reactivityScrollbarScene) { s.scroll.setPosition(1.2) }))
+	sequence.frame("SetOffset snaps the thumb to a line", func(s *reactivityScrollbarScene) { s.scroll.SetOffset(3) })
+}
+
+// A focusable Scrollable's thumb takes the focus colour, which only changes
+// its scrollbar.
+func TestReactivityFocusRecoloursScrollbarThumb(t *testing.T) {
+	sequence := newReactivitySequence(t, 20, 9, newReactivityScrollbarScene(10))
+	sequence.frame("Initial", nil)
+	node := reactivityScrollableNode(t, sequence)
+	content := node.bounds
+	content.Width-- // Everything but the scrollbar column.
+
+	for _, id := range []string{"scroll", "button"} {
+		sequence.focus(id)
+		stats := sequence.frame("Focus "+id, nil)
+		require.NotEmpty(t, stats.DamagedRects)
+		for _, rect := range stats.DamagedRects {
+			require.False(t, rect.Intersects(content), "focus change repainted the scrolled content: %v", rect)
+		}
+	}
+}
+
+// Content pinned to the bottom shows its new end in the frame it grows, not
+// one frame later.
+func TestReactivityPinToBottomShowsNewRowsInSameFrame(t *testing.T) {
+	sequence := newReactivitySequence(t, 20, 9, func() *reactivityScrollbarScene {
+		scene := newReactivityScrollbarScene(3)()
+		scene.scroll.PinToBottom = true
+		return scene
+	})
+	sequence.frame("Initial", nil)
+	for count := 7; count <= 19; count += 4 {
+		sequence.frame(fmt.Sprintf("Grow to %d rows", count), func(s *reactivityScrollbarScene) { s.count.Set(count) })
+		require.Contains(t, sequence.actual.renderer.ScreenText(), fmt.Sprintf("row %d", count-1), "newest row is visible")
+		require.True(t, sequence.actual.root.scroll.IsAtBottom())
+	}
+	sequence.frame("Scroll up breaks the pin", func(s *reactivityScrollbarScene) { s.scroll.ScrollUp(2) })
+	sequence.frame("Growth no longer scrolls", func(s *reactivityScrollbarScene) { s.count.Set(25) })
+	require.NotContains(t, sequence.actual.renderer.ScreenText(), "row 24")
+}
+
+// Scrolling a line reuses the content's layout (a Scrollable measures its
+// content under five constraints, all of which must stay cached) and
+// repaints only the viewport.
+func TestReactivityScrollReusesContentLayout(t *testing.T) {
+	sequence := newReactivitySequence(t, 20, 9, newReactivityScrollbarScene(40))
+	sequence.frame("Initial", nil)
+	viewport := reactivityScrollableNode(t, sequence).bounds
+	for i := 1; i <= 3; i++ {
+		stats := sequence.frame(fmt.Sprintf("Scroll down %d", i), func(s *reactivityScrollbarScene) { s.scroll.ScrollDown(1) })
+		require.Zero(t, stats.BuildCount)
+		require.LessOrEqual(t, stats.LayoutCount, 2, "only the Scrollable and its parent are laid out again")
+		for _, rect := range stats.DamagedRects {
+			require.Equal(t, rect, rect.Intersect(viewport))
+		}
+	}
+}
+
+// A paint-only change to content scrolled out of view repaints nothing.
+func TestReactivityChangeOutOfViewRepaintsNothing(t *testing.T) {
+	sequence := newReactivitySequence(t, 20, 9, newReactivityScrollbarScene(20))
+	sequence.frame("Initial", nil)
+	sequence.frame("Scroll row 0 out of view", func(s *reactivityScrollbarScene) { s.scroll.SetOffset(5) })
+	stats := sequence.frame("Change row 0", func(s *reactivityScrollbarScene) { s.first.Set("row X") })
+	require.Equal(t, string(rendererFramePartial), stats.FrameMode)
+	require.Empty(t, stats.DamagedRects)
+	sequence.frame("Scroll it back into view", func(s *reactivityScrollbarScene) { s.scroll.SetOffset(0) })
+	require.Contains(t, sequence.actual.renderer.ScreenText(), "row X")
+}
+
 type reactivityOverflowScene struct {
 	badge Signal[string]
 	body  Signal[string]

@@ -1,16 +1,18 @@
 package terma
 
-import "github.com/darrenburns/terma/layout"
+import (
+	"math"
+
+	"github.com/darrenburns/terma/layout"
+)
 
 // Vertical scrollbar characters for smooth rendering.
-// These are "lower eighths" Unicode block elements (U+2581-U+2587).
-// Index 0 = 1/8 filled from bottom, index 6 = 7/8 filled, index 7 = space.
-var verticalScrollbarChars = []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", " "}
+// These are "lower eighths" Unicode block elements (U+2581-U+2587):
+// index i fills the bottom (i+1)/8 of a cell.
+var verticalScrollbarChars = []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇"}
 
-const (
-	scrollbarFullBlock    = "█"
-	scrollbarSubCellCount = 8
-)
+// scrollbarSubCellCount is how many steps a scrollbar cell is divided into.
+const scrollbarSubCellCount = 8
 
 // ScrollState holds scroll state for a Scrollable widget.
 // It is the source of truth for scroll position, and must be provided to Scrollable.
@@ -23,12 +25,20 @@ const (
 //	scrollable := terma.Scrollable{State: scrollState, ...}
 //	list := terma.List[string]{ScrollState: scrollState, ...}
 type ScrollState struct {
-	OffsetX        Signal[int] // Current horizontal scroll offset
-	Offset         Signal[int] // Current vertical scroll offset
-	viewportWidth  int         // Set by Scrollable during layout
-	viewportHeight int         // Set by Scrollable during layout
-	contentWidth   int         // Set by Scrollable during layout
-	contentHeight  int         // Set by Scrollable during layout
+	OffsetX Signal[int] // Current horizontal scroll offset
+	Offset  Signal[int] // Current vertical scroll offset
+
+	// position is the exact vertical scroll position in lines, which Offset
+	// rounds. Content can only be drawn at whole lines, but the scrollbar
+	// thumb is drawn at position, so dragging it with a pixel-precise pointer
+	// moves it smoothly. It is read while painting the scrollbar, so changing
+	// it alone repaints only the scrollbar.
+	position Signal[float64]
+
+	viewportWidth  int // Set by Scrollable during layout
+	viewportHeight int // Set by Scrollable during layout
+	contentWidth   int // Set by Scrollable during layout
+	contentHeight  int // Set by Scrollable during layout
 
 	scrollbarDragging   bool
 	scrollbarDragOffset float64
@@ -73,6 +83,7 @@ func NewScrollState() *ScrollState {
 	return &ScrollState{
 		OffsetX:  NewSignal(0),
 		Offset:   NewSignal(0),
+		position: NewSignal(0.0),
 		isPinned: true,
 	}
 }
@@ -107,6 +118,27 @@ func (s *ScrollState) SetOffset(offset int) {
 		offset = max
 	}
 	s.Offset.Set(offset)
+	s.position.Set(float64(offset))
+}
+
+// setPosition scrolls to an exact position in lines, clamped to valid bounds.
+// Content is drawn at the nearest whole line; the scrollbar thumb follows the
+// exact position.
+func (s *ScrollState) setPosition(position float64) {
+	position = clampFloat(position, 0, float64(s.maxOffset()))
+	s.Offset.Set(int(math.Round(position)))
+	s.position.Set(position)
+}
+
+// thumbPosition returns the position the scrollbar thumb shows while content
+// is drawn at offset. That is the exact position, unless the offset has since
+// been moved away from it (Offset is a public signal, and layout clamps it).
+func (s *ScrollState) thumbPosition(offset int) float64 {
+	position := s.position.Get()
+	if math.Abs(position-float64(offset)) > 0.5 {
+		return float64(offset)
+	}
+	return position
 }
 
 // ScrollToView ensures a region (y to y+height) is visible in the viewport.
@@ -247,19 +279,27 @@ func (s *ScrollState) ScrollToBottom() {
 	}
 }
 
+// pinnedToEnd reports whether the next layout should show the end of the
+// content: PinToBottom is on, the pin is engaged, and the last frame was
+// scrolled to the bottom. The first layout is never pinned, so content that
+// starts out taller than the viewport is shown from the top.
+func (s *ScrollState) pinnedToEnd() bool {
+	return s.PinToBottom && s.isPinned && s.contentHeight > 0 && s.IsAtBottom()
+}
+
 // updateLayout is called by Scrollable to update viewport/content dimensions.
 // Note: Does not clamp offset here because Layout may be called multiple times
 // with different constraints (e.g., by floating widgets). Clamping is deferred
 // to Render where we have the final dimensions.
-// If PinToBottom is enabled and pinned, auto-scrolls when content grows.
+//
+// If the content was pinned to the bottom, the layout has already scrolled to
+// the new end (see pinnedToEnd), so the offset is brought into line with it.
 func (s *ScrollState) updateLayout(viewportHeight, contentHeight int) {
-	oldContentHeight := s.contentHeight
+	pinned := s.pinnedToEnd()
 	s.viewportHeight = viewportHeight
 	s.contentHeight = contentHeight
-
-	// Auto-scroll to bottom when pinned and content grows
-	if s.PinToBottom && s.isPinned && contentHeight > oldContentHeight && oldContentHeight > 0 {
-		s.Offset.Set(s.maxOffset())
+	if pinned {
+		s.SetOffset(s.maxOffset())
 	}
 }
 
@@ -345,47 +385,32 @@ func (s Scrollable) OnMouseDown(event MouseEvent) {
 		return
 	}
 
+	s.State.scrollbarDragging = false
 	cache := s.State.layoutCache
 	if !cache.valid || !cache.scrollableY {
-		s.State.scrollbarDragging = false
 		return
 	}
 
 	localX, localY := s.contentCoords(event, cache)
 	if !s.isOnScrollbar(localX, localY, cache) {
-		s.State.scrollbarDragging = false
 		return
 	}
 
-	maxScroll := s.maxScrollOffset()
-	if maxScroll <= 0 {
-		s.State.scrollbarDragging = false
+	thumb, ok := s.scrollbarThumb(cache)
+	if !ok {
 		return
 	}
 
-	thumbPos, thumbSize := scrollbarThumbMetrics(
-		s.getScrollOffset(),
-		maxScroll,
-		cache.contentHeight,
-		s.State.contentHeight,
-	)
-	if thumbSize <= 0 {
-		s.State.scrollbarDragging = false
-		return
-	}
-
-	pointerY := float64(localY) + 0.5
-	thumbEnd := thumbPos + thumbSize
-	if pointerY >= thumbPos && pointerY < thumbEnd {
-		// Preserve the grab position within the thumb so drag feels natural.
-		s.State.scrollbarDragOffset = pointerY - thumbPos
-		s.State.scrollbarDragging = true
-		return
-	}
-
-	// Clicking the track moves the thumb toward the pointer and starts dragging.
-	s.State.scrollbarDragOffset = thumbSize / 2
+	pointerY := float64(localY) + event.SubCellY
 	s.State.scrollbarDragging = true
+	if thumb.contains(pointerY) {
+		// Preserve the grab position within the thumb so drag feels natural.
+		s.State.scrollbarDragOffset = pointerY - thumb.startCells()
+		return
+	}
+
+	// Clicking the track centres the thumb on the pointer and starts dragging.
+	s.State.scrollbarDragOffset = thumb.lengthCells() / 2
 	s.dragScrollbar(pointerY)
 }
 
@@ -415,8 +440,7 @@ func (s Scrollable) OnMouseMove(event MouseEvent) {
 	}
 
 	_, localY := s.contentCoords(event, cache)
-	pointerY := float64(localY) + 0.5
-	s.dragScrollbar(pointerY)
+	s.dragScrollbar(float64(localY) + event.SubCellY)
 }
 
 // OnLayout caches layout metrics for scrollbar hit-testing and dragging.
@@ -488,9 +512,11 @@ func (s Scrollable) BuildContainerLayoutNode(ctx BuildContext, children []layout
 
 	scrollOffsetX := 0
 	scrollOffsetY := 0
+	pinToEnd := false
 	if s.State != nil {
 		scrollOffsetX = s.State.OffsetX.Get()
 		scrollOffsetY = s.State.Offset.Get()
+		pinToEnd = s.State.pinnedToEnd()
 	}
 
 	scrollbarWidth := 0
@@ -507,6 +533,7 @@ func (s Scrollable) BuildContainerLayoutNode(ctx BuildContext, children []layout
 		Child:           childNode,
 		ScrollOffsetX:   scrollOffsetX,
 		ScrollOffsetY:   scrollOffsetY,
+		PinToEndY:       pinToEnd,
 		ScrollbarWidth:  scrollbarWidth,
 		ScrollbarHeight: 0,
 		Padding:         padding,
@@ -635,43 +662,42 @@ func (s Scrollable) isOnScrollbar(localX, localY int, cache scrollableLayoutCach
 	return localX == cache.contentWidth-1
 }
 
+// dragScrollbar places the thumb under the pointer, keeping the point where it
+// was grabbed, and scrolls to the exact position that draws it there.
 func (s Scrollable) dragScrollbar(pointerY float64) {
 	if s.State == nil {
 		return
 	}
 
 	cache := s.State.layoutCache
-	if !cache.valid || !cache.scrollableY || cache.contentHeight <= 0 {
+	if !cache.valid || !cache.scrollableY {
 		return
 	}
 
-	maxScroll := s.maxScrollOffset()
-	if maxScroll <= 0 {
-		s.setScrollOffset(0)
+	thumb, ok := s.scrollbarThumb(cache)
+	travel := thumb.travelCells()
+	if !ok || travel <= 0 {
+		s.State.setPosition(0)
 		return
 	}
 
-	_, thumbSize := scrollbarThumbMetrics(
-		s.getScrollOffset(),
-		maxScroll,
-		cache.contentHeight,
-		s.State.contentHeight,
-	)
-
-	availableTrack := float64(cache.contentHeight) - thumbSize
-	if availableTrack <= 0 {
-		s.setScrollOffset(0)
-		return
-	}
-
-	thumbPos := clampFloat(pointerY-s.State.scrollbarDragOffset, 0, availableTrack)
-	positionRatio := thumbPos / availableTrack
-	newOffset := int(positionRatio*float64(maxScroll) + 0.5)
-	s.setScrollOffset(newOffset)
+	thumbStart := clampFloat(pointerY-s.State.scrollbarDragOffset, 0, travel)
+	s.State.setPosition(thumbStart / travel * float64(s.maxScrollOffset()))
 
 	if s.State.PinToBottom {
 		s.State.isPinned = s.State.IsAtBottom()
 	}
+}
+
+// scrollbarThumb returns the thumb as it is currently drawn, or false if the
+// content can't scroll.
+func (s Scrollable) scrollbarThumb(cache scrollableLayoutCache) (scrollbarThumb, bool) {
+	maxScroll := s.maxScrollOffset()
+	if maxScroll <= 0 || cache.contentHeight <= 0 {
+		return scrollbarThumb{}, false
+	}
+	position := s.State.thumbPosition(s.getScrollOffset())
+	return newScrollbarThumb(position, maxScroll, cache.contentHeight, s.State.contentHeight), true
 }
 
 // Render draws the scrollable widget and its child.
@@ -679,75 +705,69 @@ func (s Scrollable) Render(ctx *RenderContext) {
 	// No-op - rendering is done via renderTree
 }
 
-// scrollbarThumbMetrics calculates smooth scrollbar thumb position and size.
-// Returns position and size as floats for sub-cell precision.
-func scrollbarThumbMetrics(scrollOffset, maxScroll, viewportHeight, contentHeight int) (position, size float64) {
-	if contentHeight <= 0 || viewportHeight <= 0 {
-		return 0, float64(viewportHeight)
-	}
+// scrollbarThumb is the thumb's extent along the scrollbar track, in eighths
+// of a cell.
+type scrollbarThumb struct {
+	start, length, track int
+}
 
-	// Calculate thumb size proportional to viewport/content ratio
-	sizeRatio := float64(viewportHeight) / float64(contentHeight)
-	size = float64(viewportHeight) * sizeRatio
-	if size < 1.0 {
-		size = 1.0
+// newScrollbarThumb sizes and places the thumb on a track of trackHeight cells
+// for content of contentHeight lines scrolled to position (of maxScroll).
+// The length depends only on the track and content heights, so the thumb
+// keeps exactly the same size wherever it is drawn.
+func newScrollbarThumb(position float64, maxScroll, trackHeight, contentHeight int) scrollbarThumb {
+	track := trackHeight * scrollbarSubCellCount
+	thumb := scrollbarThumb{length: track, track: track}
+	if track <= 0 || contentHeight <= trackHeight {
+		return thumb
 	}
-	if size > float64(viewportHeight) {
-		size = float64(viewportHeight)
-	}
-
-	// Calculate thumb position within available track space
+	length := int(math.Round(float64(track) * float64(trackHeight) / float64(contentHeight)))
+	thumb.length = min(max(length, scrollbarSubCellCount), track)
 	if maxScroll > 0 {
-		availableTrack := float64(viewportHeight) - size
-		positionRatio := float64(scrollOffset) / float64(maxScroll)
-		position = availableTrack * positionRatio
+		ratio := clampFloat(position/float64(maxScroll), 0, 1)
+		thumb.start = int(math.Round(ratio * float64(thumb.track-thumb.length)))
 	}
-
-	return position, size
+	return thumb
 }
 
-// getTopEdgeChar returns the character for the top edge of the scrollbar thumb.
-// startSubOffset indicates how far into the cell the thumb starts (0-7).
-// Since lower-eighth blocks fill from bottom, we return the complementary block.
-func getTopEdgeChar(startSubOffset int) string {
-	if startSubOffset <= 0 {
-		return scrollbarFullBlock
-	}
-	if startSubOffset >= scrollbarSubCellCount {
-		return " "
-	}
-	// Thumb fills from bottom, so invert: offset 2 means 6/8 filled = index 5
-	return verticalScrollbarChars[scrollbarSubCellCount-1-startSubOffset]
+func (t scrollbarThumb) startCells() float64 {
+	return float64(t.start) / scrollbarSubCellCount
 }
 
-// getBottomEdgeChar returns the character for the bottom edge of the scrollbar thumb.
-// endSubOffset indicates how far into the cell the thumb extends from the top (0-8).
-// We draw track color filling from the bottom, so we need the complement.
-func getBottomEdgeChar(endSubOffset int) string {
-	if endSubOffset >= scrollbarSubCellCount {
-		// Thumb fills entire cell - return space (shows background = thumb)
-		return " "
-	}
-	if endSubOffset <= 0 {
-		// Thumb doesn't extend into this cell - return full block (shows foreground = track)
-		return scrollbarFullBlock
-	}
-	// Thumb extends endSubOffset/8 from top, track fills (8-endSubOffset)/8 from bottom
-	trackFill := scrollbarSubCellCount - endSubOffset
-	return verticalScrollbarChars[trackFill-1]
+func (t scrollbarThumb) lengthCells() float64 {
+	return float64(t.length) / scrollbarSubCellCount
 }
 
-// renderScrollbar draws the scrollbar on the right side of the widget.
-// Uses Unicode lower-eighth block characters for sub-cell precision.
+// travelCells is how far the thumb can move along the track.
+func (t scrollbarThumb) travelCells() float64 {
+	return float64(t.track-t.length) / scrollbarSubCellCount
+}
+
+func (t scrollbarThumb) contains(y float64) bool {
+	start := t.startCells()
+	return y >= start && y < start+t.lengthCells()
+}
+
+// cover returns the part of track cell y that the thumb covers, as eighths
+// measured down from the top of the cell: [top, bottom).
+func (t scrollbarThumb) cover(y int) (top, bottom int) {
+	cellTop := y * scrollbarSubCellCount
+	top = min(max(t.start-cellTop, 0), scrollbarSubCellCount)
+	bottom = min(max(t.start+t.length-cellTop, 0), scrollbarSubCellCount)
+	return top, bottom
+}
+
+// renderScrollbar draws the scrollbar down the right edge of ctx. The thumb is
+// placed to an eighth of a cell: cells it partly covers use lower-block
+// characters, and cells it fills are drawn as background colour, so the thumb
+// looks the same whatever the font.
 func (s Scrollable) renderScrollbar(ctx *RenderContext, scrollOffset int, focused bool) {
 	if s.State == nil {
 		return
 	}
 
-	scrollbarX := ctx.Width - 1
 	trackHeight := ctx.Height
 	contentHeight := s.State.contentHeight
-
 	if trackHeight <= 0 || contentHeight <= 0 {
 		return
 	}
@@ -768,60 +788,25 @@ func (s Scrollable) renderScrollbar(ctx *RenderContext, scrollOffset int, focuse
 		thumbColor = theme.ScrollbarThumb
 	}
 
-	// Calculate thumb position and size with floating-point precision
-	maxScroll := s.maxScrollOffset()
-	thumbPos, thumbSize := scrollbarThumbMetrics(scrollOffset, maxScroll, trackHeight, contentHeight)
-
-	// Convert to sub-cell units (multiply by 8)
-	startSubCell := thumbPos * float64(scrollbarSubCellCount)
-	endSubCell := (thumbPos + thumbSize) * float64(scrollbarSubCellCount)
-
-	// Get cell indices and sub-cell offsets
-	startCellIndex := int(startSubCell) / scrollbarSubCellCount
-	startSubOffset := int(startSubCell) % scrollbarSubCellCount
-	endCellIndex := int(endSubCell) / scrollbarSubCellCount
-	endSubOffset := int(endSubCell) % scrollbarSubCellCount
-
-	// Draw each cell of the track
+	position := s.State.thumbPosition(scrollOffset)
+	thumb := newScrollbarThumb(position, s.maxScrollOffset(), trackHeight, contentHeight)
+	x := ctx.Width - 1
 	for y := 0; y < trackHeight; y++ {
-		var char string
-		var style Style
-
-		// Check if this cell is outside the thumb
-		// Note: when endSubOffset=0, thumb ends exactly at cell boundary, so endCellIndex is outside
-		outsideThumb := y < startCellIndex || y > endCellIndex || (y == endCellIndex && endSubOffset == 0)
-
-		if outsideThumb {
-			// Track (outside thumb) - use space with background color for consistent appearance
-			char = " "
-			style = Style{BackgroundColor: trackColor}
-		} else if y == startCellIndex && y == endCellIndex {
-			// Thumb fits within single cell
-			fillAmount := endSubOffset - startSubOffset
-			if fillAmount <= 0 {
-				char = " "
-			} else if fillAmount >= scrollbarSubCellCount {
-				char = scrollbarFullBlock
-			} else {
-				char = verticalScrollbarChars[fillAmount-1]
-			}
-			style = Style{ForegroundColor: thumbColor, BackgroundColor: trackColor}
-		} else if y == startCellIndex {
-			// Top edge of thumb - partial block, thumb fills from bottom
-			char = getTopEdgeChar(startSubOffset)
-			style = Style{ForegroundColor: thumbColor, BackgroundColor: trackColor}
-		} else if y == endCellIndex {
-			// Bottom edge of thumb - partial block, thumb is on top
-			// Use Reverse so terminal swaps fg/bg, matching how track renders
-			char = getBottomEdgeChar(endSubOffset)
-			style = Style{ForegroundColor: thumbColor, BackgroundColor: trackColor, Reverse: true}
-		} else {
-			// Middle of thumb - full block
-			char = scrollbarFullBlock
-			style = Style{ForegroundColor: thumbColor}
+		top, bottom := thumb.cover(y)
+		switch {
+		case bottom <= top:
+			ctx.DrawStyledText(x, y, " ", Style{BackgroundColor: trackColor})
+		case top == 0 && bottom == scrollbarSubCellCount:
+			ctx.DrawStyledText(x, y, " ", Style{BackgroundColor: thumbColor})
+		case top > 0:
+			// The thumb starts partway down the cell and fills the rest.
+			char := verticalScrollbarChars[scrollbarSubCellCount-top-1]
+			ctx.DrawStyledText(x, y, char, Style{ForegroundColor: thumbColor, BackgroundColor: trackColor})
+		default:
+			// The thumb ends partway down the cell; the track fills the rest.
+			char := verticalScrollbarChars[scrollbarSubCellCount-bottom-1]
+			ctx.DrawStyledText(x, y, char, Style{ForegroundColor: trackColor, BackgroundColor: thumbColor})
 		}
-
-		ctx.DrawStyledText(scrollbarX, y, char, style)
 	}
 }
 

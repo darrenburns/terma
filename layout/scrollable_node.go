@@ -32,6 +32,10 @@ type ScrollableNode struct {
 	// ScrollOffsetY is the vertical scroll offset in cells.
 	ScrollOffsetY int
 
+	// PinToEndY scrolls to the end of the content, ignoring ScrollOffsetY, so
+	// content kept pinned to the bottom shows its new end in the same frame.
+	PinToEndY bool
+
 	// ScrollbarWidth is the space reserved for a vertical scrollbar (default 1).
 	// Set to 0 to disable vertical scrollbar space reservation.
 	ScrollbarWidth int
@@ -251,6 +255,9 @@ func (s *ScrollableNode) ComputeLayout(constraints Constraints) ComputedLayout {
 	maxScrollX := max(0, virtualWidth-viewportWidth+actualScrollbarWidth)
 
 	clampedScrollY := max(0, min(s.ScrollOffsetY, maxScrollY))
+	if s.PinToEndY {
+		clampedScrollY = maxScrollY
+	}
 	clampedScrollX := max(0, min(s.ScrollOffsetX, maxScrollX))
 
 	box := BoxModel{

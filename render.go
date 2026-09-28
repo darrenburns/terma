@@ -58,6 +58,11 @@ type RenderContext struct {
 	Width, Height int
 	// Clip rect in absolute screen coordinates - all drawing is clipped to this rect
 	clip Rect
+	// visible is the clip rect before any repaint area is applied to it: all
+	// that this widget could ever show. The areas the renderer records as
+	// painted (and so damages when they change) are clipped to it, so content
+	// scrolled out of view never causes repaints.
+	visible Rect
 	// Focus collector for gathering focusable widgets
 	focusCollector *FocusCollector
 	// Focus manager for checking focus state
@@ -85,6 +90,7 @@ func NewRenderContext(terminal CellBuffer, width, height int, fc *FocusCollector
 		Width:          width,
 		Height:         height,
 		clip:           Rect{X: 0, Y: 0, Width: width, Height: height},
+		visible:        Rect{X: 0, Y: 0, Width: width, Height: height},
 		focusCollector: fc,
 		focusManager:   fm,
 		buildContext:   bc,
@@ -130,6 +136,7 @@ func (ctx *RenderContext) SubContext(xOffset, yOffset, width, height int) *Rende
 		Width:          width,
 		Height:         height,
 		clip:           newClip,
+		visible:        ctx.visible.Intersect(childBounds),
 		focusCollector: ctx.focusCollector,
 		focusManager:   ctx.focusManager,
 		buildContext:   ctx.buildContext,
@@ -164,6 +171,7 @@ func (ctx *RenderContext) OverflowSubContext(xOffset, yOffset, width, height int
 		Width:          width,
 		Height:         height,
 		clip:           ctx.clip, // Don't intersect - allow overflow
+		visible:        ctx.visible,
 		focusCollector: ctx.focusCollector,
 		focusManager:   ctx.focusManager,
 		buildContext:   ctx.buildContext,
@@ -207,6 +215,7 @@ func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, sc
 		Width:          width,
 		Height:         height,
 		clip:           newClip,
+		visible:        ctx.visible.Intersect(viewportBounds),
 		focusCollector: ctx.focusCollector,
 		focusManager:   ctx.focusManager,
 		buildContext:   ctx.buildContext,

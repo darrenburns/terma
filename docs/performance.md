@@ -32,6 +32,7 @@ timing baseline.
 | `ReactivityTextSize` | How do fixed-width text, stable auto-width text, and growing/shrinking auto-width text compare in a 100-leaf tree? |
 | `ReactivityListCursor` | What does moving a focused list's cursor between the first two items cost with default versus custom item rendering, at 10, 100, and 1,000 items? |
 | `ReactivityBatch` | What does 1, 10, or 100 signal writes followed by one update cost, targeting the same leaf or distinct leaves in a 1,000-leaf tree? |
+| `ReactivityScroll` | What does scrolling a 30-row `Scrollable` by a line cost with 100 and 1,000 rows, and moving its thumb by less than a line? |
 
 All scenarios use a fixed 120 × 40 viewport. Leaf trees have ten fixed-size leaves
 per row; leaves beyond the first 400 are offscreen. Lists have one item per row;
@@ -269,6 +270,32 @@ overlays also marks the whole screen damaged.
 | --- | ---: | ---: | ---: | ---: |
 | Leaf under the dialog | 1,286 µs | 136 µs | 5 → 1 | 4,800 → 12 |
 | Text inside the dialog | 1,259 µs | 112 µs | 4 → 1 | 4,800 → 12 |
+
+## Scrolling
+
+Scrolling by a line changes only the `Scrollable`'s offset, but used to lay out
+all of its content again: a `Scrollable` whose content overflows measures it
+under five constraints, and each node cached only four, so every measurement
+missed. Nodes now cache eight. Damage and recorded paint areas are also clipped
+to what each node can show, so content scrolled out of view no longer damages
+the rows above and below the viewport (or anything else) when it moves.
+
+The scrollbar thumb is drawn at the exact scroll position, which can fall
+between lines while it's dragged. A `Scrollable` reads signals only while
+drawing its scrollbar, so when only that position (or its focus colour) changes,
+just the scrollbar column is repainted, with no build or layout.
+
+[Before](benchmarks/reactivity-scroll-before.txt) and
+[after](benchmarks/reactivity-scroll.txt), medians of five samples:
+
+| Change | Before | After | Layouts | Damaged cells |
+| --- | ---: | ---: | ---: | ---: |
+| Scroll a line, 100 rows | 214.6 µs | 62.2 µs | 507 → 2 | 360 → 270 |
+| Scroll a line, 1,000 rows | 1,576.8 µs | 209.9 µs | 5,007 → 2 | 360 → 270 |
+| Move the thumb less than a line | — | 3.8 µs | 0 | 30 |
+
+What remains in a line scroll is proportional to the content: every row moved,
+so the measuring pass visits each one to update hit targets and paint areas.
 
 ## Correctness checks
 

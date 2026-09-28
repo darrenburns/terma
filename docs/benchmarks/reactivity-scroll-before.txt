@@ -1,0 +1,16 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/darrenburns/terma
+cpu: Apple M4 Pro
+BenchmarkReactivityScroll/line/rows=100-14         	    2000	    208795 ns/op	         0 builds/op	       360.0 damage-cells/op	         1.000 full/op	       507.0 layouts/op	        44.50 paints/op	         0 partial/op	         1.000 sets/op	  356372 B/op	    1904 allocs/op
+BenchmarkReactivityScroll/line/rows=100-14         	    2000	    210719 ns/op	         0 builds/op	       360.0 damage-cells/op	         1.000 full/op	       507.0 layouts/op	        44.50 paints/op	         0 partial/op	         1.000 sets/op	  356365 B/op	    1904 allocs/op
+BenchmarkReactivityScroll/line/rows=100-14         	    2000	    218212 ns/op	         0 builds/op	       360.0 damage-cells/op	         1.000 full/op	       507.0 layouts/op	        44.50 paints/op	         0 partial/op	         1.000 sets/op	  356364 B/op	    1904 allocs/op
+BenchmarkReactivityScroll/line/rows=100-14         	    2000	    214632 ns/op	         0 builds/op	       360.0 damage-cells/op	         1.000 full/op	       507.0 layouts/op	        44.50 paints/op	         0 partial/op	         1.000 sets/op	  356367 B/op	    1904 allocs/op
+BenchmarkReactivityScroll/line/rows=100-14         	    2000	    215040 ns/op	         0 builds/op	       360.0 damage-cells/op	         1.000 full/op	       507.0 layouts/op	        44.50 paints/op	         0 partial/op	         1.000 sets/op	  356366 B/op	    1904 allocs/op
+BenchmarkReactivityScroll/line/rows=1000-14        	    2000	   1560170 ns/op	         0 builds/op	       360.0 damage-cells/op	         1.000 full/op	      5007 layouts/op	        44.50 paints/op	         0 partial/op	         1.000 sets/op	 3060706 B/op	   11803 allocs/op
+BenchmarkReactivityScroll/line/rows=1000-14        	    2000	   1524011 ns/op	         0 builds/op	       360.0 damage-cells/op	         1.000 full/op	      5007 layouts/op	        44.50 paints/op	         0 partial/op	         1.000 sets/op	 3060698 B/op	   11803 allocs/op
+BenchmarkReactivityScroll/line/rows=1000-14        	    2000	   1597606 ns/op	         0 builds/op	       360.0 damage-cells/op	         1.000 full/op	      5007 layouts/op	        44.50 paints/op	         0 partial/op	         1.000 sets/op	 3060695 B/op	   11803 allocs/op
+BenchmarkReactivityScroll/line/rows=1000-14        	    2000	   1576790 ns/op	         0 builds/op	       360.0 damage-cells/op	         1.000 full/op	      5007 layouts/op	        44.50 paints/op	         0 partial/op	         1.000 sets/op	 3060697 B/op	   11803 allocs/op
+BenchmarkReactivityScroll/line/rows=1000-14        	    2000	   1598832 ns/op	         0 builds/op	       360.0 damage-cells/op	         1.000 full/op	      5007 layouts/op	        44.50 paints/op	         0 partial/op	         1.000 sets/op	 3060697 B/op	   11803 allocs/op
+PASS
+ok  	github.com/darrenburns/terma	18.264s

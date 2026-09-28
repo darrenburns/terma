@@ -26,8 +26,8 @@ Scrollable{
 | `Width` | `Dimension` | — | Container width |
 | `Height` | `Dimension` | — | Container height |
 | `Style` | `Style` | — | Padding, border, colors |
-| `ScrollbarThumbColor` | `Color` | White/BrightCyan | Scrollbar thumb color |
-| `ScrollbarTrackColor` | `Color` | BrightBlack | Scrollbar track color |
+| `ScrollbarThumbColor` | `Color` | Theme `ScrollbarThumb` (`Primary` when focused) | Scrollbar thumb color |
+| `ScrollbarTrackColor` | `Color` | Theme `ScrollbarTrack` | Scrollbar track color |
 | `Click` | `func(MouseEvent)` | — | Click callback |
 | `MouseDown` | `func(MouseEvent)` | — | Mouse down callback |
 | `MouseUp` | `func(MouseEvent)` | — | Mouse up callback |
@@ -212,13 +212,32 @@ Dock{
 
 ## Scrollbar Rendering
 
-The scrollbar uses Unicode block characters for smooth sub-cell precision:
+The thumb is placed to an eighth of a cell. Cells it partly covers use the
+lower block characters `▁ ▂ ▃ ▄ ▅ ▆ ▇`; cells it fills are drawn as background
+colour. Its length depends only on the viewport and content heights, so it
+stays exactly the same size as it moves.
 
-```
-▁ ▂ ▃ ▄ ▅ ▆ ▇ █
-```
+## Smooth Scrolling
 
-This allows the scrollbar thumb to smoothly track scroll position even with small viewports.
+Content can only be drawn at whole lines, but the thumb is drawn at the exact
+scroll position, which can fall between lines. Dragging the thumb keeps it under
+the point where it was grabbed while the content follows to the nearest line.
+Moving the thumb within a line repaints only the scrollbar.
+
+In terminals that support SGR-Pixels mouse reporting (such as kitty and
+Ghostty), Terma reads the pointer in pixels, so the thumb follows the pointer to
+an eighth of a cell rather than jumping a cell at a time. The mode is switched on
+only when the terminal confirms it supports it and reports its size in pixels;
+set `TERMA_DISABLE_PIXEL_MOUSE=1` to keep cell-based reporting. Widgets can use
+the pointer's position within its cell from `MouseEvent.SubCellX` and
+`MouseEvent.SubCellY`.
+
+## Pinning to the Bottom
+
+With `PinToBottom` set, a `ScrollState` scrolled to the bottom stays there as its
+content grows or shrinks, showing the new end in the same frame. Scrolling up
+releases the pin and scrolling back to the bottom restores it. Content that is
+taller than the viewport when first shown starts at the top.
 
 ## Notes
 

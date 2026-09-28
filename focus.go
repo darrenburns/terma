@@ -34,6 +34,11 @@ type MouseEvent struct {
 	Mod        uv.KeyMod
 	ClickCount int // 1=single, 2=double, 3=triple, etc
 	WidgetID   string
+
+	// SubCellX and SubCellY place the pointer within its cell, from 0 (left or
+	// top edge) up to 1. They are exact when the terminal reports the pointer
+	// in pixels, and 0.5 (the cell's centre) otherwise.
+	SubCellX, SubCellY float64
 }
 
 // HoverEventType identifies the hover transition kind.
