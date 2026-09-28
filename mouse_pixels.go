@@ -2,6 +2,8 @@ package terma
 
 import (
 	"math"
+	"strconv"
+	"strings"
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
@@ -110,4 +112,84 @@ func (p *pixelPointer) locate(m uv.Mouse) (cell uv.Mouse, subX, subY float64) {
 	cellX, cellY := math.Floor(x), math.Floor(y)
 	m.X, m.Y = int(cellX), int(cellY)
 	return m, x - cellX, y - cellY
+}
+
+// sgrMouseRepair reassembles SGR mouse reports that the event decoder splits
+// apart. With pixel reporting, kitty and Ghostty report a pointer outside the
+// window with negative coordinates, which the decoder doesn't accept: it stops
+// at the "-", returning the report's start as an UnknownEvent and the rest as
+// key presses. Left alone, those keys reach the app (the pointer is reported
+// leaving the window as it gains or loses focus, so "m" or "M" arrives then),
+// and a release outside the window is lost, leaving a drag stuck.
+type sgrMouseRepair struct {
+	held []byte // The report so far, or nil when none is being held.
+}
+
+// sgrMouseMaxLen bounds a held report, so a stray "\x1b[<" can't swallow
+// typing for long.
+const sgrMouseMaxLen = 32
+
+// feed returns the event to handle in place of event: nil while a split
+// report is being held, the mouse event it reports once it is complete, or
+// event itself.
+func (r *sgrMouseRepair) feed(event uv.Event) uv.Event {
+	switch ev := event.(type) {
+	case uv.UnknownEvent:
+		if strings.HasPrefix(string(ev), "\x1b[<") {
+			r.held = []byte(ev)
+			return nil
+		}
+	case uv.KeyPressEvent:
+		if r.held == nil || len(ev.Text) != 1 {
+			break
+		}
+		switch c := ev.Text[0]; {
+		case c >= '0' && c <= '9', c == ';', c == '-':
+			r.held = append(r.held, c)
+			if len(r.held) > sgrMouseMaxLen {
+				r.reset()
+			}
+			return nil
+		case c == 'M', c == 'm':
+			repaired := repairSgrMouse(append(r.held, c))
+			r.reset()
+			return repaired
+		}
+	}
+	// Anything else ends the report: drop what was held.
+	r.reset()
+	return event
+}
+
+// reset drops any held report.
+func (r *sgrMouseRepair) reset() {
+	r.held = nil
+}
+
+// repairSgrMouse decodes an SGR mouse report with its negative coordinates
+// replaced by 0, returning nil if it isn't a mouse report.
+func repairSgrMouse(seq []byte) uv.Event {
+	body := string(seq[len("\x1b[<") : len(seq)-1])
+	params := strings.Split(body, ";")
+	if len(params) != 3 {
+		return nil
+	}
+	for i, param := range params {
+		n, err := strconv.Atoi(param)
+		if err != nil {
+			return nil
+		}
+		params[i] = strconv.Itoa(max(n, 0))
+	}
+	repaired := "\x1b[<" + strings.Join(params, ";") + string(seq[len(seq)-1])
+	var decoder uv.EventDecoder
+	n, event := decoder.Decode([]byte(repaired))
+	if n != len(repaired) {
+		return nil
+	}
+	switch event.(type) {
+	case uv.MouseClickEvent, uv.MouseReleaseEvent, uv.MouseMotionEvent, uv.MouseWheelEvent:
+		return event
+	}
+	return nil
 }
