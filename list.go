@@ -2,6 +2,8 @@ package terma
 
 import (
 	"fmt"
+
+	uv "github.com/charmbracelet/ultraviolet"
 )
 
 // ListState holds the state for a List widget.
@@ -456,7 +458,7 @@ type List[T any] struct {
 	DisableFocus        bool                                                               // If true, prevent keyboard focus
 	CursorStyle                                                                            // Embedded - CursorPrefix/SelectedPrefix fields for customizable indicators
 	State               *ListState[T]                                                      // Required - holds items and cursor position
-	OnSelect            func(item T)                                                       // Callback invoked when Enter is pressed on an item
+	OnSelect            func(item T)                                                       // Callback invoked when Enter is pressed or an item is double-clicked
 	OnCursorChange      func(item T)                                                       // Callback invoked when cursor moves to a different item
 	ScrollState         *ScrollState                                                       // Optional state for scroll-into-view
 	RenderItem          func(item T, active bool, selected bool) Widget                    // Function to render each item (uses default if nil). Called per row; on cursor or selection changes only affected rows are re-rendered, so it should be free of side effects.
@@ -661,12 +663,69 @@ func (l List[T]) OnClick(event MouseEvent) {
 	}
 }
 
-// OnMouseDown is called when the mouse is pressed on the widget.
+// OnMouseDown moves the cursor to the clicked item, extends the selection on
+// shift+click in multi-select mode, and selects the item on double-click.
 // Implements the MouseDownHandler interface.
 func (l List[T]) OnMouseDown(event MouseEvent) {
+	l.handleMouseDown(event)
 	if l.MouseDown != nil {
 		l.MouseDown(event)
 	}
+}
+
+func (l List[T]) handleMouseDown(event MouseEvent) {
+	if l.State == nil {
+		return
+	}
+	localY := event.LocalY - l.Style.Border.Width() - l.Style.Padding.Top
+	viewIdx, ok := l.viewIndexFromMouseY(localY)
+	if !ok {
+		return
+	}
+	view := l.viewIndices()
+	previous := l.State.CursorIndex.Peek()
+
+	if l.MultiSelect && event.Mod.Contains(uv.ModShift) {
+		l.handleShiftMoveTo(viewIdx)
+	} else {
+		if l.MultiSelect {
+			l.State.ClearSelection()
+			l.State.ClearAnchor()
+		}
+		l.setCursorToViewIndex(viewIdx)
+		l.scrollCursorIntoView()
+	}
+
+	if view[viewIdx] != previous {
+		l.notifyCursorChange()
+	}
+	if event.ClickCount == 2 {
+		l.selectItem()
+	}
+}
+
+// viewIndexFromMouseY returns the view index of the item at content row localY.
+func (l List[T]) viewIndexFromMouseY(localY int) (int, bool) {
+	view := l.viewIndices()
+	if len(view) == 0 || localY < 0 {
+		return 0, false
+	}
+	if len(l.State.itemLayouts) > 0 {
+		for i, layout := range l.State.itemLayouts {
+			if i >= len(view) {
+				break
+			}
+			if layout.height > 0 && localY >= layout.y && localY < layout.y+layout.height {
+				return i, true
+			}
+		}
+		return 0, false
+	}
+	viewIdx := localY / l.getItemHeight()
+	if viewIdx >= len(view) {
+		return 0, false
+	}
+	return viewIdx, true
 }
 
 // OnMouseUp is called when the mouse is released on the widget.

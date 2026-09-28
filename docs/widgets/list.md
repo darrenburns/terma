@@ -20,7 +20,7 @@ List[string]{
 | `RenderItemWithMatch` | `func(item T, index int, active, selected bool, match MatchResult) Widget` | — | Item renderer with filter match data |
 | `Filter` | `*FilterState` | `nil` | Optional filter state for matching items |
 | `MatchItem` | `func(item T, query string, opts FilterOptions) MatchResult` | — | Custom matcher per item |
-| `OnSelect` | `func(item T)` | — | Callback when Enter pressed |
+| `OnSelect` | `func(item T)` | — | Callback when Enter is pressed or an item is double-clicked |
 | `OnCursorChange` | `func(item T)` | — | Callback when cursor moves |
 | `ScrollState` | `*ScrollState` | `nil` | For scroll-into-view behavior |
 | `ItemSpacing` | `int` | `0` | Space between items |
@@ -90,6 +90,14 @@ List[string]{
 | `Enter` | Trigger OnSelect |
 | `Space` | Toggle selection (MultiSelect) |
 | `Shift+↑/↓` | Extend selection (MultiSelect) |
+
+## Mouse
+
+| Action | Effect |
+|--------|--------|
+| Click | Focus the list and move the cursor to the item |
+| Double-click | Trigger OnSelect |
+| Shift+click | Extend selection to the item (MultiSelect) |
 
 ## Basic Usage
 
