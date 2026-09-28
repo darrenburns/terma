@@ -144,7 +144,8 @@ func (m *mouseRouter) press(ev uv.MouseClickEvent, subX, subY float64, now time.
 	m.captureButton = ev.Button
 
 	entry, consumed := m.target(ev.X, ev.Y, true)
-	if consumed || entry == nil {
+	// A disabled widget absorbs the press: nothing is focused or notified.
+	if consumed || entry == nil || entry.Disabled {
 		return
 	}
 
@@ -190,7 +191,7 @@ func (m *mouseRouter) release(ev uv.MouseReleaseEvent, subX, subY float64) {
 			return
 		}
 	}
-	if entry == nil {
+	if entry == nil || entry.Disabled {
 		return
 	}
 	if handler, ok := entry.EventWidget.(MouseUpHandler); ok {

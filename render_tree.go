@@ -19,6 +19,10 @@ type RenderTree struct {
 	// EventID is the ID used for hit testing and focus (explicit or auto).
 	EventID string
 
+	// Disabled is true inside a DisabledWhen subtree, so the widget receives
+	// no presses or clicks.
+	Disabled bool
+
 	// Layout is the computed geometry for this widget.
 	// Contains BoxModel with all dimensions and insets.
 	Layout layout.ComputedLayout
@@ -109,6 +113,7 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 		Widget:      built,
 		EventWidget: widget,
 		EventID:     eventID,
+		Disabled:    ctx.IsDisabled(),
 		Layout:      computed,
 		Children:    children,
 	}

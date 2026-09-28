@@ -1,5 +1,7 @@
 package terma
 
+import uv "github.com/charmbracelet/ultraviolet"
+
 // ButtonVariant represents the semantic color variant for a Button.
 type ButtonVariant int
 
@@ -34,7 +36,7 @@ func buttonVariantColors(variant ButtonVariant, theme ThemeData) (fg, bg Color) 
 }
 
 // Button is a focusable widget that renders as styled text.
-// It can be pressed with Enter or Space when focused.
+// It is pressed by a left click, or with Enter or Space when focused.
 type Button struct {
 	ID           string           // Optional unique identifier for the button
 	DisableFocus bool             // If true, prevent keyboard focus
@@ -169,8 +171,12 @@ func (b Button) GetContentDimensions() (width, height Dimension) {
 }
 
 // OnClick is called when the widget is clicked.
+// A left click presses the button, then the Click callback is invoked.
 // Implements the Clickable interface.
 func (b Button) OnClick(event MouseEvent) {
+	if event.Button == uv.MouseLeft {
+		b.press()
+	}
 	if b.Click != nil {
 		b.Click(event)
 	}
