@@ -156,7 +156,8 @@ func (m *mouseRouter) press(ev uv.MouseClickEvent, subX, subY float64, now time.
 	m.captureButton = ev.Button
 
 	entry, consumed := m.target(ev.X, ev.Y, true)
-	if consumed || entry == nil {
+	// A disabled widget absorbs the press: nothing is focused or notified.
+	if consumed || entry == nil || entry.Disabled {
 		return
 	}
 
@@ -203,7 +204,8 @@ func (m *mouseRouter) release(ev uv.MouseReleaseEvent, subX, subY float64) {
 	if !pressed {
 		// The press wasn't reported (e.g. it happened before the app started).
 		var consumed bool
-		if entry, consumed = m.target(ev.X, ev.Y, false); consumed || entry == nil {
+		// A disabled widget absorbs the release, as it does the press.
+		if entry, consumed = m.target(ev.X, ev.Y, false); consumed || entry == nil || entry.Disabled {
 			return
 		}
 		pressedID = entry.ID

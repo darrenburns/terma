@@ -800,7 +800,7 @@ func (r *Renderer) recordRegistry(node *widgetNode, bounds, clip Rect) {
 	if eventWidget == nil {
 		eventWidget = node.widget
 	}
-	r.widgetRegistry.Record(node.widget, eventWidget, node.eventID, bounds, bounds.Intersect(clip))
+	r.widgetRegistry.Record(node.widget, eventWidget, node.eventID, bounds, bounds.Intersect(clip), node.buildContext.IsDisabled())
 }
 
 // recordReflowDamage marks what a reflow frame must repaint for this node:

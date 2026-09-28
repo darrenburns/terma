@@ -64,6 +64,9 @@ type WidgetEntry struct {
 	// the screen. Only this area receives pointer events; it is empty for a
 	// widget scrolled entirely out of view.
 	Visible Rect
+	// Disabled is set for widgets inside a DisabledWhen subtree. They still
+	// take up their area for hit testing, but receive no presses or clicks.
+	Disabled bool
 }
 
 // WidgetRegistry tracks all widgets and their positions during render.
@@ -86,9 +89,9 @@ func NewWidgetRegistry() *WidgetRegistry {
 	return &WidgetRegistry{}
 }
 
-// Record adds a widget to the registry with its bounds, visible area and
-// optional ID.
-func (r *WidgetRegistry) Record(widget Widget, eventWidget Widget, id string, bounds, visible Rect) {
+// Record adds a widget to the registry with its bounds, visible area,
+// optional ID and whether it is disabled.
+func (r *WidgetRegistry) Record(widget Widget, eventWidget Widget, id string, bounds, visible Rect, disabled bool) {
 	if eventWidget == nil {
 		eventWidget = widget
 	}
@@ -98,6 +101,7 @@ func (r *WidgetRegistry) Record(widget Widget, eventWidget Widget, id string, bo
 		ID:          id,
 		Bounds:      bounds,
 		Visible:     visible,
+		Disabled:    disabled,
 	})
 	r.rowsValid = false
 }
@@ -230,7 +234,7 @@ func (r *WidgetRegistry) FocusableAt(x, y int) *WidgetEntry {
 func (r *WidgetRegistry) focusableAtIn(x, y, lo, hi int) *WidgetEntry {
 	return r.topmostIn(x, y, lo, hi, func(entry *WidgetEntry) bool {
 		focusable, ok := entry.EventWidget.(Focusable)
-		return ok && focusable.IsFocusable()
+		return ok && focusable.IsFocusable() && !entry.Disabled
 	})
 }
 
@@ -246,6 +250,9 @@ type pointerOwner interface {
 // focusable or a pointerOwner.
 func (r *WidgetRegistry) pointerOwnerAtIn(x, y, lo, hi int) *WidgetEntry {
 	return r.topmostIn(x, y, lo, hi, func(entry *WidgetEntry) bool {
+		if entry.Disabled {
+			return false
+		}
 		if _, ok := entry.EventWidget.(pointerOwner); ok {
 			return true
 		}

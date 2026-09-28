@@ -34,7 +34,7 @@ Think of these like CSS `visibility: hidden`. The widget remains in the layout, 
 
 ## DisabledWhen / EnabledWhen
 
-Control whether widgets in a subtree can receive focus. Disabled widgets are rendered with disabled styling and cannot be focused or interacted with via keyboard.
+Control whether widgets in a subtree can receive focus. Disabled widgets are rendered with disabled styling and cannot be focused or interacted with via keyboard or mouse.
 
 ```go
 // Disable the submit button until the form is valid
@@ -74,6 +74,7 @@ All three widgets (both inputs and the button) become disabled when `isLoading` 
 ### How Disabled State Works
 
 - **Focus prevention**: Disabled widgets are skipped in focus navigation
+- **Mouse blocking**: Presses on a disabled widget are absorbed: it isn't focused, and its mouse down, click and mouse up handlers don't run
 - **Visual styling**: Widgets should check `ctx.Disabled()` in their Build method to render with muted/grayed appearance
 - **Layout preserved**: Disabled widgets remain in the layout and take up space
 - **Events blocked**: Disabled widgets don't receive keyboard or click events

@@ -1221,7 +1221,7 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 		Width:  box.Width,
 		Height: box.Height,
 	}
-	r.widgetRegistry.Record(tree.Widget, eventWidget, tree.EventID, bounds, bounds.Intersect(ctx.clip))
+	r.widgetRegistry.Record(tree.Widget, eventWidget, tree.EventID, bounds, bounds.Intersect(ctx.clip), tree.Disabled)
 
 	// 5. Render children at their computed positions
 	// If tree.Children is empty but widget has children, the widget handles them in Render() (fallback)
