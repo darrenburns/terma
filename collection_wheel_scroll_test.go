@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/stretchr/testify/assert"
 )
 
 // wheelScene renders a widget on a live renderer and re-renders after each
@@ -64,24 +65,57 @@ func wheelSceneItems() []string {
 func TestCollectionWheelScroll_List(t *testing.T) {
 	scroll := NewScrollState()
 	state := NewListState(wheelSceneItems())
-	list := List[string]{ID: "list", State: state, ScrollState: scroll}
+	cursorChanges := 0
+	list := List[string]{ID: "list", State: state, ScrollState: scroll, OnCursorChange: func(string) { cursorChanges++ }}
 	scene := newWheelScene(t, Scrollable{ID: "scroll", State: scroll, Height: Cells(5), Child: list}, 24, 5)
 
 	scene.wheel(uv.MouseWheelDown, 6)
-	scene.snapshot("TestCollectionWheelScroll_List_wheel_down", "After 6 wheel-downs over a 20-item List in a 5-row viewport")
+	assert.Equal(t, 0, state.CursorIndex.Peek(), "wheel must not move the cursor")
+	assert.Equal(t, 6, scroll.GetOffset(), "wheel scrolls the viewport")
+	assert.Zero(t, cursorChanges, "wheel must not report cursor changes")
+	scene.snapshot("TestCollectionWheelScroll_List_wheel_down", "After 6 wheel-downs over a 20-item List in a 5-row viewport: the view scrolls, the cursor stays on Item 00")
+
+	scene.wheel(uv.MouseWheelUp, 2)
+	assert.Equal(t, 0, state.CursorIndex.Peek())
+	assert.Equal(t, 4, scroll.GetOffset())
+
+	// A full render must not snap the viewport back to the cursor either.
+	scene.renderer.Render(scene.root)
+	assert.Equal(t, 4, scroll.GetOffset())
+
+	list.keyCursorDown()
+	scene.draw()
+	assert.Equal(t, 1, state.CursorIndex.Peek())
+	assert.Equal(t, 1, scroll.GetOffset(), "moving the cursor with the keyboard brings it back into view")
+	scene.snapshot("TestCollectionWheelScroll_List_key_after_wheel", "Pressing down after wheel scrolling moves the cursor to Item 01 and scrolls it back into view")
 }
 
 func TestCollectionWheelScroll_Table(t *testing.T) {
 	scroll := NewScrollState()
 	state := NewTableState(wheelSceneItems())
+	cursorChanges := 0
 	table := Table[string]{
 		ID: "table", State: state, ScrollState: scroll,
-		Columns: []TableColumn{{Width: Cells(10), Header: Text{Content: "Name"}}},
+		Columns:        []TableColumn{{Width: Cells(10), Header: Text{Content: "Name"}}},
+		OnCursorChange: func(string) { cursorChanges++ },
 	}
 	scene := newWheelScene(t, Scrollable{ID: "scroll", State: scroll, Height: Cells(5), Child: table}, 24, 5)
 
 	scene.wheel(uv.MouseWheelDown, 6)
-	scene.snapshot("TestCollectionWheelScroll_Table_wheel_down", "After 6 wheel-downs over a 20-row Table with a header in a 5-row viewport")
+	assert.Equal(t, 0, state.CursorIndex.Peek(), "wheel must not move the cursor")
+	assert.Equal(t, 6, scroll.GetOffset(), "wheel scrolls the viewport")
+	assert.Zero(t, cursorChanges, "wheel must not report cursor changes")
+	scene.snapshot("TestCollectionWheelScroll_Table_wheel_down", "After 6 wheel-downs over a 20-row Table with a header in a 5-row viewport: the view scrolls, the cursor stays on Item 00")
+
+	scene.wheel(uv.MouseWheelUp, 6)
+	assert.Equal(t, 0, scroll.GetOffset(), "wheel scrolls back up to reveal the header")
+
+	scene.wheel(uv.MouseWheelDown, 8)
+	table.keyCursorDown()
+	scene.draw()
+	assert.Equal(t, 1, state.CursorIndex.Peek())
+	assert.Equal(t, 2, scroll.GetOffset(), "moving the cursor with the keyboard brings it back into view")
+	scene.snapshot("TestCollectionWheelScroll_Table_key_after_wheel", "Pressing down after wheel scrolling moves the cursor to Item 01 and scrolls it back into view")
 }
 
 func TestCollectionWheelScroll_Tree(t *testing.T) {
@@ -91,9 +125,41 @@ func TestCollectionWheelScroll_Tree(t *testing.T) {
 	}
 	scroll := NewScrollState()
 	state := NewTreeState(roots)
-	tree := Tree[string]{ID: "tree", State: state, ScrollState: scroll}
+	cursorChanges := 0
+	tree := Tree[string]{ID: "tree", State: state, ScrollState: scroll, OnCursorChange: func(string) { cursorChanges++ }}
 	scene := newWheelScene(t, Scrollable{ID: "scroll", State: scroll, Height: Cells(5), Child: tree}, 24, 5)
 
 	scene.wheel(uv.MouseWheelDown, 6)
-	scene.snapshot("TestCollectionWheelScroll_Tree_wheel_down", "After 6 wheel-downs over a 20-node Tree in a 5-row viewport")
+	assert.Equal(t, []int{0}, state.CursorPath.Peek(), "wheel must not move the cursor")
+	assert.Equal(t, 6, scroll.GetOffset(), "wheel scrolls the viewport")
+	assert.Zero(t, cursorChanges, "wheel must not report cursor changes")
+	scene.snapshot("TestCollectionWheelScroll_Tree_wheel_down", "After 6 wheel-downs over a 20-node Tree in a 5-row viewport: the view scrolls, the cursor stays on Item 00")
+
+	tree.keyCursorDown()
+	scene.draw()
+	assert.Equal(t, []int{1}, state.CursorPath.Peek())
+	assert.Equal(t, 1, scroll.GetOffset(), "moving the cursor with the keyboard brings it back into view")
+	scene.snapshot("TestCollectionWheelScroll_Tree_key_after_wheel", "Pressing down after wheel scrolling moves the cursor to Item 01 and scrolls it back into view")
+}
+
+// The first layout runs before the viewport is measured, so a cursor placed
+// before the first frame is revealed on the next layout, unless the user has
+// scrolled by then.
+func TestCollectionWheelScroll_InitialCursorRevealedOnNextLayout(t *testing.T) {
+	newScene := func() (*wheelScene, *ScrollState) {
+		scroll := NewScrollState()
+		state := NewListState(wheelSceneItems())
+		state.SelectIndex(15)
+		list := List[string]{ID: "list", State: state, ScrollState: scroll}
+		return newWheelScene(t, Scrollable{ID: "scroll", State: scroll, Height: Cells(5), Child: list}, 24, 5), scroll
+	}
+
+	scene, scroll := newScene()
+	scene.renderer.Render(scene.root)
+	assert.Equal(t, 11, scroll.GetOffset())
+
+	scene, scroll = newScene()
+	scene.wheel(uv.MouseWheelDown, 2)
+	scene.renderer.Render(scene.root)
+	assert.Equal(t, 2, scroll.GetOffset(), "the user's scroll wins over the pending reveal")
 }

@@ -40,6 +40,10 @@ type ScrollState struct {
 	contentWidth   int // Set by Scrollable during layout
 	contentHeight  int // Set by Scrollable during layout
 
+	// userScrolls counts scrolls the user made directly (wheel, scrollbar,
+	// scroll keys), as opposed to a widget revealing its cursor.
+	userScrolls uint64
+
 	scrollbarDragging   bool
 	scrollbarDragOffset float64
 	layoutCache         scrollableLayoutCache
@@ -141,6 +145,41 @@ func (s *ScrollState) thumbPosition(offset int) float64 {
 	return position
 }
 
+// cursorReveal remembers where a collection widget last scrolled its cursor
+// into view, so layout re-reveals the cursor only after the cursor or its row
+// moves. A viewport the user scrolled with the mouse wheel or scrollbar then
+// stays where they left it rather than snapping back to the cursor.
+type cursorReveal[K comparable] struct {
+	cursor K
+	y      int
+	height int
+	valid  bool
+	// pending is set when the reveal ran before the viewport was measured,
+	// so ScrollToView could not act. Layout retries it until the user scrolls.
+	pending     bool
+	userScrolls uint64
+}
+
+// needed reports whether layout should scroll the cursor region into view,
+// and records it as revealed if so.
+func (r *cursorReveal[K]) needed(cursor K, y, height int, scroll *ScrollState) bool {
+	moved := !r.valid || r.cursor != cursor || r.y != y || r.height != height
+	if !moved && (!r.pending || r.userScrolls != scroll.userScrolls) {
+		r.pending = false
+		return false
+	}
+	r.record(cursor, y, height, scroll)
+	return true
+}
+
+// record notes that the cursor region is being scrolled into view.
+func (r *cursorReveal[K]) record(cursor K, y, height int, scroll *ScrollState) {
+	*r = cursorReveal[K]{
+		cursor: cursor, y: y, height: height, valid: true,
+		pending: scroll.viewportHeight <= 0, userScrolls: scroll.userScrolls,
+	}
+}
+
 // ScrollToView ensures a region (y to y+height) is visible in the viewport.
 // If the region is above the viewport, scrolls up to show it at the top.
 // If the region is below the viewport, scrolls down to show it at the bottom.
@@ -175,6 +214,7 @@ func (s *ScrollState) ScrollToView(y, height int) {
 // If OnScrollUp is set and returns true, viewport scrolling is suppressed.
 // If PinToBottom is enabled, scrolling up breaks the pin.
 func (s *ScrollState) ScrollUp(lines int) bool {
+	s.userScrolls++
 	if s.OnScrollUp != nil && s.OnScrollUp(lines) {
 		return true // Callback handled scrolling
 	}
@@ -193,6 +233,7 @@ func (s *ScrollState) ScrollUp(lines int) bool {
 // If OnScrollDown is set and returns true, viewport scrolling is suppressed.
 // If PinToBottom is enabled, reaching the bottom re-engages the pin.
 func (s *ScrollState) ScrollDown(lines int) bool {
+	s.userScrolls++
 	if s.OnScrollDown != nil && s.OnScrollDown(lines) {
 		return true // Callback handled scrolling
 	}
@@ -579,6 +620,7 @@ func (s Scrollable) getScrollOffsetX() int {
 // setScrollOffset sets the scroll offset.
 func (s Scrollable) setScrollOffset(offset int) {
 	if s.State != nil {
+		s.State.userScrolls++
 		s.State.SetOffset(offset)
 	}
 }
@@ -682,6 +724,7 @@ func (s Scrollable) dragScrollbar(pointerY float64) {
 	}
 
 	thumbStart := clampFloat(pointerY-s.State.scrollbarDragOffset, 0, travel)
+	s.State.userScrolls++
 	s.State.setPosition(thumbStart / travel * float64(s.maxScrollOffset()))
 
 	if s.State.PinToBottom {

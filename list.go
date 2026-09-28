@@ -14,12 +14,13 @@ type ListState[T any] struct {
 
 	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
 
-	itemLayouts       []listItemLayout // Cached layout metrics (per item)
-	revealCursor      func()           // Scrolls the cursor into view; set by the List that shows this state
-	viewIndices       []int            // View index -> source index for filtered views
-	viewIndexBySource map[int]int      // Source index -> view index for filtered views
-	cachedMatches     []MatchResult    // Cached match results from filtering
-	cachedFilterQuery string           // Query used for cached filter results
+	itemLayouts       []listItemLayout  // Cached layout metrics (per item)
+	revealCursor      func()            // Scrolls the cursor into view; set by the List that shows this state
+	revealed          cursorReveal[int] // Where the cursor was last scrolled into view
+	viewIndices       []int             // View index -> source index for filtered views
+	viewIndexBySource map[int]int       // Source index -> view index for filtered views
+	cachedMatches     []MatchResult     // Cached match results from filtering
+	cachedFilterQuery string            // Query used for cached filter results
 }
 
 // NewListState creates a new ListState with the given initial items.
@@ -520,7 +521,7 @@ func (c listContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 	}
 
 	c.list.State.itemLayouts = layouts
-	c.list.scrollCursorIntoView()
+	c.list.revealMovedCursor()
 }
 
 func (c listContainer[T]) ChildWidgets() []Widget {
@@ -762,8 +763,6 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 		return Column{}
 	}
 
-	// Register scroll callbacks for mouse wheel support
-	l.registerScrollCallbacks()
 	// Let cursor moves made through the state (for example from app code)
 	// scroll the cursor into view in this list.
 	l.State.revealCursor = l.scrollCursorIntoView
@@ -773,7 +772,6 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 	renderItemWithMatch := l.RenderItemWithMatch
 	useDefaultRenderer := renderItemWithMatch == nil && renderItem == nil
 	if useDefaultRenderer {
-		l.registerScrollCallbacks()
 		style := l.Style
 		theme := ctx.Theme()
 		if style.Width.IsUnset() {
@@ -1262,16 +1260,41 @@ func (l List[T]) scrollCursorIntoView() {
 		return
 	}
 	cursorIdx := l.State.CursorIndex.Peek()
-	viewIdx, ok := l.viewIndexForSource(cursorIdx)
+	itemY, itemHeight, ok := l.cursorRegion(cursorIdx)
 	if !ok {
 		return
 	}
-	itemY, itemHeight, ok := l.getItemLayout(cursorIdx)
-	if !ok {
-		itemHeight = l.getItemHeight()
-		itemY = viewIdx * itemHeight
+	l.State.revealed.record(cursorIdx, itemY, itemHeight, l.ScrollState)
+	l.ScrollState.ScrollToView(itemY, itemHeight)
+}
+
+// revealMovedCursor scrolls the cursor into view after layout, unless it was
+// already revealed at its current position. Mouse wheel scrolling moves only
+// the viewport, so it must not be undone by the next layout.
+func (l List[T]) revealMovedCursor() {
+	if l.ScrollState == nil || l.State == nil {
+		return
+	}
+	cursorIdx := l.State.CursorIndex.Peek()
+	itemY, itemHeight, ok := l.cursorRegion(cursorIdx)
+	if !ok || !l.State.revealed.needed(cursorIdx, itemY, itemHeight, l.ScrollState) {
+		return
 	}
 	l.ScrollState.ScrollToView(itemY, itemHeight)
+}
+
+// cursorRegion returns the content rows occupied by the cursor item.
+func (l List[T]) cursorRegion(cursorIdx int) (y, height int, ok bool) {
+	viewIdx, ok := l.viewIndexForSource(cursorIdx)
+	if !ok {
+		return 0, 0, false
+	}
+	y, height, ok = l.getItemLayout(cursorIdx)
+	if !ok {
+		height = l.getItemHeight()
+		y = viewIdx * height
+	}
+	return y, height, true
 }
 
 // getItemHeight returns the fallback uniform height of list items.
@@ -1299,80 +1322,6 @@ func (l List[T]) getItemLayout(index int) (y, height int, ok bool) {
 		return 0, 0, false
 	}
 	return layout.y, layout.height, true
-}
-
-// registerScrollCallbacks sets up callbacks on the ScrollState
-// to update cursor position when mouse wheel scrolling occurs.
-// The callbacks move cursor first, then scroll only if needed.
-func (l List[T]) registerScrollCallbacks() {
-	if l.ScrollState == nil {
-		return
-	}
-
-	l.ScrollState.OnScrollUp = func(lines int) bool {
-		if l.State == nil {
-			return false
-		}
-		before := l.State.CursorIndex.Peek()
-		l.moveCursorUp(lines)
-		after := l.State.CursorIndex.Peek()
-		if after == before {
-			return false
-		}
-		l.scrollCursorIntoView()
-		l.notifyCursorChange()
-		return true // We handled scrolling via cursor movement
-	}
-	l.ScrollState.OnScrollDown = func(lines int) bool {
-		if l.State == nil {
-			return false
-		}
-		before := l.State.CursorIndex.Peek()
-		l.moveCursorDown(lines)
-		after := l.State.CursorIndex.Peek()
-		if after == before {
-			return false
-		}
-		l.scrollCursorIntoView()
-		l.notifyCursorChange()
-		return true // We handled scrolling via cursor movement
-	}
-}
-
-// moveCursorUp moves the cursor up by the given number of items.
-func (l List[T]) moveCursorUp(count int) {
-	if l.State == nil || l.State.ItemCount() == 0 {
-		return
-	}
-	view := l.viewIndices()
-	if len(view) == 0 {
-		return
-	}
-	cursorIdx := l.State.CursorIndex.Peek()
-	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
-	if !ok {
-		cursorViewIdx = 0
-	}
-	newCursor := clampInt(cursorViewIdx-count, 0, len(view)-1)
-	l.State.SelectIndex(view[newCursor])
-}
-
-// moveCursorDown moves the cursor down by the given number of items.
-func (l List[T]) moveCursorDown(count int) {
-	if l.State == nil || l.State.ItemCount() == 0 {
-		return
-	}
-	view := l.viewIndices()
-	if len(view) == 0 {
-		return
-	}
-	cursorIdx := l.State.CursorIndex.Peek()
-	cursorViewIdx, ok := l.viewIndexForSource(cursorIdx)
-	if !ok {
-		cursorViewIdx = 0
-	}
-	newCursor := clampInt(cursorViewIdx+count, 0, len(view)-1)
-	l.State.SelectIndex(view[newCursor])
 }
 
 // notifyCursorChange calls OnCursorChange with the current item if the callback is set.
