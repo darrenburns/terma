@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+
+	uv "github.com/charmbracelet/ultraviolet"
 )
 
 // snapshotRegistry collects all snapshot comparisons during a test run.
@@ -133,10 +135,16 @@ func AssertSnapshotNamedWithOptions(t *testing.T, name string, widget Widget, wi
 func assertSnapshotNamed(t *testing.T, name string, widget Widget, width, height int, opts SVGOptions, description string) {
 	t.Helper()
 
-	sanitizedName := sanitizeFilename(name)
-
 	// Render to buffer first (we need this for DiffSVG generation)
-	actualBuf := RenderToBuffer(widget, width, height)
+	assertBufferSnapshot(t, name, RenderToBuffer(widget, width, height), width, height, opts, description)
+}
+
+// assertBufferSnapshot compares an already rendered buffer against a golden
+// file, for snapshots of frames reached through events on a live renderer.
+func assertBufferSnapshot(t *testing.T, name string, actualBuf *uv.Buffer, width, height int, opts SVGOptions, description string) {
+	t.Helper()
+
+	sanitizedName := sanitizeFilename(name)
 	actualSVG := BufferToSVG(actualBuf, width, height, opts)
 
 	goldenPath := filepath.Join("testdata", sanitizedName+".svg")

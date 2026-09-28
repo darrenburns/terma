@@ -22,9 +22,10 @@ type TableState[T any] struct {
 	lastSelectionMode TableSelectionMode
 	hasSelectionMode  bool
 
-	rowLayouts        []tableRowLayout // Cached layout metrics (per row)
-	viewIndices       []int            // View index -> source index for filtered views
-	viewIndexBySource map[int]int      // Source index -> view index for filtered views
+	rowLayouts        []tableRowLayout  // Cached layout metrics (per row)
+	revealed          cursorReveal[int] // Where the cursor was last scrolled into view
+	viewIndices       []int             // View index -> source index for filtered views
+	viewIndexBySource map[int]int       // Source index -> view index for filtered views
 }
 
 // NewTableState creates a new TableState with the given initial rows.
@@ -511,7 +512,7 @@ func (c tableContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 
 	c.State.rowLayouts = rowLayouts
 	if c.selectionMode() != TableSelectionColumn {
-		c.scrollCursorIntoView()
+		c.revealMovedCursor()
 	}
 }
 
@@ -740,10 +741,6 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 	children := make([]Widget, 0, (len(viewRows)+headerRows)*columnCount)
 	if headerRows > 0 {
 		children = append(children, headerCells...)
-	}
-
-	if len(viewRows) > 0 {
-		t.registerScrollCallbacks(mode, hasHeader)
 	}
 
 	if useDefaultRenderer {
@@ -1470,16 +1467,41 @@ func (t Table[T]) scrollCursorIntoView() {
 		return
 	}
 	cursorIdx := t.State.CursorIndex.Peek()
-	viewIdx, ok := t.viewIndexForSource(cursorIdx)
+	rowY, rowHeight, ok := t.cursorRegion(cursorIdx)
 	if !ok {
 		return
 	}
-	rowY, rowHeight, ok := t.getRowLayout(cursorIdx)
-	if !ok {
-		rowHeight = t.getRowHeight()
-		rowY = viewIdx * rowHeight
+	t.State.revealed.record(cursorIdx, rowY, rowHeight, t.ScrollState)
+	t.ScrollState.ScrollToView(rowY, rowHeight)
+}
+
+// revealMovedCursor scrolls the cursor into view after layout, unless it was
+// already revealed at its current position. Mouse wheel scrolling moves only
+// the viewport, so it must not be undone by the next layout.
+func (t Table[T]) revealMovedCursor() {
+	if t.ScrollState == nil || t.State == nil {
+		return
+	}
+	cursorIdx := t.State.CursorIndex.Peek()
+	rowY, rowHeight, ok := t.cursorRegion(cursorIdx)
+	if !ok || !t.State.revealed.needed(cursorIdx, rowY, rowHeight, t.ScrollState) {
+		return
 	}
 	t.ScrollState.ScrollToView(rowY, rowHeight)
+}
+
+// cursorRegion returns the content rows occupied by the cursor row.
+func (t Table[T]) cursorRegion(cursorIdx int) (y, height int, ok bool) {
+	viewIdx, ok := t.viewIndexForSource(cursorIdx)
+	if !ok {
+		return 0, 0, false
+	}
+	y, height, ok = t.getRowLayout(cursorIdx)
+	if !ok {
+		height = t.getRowHeight()
+		y = viewIdx * height
+	}
+	return y, height, true
 }
 
 // getRowHeight returns the fallback uniform height of table rows.
@@ -1507,75 +1529,6 @@ func (t Table[T]) getRowLayout(index int) (y, height int, ok bool) {
 		return 0, 0, false
 	}
 	return layout.y, layout.height, true
-}
-
-// registerScrollCallbacks sets up callbacks on the ScrollState
-// to update cursor position when mouse wheel scrolling occurs.
-// The callbacks move cursor first, then scroll only if needed.
-func (t Table[T]) registerScrollCallbacks(mode TableSelectionMode, hasHeader bool) {
-	if t.ScrollState == nil {
-		return
-	}
-
-	if mode == TableSelectionColumn {
-		t.ScrollState.OnScrollUp = nil
-		t.ScrollState.OnScrollDown = nil
-		return
-	}
-
-	t.ScrollState.OnScrollUp = func(lines int) bool {
-		if hasHeader && t.State != nil {
-			if viewIdx, ok := t.viewIndexForSource(t.State.CursorIndex.Peek()); ok && viewIdx == 0 {
-				return false
-			}
-		}
-		t.moveCursorUp(lines)
-		t.scrollCursorIntoView()
-		t.notifyCursorChange()
-		return true
-	}
-	t.ScrollState.OnScrollDown = func(lines int) bool {
-		t.moveCursorDown(lines)
-		t.scrollCursorIntoView()
-		t.notifyCursorChange()
-		return true
-	}
-}
-
-// moveCursorUp moves the cursor up by the given number of rows.
-func (t Table[T]) moveCursorUp(count int) {
-	if t.State == nil {
-		return
-	}
-	view := t.viewIndices()
-	if len(view) == 0 {
-		return
-	}
-	cursorIdx := t.State.CursorIndex.Peek()
-	cursorViewIdx, ok := t.viewIndexForSource(cursorIdx)
-	if !ok {
-		cursorViewIdx = 0
-	}
-	newCursor := clampInt(cursorViewIdx-count, 0, len(view)-1)
-	t.State.SelectIndex(view[newCursor])
-}
-
-// moveCursorDown moves the cursor down by the given number of rows.
-func (t Table[T]) moveCursorDown(count int) {
-	if t.State == nil {
-		return
-	}
-	view := t.viewIndices()
-	if len(view) == 0 {
-		return
-	}
-	cursorIdx := t.State.CursorIndex.Peek()
-	cursorViewIdx, ok := t.viewIndexForSource(cursorIdx)
-	if !ok {
-		cursorViewIdx = 0
-	}
-	newCursor := clampInt(cursorViewIdx+count, 0, len(view)-1)
-	t.State.SelectIndex(view[newCursor])
 }
 
 // notifyCursorChange calls OnCursorChange with the current row if the callback is set.
