@@ -559,6 +559,23 @@ type FocusCollector struct {
 	// trapStack tracks the IDs of enclosing FocusTrapper widgets.
 	// The last element is the innermost active trap.
 	trapStack []string
+	// globalKeybinds are keybinds that work wherever focus is, even inside an
+	// overlay, gathered from globalKeybindProvider widgets in tree order.
+	globalKeybinds []Keybind
+}
+
+// globalKeybindProvider is implemented by widgets whose keybinds must work
+// wherever focus is, not just inside their subtree: Jumper's toggle key
+// enters jump mode from within a dialog too.
+type globalKeybindProvider interface {
+	globalKeybinds() []Keybind
+}
+
+// CollectGlobalKeybinds records the widget's global keybinds, if it has any.
+func (fc *FocusCollector) CollectGlobalKeybinds(widget Widget, ctx BuildContext) {
+	if provider, ok := widget.(globalKeybindProvider); ok && !ctx.IsDisabled() {
+		fc.globalKeybinds = append(fc.globalKeybinds, provider.globalKeybinds()...)
+	}
 }
 
 // NewFocusCollector creates a new focus collector.
@@ -655,6 +672,7 @@ func (fc *FocusCollector) Reset() {
 	fc.focusables = fc.focusables[:0]
 	fc.ancestorStack = fc.ancestorStack[:0]
 	fc.trapStack = fc.trapStack[:0]
+	fc.globalKeybinds = fc.globalKeybinds[:0]
 }
 
 // Len returns the number of focusables collected so far.
