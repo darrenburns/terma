@@ -1,0 +1,245 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/darrenburns/terma
+cpu: Apple M4 Pro
+BenchmarkReactivityLeaf/leaves=10/build-14         	   27614	      8188 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	   13544 B/op	     106 allocs/op
+BenchmarkReactivityLeaf/leaves=10/paint-14         	  107498	      2105 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityLeaf/leaves=100/build-14        	   10000	     21195 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	   36408 B/op	     413 allocs/op
+BenchmarkReactivityLeaf/leaves=100/paint-14        	  105679	      2534 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityLeaf/leaves=1000/build-14       	    1566	    148587 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	  266697 B/op	    3473 allocs/op
+BenchmarkReactivityLeaf/leaves=1000/paint-14       	   72380	      3261 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityTextSize/fixed-14               	  111946	      2191 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityTextSize/auto-stable-14         	  149564	      1595 ns/op	         0 builds/op	         4.000 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    1684 B/op	      18 allocs/op
+BenchmarkReactivityTextSize/auto-changing-14       	    6902	     33119 ns/op	         0 builds/op	       119.0 damage-cells/op	         1.000 full/op	         3.000 layouts/op	        12.00 paints/op	         0 partial/op	         1.000 sets/op	   50416 B/op	     654 allocs/op
+BenchmarkReactivityListCursor/items=10/default-14  	    8637	     37679 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	   51984 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=10/custom-14   	    7104	     31184 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	   47217 B/op	     619 allocs/op
+BenchmarkReactivityListCursor/items=100/default-14 	    6771	     34912 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	   58256 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=100/custom-14  	    2904	     87077 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	  134434 B/op	    1159 allocs/op
+BenchmarkReactivityListCursor/items=1000/default-14         	    2960	     74580 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	  116881 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=1000/custom-14          	     435	    548049 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	  984755 B/op	    6559 allocs/op
+BenchmarkRetainedNestedLayout/depth=3-14                    	   22312	     10938 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	        16.00 layouts/op	         4.000 paints/op	         0 partial/op	         1.000 sets/op	   16920 B/op	     139 allocs/op
+BenchmarkRetainedNestedLayout/depth=6-14                    	    5085	     45709 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	       118.0 layouts/op	         7.000 paints/op	         0 partial/op	         1.000 sets/op	   66392 B/op	     491 allocs/op
+BenchmarkRetainedPartialDamage/overlap-14                   	  115078	      2067 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         2.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2637 B/op	      37 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=2-14       	   48721	      5050 ns/op	         0 builds/op	        24.00 damage-cells/op	         0 full/op	         0 layouts/op	         6.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5274 B/op	      70 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=10-14      	   10000	     26298 ns/op	         0 builds/op	       120.0 damage-cells/op	         0 full/op	         0 layouts/op	        30.00 paints/op	         1.000 partial/op	        10.00 sets/op	   26885 B/op	     345 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=100-14     	     841	    294537 ns/op	         0 builds/op	      1200 damage-cells/op	         0 full/op	         0 layouts/op	       300.0 paints/op	         1.000 partial/op	       100.0 sets/op	  267099 B/op	    3408 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=2-14           	   46792	      5075 ns/op	         0 builds/op	        24.00 damage-cells/op	         0 full/op	         0 layouts/op	         6.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5274 B/op	      70 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=10-14          	   10000	     26132 ns/op	         0 builds/op	       120.0 damage-cells/op	         0 full/op	         0 layouts/op	        30.00 paints/op	         1.000 partial/op	        10.00 sets/op	   26885 B/op	     345 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=100-14         	     932	    262100 ns/op	         0 builds/op	      1200 damage-cells/op	         0 full/op	         0 layouts/op	       300.0 paints/op	         1.000 partial/op	       100.0 sets/op	  267096 B/op	    3408 allocs/op
+BenchmarkSignalSelectorFanout/subscribers=100-14            	  116283	      2003 ns/op	    5248 B/op	       2 allocs/op
+BenchmarkSignalSelectorFanout/subscribers=1000-14           	   10000	     22859 ns/op	   49152 B/op	       2 allocs/op
+BenchmarkTextPerfHardWrap/bytes=80-14                       	 2941634	        81.18 ns/op	 985.43 MB/s	      32 B/op	       2 allocs/op
+BenchmarkTextPerfHardWrap/bytes=4096-14                     	   12892	     18533 ns/op	 221.02 MB/s	    3072 B/op	       9 allocs/op
+BenchmarkTextPerfHardWrap/bytes=16384-14                    	    3374	     73105 ns/op	 224.12 MB/s	   12800 B/op	      11 allocs/op
+BenchmarkTextPerfCollectSpans/StatusRow-14                  	   49882	      4832 ns/op	   33000 B/op	      15 allocs/op
+BenchmarkTextPerfCollectSpans/Paragraph-14                  	     904	    236710 ns/op	 1462238 B/op	    1836 allocs/op
+BenchmarkTextPerfCollectSpans/LongWord-14                   	     440	    513361 ns/op	 4081000 B/op	     211 allocs/op
+BenchmarkTextPerfReactiveSpans/StatusRow-14                 	   19218	     12901 ns/op	         0 builds/op	        80.00 damage-cells/op	         0 full/op	         0 layouts/op	         1.000 paints/op	         1.000 partial/op	         1.000 sets/op	   42728 B/op	     181 allocs/op
+BenchmarkTextPerfReactiveSpans/Paragraph-14                 	     594	    407386 ns/op	         0 builds/op	      1920 damage-cells/op	         0 full/op	         0 layouts/op	         1.000 paints/op	         1.000 partial/op	         1.000 sets/op	 1686136 B/op	    5682 allocs/op
+BenchmarkTreeFlattenVisible/nodes=110-14                    	   23860	      9304 ns/op	   43744 B/op	     125 allocs/op
+BenchmarkTreeFlattenVisible/nodes=1110-14                   	    2836	     85158 ns/op	  347074 B/op	    1228 allocs/op
+PASS
+goos: darwin
+goarch: arm64
+pkg: github.com/darrenburns/terma/layout
+cpu: Apple M4 Pro
+BenchmarkTextPerfMeasureHardWrap/bytes=80-14         	 1832316	       129.5 ns/op	 617.88 MB/s	      32 B/op	       2 allocs/op
+BenchmarkTextPerfMeasureHardWrap/bytes=4096-14       	   10000	     20192 ns/op	 202.85 MB/s	    3072 B/op	       9 allocs/op
+BenchmarkTextPerfMeasureHardWrap/bytes=16384-14      	    3031	     79240 ns/op	 206.76 MB/s	   12800 B/op	      11 allocs/op
+PASS
+goos: darwin
+goarch: arm64
+pkg: github.com/darrenburns/terma
+cpu: Apple M4 Pro
+BenchmarkReactivityLeaf/leaves=10/build-14         	   28552	      8215 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	   13544 B/op	     106 allocs/op
+BenchmarkReactivityLeaf/leaves=10/paint-14         	  110532	      2146 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityLeaf/leaves=100/build-14        	   10000	     22733 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	   36408 B/op	     413 allocs/op
+BenchmarkReactivityLeaf/leaves=100/paint-14        	   81715	      2470 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityLeaf/leaves=1000/build-14       	    1440	    146513 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	  266697 B/op	    3473 allocs/op
+BenchmarkReactivityLeaf/leaves=1000/paint-14       	   72478	      3241 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityTextSize/fixed-14               	  108084	      2179 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityTextSize/auto-stable-14         	  145944	      1617 ns/op	         0 builds/op	         4.000 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    1684 B/op	      18 allocs/op
+BenchmarkReactivityTextSize/auto-changing-14       	    7194	     33227 ns/op	         0 builds/op	       119.0 damage-cells/op	         1.000 full/op	         3.000 layouts/op	        12.00 paints/op	         0 partial/op	         1.000 sets/op	   50416 B/op	     654 allocs/op
+BenchmarkReactivityListCursor/items=10/default-14  	    8457	     28756 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	   51984 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=10/custom-14   	    7124	     30245 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	   47217 B/op	     619 allocs/op
+BenchmarkReactivityListCursor/items=100/default-14 	    7042	     33777 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	   58256 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=100/custom-14  	    2727	     87403 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	  134434 B/op	    1159 allocs/op
+BenchmarkReactivityListCursor/items=1000/default-14         	    3012	     74616 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	  116880 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=1000/custom-14          	     424	    564098 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	  984754 B/op	    6559 allocs/op
+BenchmarkRetainedNestedLayout/depth=3-14                    	   21295	     10928 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	        16.00 layouts/op	         4.000 paints/op	         0 partial/op	         1.000 sets/op	   16920 B/op	     139 allocs/op
+BenchmarkRetainedNestedLayout/depth=6-14                    	    5035	     46420 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	       118.0 layouts/op	         7.000 paints/op	         0 partial/op	         1.000 sets/op	   66392 B/op	     491 allocs/op
+BenchmarkRetainedPartialDamage/overlap-14                   	  111279	      2107 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         2.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2637 B/op	      37 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=2-14       	   45384	      5180 ns/op	         0 builds/op	        24.00 damage-cells/op	         0 full/op	         0 layouts/op	         6.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5274 B/op	      70 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=10-14      	   10000	     25603 ns/op	         0 builds/op	       120.0 damage-cells/op	         0 full/op	         0 layouts/op	        30.00 paints/op	         1.000 partial/op	        10.00 sets/op	   26885 B/op	     345 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=100-14     	     913	    259408 ns/op	         0 builds/op	      1200 damage-cells/op	         0 full/op	         0 layouts/op	       300.0 paints/op	         1.000 partial/op	       100.0 sets/op	  267096 B/op	    3408 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=2-14           	   47817	      5185 ns/op	         0 builds/op	        24.00 damage-cells/op	         0 full/op	         0 layouts/op	         6.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5274 B/op	      70 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=10-14          	    8888	     27304 ns/op	         0 builds/op	       120.0 damage-cells/op	         0 full/op	         0 layouts/op	        30.00 paints/op	         1.000 partial/op	        10.00 sets/op	   26885 B/op	     345 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=100-14         	     886	    263396 ns/op	         0 builds/op	      1200 damage-cells/op	         0 full/op	         0 layouts/op	       300.0 paints/op	         1.000 partial/op	       100.0 sets/op	  267097 B/op	    3408 allocs/op
+BenchmarkSignalSelectorFanout/subscribers=100-14            	  126327	      1888 ns/op	    5248 B/op	       2 allocs/op
+BenchmarkSignalSelectorFanout/subscribers=1000-14           	    9835	     23385 ns/op	   49152 B/op	       2 allocs/op
+BenchmarkTextPerfHardWrap/bytes=80-14                       	 2914083	        81.30 ns/op	 984.05 MB/s	      32 B/op	       2 allocs/op
+BenchmarkTextPerfHardWrap/bytes=4096-14                     	   12576	     18853 ns/op	 217.26 MB/s	    3072 B/op	       9 allocs/op
+BenchmarkTextPerfHardWrap/bytes=16384-14                    	    3367	     71422 ns/op	 229.40 MB/s	   12800 B/op	      11 allocs/op
+BenchmarkTextPerfCollectSpans/StatusRow-14                  	   46602	      5109 ns/op	   33000 B/op	      15 allocs/op
+BenchmarkTextPerfCollectSpans/Paragraph-14                  	    1070	    255626 ns/op	 1462236 B/op	    1836 allocs/op
+BenchmarkTextPerfCollectSpans/LongWord-14                   	     440	    564220 ns/op	 4080995 B/op	     211 allocs/op
+BenchmarkTextPerfReactiveSpans/StatusRow-14                 	   16969	     14007 ns/op	         0 builds/op	        80.00 damage-cells/op	         0 full/op	         0 layouts/op	         1.000 paints/op	         1.000 partial/op	         1.000 sets/op	   42728 B/op	     181 allocs/op
+BenchmarkTextPerfReactiveSpans/Paragraph-14                 	     541	    417124 ns/op	         0 builds/op	      1920 damage-cells/op	         0 full/op	         0 layouts/op	         1.000 paints/op	         1.000 partial/op	         1.000 sets/op	 1686137 B/op	    5682 allocs/op
+BenchmarkTreeFlattenVisible/nodes=110-14                    	   25372	      9436 ns/op	   43744 B/op	     125 allocs/op
+BenchmarkTreeFlattenVisible/nodes=1110-14                   	    2626	     92411 ns/op	  347075 B/op	    1228 allocs/op
+PASS
+goos: darwin
+goarch: arm64
+pkg: github.com/darrenburns/terma/layout
+cpu: Apple M4 Pro
+BenchmarkTextPerfMeasureHardWrap/bytes=80-14         	 1494950	       164.0 ns/op	 487.94 MB/s	      32 B/op	       2 allocs/op
+BenchmarkTextPerfMeasureHardWrap/bytes=4096-14       	   10000	     20305 ns/op	 201.72 MB/s	    3072 B/op	       9 allocs/op
+BenchmarkTextPerfMeasureHardWrap/bytes=16384-14      	    2982	     80514 ns/op	 203.49 MB/s	   12800 B/op	      11 allocs/op
+PASS
+goos: darwin
+goarch: arm64
+pkg: github.com/darrenburns/terma
+cpu: Apple M4 Pro
+BenchmarkReactivityLeaf/leaves=10/build-14         	   30614	      7921 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	   13544 B/op	     106 allocs/op
+BenchmarkReactivityLeaf/leaves=10/paint-14         	  117128	      2031 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityLeaf/leaves=100/build-14        	   12008	     20245 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	   36408 B/op	     413 allocs/op
+BenchmarkReactivityLeaf/leaves=100/paint-14        	  112432	      2217 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityLeaf/leaves=1000/build-14       	    1636	    144975 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	  266696 B/op	    3473 allocs/op
+BenchmarkReactivityLeaf/leaves=1000/paint-14       	   73507	      3193 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityTextSize/fixed-14               	  112117	      2177 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityTextSize/auto-stable-14         	  150390	      1576 ns/op	         0 builds/op	         4.000 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    1684 B/op	      18 allocs/op
+BenchmarkReactivityTextSize/auto-changing-14       	    7177	     32745 ns/op	         0 builds/op	       119.0 damage-cells/op	         1.000 full/op	         3.000 layouts/op	        12.00 paints/op	         0 partial/op	         1.000 sets/op	   50416 B/op	     654 allocs/op
+BenchmarkReactivityListCursor/items=10/default-14  	    8745	     28245 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	   51984 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=10/custom-14   	    7394	     30280 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	   47216 B/op	     619 allocs/op
+BenchmarkReactivityListCursor/items=100/default-14 	    6577	     34754 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	   58256 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=100/custom-14  	    2724	     88070 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	  134434 B/op	    1159 allocs/op
+BenchmarkReactivityListCursor/items=1000/default-14         	    2950	     73545 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	  116880 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=1000/custom-14          	     429	    560621 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	  984756 B/op	    6559 allocs/op
+BenchmarkRetainedNestedLayout/depth=3-14                    	   22158	     10805 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	        16.00 layouts/op	         4.000 paints/op	         0 partial/op	         1.000 sets/op	   16920 B/op	     139 allocs/op
+BenchmarkRetainedNestedLayout/depth=6-14                    	    5390	     45565 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	       118.0 layouts/op	         7.000 paints/op	         0 partial/op	         1.000 sets/op	   66392 B/op	     491 allocs/op
+BenchmarkRetainedPartialDamage/overlap-14                   	  116978	      2060 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         2.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2637 B/op	      37 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=2-14       	   46903	      5138 ns/op	         0 builds/op	        24.00 damage-cells/op	         0 full/op	         0 layouts/op	         6.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5274 B/op	      70 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=10-14      	    9152	     26049 ns/op	         0 builds/op	       120.0 damage-cells/op	         0 full/op	         0 layouts/op	        30.00 paints/op	         1.000 partial/op	        10.00 sets/op	   26885 B/op	     345 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=100-14     	     926	    268768 ns/op	         0 builds/op	      1200 damage-cells/op	         0 full/op	         0 layouts/op	       300.0 paints/op	         1.000 partial/op	       100.0 sets/op	  267099 B/op	    3408 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=2-14           	   47173	      5398 ns/op	         0 builds/op	        24.00 damage-cells/op	         0 full/op	         0 layouts/op	         6.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5274 B/op	      70 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=10-14          	    8853	     27319 ns/op	         0 builds/op	       120.0 damage-cells/op	         0 full/op	         0 layouts/op	        30.00 paints/op	         1.000 partial/op	        10.00 sets/op	   26885 B/op	     345 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=100-14         	     884	    266578 ns/op	         0 builds/op	      1200 damage-cells/op	         0 full/op	         0 layouts/op	       300.0 paints/op	         1.000 partial/op	       100.0 sets/op	  267097 B/op	    3408 allocs/op
+BenchmarkSignalSelectorFanout/subscribers=100-14            	  129405	      1900 ns/op	    5248 B/op	       2 allocs/op
+BenchmarkSignalSelectorFanout/subscribers=1000-14           	   10000	     22446 ns/op	   49152 B/op	       2 allocs/op
+BenchmarkTextPerfHardWrap/bytes=80-14                       	 3004587	        79.98 ns/op	1000.24 MB/s	      32 B/op	       2 allocs/op
+BenchmarkTextPerfHardWrap/bytes=4096-14                     	   12924	     18539 ns/op	 220.94 MB/s	    3072 B/op	       9 allocs/op
+BenchmarkTextPerfHardWrap/bytes=16384-14                    	    3379	     73033 ns/op	 224.34 MB/s	   12800 B/op	      11 allocs/op
+BenchmarkTextPerfCollectSpans/StatusRow-14                  	   47941	      5107 ns/op	   33000 B/op	      15 allocs/op
+BenchmarkTextPerfCollectSpans/Paragraph-14                  	    1114	    218545 ns/op	 1462237 B/op	    1836 allocs/op
+BenchmarkTextPerfCollectSpans/LongWord-14                   	     483	    495926 ns/op	 4080994 B/op	     211 allocs/op
+BenchmarkTextPerfReactiveSpans/StatusRow-14                 	   19311	     12915 ns/op	         0 builds/op	        80.00 damage-cells/op	         0 full/op	         0 layouts/op	         1.000 paints/op	         1.000 partial/op	         1.000 sets/op	   42728 B/op	     181 allocs/op
+BenchmarkTextPerfReactiveSpans/Paragraph-14                 	     607	    594905 ns/op	         0 builds/op	      1920 damage-cells/op	         0 full/op	         0 layouts/op	         1.000 paints/op	         1.000 partial/op	         1.000 sets/op	 1686136 B/op	    5682 allocs/op
+BenchmarkTreeFlattenVisible/nodes=110-14                    	   23928	      9329 ns/op	   43744 B/op	     125 allocs/op
+BenchmarkTreeFlattenVisible/nodes=1110-14                   	    2744	     85720 ns/op	  347074 B/op	    1228 allocs/op
+PASS
+goos: darwin
+goarch: arm64
+pkg: github.com/darrenburns/terma/layout
+cpu: Apple M4 Pro
+BenchmarkTextPerfMeasureHardWrap/bytes=80-14         	 1853151	       129.5 ns/op	 617.63 MB/s	      32 B/op	       2 allocs/op
+BenchmarkTextPerfMeasureHardWrap/bytes=4096-14       	   10000	     20246 ns/op	 202.31 MB/s	    3072 B/op	       9 allocs/op
+BenchmarkTextPerfMeasureHardWrap/bytes=16384-14      	    2967	     79835 ns/op	 205.22 MB/s	   12800 B/op	      11 allocs/op
+PASS
+goos: darwin
+goarch: arm64
+pkg: github.com/darrenburns/terma
+cpu: Apple M4 Pro
+BenchmarkReactivityLeaf/leaves=10/build-14         	   31160	      7997 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	   13544 B/op	     106 allocs/op
+BenchmarkReactivityLeaf/leaves=10/paint-14         	  115197	      2103 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityLeaf/leaves=100/build-14        	   10000	     20595 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	   36408 B/op	     413 allocs/op
+BenchmarkReactivityLeaf/leaves=100/paint-14        	  108144	      2212 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityLeaf/leaves=1000/build-14       	    1603	    158082 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	  266697 B/op	    3473 allocs/op
+BenchmarkReactivityLeaf/leaves=1000/paint-14       	   71834	      3171 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityTextSize/fixed-14               	  110568	      2187 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityTextSize/auto-stable-14         	  151984	      1595 ns/op	         0 builds/op	         4.000 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    1684 B/op	      18 allocs/op
+BenchmarkReactivityTextSize/auto-changing-14       	    7282	     33849 ns/op	         0 builds/op	       119.0 damage-cells/op	         1.000 full/op	         3.000 layouts/op	        12.00 paints/op	         0 partial/op	         1.000 sets/op	   50416 B/op	     654 allocs/op
+BenchmarkReactivityListCursor/items=10/default-14  	    7832	     27462 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	   51984 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=10/custom-14   	    7680	     30038 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	   47217 B/op	     619 allocs/op
+BenchmarkReactivityListCursor/items=100/default-14 	    6962	     34518 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	   58256 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=100/custom-14  	    2880	     86387 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	  134433 B/op	    1159 allocs/op
+BenchmarkReactivityListCursor/items=1000/default-14         	    3064	     74705 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	  116880 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=1000/custom-14          	     424	    566505 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	  984755 B/op	    6559 allocs/op
+BenchmarkRetainedNestedLayout/depth=3-14                    	   21454	     11128 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	        16.00 layouts/op	         4.000 paints/op	         0 partial/op	         1.000 sets/op	   16920 B/op	     139 allocs/op
+BenchmarkRetainedNestedLayout/depth=6-14                    	    5083	     48411 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	       118.0 layouts/op	         7.000 paints/op	         0 partial/op	         1.000 sets/op	   66392 B/op	     491 allocs/op
+BenchmarkRetainedPartialDamage/overlap-14                   	  112299	      2098 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         2.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2637 B/op	      37 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=2-14       	   47026	      5215 ns/op	         0 builds/op	        24.00 damage-cells/op	         0 full/op	         0 layouts/op	         6.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5274 B/op	      70 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=10-14      	    9111	     26391 ns/op	         0 builds/op	       120.0 damage-cells/op	         0 full/op	         0 layouts/op	        30.00 paints/op	         1.000 partial/op	        10.00 sets/op	   26885 B/op	     345 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=100-14     	     914	    259534 ns/op	         0 builds/op	      1200 damage-cells/op	         0 full/op	         0 layouts/op	       300.0 paints/op	         1.000 partial/op	       100.0 sets/op	  267097 B/op	    3408 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=2-14           	   46862	      5093 ns/op	         0 builds/op	        24.00 damage-cells/op	         0 full/op	         0 layouts/op	         6.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5274 B/op	      70 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=10-14          	    9993	     26236 ns/op	         0 builds/op	       120.0 damage-cells/op	         0 full/op	         0 layouts/op	        30.00 paints/op	         1.000 partial/op	        10.00 sets/op	   26885 B/op	     345 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=100-14         	     867	    262244 ns/op	         0 builds/op	      1200 damage-cells/op	         0 full/op	         0 layouts/op	       300.0 paints/op	         1.000 partial/op	       100.0 sets/op	  267097 B/op	    3408 allocs/op
+BenchmarkSignalSelectorFanout/subscribers=100-14            	  127300	      1874 ns/op	    5248 B/op	       2 allocs/op
+BenchmarkSignalSelectorFanout/subscribers=1000-14           	   10000	     22533 ns/op	   49152 B/op	       2 allocs/op
+BenchmarkTextPerfHardWrap/bytes=80-14                       	 3006019	        80.12 ns/op	 998.55 MB/s	      32 B/op	       2 allocs/op
+BenchmarkTextPerfHardWrap/bytes=4096-14                     	   13038	     18459 ns/op	 221.90 MB/s	    3072 B/op	       9 allocs/op
+BenchmarkTextPerfHardWrap/bytes=16384-14                    	    3464	     74216 ns/op	 220.76 MB/s	   12800 B/op	      11 allocs/op
+BenchmarkTextPerfCollectSpans/StatusRow-14                  	   36157	      6357 ns/op	   33000 B/op	      15 allocs/op
+BenchmarkTextPerfCollectSpans/Paragraph-14                  	    1032	    234290 ns/op	 1462238 B/op	    1836 allocs/op
+BenchmarkTextPerfCollectSpans/LongWord-14                   	     465	    524921 ns/op	 4080999 B/op	     211 allocs/op
+BenchmarkTextPerfReactiveSpans/StatusRow-14                 	   19021	     12899 ns/op	         0 builds/op	        80.00 damage-cells/op	         0 full/op	         0 layouts/op	         1.000 paints/op	         1.000 partial/op	         1.000 sets/op	   42728 B/op	     181 allocs/op
+BenchmarkTextPerfReactiveSpans/Paragraph-14                 	     619	    395504 ns/op	         0 builds/op	      1920 damage-cells/op	         0 full/op	         0 layouts/op	         1.000 paints/op	         1.000 partial/op	         1.000 sets/op	 1686137 B/op	    5682 allocs/op
+BenchmarkTreeFlattenVisible/nodes=110-14                    	   25545	      9289 ns/op	   43744 B/op	     125 allocs/op
+BenchmarkTreeFlattenVisible/nodes=1110-14                   	    2680	     86571 ns/op	  347074 B/op	    1228 allocs/op
+PASS
+goos: darwin
+goarch: arm64
+pkg: github.com/darrenburns/terma/layout
+cpu: Apple M4 Pro
+BenchmarkTextPerfMeasureHardWrap/bytes=80-14         	 1870516	       128.3 ns/op	 623.58 MB/s	      32 B/op	       2 allocs/op
+BenchmarkTextPerfMeasureHardWrap/bytes=4096-14       	   10000	     20180 ns/op	 202.98 MB/s	    3072 B/op	       9 allocs/op
+BenchmarkTextPerfMeasureHardWrap/bytes=16384-14      	    3026	     81838 ns/op	 200.20 MB/s	   12800 B/op	      11 allocs/op
+PASS
+goos: darwin
+goarch: arm64
+pkg: github.com/darrenburns/terma
+cpu: Apple M4 Pro
+BenchmarkReactivityLeaf/leaves=10/build-14         	   31227	      7727 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	   13544 B/op	     106 allocs/op
+BenchmarkReactivityLeaf/leaves=10/paint-14         	  115668	      2051 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityLeaf/leaves=100/build-14        	   10000	     21555 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	   36408 B/op	     413 allocs/op
+BenchmarkReactivityLeaf/leaves=100/paint-14        	  110056	      2210 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityLeaf/leaves=1000/build-14       	    1608	    150656 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	         3.000 layouts/op	         3.000 paints/op	         0 partial/op	         1.000 sets/op	  266697 B/op	    3473 allocs/op
+BenchmarkReactivityLeaf/leaves=1000/paint-14       	   74139	      3242 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityTextSize/fixed-14               	  107863	      2199 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2621 B/op	      35 allocs/op
+BenchmarkReactivityTextSize/auto-stable-14         	  147556	      1593 ns/op	         0 builds/op	         4.000 damage-cells/op	         0 full/op	         0 layouts/op	         3.000 paints/op	         1.000 partial/op	         1.000 sets/op	    1684 B/op	      18 allocs/op
+BenchmarkReactivityTextSize/auto-changing-14       	    7125	     33293 ns/op	         0 builds/op	       119.0 damage-cells/op	         1.000 full/op	         3.000 layouts/op	        12.00 paints/op	         0 partial/op	         1.000 sets/op	   50416 B/op	     654 allocs/op
+BenchmarkReactivityListCursor/items=10/default-14  	    8464	     28798 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	   51984 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=10/custom-14   	    7482	     32200 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	   47217 B/op	     619 allocs/op
+BenchmarkReactivityListCursor/items=100/default-14 	    5920	     34915 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	   58256 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=100/custom-14  	    2848	     85338 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	  134434 B/op	    1159 allocs/op
+BenchmarkReactivityListCursor/items=1000/default-14         	    2968	     72760 ns/op	         0 builds/op	       240.0 damage-cells/op	         0 full/op	         0 layouts/op	         4.000 paints/op	         1.000 partial/op	         1.000 sets/op	  116880 B/op	     880 allocs/op
+BenchmarkReactivityListCursor/items=1000/custom-14          	     418	    555994 ns/op	         4.000 builds/op	       240.0 damage-cells/op	         1.000 full/op	         9.000 layouts/op	         6.000 paints/op	         0 partial/op	         1.000 sets/op	  984754 B/op	    6559 allocs/op
+BenchmarkRetainedNestedLayout/depth=3-14                    	   22594	     10740 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	        16.00 layouts/op	         4.000 paints/op	         0 partial/op	         1.000 sets/op	   16920 B/op	     139 allocs/op
+BenchmarkRetainedNestedLayout/depth=6-14                    	    5248	     45562 ns/op	         1.000 builds/op	        12.00 damage-cells/op	         1.000 full/op	       118.0 layouts/op	         7.000 paints/op	         0 partial/op	         1.000 sets/op	   66392 B/op	     491 allocs/op
+BenchmarkRetainedPartialDamage/overlap-14                   	  111075	      2132 ns/op	         0 builds/op	        12.00 damage-cells/op	         0 full/op	         0 layouts/op	         2.000 paints/op	         1.000 partial/op	         1.000 sets/op	    2637 B/op	      37 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=2-14       	   46050	      5300 ns/op	         0 builds/op	        24.00 damage-cells/op	         0 full/op	         0 layouts/op	         6.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5274 B/op	      70 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=10-14      	    8890	     25668 ns/op	         0 builds/op	       120.0 damage-cells/op	         0 full/op	         0 layouts/op	        30.00 paints/op	         1.000 partial/op	        10.00 sets/op	   26885 B/op	     345 allocs/op
+BenchmarkRetainedPartialDamage/contiguous/leaves=100-14     	     918	    257277 ns/op	         0 builds/op	      1200 damage-cells/op	         0 full/op	         0 layouts/op	       300.0 paints/op	         1.000 partial/op	       100.0 sets/op	  267099 B/op	    3408 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=2-14           	   42692	      5203 ns/op	         0 builds/op	        24.00 damage-cells/op	         0 full/op	         0 layouts/op	         6.000 paints/op	         1.000 partial/op	         2.000 sets/op	    5274 B/op	      70 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=10-14          	   10000	     31934 ns/op	         0 builds/op	       120.0 damage-cells/op	         0 full/op	         0 layouts/op	        30.00 paints/op	         1.000 partial/op	        10.00 sets/op	   26885 B/op	     345 allocs/op
+BenchmarkRetainedPartialDamage/sparse/leaves=100-14         	     870	    268711 ns/op	         0 builds/op	      1200 damage-cells/op	         0 full/op	         0 layouts/op	       300.0 paints/op	         1.000 partial/op	       100.0 sets/op	  267097 B/op	    3408 allocs/op
+BenchmarkSignalSelectorFanout/subscribers=100-14            	  130078	      1884 ns/op	    5248 B/op	       2 allocs/op
+BenchmarkSignalSelectorFanout/subscribers=1000-14           	   10000	     22883 ns/op	   49152 B/op	       2 allocs/op
+BenchmarkTextPerfHardWrap/bytes=80-14                       	 2951250	        80.14 ns/op	 998.19 MB/s	      32 B/op	       2 allocs/op
+BenchmarkTextPerfHardWrap/bytes=4096-14                     	   12778	     18810 ns/op	 217.76 MB/s	    3072 B/op	       9 allocs/op
+BenchmarkTextPerfHardWrap/bytes=16384-14                    	    3242	     75021 ns/op	 218.39 MB/s	   12800 B/op	      11 allocs/op
+BenchmarkTextPerfCollectSpans/StatusRow-14                  	   48194	      4877 ns/op	   33000 B/op	      15 allocs/op
+BenchmarkTextPerfCollectSpans/Paragraph-14                  	    1099	    218083 ns/op	 1462238 B/op	    1836 allocs/op
+BenchmarkTextPerfCollectSpans/LongWord-14                   	     504	    491279 ns/op	 4080994 B/op	     211 allocs/op
+BenchmarkTextPerfReactiveSpans/StatusRow-14                 	   18991	     12423 ns/op	         0 builds/op	        80.00 damage-cells/op	         0 full/op	         0 layouts/op	         1.000 paints/op	         1.000 partial/op	         1.000 sets/op	   42728 B/op	     181 allocs/op
+BenchmarkTextPerfReactiveSpans/Paragraph-14                 	     613	    387544 ns/op	         0 builds/op	      1920 damage-cells/op	         0 full/op	         0 layouts/op	         1.000 paints/op	         1.000 partial/op	         1.000 sets/op	 1686135 B/op	    5682 allocs/op
+BenchmarkTreeFlattenVisible/nodes=110-14                    	   26434	      9117 ns/op	   43744 B/op	     125 allocs/op
+BenchmarkTreeFlattenVisible/nodes=1110-14                   	    2971	     84969 ns/op	  347074 B/op	    1228 allocs/op
+PASS
+goos: darwin
+goarch: arm64
+pkg: github.com/darrenburns/terma/layout
+cpu: Apple M4 Pro
+BenchmarkTextPerfMeasureHardWrap/bytes=80-14         	 1843831	       129.2 ns/op	 619.18 MB/s	      32 B/op	       2 allocs/op
+BenchmarkTextPerfMeasureHardWrap/bytes=4096-14       	   12069	     19924 ns/op	 205.58 MB/s	    3072 B/op	       9 allocs/op
+BenchmarkTextPerfMeasureHardWrap/bytes=16384-14      	    3040	     77542 ns/op	 211.29 MB/s	   12800 B/op	      11 allocs/op
+PASS
