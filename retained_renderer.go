@@ -12,6 +12,9 @@ import (
 type retainedFloat struct {
 	entry FloatEntry
 	root  *widgetNode
+	// The overlay's hit-test entries are registry entries [registryStart, registryEnd).
+	registryStart int
+	registryEnd   int
 }
 
 type rendererFrameMode string
@@ -538,9 +541,9 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 	if r.geometryOnly {
 		// A clean subtree with the same layout in the same place is exactly as
 		// it was: replay its hit-test entries instead of walking it.
-		if recordRegistry && node.layoutReused && node.subtreeDirtyLevel() == DirtyNone && node.bounds == nodeBounds && node.registered != nil {
+		if recordRegistry && node.layoutReused && node.subtreeDirtyLevel() == DirtyNone && node.bounds == nodeBounds && node.hitClip == ctx.clip && node.registered != nil {
 			start := len(r.widgetRegistry.entries)
-			r.widgetRegistry.entries = append(r.widgetRegistry.entries, node.registered...)
+			r.widgetRegistry.appendEntries(node.registered)
 			node.registered = r.registeredSince(start)
 			return node.subtreeBounds
 		}
@@ -549,7 +552,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		r.lastMeasureCount++
 		registryStart := len(r.widgetRegistry.entries)
 		if recordRegistry {
-			r.recordRegistry(node, nodeBounds)
+			r.recordRegistry(node, nodeBounds, ctx.clip)
 		}
 		subtreeBounds := nodeBounds
 		r.forEachChildContext(ctx, node, style, absBorderX, absBorderY, absContentX, absContentY, func(childCtx *RenderContext, child *widgetNode, x, y int) {
@@ -564,6 +567,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		r.recordReflowDamage(node, nodeBounds, subtreeBounds, ctx.visible)
 		if recordRegistry {
 			node.registered = r.registeredSince(registryStart)
+			node.hitClip = ctx.clip
 		}
 		node.prevBox = box
 		node.bounds = nodeBounds
@@ -658,7 +662,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 
 	registryStart := len(r.widgetRegistry.entries)
 	if recordRegistry {
-		r.recordRegistry(node, nodeBounds)
+		r.recordRegistry(node, nodeBounds, ctx.clip)
 	}
 
 	subtreeBounds := nodeBounds
@@ -704,6 +708,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 
 	if recordRegistry {
 		node.registered = r.registeredSince(registryStart)
+		node.hitClip = ctx.clip
 	}
 	if !partial {
 		node.prevBox = box
@@ -775,12 +780,14 @@ func (r *Renderer) forEachChildContext(ctx *RenderContext, node *widgetNode, sty
 	}
 }
 
-func (r *Renderer) recordRegistry(node *widgetNode, bounds Rect) {
+// recordRegistry records the node as a hit target. clip is the area it may
+// draw in, so only the part of it actually on screen receives pointer events.
+func (r *Renderer) recordRegistry(node *widgetNode, bounds, clip Rect) {
 	eventWidget := node.eventWidget
 	if eventWidget == nil {
 		eventWidget = node.widget
 	}
-	r.widgetRegistry.Record(node.widget, eventWidget, node.eventID, bounds)
+	r.widgetRegistry.Record(node.widget, eventWidget, node.eventID, bounds, bounds.Intersect(clip))
 }
 
 // recordReflowDamage marks what a reflow frame must repaint for this node:
@@ -973,10 +980,13 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 			}
 		}
 
+		registryStart := len(r.widgetRegistry.entries)
 		r.paintRetainedNode(ctx, floatRoot, x, y, Rect{}, false, true)
 		r.retainedFloats = append(r.retainedFloats, retainedFloat{
-			entry: entry,
-			root:  floatRoot,
+			entry:         entry,
+			root:          floatRoot,
+			registryStart: registryStart,
+			registryEnd:   len(r.widgetRegistry.entries),
 		})
 	}
 

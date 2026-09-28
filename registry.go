@@ -56,7 +56,14 @@ type WidgetEntry struct {
 	Widget      Widget
 	EventWidget Widget
 	ID          string
-	Bounds      Rect
+	// Bounds is the widget's border box in screen coordinates. Local mouse
+	// coordinates are relative to it. It can extend past what is drawn, for
+	// example when an ancestor has scrolled part of the widget out of view.
+	Bounds Rect
+	// Visible is the part of Bounds left after clipping by every ancestor and
+	// the screen. Only this area receives pointer events; it is empty for a
+	// widget scrolled entirely out of view.
+	Visible Rect
 }
 
 // WidgetRegistry tracks all widgets and their positions during render.
@@ -65,6 +72,13 @@ type WidgetEntry struct {
 type WidgetRegistry struct {
 	entries    []WidgetEntry
 	totalCount int // All widgets including those scrolled out of view
+
+	// rows[y] lists, in record order, the entries whose visible area covers
+	// screen row y. It is built by the first hit test after the entries
+	// change, so a pointer event costs the widgets on one row rather than
+	// every widget recorded (including those scrolled out of view).
+	rows      [][]int32
+	rowsValid bool
 }
 
 // NewWidgetRegistry creates a new widget registry.
@@ -72,8 +86,9 @@ func NewWidgetRegistry() *WidgetRegistry {
 	return &WidgetRegistry{}
 }
 
-// Record adds a widget to the registry with its bounds and optional ID.
-func (r *WidgetRegistry) Record(widget Widget, eventWidget Widget, id string, bounds Rect) {
+// Record adds a widget to the registry with its bounds, visible area and
+// optional ID.
+func (r *WidgetRegistry) Record(widget Widget, eventWidget Widget, id string, bounds, visible Rect) {
 	if eventWidget == nil {
 		eventWidget = widget
 	}
@@ -82,21 +97,78 @@ func (r *WidgetRegistry) Record(widget Widget, eventWidget Widget, id string, bo
 		EventWidget: eventWidget,
 		ID:          id,
 		Bounds:      bounds,
+		Visible:     visible,
 	})
+	r.rowsValid = false
 }
 
-// WidgetAt returns the topmost widget containing the point (x, y).
-// Returns nil if no widget contains the point.
-// Since widgets are recorded in render order, we search back-to-front
-// to find the topmost (last rendered) widget at this position.
-func (r *WidgetRegistry) WidgetAt(x, y int) *WidgetEntry {
-	// Search from back to front (topmost widgets are rendered last)
-	for i := len(r.entries) - 1; i >= 0; i-- {
-		if r.entries[i].Bounds.Contains(x, y) {
-			return &r.entries[i]
+// appendEntries re-records entries from an earlier frame.
+func (r *WidgetRegistry) appendEntries(entries []WidgetEntry) {
+	r.entries = append(r.entries, entries...)
+	r.rowsValid = false
+}
+
+// row returns the indexes of the entries whose visible area covers row y.
+func (r *WidgetRegistry) row(y int) []int32 {
+	if !r.rowsValid {
+		r.buildRows()
+	}
+	if y < 0 || y >= len(r.rows) {
+		return nil
+	}
+	return r.rows[y]
+}
+
+func (r *WidgetRegistry) buildRows() {
+	for y := range r.rows {
+		r.rows[y] = r.rows[y][:0]
+	}
+	for i := range r.entries {
+		visible := r.entries[i].Visible
+		if visible.IsEmpty() {
+			continue
+		}
+		start, end := max(visible.Y, 0), visible.Y+visible.Height
+		for len(r.rows) < end {
+			r.rows = append(r.rows, nil)
+		}
+		for y := start; y < end; y++ {
+			r.rows[y] = append(r.rows[y], int32(i))
+		}
+	}
+	r.rowsValid = true
+}
+
+// topmostIn returns the last entry in [lo, hi) whose visible area contains
+// (x, y) and that match accepts (nil accepts any).
+func (r *WidgetRegistry) topmostIn(x, y, lo, hi int, match func(*WidgetEntry) bool) *WidgetEntry {
+	row := r.row(y)
+	for i := len(row) - 1; i >= 0; i-- {
+		index := int(row[i])
+		if index >= hi {
+			continue
+		}
+		if index < lo {
+			break
+		}
+		entry := &r.entries[index]
+		if entry.Visible.Contains(x, y) && (match == nil || match(entry)) {
+			return entry
 		}
 	}
 	return nil
+}
+
+// WidgetAt returns the topmost widget visible at the point (x, y).
+// Returns nil if no widget contains the point.
+// Since widgets are recorded in render order, the topmost (last rendered)
+// widget at this position wins.
+func (r *WidgetRegistry) WidgetAt(x, y int) *WidgetEntry {
+	return r.widgetAtIn(x, y, 0, len(r.entries))
+}
+
+func (r *WidgetRegistry) widgetAtIn(x, y, lo, hi int) *WidgetEntry {
+	return r.topmostIn(x, y, lo, hi, nil)
 }
 
 // Entries returns all recorded widget entries.
@@ -118,64 +190,48 @@ func (r *WidgetRegistry) WidgetByID(id string) *WidgetEntry {
 	return nil
 }
 
-// ScrollableAt returns the innermost Scrollable widget containing the point (x, y).
+// ScrollableAt returns the innermost Scrollable widget visible at the point (x, y).
 // Returns nil if no Scrollable contains the point.
-// Since widgets are recorded in render order (parents before children),
-// we search back-to-front to find the innermost scrollable.
 func (r *WidgetRegistry) ScrollableAt(x, y int) *Scrollable {
-	for i := len(r.entries) - 1; i >= 0; i-- {
-		entry := &r.entries[i]
-		if entry.Bounds.Contains(x, y) {
-			// Check for pointer first (e.g., &Scrollable{...})
-			if scrollable, ok := entry.Widget.(*Scrollable); ok {
-				return scrollable
-			}
-			// Then check for value (e.g., Scrollable{...})
-			if scrollable, ok := entry.Widget.(Scrollable); ok {
-				return &scrollable
-			}
-		}
+	scrollables := r.scrollablesAtIn(x, y, 0, len(r.entries))
+	if len(scrollables) == 0 {
+		return nil
 	}
-	return nil
+	return scrollables[0]
 }
 
-// ScrollablesAt returns all Scrollable widgets containing the point (x, y),
+// ScrollablesAt returns all Scrollable widgets visible at the point (x, y),
 // ordered from innermost to outermost.
-// Since widgets are recorded in render order (parents before children),
-// we search back-to-front and collect all matching scrollables.
 func (r *WidgetRegistry) ScrollablesAt(x, y int) []*Scrollable {
+	return r.scrollablesAtIn(x, y, 0, len(r.entries))
+}
+
+func (r *WidgetRegistry) scrollablesAtIn(x, y, lo, hi int) []*Scrollable {
 	var scrollables []*Scrollable
-	for i := len(r.entries) - 1; i >= 0; i-- {
-		entry := &r.entries[i]
-		if entry.Bounds.Contains(x, y) {
-			// Check for pointer first (e.g., &Scrollable{...})
-			if scrollable, ok := entry.Widget.(*Scrollable); ok {
-				scrollables = append(scrollables, scrollable)
-			}
+	r.topmostIn(x, y, lo, hi, func(entry *WidgetEntry) bool {
+		// Check for pointer first (e.g., &Scrollable{...})
+		if scrollable, ok := entry.Widget.(*Scrollable); ok {
+			scrollables = append(scrollables, scrollable)
+		} else if scrollable, ok := entry.Widget.(Scrollable); ok {
 			// Then check for value (e.g., Scrollable{...})
-			if scrollable, ok := entry.Widget.(Scrollable); ok {
-				scrollables = append(scrollables, &scrollable)
-			}
+			scrollables = append(scrollables, &scrollable)
 		}
-	}
+		return false
+	})
 	return scrollables
 }
 
-// FocusableAt returns the innermost focusable widget containing the point (x, y).
+// FocusableAt returns the innermost focusable widget visible at the point (x, y).
 // Returns nil if no focusable widget contains the point.
-// Since widgets are recorded in render order (parents before children),
-// we search back-to-front to find the innermost focusable.
 func (r *WidgetRegistry) FocusableAt(x, y int) *WidgetEntry {
-	for i := len(r.entries) - 1; i >= 0; i-- {
-		entry := &r.entries[i]
-		if entry.Bounds.Contains(x, y) {
-			// Check if EventWidget is focusable
-			if focusable, ok := entry.EventWidget.(Focusable); ok && focusable.IsFocusable() {
-				return entry
-			}
-		}
-	}
-	return nil
+	return r.focusableAtIn(x, y, 0, len(r.entries))
+}
+
+func (r *WidgetRegistry) focusableAtIn(x, y, lo, hi int) *WidgetEntry {
+	return r.topmostIn(x, y, lo, hi, func(entry *WidgetEntry) bool {
+		focusable, ok := entry.EventWidget.(Focusable)
+		return ok && focusable.IsFocusable()
+	})
 }
 
 // Reset clears all entries for a new render pass.
@@ -184,6 +240,7 @@ func (r *WidgetRegistry) Reset() {
 	// their subtree recorded and replay them when a frame skips the subtree.
 	r.entries = make([]WidgetEntry, 0, cap(r.entries))
 	r.totalCount = 0
+	r.rowsValid = false
 }
 
 // IncrementTotal increments the total widget count (including non-visible widgets).

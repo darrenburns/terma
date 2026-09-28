@@ -171,6 +171,7 @@ func (s *reactivitySequence[T]) frame(name string, change func(T)) RenderStats {
 				require.NotNil(s.t, actual, "%s: hit target at %d,%d", name, x, y)
 				require.Equal(s.t, expected.ID, actual.ID, "%s: hit target at %d,%d", name, x, y)
 				require.Equal(s.t, expected.Bounds, actual.Bounds, "%s: hit bounds at %d,%d", name, x, y)
+				require.Equal(s.t, expected.Visible, actual.Visible, "%s: hit area at %d,%d", name, x, y)
 			}
 		}
 	}
@@ -1040,6 +1041,35 @@ func TestReactivitySkippedClickTargetsAfterShift(t *testing.T) {
 	sequence.frame("More targets before the block", func(s *reactivityShiftedTargetsScene) { s.count.Set(4) })
 	sequence.frame("Fewer targets before the block", func(s *reactivityShiftedTargetsScene) { s.count.Set(2) })
 	sequence.frame("None before the block", func(s *reactivityShiftedTargetsScene) { s.count.Set(0) })
+}
+
+type reactivityViewportScene struct {
+	footerLines Signal[int]
+}
+
+// A clean scrolled block keeps its place while a growing footer shrinks its
+// viewport: its targets' bounds are unchanged, but not which parts are visible.
+func (s *reactivityViewportScene) Build(BuildContext) Widget {
+	rows := make([]Widget, 8)
+	for i := range rows {
+		rows[i] = Button{ID: fmt.Sprintf("row-%d", i), Label: fmt.Sprintf("row %d", i)}
+	}
+	return Column{Height: Cells(8), Children: []Widget{
+		Scrollable{ID: "scroller", Height: Flex(1), Child: Column{Children: rows}},
+		reactivityBuilder{ID: "footer", build: func(BuildContext) Widget {
+			return Text{Content: strings.TrimSuffix(strings.Repeat("f\n", s.footerLines.Get()), "\n")}
+		}},
+	}}
+}
+
+func TestReactivityViewportResizeUpdatesClickTargets(t *testing.T) {
+	sequence := newReactivitySequence(t, 20, 8, func() *reactivityViewportScene {
+		return &reactivityViewportScene{footerLines: NewSignal(1)}
+	})
+	sequence.frame("Initial", nil)
+	work := sequence.frame("Viewport shrinks", func(s *reactivityViewportScene) { s.footerLines.Set(5) })
+	require.Equal(t, 1, work.BuildCount, "the scrolled block is reused, not rebuilt")
+	sequence.frame("Viewport grows", func(s *reactivityViewportScene) { s.footerLines.Set(2) })
 }
 
 type reactivityCollapseScene struct {

@@ -797,7 +797,7 @@
   <rect x="587.6" y="204.0" width="8.4" height="19.6" fill="#181623"/>
   <text x="33.2" y="204.0" fill="#E0DEF4">Theme</text>
   <text x="83.6" y="204.0" fill="#E0DEF4">14</text>
-  <text x="520.4" y="204.0" fill="#6E6A86">▇</text>
+  <rect x="520.40" y="206.45" width="8.40" height="17.15" fill="#6E6A86"/>
   <rect x="8.0" y="223.6" width="8.4" height="19.6" fill="#181623"/>
   <rect x="16.4" y="223.6" width="8.4" height="19.6" fill="#181623"/>
   <rect x="24.8" y="223.6" width="8.4" height="19.6" fill="#1F1D2E"/>
@@ -859,7 +859,7 @@
   <rect x="495.2" y="223.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="503.6" y="223.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="512.0" y="223.6" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <rect x="520.4" y="223.6" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="520.4" y="223.6" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="223.6" width="8.4" height="19.6" fill="#181623"/>
   <rect x="537.2" y="223.6" width="8.4" height="19.6" fill="#181623"/>
   <rect x="545.6" y="223.6" width="8.4" height="19.6" fill="#181623"/>
@@ -870,7 +870,6 @@
   <rect x="587.6" y="223.6" width="8.4" height="19.6" fill="#181623"/>
   <text x="33.2" y="223.6" fill="#E0DEF4">Theme</text>
   <text x="83.6" y="223.6" fill="#E0DEF4">15</text>
-  <text x="520.4" y="223.6" fill="#6E6A86">█</text>
   <rect x="8.0" y="243.2" width="8.4" height="19.6" fill="#181623"/>
   <rect x="16.4" y="243.2" width="8.4" height="19.6" fill="#181623"/>
   <rect x="24.8" y="243.2" width="8.4" height="19.6" fill="#F6C177"/>
@@ -932,7 +931,7 @@
   <rect x="495.2" y="243.2" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="503.6" y="243.2" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="512.0" y="243.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="520.4" y="243.2" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="520.4" y="243.2" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="243.2" width="8.4" height="19.6" fill="#181623"/>
   <rect x="537.2" y="243.2" width="8.4" height="19.6" fill="#181623"/>
   <rect x="545.6" y="243.2" width="8.4" height="19.6" fill="#181623"/>
@@ -943,7 +942,6 @@
   <rect x="587.6" y="243.2" width="8.4" height="19.6" fill="#181623"/>
   <text x="33.2" y="243.2" fill="#191724">Theme</text>
   <text x="83.6" y="243.2" fill="#191724">16</text>
-  <text x="520.4" y="243.2" fill="#6E6A86">█</text>
   <rect x="8.0" y="262.8" width="8.4" height="19.6" fill="#181623"/>
   <rect x="16.4" y="262.8" width="8.4" height="19.6" fill="#181623"/>
   <rect x="24.8" y="262.8" width="8.4" height="19.6" fill="#1F1D2E"/>
@@ -1005,7 +1003,7 @@
   <rect x="495.2" y="262.8" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="503.6" y="262.8" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="512.0" y="262.8" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <rect x="520.4" y="262.8" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="520.4" y="262.8" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="262.8" width="8.4" height="19.6" fill="#181623"/>
   <rect x="537.2" y="262.8" width="8.4" height="19.6" fill="#181623"/>
   <rect x="545.6" y="262.8" width="8.4" height="19.6" fill="#181623"/>
@@ -1016,7 +1014,6 @@
   <rect x="587.6" y="262.8" width="8.4" height="19.6" fill="#181623"/>
   <text x="33.2" y="262.8" fill="#E0DEF4">Theme</text>
   <text x="83.6" y="262.8" fill="#E0DEF4">17</text>
-  <text x="520.4" y="262.8" fill="#6E6A86">█</text>
   <rect x="8.0" y="282.4" width="8.4" height="19.6" fill="#181623"/>
   <rect x="16.4" y="282.4" width="8.4" height="19.6" fill="#181623"/>
   <rect x="24.8" y="282.4" width="8.4" height="19.6" fill="#1F1D2E"/>
@@ -1078,7 +1075,7 @@
   <rect x="495.2" y="282.4" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="503.6" y="282.4" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="512.0" y="282.4" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <rect x="520.4" y="282.4" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="520.4" y="282.4" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="282.4" width="8.4" height="19.6" fill="#181623"/>
   <rect x="537.2" y="282.4" width="8.4" height="19.6" fill="#181623"/>
   <rect x="545.6" y="282.4" width="8.4" height="19.6" fill="#181623"/>
@@ -1089,7 +1086,6 @@
   <rect x="587.6" y="282.4" width="8.4" height="19.6" fill="#181623"/>
   <text x="33.2" y="282.4" fill="#E0DEF4">Theme</text>
   <text x="83.6" y="282.4" fill="#E0DEF4">18</text>
-  <text x="520.4" y="282.4" fill="#6E6A86">█</text>
   <rect x="8.0" y="302.0" width="8.4" height="19.6" fill="#181623"/>
   <rect x="16.4" y="302.0" width="8.4" height="19.6" fill="#181623"/>
   <rect x="24.8" y="302.0" width="8.4" height="19.6" fill="#1F1D2E"/>
@@ -1151,7 +1147,7 @@
   <rect x="495.2" y="302.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="503.6" y="302.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="512.0" y="302.0" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <rect x="520.4" y="302.0" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="520.4" y="302.0" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="302.0" width="8.4" height="19.6" fill="#181623"/>
   <rect x="537.2" y="302.0" width="8.4" height="19.6" fill="#181623"/>
   <rect x="545.6" y="302.0" width="8.4" height="19.6" fill="#181623"/>
@@ -1162,7 +1158,6 @@
   <rect x="587.6" y="302.0" width="8.4" height="19.6" fill="#181623"/>
   <text x="33.2" y="302.0" fill="#E0DEF4">Theme</text>
   <text x="83.6" y="302.0" fill="#E0DEF4">19</text>
-  <text x="520.4" y="302.0" fill="#6E6A86">█</text>
   <rect x="8.0" y="321.6" width="8.4" height="19.6" fill="#181623"/>
   <rect x="16.4" y="321.6" width="8.4" height="19.6" fill="#181623"/>
   <rect x="24.8" y="321.6" width="8.4" height="19.6" fill="#1F1D2E"/>
@@ -1224,7 +1219,7 @@
   <rect x="495.2" y="321.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="503.6" y="321.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="512.0" y="321.6" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <rect x="520.4" y="321.6" width="8.4" height="19.6" fill="#1F1D2E"/>
+  <rect x="520.4" y="321.6" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="321.6" width="8.4" height="19.6" fill="#181623"/>
   <rect x="537.2" y="321.6" width="8.4" height="19.6" fill="#181623"/>
   <rect x="545.6" y="321.6" width="8.4" height="19.6" fill="#181623"/>
@@ -1235,7 +1230,6 @@
   <rect x="587.6" y="321.6" width="8.4" height="19.6" fill="#181623"/>
   <text x="33.2" y="321.6" fill="#E0DEF4">Theme</text>
   <text x="83.6" y="321.6" fill="#E0DEF4">20</text>
-  <text x="520.4" y="321.6" fill="#6E6A86">█</text>
   <rect x="8.0" y="341.2" width="8.4" height="19.6" fill="#181623"/>
   <rect x="16.4" y="341.2" width="8.4" height="19.6" fill="#181623"/>
   <rect x="24.8" y="341.2" width="8.4" height="19.6" fill="#181623"/>

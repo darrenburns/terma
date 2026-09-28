@@ -165,6 +165,7 @@ type widgetNode struct {
 	prevBox      layout.BoxModel    // Box when last measured or painted, to detect box-only changes.
 	layoutReused bool               // Its last layout assignment was skipped as unchanged.
 	registered   []WidgetEntry      // Hit-test entries its subtree recorded when last measured or painted.
+	hitClip      Rect               // Clip it was recorded under; its entries' visible areas depend on it.
 	layoutCache  []layoutCacheEntry // Recent results by constraints, valid while the subtree is clean.
 
 	// Cached layout.SizePreserver answers, valid under the same condition.

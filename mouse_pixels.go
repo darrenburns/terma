@@ -82,13 +82,18 @@ func (p *pixelPointer) locateEvent(event uv.Event) (uv.Event, float64, float64) 
 		m, subX, subY := p.locate(uv.Mouse(ev))
 		return uv.MouseReleaseEvent(m), subX, subY
 	case uv.MouseMotionEvent:
-		m, subX, subY := p.locate(uv.Mouse(ev))
-		return uv.MouseMotionEvent(m), subX, subY
+		return p.locateMotion(ev)
 	case uv.MouseWheelEvent:
 		m, subX, subY := p.locate(uv.Mouse(ev))
 		return uv.MouseWheelEvent(m), subX, subY
 	}
 	return event, 0.5, 0.5
+}
+
+// locateMotion applies locate to a motion event.
+func (p *pixelPointer) locateMotion(ev uv.MouseMotionEvent) (uv.MouseMotionEvent, float64, float64) {
+	m, subX, subY := p.locate(uv.Mouse(ev))
+	return uv.MouseMotionEvent(m), subX, subY
 }
 
 // locate converts a mouse position to cells, and returns where in its cell

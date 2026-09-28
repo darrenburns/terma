@@ -105,11 +105,15 @@ type MouseDownHandler interface {
 }
 
 // MouseUpHandler is implemented by widgets that respond to mouse button releases.
+// A release goes to the widget that received the press, even if the pointer
+// has since moved off it, so a drag always ends where it started.
 type MouseUpHandler interface {
 	OnMouseUp(event MouseEvent)
 }
 
 // MouseMoveHandler is implemented by widgets that respond to mouse movement during drag.
+// It is called while a button pressed on the widget is held, wherever the
+// pointer goes; LocalX and LocalY can then lie outside the widget.
 type MouseMoveHandler interface {
 	OnMouseMove(event MouseEvent)
 }
