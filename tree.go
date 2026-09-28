@@ -28,6 +28,7 @@ type TreeState[T any] struct {
 	viewPaths       [][]int
 	viewIndexByPath map[string]int
 	rowLayouts      []treeRowLayout
+	revealed        cursorReveal[string] // Where the cursor was last scrolled into view
 	indicatorLayout []treeIndicatorLayout
 	nodeID          func(T) string
 	eagerLoadOnce   sync.Once
@@ -565,7 +566,7 @@ func (c treeContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 		layouts[i] = treeRowLayout{y: bounds.Y, height: bounds.Height}
 	}
 	c.tree.State.rowLayouts = layouts
-	c.tree.scrollCursorIntoView()
+	c.tree.revealMovedCursor()
 }
 
 func (c treeContainer[T]) ChildWidgets() []Widget {
@@ -994,7 +995,6 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 			}
 		}
 		t.State.indicatorLayout = indicatorLayout
-		t.registerScrollCallbacks()
 
 		return treeContainer[T]{
 			Column: Column{
@@ -1042,8 +1042,6 @@ func (t Tree[T]) Build(ctx BuildContext) Widget {
 		}
 	}
 	t.State.indicatorLayout = indicatorLayout
-
-	t.registerScrollCallbacks()
 
 	return treeContainer[T]{
 		Column: Column{
@@ -1643,16 +1641,39 @@ func (t Tree[T]) scrollCursorIntoView() {
 		return
 	}
 	cursor := t.State.CursorPath.Peek()
-	rowY, rowHeight, ok := t.getRowLayout(cursor)
+	rowY, rowHeight, ok := t.cursorRegion(cursor)
 	if !ok {
-		if viewIdx, ok := t.viewIndexForPath(cursor); ok {
-			rowHeight = 1
-			rowY = viewIdx * rowHeight
-		} else {
-			return
-		}
+		return
+	}
+	t.State.revealed.record(pathKey(cursor), rowY, rowHeight, t.ScrollState)
+	t.ScrollState.ScrollToView(rowY, rowHeight)
+}
+
+// revealMovedCursor scrolls the cursor into view after layout, unless it was
+// already revealed at its current position. Mouse wheel scrolling moves only
+// the viewport, so it must not be undone by the next layout.
+func (t Tree[T]) revealMovedCursor() {
+	if t.ScrollState == nil || t.State == nil {
+		return
+	}
+	cursor := t.State.CursorPath.Peek()
+	rowY, rowHeight, ok := t.cursorRegion(cursor)
+	if !ok || !t.State.revealed.needed(pathKey(cursor), rowY, rowHeight, t.ScrollState) {
+		return
 	}
 	t.ScrollState.ScrollToView(rowY, rowHeight)
+}
+
+// cursorRegion returns the content rows occupied by the cursor row.
+func (t Tree[T]) cursorRegion(cursor []int) (y, height int, ok bool) {
+	if y, height, ok = t.getRowLayout(cursor); ok {
+		return y, height, true
+	}
+	viewIdx, ok := t.viewIndexForPath(cursor)
+	if !ok {
+		return 0, 0, false
+	}
+	return viewIdx, 1, true
 }
 
 func (t Tree[T]) getRowLayout(path []int) (y, height int, ok bool) {
@@ -1671,58 +1692,6 @@ func (t Tree[T]) getRowLayout(path []int) (y, height int, ok bool) {
 		return 0, 0, false
 	}
 	return layout.y, layout.height, true
-}
-
-func (t Tree[T]) registerScrollCallbacks() {
-	if t.ScrollState == nil {
-		return
-	}
-	t.ScrollState.OnScrollUp = func(lines int) bool {
-		t.moveCursorUp(lines)
-		t.scrollCursorIntoView()
-		t.notifyCursorChange()
-		return true
-	}
-	t.ScrollState.OnScrollDown = func(lines int) bool {
-		t.moveCursorDown(lines)
-		t.scrollCursorIntoView()
-		t.notifyCursorChange()
-		return true
-	}
-}
-
-func (t Tree[T]) moveCursorUp(count int) {
-	if t.State == nil {
-		return
-	}
-	view := t.viewPaths()
-	if len(view) == 0 {
-		return
-	}
-	cursor := t.State.CursorPath.Peek()
-	cursorIdx, ok := t.viewIndexForPath(cursor)
-	if !ok {
-		cursorIdx = 0
-	}
-	newIdx := clampInt(cursorIdx-count, 0, len(view)-1)
-	t.State.CursorPath.Set(clonePath(view[newIdx]))
-}
-
-func (t Tree[T]) moveCursorDown(count int) {
-	if t.State == nil {
-		return
-	}
-	view := t.viewPaths()
-	if len(view) == 0 {
-		return
-	}
-	cursor := t.State.CursorPath.Peek()
-	cursorIdx, ok := t.viewIndexForPath(cursor)
-	if !ok {
-		cursorIdx = 0
-	}
-	newIdx := clampInt(cursorIdx+count, 0, len(view)-1)
-	t.State.CursorPath.Set(clonePath(view[newIdx]))
 }
 
 func (t Tree[T]) notifyCursorChange() {

@@ -520,6 +520,37 @@ func TestReactivityScrollbarFollowsContentGrowth(t *testing.T) {
 	sequence.frame("Shrink removes scrollbar", func(s *reactivityScrollGrowthScene) { s.count.Set(1) })
 }
 
+type reactivityWheelListScene struct {
+	list   *ListState[string]
+	scroll *ScrollState
+}
+
+func (s *reactivityWheelListScene) Build(BuildContext) Widget {
+	return Scrollable{ID: "scroll", State: s.scroll, Height: Cells(4), Child: List[string]{ID: "list", State: s.list, ScrollState: s.scroll}}
+}
+
+// Wheel scrolling moves only the viewport; relayouts after it must not snap
+// the viewport back to the cursor, while cursor moves still reveal it.
+func TestReactivityWheelScrollLeavesListCursor(t *testing.T) {
+	sequence := newReactivitySequence(t, 20, 4, func() *reactivityWheelListScene {
+		items := make([]string, 12)
+		for i := range items {
+			items[i] = fmt.Sprintf("item %d", i)
+		}
+		return &reactivityWheelListScene{list: NewListState(items), scroll: NewScrollState()}
+	})
+	sequence.frame("Initial", nil)
+	sequence.focus("list")
+	sequence.frame("Focus list", nil)
+	sequence.frame("Wheel down leaves the cursor behind", func(s *reactivityWheelListScene) { s.scroll.ScrollDown(5) })
+	sequence.frame("Appending relayouts without snapping back", func(s *reactivityWheelListScene) { s.list.Append("item 12") })
+	sequence.frame("Cursor move reveals the cursor", func(s *reactivityWheelListScene) { s.list.SelectNext() })
+	for _, side := range []*reactivitySurface[*reactivityWheelListScene]{sequence.actual, sequence.expected} {
+		require.Equal(t, 1, side.root.list.CursorIndex.Peek())
+		require.Equal(t, 1, side.root.scroll.GetOffset())
+	}
+}
+
 type reactivityScrollbarScene struct {
 	scroll *ScrollState
 	count  Signal[int]

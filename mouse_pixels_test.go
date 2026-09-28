@@ -1,6 +1,7 @@
 package terma
 
 import (
+	"strings"
 	"testing"
 
 	uv "github.com/charmbracelet/ultraviolet"
@@ -98,4 +99,108 @@ func TestPixelPointer_LocatesWithinCell(t *testing.T) {
 	key := uv.KeyPressEvent{Code: 'a'}
 	other, _, _ := p.locateEvent(key)
 	assert.Equal(t, uv.Event(key), other)
+}
+
+// decodeAll decodes input as the terminal reader does.
+func decodeAll(t *testing.T, input string) []uv.Event {
+	t.Helper()
+	var decoder uv.EventDecoder
+	var events []uv.Event
+	for buf := []byte(input); len(buf) > 0; {
+		n, event := decoder.Decode(buf)
+		require.Positive(t, n, "decoder made no progress on %q", buf)
+		events = append(events, event)
+		buf = buf[n:]
+	}
+	return events
+}
+
+// feedAll passes events through repair, returning those left to handle.
+func feedAll(repair *sgrMouseRepair, events []uv.Event) []uv.Event {
+	var out []uv.Event
+	for _, event := range events {
+		if event = repair.feed(event); event != nil {
+			out = append(out, event)
+		}
+	}
+	return out
+}
+
+func TestSgrMouseRepair_NegativeCoordinates(t *testing.T) {
+	for _, tc := range []struct {
+		input    string
+		repaired string // The same report with negative coordinates as 0.
+	}{
+		{"\x1b[<0;-3;5m", "\x1b[<0;0;5m"},       // Release outside the window.
+		{"\x1b[<35;-3;5M", "\x1b[<35;0;5M"},     // Motion off the left edge.
+		{"\x1b[<35;10;-2M", "\x1b[<35;10;0M"},   // Motion off the top edge.
+		{"\x1b[<35;-1;-1M", "\x1b[<35;0;0M"},    // Motion off the top-left corner.
+		{"\x1b[<32;-40;-7M", "\x1b[<32;0;0M"},   // Drag outside the window.
+		{"\x1b[<0;-123;456M", "\x1b[<0;0;456M"}, // Press (reported while outside).
+	} {
+		t.Run(tc.input, func(t *testing.T) {
+			split := decodeAll(t, tc.input)
+			require.IsType(t, uv.UnknownEvent(""), split[0], "the decoder still splits this report")
+
+			var repair sgrMouseRepair
+			out := feedAll(&repair, split)
+			for _, event := range out {
+				_, isKey := event.(uv.KeyPressEvent)
+				assert.False(t, isKey, "stray key press %v", event)
+			}
+			assert.Equal(t, decodeAll(t, tc.repaired), out)
+			assert.Nil(t, repair.held)
+		})
+	}
+}
+
+func TestSgrMouseRepair_ReleaseOutsideWindow(t *testing.T) {
+	var repair sgrMouseRepair
+	out := feedAll(&repair, decodeAll(t, "\x1b[<0;-3;5m"))
+	require.Len(t, out, 1)
+	release, ok := out[0].(uv.MouseReleaseEvent)
+	require.True(t, ok, "got %T", out[0])
+	assert.Equal(t, uv.MouseLeft, release.Button)
+	assert.Equal(t, 4, release.Y) // 1-based 5.
+}
+
+func TestSgrMouseRepair_EventsAfterReportPassThrough(t *testing.T) {
+	var repair sgrMouseRepair
+	out := feedAll(&repair, decodeAll(t, "\x1b[<35;-3;5M\x1b[<35;-1;-1Mq\x1b[I"))
+	require.Len(t, out, 4)
+	assert.IsType(t, uv.MouseMotionEvent{}, out[0])
+	assert.IsType(t, uv.MouseMotionEvent{}, out[1])
+	assert.Equal(t, uv.Event(uv.KeyPressEvent{Code: 'q', Text: "q"}), out[2])
+	assert.IsType(t, uv.FocusEvent{}, out[3])
+}
+
+func TestSgrMouseRepair_OtherEventEndsReport(t *testing.T) {
+	var repair sgrMouseRepair
+	events := decodeAll(t, "\x1b[<0;-3")
+	events = append(events, uv.KeyPressEvent{Code: 'x', Text: "x"})
+	events = append(events, decodeAll(t, "5m")...)
+	out := feedAll(&repair, events)
+	// The held prefix is dropped; what follows the interruption is ordinary input.
+	assert.Equal(t, []uv.Event{
+		uv.KeyPressEvent{Code: 'x', Text: "x"},
+		uv.KeyPressEvent{Code: '5', Text: "5"},
+		uv.KeyPressEvent{Code: 'm', Text: "m"},
+	}, out)
+}
+
+func TestSgrMouseRepair_LeavesOtherInputAlone(t *testing.T) {
+	var repair sgrMouseRepair
+	events := decodeAll(t, "12;-mM\x1b[<0;3;5m")
+	events = append(events, uv.UnknownEvent("\x1b[?999z"))
+	assert.Equal(t, events, feedAll(&repair, events))
+}
+
+func TestSgrMouseRepair_MalformedReportIsDropped(t *testing.T) {
+	var repair sgrMouseRepair
+	// Too many parameters to be a mouse report: nothing comes out.
+	assert.Empty(t, feedAll(&repair, decodeAll(t, "\x1b[<0;-3;5;7m")))
+	// A report that never ends stops being held once too long to be one.
+	out := feedAll(&repair, decodeAll(t, "\x1b[<0;-"+strings.Repeat("1", 40)))
+	assert.NotEmpty(t, out)
+	assert.Nil(t, repair.held)
 }

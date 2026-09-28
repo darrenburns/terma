@@ -231,6 +231,8 @@ func Run(root Widget) (runErr error) {
 	// Ask whether the mouse can be reported in pixels; see pixelPointer.
 	pointer := newPixelPointer()
 	_, _ = t.WriteString(pointer.query())
+	// Reassembles mouse reports the decoder splits; see sgrMouseRepair.
+	var sgrRepair sgrMouseRepair
 
 	// shutdownTerminal restores the terminal to its normal state.
 	// Safe to call multiple times (Shutdown is idempotent).
@@ -637,6 +639,7 @@ func Run(root Widget) (runErr error) {
 				// reporting); only the latest position matters. The pixel
 				// pointer ignores mouse events, so it can't change mid-burst.
 				if motion, isMotion := ev.(uv.MouseMotionEvent); isMotion {
+					sgrRepair.reset()
 					latest, next := coalesceMouseMotion(motion, termEvents)
 					if mouse.motion(pointer.locateMotion(latest)) {
 						requestRender()
@@ -645,6 +648,12 @@ func Run(root Widget) (runErr error) {
 						continue
 					}
 					ev = next
+				}
+				// A report with a negative coordinate (the pointer outside
+				// the window, in pixel mode) arrives in pieces, mostly as key
+				// presses; hold them and handle the mouse event they make.
+				if ev = sgrRepair.feed(ev); ev == nil {
+					continue
 				}
 				if seq := pointer.handle(ev); seq != "" {
 					_, _ = t.WriteString(seq)
