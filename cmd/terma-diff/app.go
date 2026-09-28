@@ -389,7 +389,7 @@ func (a *DiffApp) buildHeader(theme t.ThemeData) t.Widget {
 	}
 
 	rightWidget := t.Text{
-		Content: themeDisplayName(t.CurrentThemeName()) + " [^t]",
+		Content: t.ThemeDisplayName(t.CurrentThemeName()) + " [^t]",
 		Style: t.Style{
 			Padding:         t.EdgeInsetsXY(1, 0),
 			ForegroundColor: theme.SecondaryText,
@@ -1927,43 +1927,14 @@ func (a *DiffApp) refreshCommandPaletteItems() {
 }
 
 func (a *DiffApp) themeItems() []t.CommandPaletteItem {
-	items := make([]t.CommandPaletteItem, 0, len(t.ThemeNames())+2)
-	addGroup := func(title string, names []string) {
-		if len(names) == 0 {
-			return
-		}
-		items = append(items, t.CommandPaletteItem{Divider: title})
-		for _, name := range names {
-			label := themeDisplayName(name)
-			hint := ""
-			if name == t.CurrentThemeName() {
-				hint = "current"
-			}
-			themeName := name
-			items = append(items, t.CommandPaletteItem{
-				Label:      label,
-				FilterText: label + " " + themeName,
-				Hint:       hint,
-				Current:    name == t.CurrentThemeName(),
-				Data:       themeName,
-				Action:     a.setThemeAction(themeName),
-			})
-		}
-	}
-
-	addGroup("Dark themes", t.DarkThemeNames())
-	addGroup("Light themes", t.LightThemeNames())
-
-	return items
+	return t.ThemePaletteItems(a.selectTheme)
 }
 
-func (a *DiffApp) setThemeAction(themeName string) func() {
-	return func() {
-		t.SetTheme(themeName)
-		a.commitThemePreview()
-		if a.commandPalette != nil {
-			a.commandPalette.Close(false)
-		}
+func (a *DiffApp) selectTheme(themeName string) {
+	t.SetTheme(themeName)
+	a.commitThemePreview()
+	if a.commandPalette != nil {
+		a.commandPalette.Close(false)
 	}
 }
 
@@ -2015,17 +1986,6 @@ func (a *DiffApp) finishThemePreview(commit bool) {
 		t.SetTheme(a.themePreviewBase)
 	}
 	a.themePreviewBase = ""
-}
-
-func themeDisplayName(name string) string {
-	parts := strings.Split(name, "-")
-	for i, part := range parts {
-		if part == "" {
-			continue
-		}
-		parts[i] = strings.ToUpper(part[:1]) + part[1:]
-	}
-	return strings.Join(parts, " ")
 }
 
 func (a *DiffApp) sidebarSummaryLabel() string {
