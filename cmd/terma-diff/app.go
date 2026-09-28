@@ -89,7 +89,6 @@ type DiffApp struct {
 	dividerFocusRequested bool
 	lastNonDividerFocus   string
 	focusReturnID         string
-	themeCursorSynced     bool
 	themePreviewBase      string
 
 	layoutToggleScrollRestoreValid  bool
@@ -1762,7 +1761,6 @@ func (a *DiffApp) togglePalette() {
 		return
 	}
 	a.themePreviewBase = ""
-	a.themeCursorSynced = false
 	a.commandPalette.Open()
 }
 
@@ -1774,7 +1772,6 @@ func (a *DiffApp) openThemePalette() {
 	a.cancelThemePreview()
 	a.commandPalette.Close(false)
 	a.themePreviewBase = ""
-	a.themeCursorSynced = false
 	a.commandPalette.Open()
 	a.commandPalette.PushLevel(diffThemesPalette, a.themeItems())
 	if item, ok := a.commandPalette.CurrentItem(); ok {
@@ -1947,6 +1944,7 @@ func (a *DiffApp) themeItems() []t.CommandPaletteItem {
 				Label:      label,
 				FilterText: label + " " + themeName,
 				Hint:       hint,
+				Current:    name == t.CurrentThemeName(),
 				Data:       themeName,
 				Action:     a.setThemeAction(themeName),
 			})
@@ -1997,18 +1995,6 @@ func (a *DiffApp) handlePaletteCursorChange(item t.CommandPaletteItem) {
 	if !ok || themeName == "" {
 		return
 	}
-	if !a.themeCursorSynced {
-		currentItem, hasCurrent := a.commandPalette.CurrentItem()
-		if hasCurrent {
-			currentThemeName, _ := currentItem.Data.(string)
-			if currentThemeName == themeName {
-				a.themeCursorSynced = true
-				if selectPaletteTheme(level, t.CurrentThemeName()) {
-					return
-				}
-			}
-		}
-	}
 	t.SetTheme(themeName)
 }
 
@@ -2029,25 +2015,6 @@ func (a *DiffApp) finishThemePreview(commit bool) {
 		t.SetTheme(a.themePreviewBase)
 	}
 	a.themePreviewBase = ""
-	a.themeCursorSynced = false
-}
-
-func selectPaletteTheme(level *t.CommandPaletteLevel, themeName string) bool {
-	if level == nil || level.ListState == nil || themeName == "" {
-		return false
-	}
-	for idx, item := range level.Items {
-		name, ok := item.Data.(string)
-		if !ok || name != themeName {
-			continue
-		}
-		if level.ListState.CursorIndex.Peek() == idx {
-			return false
-		}
-		level.ListState.SelectIndex(idx)
-		return true
-	}
-	return false
 }
 
 func themeDisplayName(name string) string {

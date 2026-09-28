@@ -22,7 +22,7 @@ func TestSortFilteredViewByFuzzyRank_PrefersEarlierStart(t *testing.T) {
 	items := []string{"xa---b", "ab---", "zab"}
 	view := ApplyFilter(items, "ab", fuzzyStringMatcher)
 
-	sortFilteredViewByFuzzyRank(&view)
+	sortFilteredViewByScore(&view)
 
 	wantIndices := []int{1, 2, 0}
 	if !reflect.DeepEqual(view.Indices, wantIndices) {
@@ -34,7 +34,7 @@ func TestSortFilteredViewByFuzzyRank_PrefersTighterWhenStartEqual(t *testing.T) 
 	items := []string{"a---b", "ab---", "a--b"}
 	view := ApplyFilter(items, "ab", fuzzyStringMatcher)
 
-	sortFilteredViewByFuzzyRank(&view)
+	sortFilteredViewByScore(&view)
 
 	wantIndices := []int{1, 2, 0}
 	if !reflect.DeepEqual(view.Indices, wantIndices) {
@@ -54,7 +54,7 @@ func TestSortFilteredViewByFuzzyRank_StableOnExactTie(t *testing.T) {
 		},
 	}
 
-	sortFilteredViewByFuzzyRank(&view)
+	sortFilteredViewByScore(&view)
 
 	wantIndices := []int{2, 0, 1}
 	if !reflect.DeepEqual(view.Indices, wantIndices) {
@@ -192,5 +192,109 @@ func TestTreeBuildViewEntries_FuzzyKeepsSiblingOrder(t *testing.T) {
 	want := []string{"a---b", "ab---", "a--b"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("tree sibling order changed under fuzzy filtering: got %v, want %v", got, want)
+	}
+}
+
+func fuzzyRankedLabels(items []string, query string) []string {
+	view := ApplyFilter(items, query, fuzzyStringMatcher)
+	sortFilteredViewByScore(&view)
+	return view.Items
+}
+
+func matchedText(text string, match MatchResult) []string {
+	parts := make([]string, 0, len(match.Ranges))
+	for _, r := range match.Ranges {
+		parts = append(parts, text[r.Start:r.End])
+	}
+	return parts
+}
+
+func TestFuzzyRank_WordStartBeatsMidWord(t *testing.T) {
+	got := fuzzyRankedLabels([]string{"Profile Settings", "New File", "Find in Files"}, "file")
+
+	want := []string{"New File", "Find in Files", "Profile Settings"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected order: got %v, want %v", got, want)
+	}
+}
+
+func TestFuzzyRank_InitialsMatchWordStarts(t *testing.T) {
+	got := fuzzyRankedLabels([]string{"Paste", "Git: Push", "Profile Settings"}, "ps")
+
+	if got[0] != "Profile Settings" {
+		t.Fatalf("expected initials match first, got %v", got)
+	}
+}
+
+func TestFuzzyRank_ShorterTextWinsEqualMatches(t *testing.T) {
+	got := fuzzyRankedLabels([]string{"Copy Path", "Save All", "Copy", "Save"}, "copy")
+
+	want := []string{"Copy", "Copy Path"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected order: got %v, want %v", got, want)
+	}
+}
+
+func TestFuzzyRank_ContiguousBeatsScattered(t *testing.T) {
+	got := fuzzyRankedLabels([]string{"Go to Line", "Toggle Sidebar"}, "tog")
+
+	if got[0] != "Toggle Sidebar" {
+		t.Fatalf("expected contiguous prefix match first, got %v", got)
+	}
+}
+
+func TestMatchString_FuzzyHighlightsBestPlacement(t *testing.T) {
+	// A greedy left-to-right scan would take the "o" in "Toggle".
+	match := MatchString("Toggle off", "of", FilterOptions{Mode: FilterFuzzy})
+
+	if got := matchedText("Toggle off", match); !reflect.DeepEqual(got, []string{"of"}) {
+		t.Fatalf("expected contiguous \"of\" highlighted, got %q", got)
+	}
+}
+
+func TestMatchString_FuzzyHighlightsWordStarts(t *testing.T) {
+	match := MatchString("Toggle Word Wrap", "tw", FilterOptions{Mode: FilterFuzzy})
+
+	if got := matchedText("Toggle Word Wrap", match); !reflect.DeepEqual(got, []string{"T", "W"}) {
+		t.Fatalf("expected word starts highlighted, got %q", got)
+	}
+}
+
+func TestMatchString_FuzzyTermsMatchInAnyOrder(t *testing.T) {
+	opts := FilterOptions{Mode: FilterFuzzy}
+
+	match := MatchString("Toggle Word Wrap", "wrap toggle", opts)
+	if !match.Matched {
+		t.Fatal("expected terms to match out of order")
+	}
+	if got := matchedText("Toggle Word Wrap", match); !reflect.DeepEqual(got, []string{"Toggle", "Wrap"}) {
+		t.Fatalf("unexpected highlight: %q", got)
+	}
+
+	if MatchString("Toggle Word Wrap", "wrap zebra", opts).Matched {
+		t.Fatal("expected every term to be required")
+	}
+	if !MatchString("Toggle Word Wrap", "  ", opts).Matched {
+		t.Fatal("expected a blank query to match everything")
+	}
+}
+
+func TestMatchString_FuzzyRangesAreByteOffsetsInMultibyteText(t *testing.T) {
+	text := "Café Menü"
+	match := MatchString(text, "MENÜ", FilterOptions{Mode: FilterFuzzy})
+
+	if got := matchedText(text, match); !reflect.DeepEqual(got, []string{"Menü"}) {
+		t.Fatalf("unexpected highlight: %q", got)
+	}
+}
+
+func TestMatchString_FuzzyCaseSensitive(t *testing.T) {
+	opts := FilterOptions{Mode: FilterFuzzy, CaseSensitive: true}
+
+	if MatchString("toggle", "T", opts).Matched {
+		t.Fatal("expected case-sensitive fuzzy match to fail")
+	}
+	if !MatchString("Toggle", "T", opts).Matched {
+		t.Fatal("expected case-sensitive fuzzy match to succeed")
 	}
 }
