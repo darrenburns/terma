@@ -61,4 +61,5 @@ upstream refresh (on `ef63bc1`); the full test and race suites were rerun afterw
 - Searching `HardWrap` returns six of 39 scenarios.
 - Browser reported no console errors or warnings during the check.
 - Embedded measurements exactly match `results.json`; all source/evidence links
-  resolve within the repository. No external assets or runtime dependencies.
+  resolve to the repository or bundled data. Published source and Markdown links
+  point to the audited commit on GitHub. No external assets or runtime dependencies.
