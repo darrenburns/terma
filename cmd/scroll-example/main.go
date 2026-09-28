@@ -3,11 +3,47 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
+	"time"
 
 	t "github.com/darrenburns/terma"
 )
 
-// Theme names for cycling
+// ScrollDemo shows Scrollable containers driven by ScrollState: a page that
+// scrolls and holds more scrollables, a list, wrapped text, a log pinned to
+// its end, wide content that pans sideways, and a panel with scrolling
+// disabled.
+//
+// Keys in the focused scrollable:
+//
+//	↑/↓ j/k         - scroll one line
+//	PgUp/PgDn       - scroll a page (also ctrl+u / ctrl+d)
+//	Home/End g/G    - jump to top / end (End re-pins the log)
+//	←/→ h/l         - pan sideways (wide panel)
+//	tab / shift+tab - move between scrollables
+//
+// App keys:
+//
+//	p - pause / resume the log feed
+//	b - jump the log to its end and re-pin it
+//	r - scroll everything back to the top
+//	c - clear the log
+//	t - cycle theme
+type ScrollDemo struct {
+	pageState *t.ScrollState
+	listState *t.ScrollState
+	textState *t.ScrollState
+	logState  *t.ScrollState
+	wideState *t.ScrollState
+	offState  *t.ScrollState
+
+	logLines   t.AnySignal[[]string]
+	logCount   int // numbers log lines; keeps counting after a clear
+	feed       *t.Animation[float64]
+	feedPaused t.Signal[bool]
+	themeIndex t.Signal[int]
+}
+
 var themeNames = []string{
 	t.ThemeNameRosePine,
 	t.ThemeNameDracula,
@@ -20,160 +56,443 @@ var themeNames = []string{
 	t.ThemeNameMonokai,
 }
 
-type ScrollDemo struct {
-	bodyState       *t.ScrollState
-	scrollListState *t.ScrollState
-	scrollTextState *t.ScrollState
-	noScrollState   *t.ScrollState
-	themeIndex      t.Signal[int]
+const (
+	sidebarWidth    = 32
+	topRowHeight    = 12
+	middleRowHeight = 9
+	disabledHeight  = 3
+)
+
+const loremText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo."
+
+var logEvents = []string{
+	"GET /api/items 200",
+	"cache hit items:page=2",
+	"POST /api/items 201",
+	"worker 3 picked up job",
+	"GET /healthz 200",
+	"slow query took 412ms",
+	"DELETE /api/items/17 204",
+	"worker 3 finished job",
 }
 
-func (s *ScrollDemo) cycleTheme() {
-	s.themeIndex.Update(func(i int) int {
+func NewScrollDemo() *ScrollDemo {
+	d := &ScrollDemo{
+		pageState:  t.NewScrollState(),
+		listState:  t.NewScrollState(),
+		textState:  t.NewScrollState(),
+		logState:   t.NewScrollState(),
+		wideState:  t.NewScrollState(),
+		offState:   t.NewScrollState(),
+		logLines:   t.NewAnySignal[[]string](nil),
+		feedPaused: t.NewSignal(false),
+		themeIndex: t.NewSignal(0),
+	}
+	// While the log is scrolled to its end, new lines keep it there.
+	// Scrolling up unpins it; End (or b) pins it again.
+	d.logState.PinToBottom = true
+	for i := 0; i < 3; i++ {
+		d.appendLog()
+	}
+
+	// A looping animation runs code on the UI goroutine at a steady pace:
+	// each time it completes, add a log line and start again.
+	d.feed = t.NewAnimation(t.AnimationConfig[float64]{
+		From:     0,
+		To:       1,
+		Duration: 600 * time.Millisecond,
+		OnComplete: func() {
+			d.appendLog()
+			d.feed.Reset()
+			d.feed.Start()
+		},
+	})
+	d.feed.Start()
+	return d
+}
+
+func (d *ScrollDemo) appendLog() {
+	d.logCount++
+	line := fmt.Sprintf("%04d  %s", d.logCount, logEvents[d.logCount%len(logEvents)])
+	d.logLines.Update(func(lines []string) []string {
+		return append(lines[:len(lines):len(lines)], line)
+	})
+}
+
+func (d *ScrollDemo) toggleFeed() {
+	if d.feedPaused.Peek() {
+		d.feed.Resume()
+	} else {
+		d.feed.Pause()
+	}
+	d.feedPaused.Set(!d.feedPaused.Peek())
+}
+
+func (d *ScrollDemo) scrollAllToTop() {
+	for _, s := range []*t.ScrollState{d.pageState, d.listState, d.textState, d.logState, d.wideState} {
+		s.SetOffset(0)
+		s.SetOffsetX(0)
+	}
+}
+
+func (d *ScrollDemo) cycleTheme() {
+	d.themeIndex.Update(func(i int) int {
 		next := (i + 1) % len(themeNames)
 		t.SetTheme(themeNames[next])
 		return next
 	})
 }
 
-func (s *ScrollDemo) Keybinds() []t.Keybind {
+func (d *ScrollDemo) Keybinds() []t.Keybind {
 	return []t.Keybind{
-		{Key: "t", Name: "Next theme", Action: s.cycleTheme},
+		{Key: "p", Name: "Pause feed", Action: d.toggleFeed},
+		{Key: "b", Name: "Log end", Action: d.logState.ScrollToBottom},
+		{Key: "r", Name: "All to top", Action: d.scrollAllToTop},
+		{Key: "c", Name: "Clear log", Action: func() { d.logLines.Set(nil) }, Hidden: true},
+		{Key: "t", Name: "Theme", Action: d.cycleTheme},
 	}
 }
 
-func (s *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
+func (d *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
-	themeIdx := s.themeIndex.Get()
-	currentTheme := themeNames[themeIdx]
 
-	// Generate a list of items that will exceed the viewport
-	var items []t.Widget
-	for i := 1; i <= 50; i++ {
-		color := theme.Text
-		if i%2 == 0 {
-			color = theme.TextMuted
-		}
-		items = append(items, t.Text{
-			Content: fmt.Sprintf("Item %d - This is a scrollable list item", i),
-			Style:   t.Style{ForegroundColor: color},
-		})
-	}
+	// An animation started before the app runs is only registered once its
+	// value is read, so touch it here to get the feed going.
+	d.feed.Value()
 
-	return t.Column{
-		ID:      "root",
-		Height:  t.Flex(1),
-		Spacing: 1,
-		Style: t.Style{
-			BackgroundColor: theme.Background,
-			Padding:         t.EdgeInsetsAll(1),
+	return t.Dock{
+		ID:    "scroll-demo-root",
+		Style: t.Style{BackgroundColor: theme.Background},
+		Top: []t.Widget{
+			header{themeName: themeNames[d.themeIndex.Get()]},
 		},
-		Children: []t.Widget{
-			// Header
-			t.Text{
-				Content: "Scroll Demo",
+		Bottom: []t.Widget{
+			t.KeybindBar{
 				Style: t.Style{
-					ForegroundColor: theme.TextOnPrimary,
-					BackgroundColor: theme.Primary,
-					Padding:         t.EdgeInsetsXY(2, 0),
+					BackgroundColor: theme.Surface,
+					Padding:         t.EdgeInsetsXY(1, 0),
 				},
 			},
-
-			// Theme indicator
-			t.ParseMarkupToText(fmt.Sprintf("[$TextMuted]Theme: [/][$Accent]%s[/][$TextMuted] (press t to change)[/]", currentTheme), theme),
-
-			// Instructions
-			t.ParseMarkupToText("Use [b $Info]↑/↓[/] or [b $Info]j/k[/] to scroll • [b $Info]PgUp/PgDn[/] or [b $Info]Ctrl+U/D[/] for half-page • [b $Info]Home/End[/] or [b $Info]g/G[/] for top/bottom", theme),
-
-			// Body: scrollable container with all the panels
-			t.Scrollable{
-				ID:        "body",
-				State:     s.bodyState,
-				Focusable: true,
-				Height:    t.Flex(1),
-				Child: t.Column{
+		},
+		Body: t.Row{
+			Width:   t.Flex(1),
+			Height:  t.Flex(1),
+			Spacing: 1,
+			Style:   t.Style{Padding: t.EdgeInsetsXY(1, 1)},
+			Children: []t.Widget{
+				fill(pagePanel{demo: d}),
+				t.Column{
+					Width:   t.Cells(sidebarWidth),
+					Height:  t.Flex(1),
 					Spacing: 1,
 					Children: []t.Widget{
-						// Side by side: scrollable list and long text
-						t.Row{
-							Spacing: 2,
-							Children: []t.Widget{
-								// Scrollable list with fixed height
-								t.Scrollable{
-									ID:        "scroll-list",
-									State:     s.scrollListState,
-									Focusable: true,
-									Height:    t.Cells(15),
-									Width:     t.Flex(2),
-									Style: t.Style{
-										Border:  t.RoundedBorder(theme.Info, t.BorderTitle("Scrollable List")),
-										Padding: t.EdgeInsetsAll(1),
-									},
-									Child: t.Column{
-										Children: items,
-									},
-								},
-
-								// Second scrollable panel with different content
-								t.Scrollable{
-									ID:        "scroll-text",
-									State:     s.scrollTextState,
-									Focusable: true,
-									Height:    t.Cells(15),
-									Width:     t.Flex(1),
-									Style: t.Style{
-										Border:  t.RoundedBorder(theme.Secondary, t.BorderTitle("Long Text")),
-										Padding: t.EdgeInsetsAll(1),
-									},
-									Child: t.Text{
-										Wrap:    t.WrapSoft,
-										Content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. \n\n Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.",
-										Width:   t.Flex(1),
-									},
-								},
-							},
-						},
-
-						// Example of disabled scrolling
-						t.Row{
-							Children: []t.Widget{
-								&t.Scrollable{
-									ID:            "no-scroll",
-									State:         s.noScrollState,
-									Height:        t.Cells(5),
-									DisableScroll: true,
-									Style: t.Style{
-										Border:  t.SquareBorder(theme.Warning, t.BorderTitle("Scrolling Disabled")),
-										Padding: t.EdgeInsetsAll(1),
-									},
-									Child: t.Text{
-										Content: "This panel has scrolling disabled. Content that overflows is hidden. This demonstrates what happens when you have more text than fits in the available space but scrolling is not enabled.",
-										Width:   t.Flex(1),
-									},
-								},
-							},
-						},
+						statePanel{demo: d},
+						keysPanel{},
 					},
 				},
 			},
+		},
+	}
+}
 
-			// Footer
-			t.Text{
-				Spans: t.ParseMarkup("Press [b $Warning]Tab[/] to switch focus between scrollable panels • [b $Error]Ctrl+C[/] to quit", theme),
+// header is the title bar across the top of the screen.
+type header struct {
+	themeName string
+}
+
+func (h header) Build(ctx t.BuildContext) t.Widget {
+	theme := ctx.Theme()
+	return t.Row{
+		Width: t.Flex(1),
+		Style: t.Style{
+			BackgroundColor: theme.Surface,
+			Padding:         t.EdgeInsetsXY(1, 0),
+		},
+		Children: []t.Widget{
+			t.ParseMarkupToText("[b $Primary]≡ Scroll Playground[/]  [$TextMuted]Scrollables inside a scrollable[/]", theme),
+			t.Spacer{Width: t.Flex(1)},
+			t.ParseMarkupToText(fmt.Sprintf("[$TextMuted]theme[/] [b $Accent]%s[/]", h.themeName), theme),
+		},
+	}
+}
+
+// fill gives a component the remaining space in its Row or Column. Rows and
+// Columns read Flex from their direct children, so a component's own Flex(1)
+// needs a plain wrapper to take effect.
+func fill(child t.Widget) t.Widget {
+	return t.Column{
+		Width:    t.Flex(1),
+		Height:   t.Flex(1),
+		Children: []t.Widget{child},
+	}
+}
+
+// panelStyle is the bordered look shared by every panel in the demo.
+func panelStyle(theme t.ThemeData, title string, focused bool) t.Style {
+	color := theme.Border
+	titleColor := "$TextMuted"
+	if focused {
+		color = theme.FocusRing
+		titleColor = "$FocusRing"
+	}
+	return t.Style{
+		BackgroundColor: theme.Background,
+		Border:          t.RoundedBorder(color, t.BorderTitleMarkup(fmt.Sprintf("[b %s] %s [/]", titleColor, title))),
+		Padding:         t.EdgeInsetsXY(1, 0),
+	}
+}
+
+// scrollPanel is a bordered, focusable Scrollable whose border lights up
+// while it has focus.
+func scrollPanel(ctx t.BuildContext, id, title string, state *t.ScrollState, width, height t.Dimension, child t.Widget) t.Scrollable {
+	s := t.Scrollable{
+		ID:        id,
+		State:     state,
+		Focusable: true,
+		Child:     child,
+	}
+	s.Style = panelStyle(ctx.Theme(), title, ctx.IsFocused(s))
+	s.Style.Width = width
+	s.Style.Height = height
+	return s
+}
+
+// pagePanel is the outer scrollable. Its content is taller than the screen,
+// so it scrolls too, while every panel inside it scrolls on its own.
+type pagePanel struct {
+	demo *ScrollDemo
+}
+
+func (p pagePanel) Build(ctx t.BuildContext) t.Widget {
+	theme := ctx.Theme()
+	d := p.demo
+	page := scrollPanel(ctx, "page", "Page", d.pageState, t.Flex(1), t.Flex(1), t.Column{
+		Width:   t.Flex(1),
+		Spacing: 1,
+		Children: []t.Widget{
+			t.Row{
+				Width:   t.Flex(1),
+				Spacing: 1,
+				Children: []t.Widget{
+					scrollPanel(ctx, "scroll-list", "List · 50 rows", d.listState, t.Flex(3), t.Cells(topRowHeight), listContent{}),
+					scrollPanel(ctx, "scroll-text", "Wrapped text", d.textState, t.Flex(2), t.Cells(topRowHeight), t.Text{
+						Content: loremText,
+						Wrap:    t.WrapSoft,
+						Width:   t.Flex(1),
+						Style:   t.Style{ForegroundColor: theme.Text},
+					}),
+				},
 			},
+			t.Row{
+				Width:   t.Flex(1),
+				Spacing: 1,
+				Children: []t.Widget{
+					scrollPanel(ctx, "scroll-log", "Log · PinToBottom", d.logState, t.Flex(1), t.Cells(middleRowHeight), logContent{demo: d}),
+					scrollPanel(ctx, "scroll-wide", "Wide · pans both ways", d.wideState, t.Flex(1), t.Cells(middleRowHeight), wideContent{}),
+				},
+			},
+			disabledPanel(ctx, d.offState),
+			t.Text{
+				Spans: t.ParseMarkup("[$TextMuted]The page is a Scrollable too, holding the others. Tab to it and scroll down to reach this line.[/]", theme),
+				Wrap:  t.WrapSoft,
+				Width: t.Flex(1),
+			},
+		},
+	})
+	// Keep the Scrollable a direct child of a flex Column rather than the
+	// root of this component: that way it fills the space and is registered
+	// as focusable.
+	return t.Column{
+		Width:    t.Flex(1),
+		Height:   t.Flex(1),
+		Children: []t.Widget{page},
+	}
+}
+
+// listContent is 50 rows of striped text.
+type listContent struct{}
+
+func (listContent) Build(ctx t.BuildContext) t.Widget {
+	theme := ctx.Theme()
+	rows := make([]t.Widget, 0, 50)
+	for i := 1; i <= 50; i++ {
+		color := "$Text"
+		if i%2 == 0 {
+			color = "$TextMuted"
+		}
+		rows = append(rows, t.ParseMarkupToText(fmt.Sprintf("[$Accent]%2d[/]  [%s]This is a scrollable list item[/]", i, color), theme))
+	}
+	return t.Column{Width: t.Flex(1), Children: rows}
+}
+
+// logContent renders the log lines. It reads the lines itself so a new line
+// only rebuilds the log.
+type logContent struct {
+	demo *ScrollDemo
+}
+
+func (l logContent) Build(ctx t.BuildContext) t.Widget {
+	theme := ctx.Theme()
+	lines := l.demo.logLines.Get()
+	if len(lines) == 0 {
+		return t.ParseMarkupToText("[$TextMuted]Log is empty.[/]", theme)
+	}
+	rows := make([]t.Widget, len(lines))
+	for i, line := range lines {
+		num, msg, _ := strings.Cut(line, "  ")
+		rows[i] = t.ParseMarkupToText(fmt.Sprintf("[$TextMuted]%s[/]  [$Text]%s[/]", num, msg), theme)
+	}
+	return t.Column{Width: t.Flex(1), Children: rows}
+}
+
+// wideContent is wider than its panel, so it scrolls horizontally.
+type wideContent struct{}
+
+func (wideContent) Build(ctx t.BuildContext) t.Widget {
+	theme := ctx.Theme()
+	const cols = 20
+	cells := func(format func(c int) string) string {
+		var b strings.Builder
+		for c := 0; c < cols; c++ {
+			fmt.Fprintf(&b, "%-10s", format(c))
+		}
+		return b.String()
+	}
+	rows := []t.Widget{
+		t.Text{Content: cells(func(c int) string { return fmt.Sprintf("╷%d", c*10) }), Style: t.Style{ForegroundColor: theme.TextMuted}},
+		t.Text{Content: cells(func(c int) string { return fmt.Sprintf("col %02d", c+1) }), Style: t.Style{ForegroundColor: theme.Info, Bold: true}},
+	}
+	for r := 1; r <= 12; r++ {
+		rows = append(rows, t.Text{
+			Content: cells(func(c int) string { return fmt.Sprintf("%d.%02d", r, c+1) }),
+			Style:   t.Style{ForegroundColor: theme.Text},
+		})
+	}
+	return t.Column{Children: rows}
+}
+
+// disabledPanel has more text than fits, but DisableScroll clips it instead
+// of scrolling. It can't take focus and shows no scrollbar.
+func disabledPanel(ctx t.BuildContext, state *t.ScrollState) t.Widget {
+	theme := ctx.Theme()
+	style := panelStyle(theme, "", false)
+	style.Border = t.RoundedBorder(theme.Warning, t.BorderTitleMarkup("[b $Warning] DisableScroll [/]"))
+	style.Width = t.Flex(1)
+	style.Height = t.Cells(disabledHeight)
+	return t.Scrollable{
+		ID:            "no-scroll",
+		State:         state,
+		DisableScroll: true,
+		Style:         style,
+		Child: t.Text{
+			Content: "Scrolling is disabled here, so content that overflows is clipped and there is no scrollbar. This panel can't take focus and ignores the mouse wheel. " +
+				"This sentence keeps going so that it runs past the bottom border, where it is cut off instead of becoming scrollable. You shouldn't be able to read this far.",
+			Wrap:  t.WrapSoft,
+			Width: t.Flex(1),
+			Style: t.Style{ForegroundColor: theme.TextMuted},
+		},
+	}
+}
+
+// statePanel shows live scroll offsets. It subscribes to the ScrollState
+// signals itself, so scrolling only rebuilds this panel.
+type statePanel struct {
+	demo *ScrollDemo
+}
+
+func (s statePanel) Build(ctx t.BuildContext) t.Widget {
+	theme := ctx.Theme()
+	d := s.demo
+
+	focus := "—"
+	if f, ok := ctx.Focused().(t.Identifiable); ok && f.WidgetID() != "" {
+		focus = strings.TrimPrefix(f.WidgetID(), "scroll-")
+	}
+
+	logOffset := d.logState.Offset.Get()
+	logLines := len(d.logLines.Get())
+	logNote := ""
+	if d.logState.IsPinned() && d.logState.IsAtBottom() {
+		logNote = "pinned"
+	}
+
+	feed := "[b $Success]live[/]"
+	if d.feedPaused.Get() {
+		feed = "[b $Warning]paused[/]"
+	}
+
+	return t.Column{
+		Width: t.Flex(1),
+		Style: panelStyle(theme, "State", false),
+		Children: []t.Widget{
+			statRow(theme, "Focus", fmt.Sprintf("[b $Accent]%s[/]", focus)),
+			statRow(theme, "Page", offsetMarkup(d.pageState.Offset.Get(), d.pageState, "")),
+			statRow(theme, "List", offsetMarkup(d.listState.Offset.Get(), d.listState, "")),
+			statRow(theme, "Text", offsetMarkup(d.textState.Offset.Get(), d.textState, "")),
+			statRow(theme, "Log", offsetMarkup(logOffset, d.logState, logNote)),
+			statRow(theme, "Wide (x)", fmt.Sprintf("[b $Info]%d[/]", d.wideState.OffsetX.Get())),
+			statRow(theme, "Log lines", fmt.Sprintf("[b $Primary]%d[/]", logLines)),
+			statRow(theme, "Feed", feed),
+		},
+	}
+}
+
+// offsetMarkup formats a vertical offset, noting when it is at the top or the
+// end. Callers read the offset with Get, so this is recomputed whenever the
+// offset changes.
+func offsetMarkup(offset int, state *t.ScrollState, note string) string {
+	if note == "" {
+		switch {
+		case offset == 0:
+			note = "top"
+		case state.IsAtBottom():
+			note = "end"
+		}
+	}
+	if note != "" {
+		return fmt.Sprintf("[$TextMuted]%s[/] [b $Info]%d[/]", note, offset)
+	}
+	return fmt.Sprintf("[b $Info]%d[/]", offset)
+}
+
+func statRow(theme t.ThemeData, label, valueMarkup string) t.Widget {
+	return t.Row{
+		Width: t.Flex(1),
+		Children: []t.Widget{
+			t.Text{Content: label, Style: t.Style{ForegroundColor: theme.TextMuted}},
+			t.Spacer{Width: t.Flex(1)},
+			t.ParseMarkupToText(valueMarkup, theme),
+		},
+	}
+}
+
+// keysPanel is a quick reference for the keys the demo responds to.
+type keysPanel struct{}
+
+func (keysPanel) Build(ctx t.BuildContext) t.Widget {
+	theme := ctx.Theme()
+	key := func(keys, colour, desc string) t.Widget {
+		return t.ParseMarkupToText(fmt.Sprintf("[b %s]%-9s[/] [$TextMuted]%s[/]", colour, keys, desc), theme)
+	}
+	return t.Column{
+		Width: t.Flex(1),
+		Style: panelStyle(theme, "Keys", false),
+		Children: []t.Widget{
+			key("↑↓ jk", "$Info", "scroll a line"),
+			key("PgUp PgDn", "$Info", "a page (^u ^d)"),
+			key("Home End", "$Info", "top / end (g G)"),
+			key("←→ hl", "$Info", "pan sideways"),
+			key("tab", "$Accent", "next scrollable"),
+			key("p b", "$Success", "pause / log end"),
+			key("r c", "$Warning", "all to top / clear"),
 		},
 	}
 }
 
 func main() {
 	t.SetTheme(themeNames[0])
-	app := &ScrollDemo{
-		bodyState:       t.NewScrollState(),
-		scrollListState: t.NewScrollState(),
-		scrollTextState: t.NewScrollState(),
-		noScrollState:   t.NewScrollState(),
-		themeIndex:      t.NewSignal(0),
-	}
+	app := NewScrollDemo()
+	t.RequestFocus("scroll-list")
 	if err := t.Run(app); err != nil {
 		log.Fatal(err)
 	}
