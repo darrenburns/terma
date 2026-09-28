@@ -412,7 +412,9 @@ func resolveJumpLabels(j Jumper, registry *WidgetRegistry, focusables []Focusabl
 			if !ok {
 				continue
 			}
-			label.action = item.action
+			// The item stands in for the widget holding it (a tab for its
+			// tab bar), which so gets no hint of its own to cover the item.
+			label.action, label.focusID = item.action, item.focusID
 		case target.Action == nil:
 			// A container: jump to the first focusable inside it.
 			for _, entry := range candidates {
