@@ -21,6 +21,7 @@ type TableState[T any] struct {
 
 	lastSelectionMode TableSelectionMode
 	hasSelectionMode  bool
+	columnCount       int // Column count of the Table showing this state, for decoding cell selections
 
 	rowLayouts        []tableRowLayout // Cached layout metrics (per row)
 	viewIndices       []int            // View index -> source index for filtered views
@@ -41,12 +42,14 @@ func NewTableState[T any](initialRows []T) *TableState[T] {
 }
 
 // SetRows replaces all rows and clamps cursor to valid range.
+// Selections on rows past the end of the new rows are dropped.
 func (s *TableState[T]) SetRows(rows []T) {
 	if rows == nil {
 		rows = []T{}
 	}
 	s.Rows.Set(rows)
 	s.clampCursor()
+	s.remapSelectedRows(func(i int) (int, bool) { return i, i < len(rows) })
 }
 
 // GetRows returns the current table rows (without subscribing to changes).
@@ -67,26 +70,18 @@ func (s *TableState[T]) Append(row T) {
 }
 
 // Prepend adds a row to the beginning of the table.
+// The cursor and selection stay on the same rows.
 func (s *TableState[T]) Prepend(row T) {
-	s.Rows.Update(func(rows []T) []T {
-		return append([]T{row}, rows...)
-	})
-	// Adjust cursor to keep same row selected
-	s.CursorIndex.Update(func(i int) int {
-		return i + 1
-	})
+	s.InsertAt(0, row)
 }
 
 // InsertAt inserts a row at the specified index.
 // If index is out of bounds, it's clamped to valid range.
+// The cursor and selection stay on the same rows.
 func (s *TableState[T]) InsertAt(index int, row T) {
+	hadRows := len(s.Rows.Peek()) > 0
 	s.Rows.Update(func(rows []T) []T {
-		if index < 0 {
-			index = 0
-		}
-		if index > len(rows) {
-			index = len(rows)
-		}
+		index = clampInt(index, 0, len(rows))
 		rows = append(rows, row)
 		copy(rows[index+1:], rows[index:])
 		rows[index] = row
@@ -94,13 +89,20 @@ func (s *TableState[T]) InsertAt(index int, row T) {
 	})
 	// Adjust cursor if insertion was at or before cursor
 	cursorIdx := s.CursorIndex.Peek()
-	if index <= cursorIdx {
+	if hadRows && index <= cursorIdx {
 		s.CursorIndex.Set(cursorIdx + 1)
 	}
+	s.remapSelectedRows(func(i int) (int, bool) {
+		if i >= index {
+			return i + 1, true
+		}
+		return i, true
+	})
 }
 
 // RemoveAt removes the row at the specified index.
 // Returns true if a row was removed, false if index was out of bounds.
+// Selections on the removed row are dropped; other selections stay on their rows.
 func (s *TableState[T]) RemoveAt(index int) bool {
 	rows := s.Rows.Peek()
 	if index < 0 || index >= len(rows) {
@@ -110,33 +112,109 @@ func (s *TableState[T]) RemoveAt(index int) bool {
 		return append(rows[:index], rows[index+1:]...)
 	})
 	s.clampCursor()
+	s.remapSelectedRows(func(i int) (int, bool) {
+		switch {
+		case i == index:
+			return 0, false
+		case i > index:
+			return i - 1, true
+		default:
+			return i, true
+		}
+	})
 	return true
 }
 
 // RemoveWhere removes all rows matching the predicate.
 // Returns the number of rows removed.
+// Selections on removed rows are dropped; other selections stay on their rows.
 func (s *TableState[T]) RemoveWhere(predicate func(T) bool) int {
 	removed := 0
+	var newIndex []int // Old index -> new index, or -1 if removed
 	s.Rows.Update(func(rows []T) []T {
+		newIndex = make([]int, len(rows))
 		result := make([]T, 0, len(rows))
-		for _, row := range rows {
+		for i, row := range rows {
 			if !predicate(row) {
+				newIndex[i] = len(result)
 				result = append(result, row)
 			} else {
+				newIndex[i] = -1
 				removed++
 			}
 		}
 		return result
 	})
 	s.clampCursor()
+	if removed > 0 {
+		s.remapSelectedRows(func(i int) (int, bool) {
+			if i < 0 || i >= len(newIndex) || newIndex[i] < 0 {
+				return 0, false
+			}
+			return newIndex[i], true
+		})
+	}
 	return removed
 }
 
-// Clear removes all rows from the table.
+// Clear removes all rows from the table, along with the selection.
 func (s *TableState[T]) Clear() {
 	s.Rows.Set([]T{})
 	s.CursorIndex.Set(0)
 	s.CursorColumn.Set(0)
+	s.ClearSelection()
+	s.ClearAnchor()
+}
+
+// remapSelectedRows moves the selection and shift-select anchor after rows are
+// inserted or removed, so they stay on the same rows. mapRow returns a row's
+// new index, or false if the row is gone. Column selections don't depend on
+// rows and are left alone.
+func (s *TableState[T]) remapSelectedRows(mapRow func(int) (int, bool)) {
+	mapKey := mapRow
+	if s.hasSelectionMode {
+		switch s.lastSelectionMode {
+		case TableSelectionColumn:
+			return
+		case TableSelectionCursor:
+			columnCount := s.columnCount
+			if columnCount <= 0 {
+				// Cell keys can't be decoded without the column count.
+				s.ClearSelection()
+				s.ClearAnchor()
+				return
+			}
+			mapKey = func(key int) (int, bool) {
+				row, col := cellIndexToRowCol(key, columnCount)
+				newRow, ok := mapRow(row)
+				return cellIndex(newRow, col, columnCount), ok
+			}
+		}
+	}
+
+	if s.anchorIndex != nil {
+		if idx, ok := mapKey(*s.anchorIndex); ok {
+			s.anchorIndex = &idx
+		} else {
+			s.anchorIndex = nil
+		}
+	}
+
+	sel := s.Selection.Peek()
+	changed := false
+	next := make(map[int]struct{}, len(sel))
+	for key := range sel {
+		newKey, ok := mapKey(key)
+		if !ok || newKey != key {
+			changed = true
+		}
+		if ok {
+			next[newKey] = struct{}{}
+		}
+	}
+	if changed {
+		s.Selection.Set(next)
+	}
 }
 
 // SelectedRow returns the currently selected row (if any).
@@ -341,18 +419,23 @@ func (s *TableState[T]) ClearAnchor() {
 	s.anchorIndex = nil
 }
 
-func (s *TableState[T]) syncSelectionMode(mode TableSelectionMode) {
+// syncSelectionMode records how the Table showing this state interprets
+// selection keys. A change of mode or column count invalidates the existing
+// keys, so the selection is cleared.
+func (s *TableState[T]) syncSelectionMode(mode TableSelectionMode, columnCount int) {
 	if !s.hasSelectionMode {
 		s.lastSelectionMode = mode
+		s.columnCount = columnCount
 		s.hasSelectionMode = true
 		return
 	}
-	if s.lastSelectionMode == mode {
+	if s.lastSelectionMode == mode && s.columnCount == columnCount {
 		return
 	}
 	s.ClearSelection()
 	s.ClearAnchor()
 	s.lastSelectionMode = mode
+	s.columnCount = columnCount
 }
 
 // HasAnchor returns true if an anchor point is set.
@@ -1012,8 +1095,8 @@ func (t Table[T]) Keybinds() []Keybind {
 		{Key: "ctrl+d", Action: t.pageDown, Hidden: true},
 	}
 
-	// Left/right only in Cursor mode (not Row, not Column)
-	if mode == TableSelectionCursor {
+	// Left/right move between cells or columns (rows have no horizontal cursor)
+	if mode == TableSelectionCursor || mode == TableSelectionColumn {
 		binds = append(binds,
 			Keybind{Key: "left", Action: t.keyCursorLeft, Hidden: true},
 			Keybind{Key: "h", Action: t.keyCursorLeft, Hidden: true},
@@ -1777,7 +1860,7 @@ func (t Table[T]) selectionMode() TableSelectionMode {
 		mode = TableSelectionCursor
 	}
 	if t.State != nil {
-		t.State.syncSelectionMode(mode)
+		t.State.syncSelectionMode(mode, len(t.Columns))
 	}
 	return mode
 }
