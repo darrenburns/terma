@@ -26,7 +26,7 @@ Table[[]string]{
 | `Filter` | `*FilterState` | `nil` | Optional filter state for matching rows |
 | `MatchCell` | `func(row T, rowIdx, colIdx int, query string, opts FilterOptions) MatchResult` | — | Custom matcher per cell |
 | `RenderHeader` | `func(colIndex int) Widget` | — | Header renderer (overrides column headers) |
-| `OnSelect` | `func(row T)` | — | Callback when Enter pressed |
+| `OnSelect` | `func(row T)` | — | Callback when Enter is pressed or a row is double-clicked |
 | `OnCursorChange` | `func(row T)` | — | Callback when cursor moves |
 | `ScrollState` | `*ScrollState` | `nil` | For scroll-into-view behavior |
 | `RowHeight` | `int` | `0` | Uniform row height override |
@@ -118,6 +118,15 @@ Table[T]{SelectionMode: TableSelectionColumn, ...}
 | `Enter` | Trigger OnSelect |
 | `Space` | Toggle selection (MultiSelect) |
 | `Shift+↑/↓` | Extend selection (MultiSelect) |
+
+## Mouse
+
+| Action | Effect |
+|--------|--------|
+| Click | Focus the table and move the cursor to the cell (row, in row mode) |
+| Double-click | Trigger OnSelect |
+| Shift+click | Extend selection to the cell, row or column (MultiSelect) |
+| Drag | Move the cursor with the pointer; with MultiSelect, select from the pressed cell to the pointer: a box of cells, a run of rows or a run of columns, by selection mode. Dragging past the top or bottom scrolls |
 
 ## Basic Usage
 

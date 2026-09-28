@@ -15,6 +15,7 @@ type ListState[T any] struct {
 	Selection   AnySignal[map[int]struct{}] // Selected item indices (for multi-select)
 
 	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
+	dragging    bool // A press on an item is held, so pointer motion moves the cursor
 
 	itemLayouts       []listItemLayout  // Cached layout metrics (per item)
 	revealCursor      func()            // Scrolls the cursor into view; set by the List that shows this state
@@ -518,7 +519,7 @@ type List[T any] struct {
 	Filter              *FilterState                                                       // Optional filter state for matching items
 	MatchItem           func(item T, query string, options FilterOptions) MatchResult      // Optional matcher for filtering/highlighting
 	ItemHeight          int                                                                // Optional uniform item height override (default 0 = layout metrics / fallback 1)
-	MultiSelect         bool                                                               // Enable multi-select mode (space to toggle, shift+move to extend)
+	MultiSelect         bool                                                               // Enable multi-select mode (space to toggle; shift+move, shift+click or drag to extend)
 	Width               Dimension                                                          // Deprecated: use Style.Width
 	Height              Dimension                                                          // Deprecated: use Style.Height
 	Style               Style                                                              // Optional styling
@@ -527,6 +528,11 @@ type List[T any] struct {
 	MouseUp             func(MouseEvent)                                                   // Optional callback invoked when mouse is released
 	Hover               func(HoverEvent)                                                   // Optional callback invoked when hover state changes
 	Blur                func()                                                             // Optional callback invoked when focus leaves this widget
+
+	// pointerTargetable reports whether a click or drag may put the cursor on
+	// an item. Composite widgets whose own navigation skips some items (such as
+	// dividers) set it; nil allows every item.
+	pointerTargetable func(item T) bool
 }
 
 type listItemLayout struct {
@@ -715,6 +721,8 @@ func (l List[T]) OnClick(event MouseEvent) {
 	}
 }
 
+func (l List[T]) ownsDescendantPointer() {}
+
 // OnMouseDown moves the cursor to the clicked item, extends the selection on
 // shift+click in multi-select mode, and selects the item on double-click.
 // Implements the MouseDownHandler interface.
@@ -729,13 +737,14 @@ func (l List[T]) handleMouseDown(event MouseEvent) {
 	if l.State == nil {
 		return
 	}
-	localY := event.LocalY - l.Style.Border.Width() - l.Style.Padding.Top
-	viewIdx, ok := l.viewIndexFromMouseY(localY)
-	if !ok {
+	l.State.dragging = false
+	viewIdx, ok := l.viewIndexFromMouseY(l.contentY(event), false)
+	if !ok || !l.pointerCanTarget(viewIdx) {
 		return
 	}
 	view := l.viewIndices()
 	previous := l.State.CursorIndex.Peek()
+	l.State.dragging = event.Button == uv.MouseLeft
 
 	if l.MultiSelect && event.Mod.Contains(uv.ModShift) {
 		l.handleShiftMoveTo(viewIdx)
@@ -756,33 +765,74 @@ func (l List[T]) handleMouseDown(event MouseEvent) {
 	}
 }
 
-// viewIndexFromMouseY returns the view index of the item at content row localY.
-func (l List[T]) viewIndexFromMouseY(localY int) (int, bool) {
+// OnMouseMove drags the cursor to the item under the pointer while a press
+// on an item is held, extending the selection from the pressed item in
+// multi-select mode. Dragging past either end scrolls.
+// Implements the MouseMoveHandler interface.
+func (l List[T]) OnMouseMove(event MouseEvent) {
+	if l.State == nil || !l.State.dragging {
+		return
+	}
+	viewIdx, ok := l.viewIndexFromMouseY(l.contentY(event), true)
+	if !ok || !l.pointerCanTarget(viewIdx) {
+		return
+	}
 	view := l.viewIndices()
-	if len(view) == 0 || localY < 0 {
+	if view[viewIdx] == l.State.CursorIndex.Peek() {
+		return
+	}
+	if l.MultiSelect {
+		l.handleShiftMoveTo(viewIdx)
+	} else {
+		l.setCursorToViewIndex(viewIdx)
+		l.scrollCursorIntoView()
+	}
+	l.notifyCursorChange()
+}
+
+// contentY converts a mouse event's local Y to a row within the list content.
+func (l List[T]) contentY(event MouseEvent) int {
+	return event.LocalY - l.Style.Border.Width() - l.Style.Padding.Top
+}
+
+func (l List[T]) pointerCanTarget(viewIdx int) bool {
+	if l.pointerTargetable == nil {
+		return true
+	}
+	items := l.State.Items.Peek()
+	sourceIdx := l.viewIndices()[viewIdx]
+	return sourceIdx >= 0 && sourceIdx < len(items) && l.pointerTargetable(items[sourceIdx])
+}
+
+// viewIndexFromMouseY returns the view index of the item at content row
+// localY. With clamp, rows above or below the items give the first or last
+// item and a gap between items gives the one above it.
+func (l List[T]) viewIndexFromMouseY(localY int, clamp bool) (int, bool) {
+	view := l.viewIndices()
+	if len(view) == 0 || (localY < 0 && !clamp) {
 		return 0, false
 	}
-	if len(l.State.itemLayouts) > 0 {
-		for i, layout := range l.State.itemLayouts {
-			if i >= len(view) {
-				break
-			}
-			if layout.height > 0 && localY >= layout.y && localY < layout.y+layout.height {
-				return i, true
-			}
-		}
-		return 0, false
+	if layouts := l.State.itemLayouts; len(layouts) > 0 {
+		return spanAt(min(len(layouts), len(view)), func(i int) (int, int) {
+			return layouts[i].y, layouts[i].height
+		}, localY, clamp)
 	}
-	viewIdx := localY / l.getItemHeight()
+	viewIdx := max(0, localY) / l.getItemHeight()
 	if viewIdx >= len(view) {
-		return 0, false
+		if !clamp {
+			return 0, false
+		}
+		viewIdx = len(view) - 1
 	}
 	return viewIdx, true
 }
 
-// OnMouseUp is called when the mouse is released on the widget.
+// OnMouseUp ends a drag begun on an item.
 // Implements the MouseUpHandler interface.
 func (l List[T]) OnMouseUp(event MouseEvent) {
+	if l.State != nil {
+		l.State.dragging = false
+	}
 	if l.MouseUp != nil {
 		l.MouseUp(event)
 	}
