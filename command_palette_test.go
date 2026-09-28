@@ -404,3 +404,253 @@ func TestCommandPalette_MoveCursorScrollsIntoView(t *testing.T) {
 		t.Fatalf("expected cursor index 3, got %d", got)
 	}
 }
+
+// typeInPalette sets the current level's query as if typed into the input.
+func typeInPalette(p CommandPalette, text string) {
+	level := p.State.CurrentLevel()
+	input := p.buildInput(level, ThemeData{}).(TextInput)
+	level.InputState.SetText(text)
+	input.OnChange(text)
+}
+
+func currentPaletteLabel(t *testing.T, state *CommandPaletteState) string {
+	t.Helper()
+	item, ok := state.CurrentItem()
+	if !ok {
+		t.Fatal("expected a current item")
+	}
+	return item.Label
+}
+
+func TestCommandPalette_TypingMovesCursorToTopResult(t *testing.T) {
+	state := NewCommandPaletteState("Commands", []CommandPaletteItem{
+		{Label: "Profile Settings"},
+		{Label: "Save"},
+		{Divider: "Files"},
+		{Label: "New File"},
+	})
+	palette := CommandPalette{ID: "palette", State: state}
+
+	// The cursor starts on an item that still matches, but isn't the best match.
+	typeInPalette(palette, "fil")
+	if got := currentPaletteLabel(t, state); got != "New File" {
+		t.Fatalf("expected cursor on top result, got %q", got)
+	}
+
+	palette.moveCursor(1)
+	if got := currentPaletteLabel(t, state); got != "Profile Settings" {
+		t.Fatalf("expected cursor on second result, got %q", got)
+	}
+
+	// Typing more re-ranks, so the cursor returns to the top.
+	typeInPalette(palette, "file")
+	if got := currentPaletteLabel(t, state); got != "New File" {
+		t.Fatalf("expected cursor back on top result, got %q", got)
+	}
+
+	// Clearing the query returns to the first item of the full list.
+	typeInPalette(palette, "")
+	if got := currentPaletteLabel(t, state); got != "Profile Settings" {
+		t.Fatalf("expected cursor on first item, got %q", got)
+	}
+}
+
+func TestCommandPalette_TypingScrollsBackToTop(t *testing.T) {
+	items := make([]CommandPaletteItem, 0, 20)
+	for i := 0; i < 20; i++ {
+		items = append(items, CommandPaletteItem{Label: fmt.Sprintf("Item %02d", i)})
+	}
+	state := NewCommandPaletteState("Commands", items)
+	palette := CommandPalette{ID: "palette", State: state}
+	level := state.CurrentLevel()
+	level.ScrollState.updateLayout(5, len(items))
+	level.ListState.SelectIndex(15)
+	level.ScrollState.SetOffset(11)
+
+	typeInPalette(palette, "item")
+
+	if got := level.ScrollState.GetOffset(); got != 0 {
+		t.Fatalf("expected scroll offset reset to 0, got %d", got)
+	}
+	if got := currentPaletteLabel(t, state); got != "Item 00" {
+		t.Fatalf("expected cursor on top result, got %q", got)
+	}
+}
+
+func TestCommandPaletteFilteredView_HidesDividersWhileSearching(t *testing.T) {
+	items := []CommandPaletteItem{
+		{Divider: "Files"},
+		{Label: "New File"},
+		{Divider: "Edit"},
+		{Label: "Copy"},
+	}
+	filter := NewFilterState()
+	filter.Mode.Set(FilterFuzzy)
+
+	if view := commandPaletteFilteredView(items, filter); len(view.Indices) != 4 {
+		t.Fatalf("expected every item with no query, got %v", view.Indices)
+	}
+
+	filter.Query.Set("file")
+	view := commandPaletteFilteredView(items, filter)
+	if want := []int{1}; !reflect.DeepEqual(view.Indices, want) {
+		t.Fatalf("expected only matching items while searching: got %v, want %v", view.Indices, want)
+	}
+}
+
+func TestCommandPaletteFilteredView_KeywordMatchesRankBelowLabelMatches(t *testing.T) {
+	items := []CommandPaletteItem{
+		{Label: "Toggle Sidebar", FilterText: "Toggle Sidebar layout panel"},
+		{Label: "Reset Layout"},
+	}
+	filter := NewFilterState()
+	filter.Mode.Set(FilterFuzzy)
+	filter.Query.Set("layout")
+
+	view := commandPaletteFilteredView(items, filter)
+
+	if want := []int{1, 0}; !reflect.DeepEqual(view.Indices, want) {
+		t.Fatalf("expected label match first: got %v, want %v", view.Indices, want)
+	}
+	if ranges := view.Matches[1].Ranges; len(ranges) != 0 {
+		t.Fatalf("expected no label highlight for a keyword-only match, got %v", ranges)
+	}
+}
+
+func TestCommandPalette_LevelOpensOnCurrentItem(t *testing.T) {
+	state := NewCommandPaletteState("Commands", []CommandPaletteItem{{Label: "Theme"}})
+	palette := CommandPalette{ID: "palette", State: state}
+
+	state.PushLevel("Theme", []CommandPaletteItem{
+		{Divider: "Dark"},
+		{Label: "Dracula"},
+		{Label: "Nord"},
+		{Divider: "Light"},
+		{Label: "Solarized Light", Current: true},
+	})
+	if got := currentPaletteLabel(t, state); got != "Solarized Light" {
+		t.Fatalf("expected level to open on its current item, got %q", got)
+	}
+
+	typeInPalette(palette, "d")
+	if got := currentPaletteLabel(t, state); got != "Dracula" {
+		t.Fatalf("expected cursor on top result while searching, got %q", got)
+	}
+
+	typeInPalette(palette, "")
+	if got := currentPaletteLabel(t, state); got != "Solarized Light" {
+		t.Fatalf("expected cursor back on current item after clearing, got %q", got)
+	}
+}
+
+func TestCommandPalette_BackKeepsParentSearchAndCursor(t *testing.T) {
+	var pushed []string
+	state := NewCommandPaletteState("Commands", []CommandPaletteItem{
+		{Label: "New File"},
+		{
+			Label: "Themes",
+			Children: func() []CommandPaletteItem {
+				pushed = append(pushed, "Themes")
+				return []CommandPaletteItem{{Label: "Dracula"}}
+			},
+		},
+		{Label: "Toggle Sidebar"},
+	})
+	palette := CommandPalette{ID: "palette", State: state}
+
+	typeInPalette(palette, "th")
+	if got := currentPaletteLabel(t, state); got != "Themes" {
+		t.Fatalf("expected Themes as top result, got %q", got)
+	}
+
+	palette.selectCurrent()
+	if !state.IsNested() || len(pushed) != 1 {
+		t.Fatalf("expected Enter to open the nested level, pushed %v", pushed)
+	}
+	if got := state.CurrentLevel().FilterState.PeekQuery(); got != "" {
+		t.Fatalf("expected nested level to start with an empty query, got %q", got)
+	}
+
+	palette.handleEscape()
+	if state.IsNested() {
+		t.Fatal("expected Escape to go back to the root level")
+	}
+	root := state.CurrentLevel()
+	if got := root.InputState.GetText(); got != "th" {
+		t.Fatalf("expected parent query to be kept, got %q", got)
+	}
+	if got := currentPaletteLabel(t, state); got != "Themes" {
+		t.Fatalf("expected cursor on the item that opened the level, got %q", got)
+	}
+
+	palette.handleEscape()
+	if state.Visible.Peek() {
+		t.Fatal("expected Escape at the root to close the palette")
+	}
+	state.Open()
+	if got := root.InputState.GetText(); got != "" {
+		t.Fatalf("expected query cleared on reopen, got %q", got)
+	}
+	if got := currentPaletteLabel(t, state); got != "New File" {
+		t.Fatalf("expected cursor on first item on reopen, got %q", got)
+	}
+}
+
+func TestCommandPalette_EnterWithNoResultsDoesNothing(t *testing.T) {
+	selected := false
+	state := NewCommandPaletteState("Commands", []CommandPaletteItem{
+		{Label: "Save", Action: func() { selected = true }},
+	})
+	palette := CommandPalette{ID: "palette", State: state}
+
+	typeInPalette(palette, "zzz")
+	palette.selectCurrent()
+
+	if selected {
+		t.Fatal("expected Enter with no results not to run an action")
+	}
+}
+
+func TestSnapshot_CommandPalette_RankedSearch(t *testing.T) {
+	state := NewCommandPaletteState("Commands", []CommandPaletteItem{
+		{Label: "Profile Settings"},
+		{Divider: "File"},
+		{Label: "Open Recent", Hint: "Ctrl+R"},
+		{Label: "Find in Files", Hint: "Ctrl+Shift+F"},
+		{Label: "New File", Hint: "Ctrl+N"},
+		{Divider: "View"},
+		{Label: "Toggle Sidebar", Hint: "Ctrl+B"},
+	})
+	state.Visible.Set(true)
+	palette := CommandPalette{
+		ID:       "palette-ranked",
+		State:    state,
+		Position: FloatPositionTopLeft,
+		Offset:   Offset{X: 2, Y: 1},
+	}
+	typeInPalette(palette, "file")
+
+	AssertSnapshot(t, palette, 70, 14, "Query 'file' lists 'New File' (cursor), 'Find in Files', then mid-word 'Profile Settings'; no divider rows")
+}
+
+func TestSnapshot_CommandPalette_NestedOpensOnCurrent(t *testing.T) {
+	items := []CommandPaletteItem{{Divider: "Themes"}}
+	for i := 0; i < 20; i++ {
+		items = append(items, CommandPaletteItem{
+			Label:   fmt.Sprintf("Theme %02d", i+1),
+			Current: i == 15,
+		})
+	}
+	state := NewCommandPaletteState("Commands", []CommandPaletteItem{{Label: "Theme"}})
+	state.PushLevel("Theme", items)
+	state.Visible.Set(true)
+
+	palette := CommandPalette{
+		ID:       "palette-current",
+		State:    state,
+		Position: FloatPositionTopLeft,
+		Offset:   Offset{X: 2, Y: 1},
+	}
+
+	AssertSnapshot(t, palette, 70, 20, "Nested Theme level scrolled so the cursor sits on the current item, 'Theme 16'")
+}

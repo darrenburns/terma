@@ -672,6 +672,51 @@ func TestReactivityChangeOutOfViewRepaintsNothing(t *testing.T) {
 	require.Contains(t, sequence.actual.renderer.ScreenText(), "row X")
 }
 
+type reactivityPaletteScene struct {
+	state *CommandPaletteState
+}
+
+func newReactivityPaletteScene() *reactivityPaletteScene {
+	themes := []CommandPaletteItem{{Divider: "Themes"}}
+	for i := 0; i < 20; i++ {
+		themes = append(themes, CommandPaletteItem{Label: fmt.Sprintf("Theme %02d", i+1), Current: i == 15})
+	}
+	return &reactivityPaletteScene{state: NewCommandPaletteState("Commands", []CommandPaletteItem{
+		{Label: "Profile Settings"},
+		{Divider: "Files"},
+		{Label: "New File"},
+		{Label: "Find in Files"},
+		{Label: "Theme", Children: func() []CommandPaletteItem { return themes }},
+	})}
+}
+
+func (s *reactivityPaletteScene) palette() CommandPalette {
+	return CommandPalette{ID: "palette", State: s.state, Position: FloatPositionTopLeft, Offset: Offset{X: 1, Y: 1}, Style: Style{MaxHeight: Cells(10)}}
+}
+
+func (s *reactivityPaletteScene) Build(BuildContext) Widget {
+	return Stack{Style: Style{Width: Flex(1), Height: Flex(1)}, Children: []Widget{Text{Content: "app"}, s.palette()}}
+}
+
+// Typing rebuilds only the palette's results, which must still switch to and
+// from the empty state, and a nested level must open scrolled to its current item.
+func TestReactivityCommandPaletteSearchAndNesting(t *testing.T) {
+	sequence := newReactivitySequence(t, 50, 14, newReactivityPaletteScene)
+	sequence.frame("Closed", nil)
+	sequence.frame("Open", func(s *reactivityPaletteScene) { s.state.Open() })
+	sequence.frame("Type f", func(s *reactivityPaletteScene) { typeInPalette(s.palette(), "f") })
+	sequence.frame("Type file", func(s *reactivityPaletteScene) { typeInPalette(s.palette(), "file") })
+	sequence.frame("No results", func(s *reactivityPaletteScene) { typeInPalette(s.palette(), "filez") })
+	require.Contains(t, sequence.actual.renderer.ScreenText(), defaultCommandPaletteEmptyLabel)
+	sequence.frame("Clear query", func(s *reactivityPaletteScene) { typeInPalette(s.palette(), "") })
+	sequence.frame("Type theme", func(s *reactivityPaletteScene) { typeInPalette(s.palette(), "theme") })
+	sequence.frame("Open nested level", func(s *reactivityPaletteScene) { s.palette().selectCurrent() })
+	require.Contains(t, sequence.actual.renderer.ScreenText(), "Theme 16", "the current item is scrolled into view")
+	sequence.frame("Back", func(s *reactivityPaletteScene) { s.palette().handleEscape() })
+	sequence.frame("Close", func(s *reactivityPaletteScene) { s.palette().handleEscape() })
+	sequence.frame("Reopen", func(s *reactivityPaletteScene) { s.state.Open() })
+}
+
 type reactivityOverflowScene struct {
 	badge Signal[string]
 	body  Signal[string]

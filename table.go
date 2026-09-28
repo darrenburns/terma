@@ -927,28 +927,24 @@ func (t Table[T]) filteredRows(rows []T, columnCount int, query string, options 
 	viewRows := make([]T, 0, len(rows))
 	viewIndices := make([]int, 0, len(rows))
 	viewMatches := make([][]MatchResult, 0, len(rows))
-	rowRanks := make([]fuzzyMatchRank, 0, len(rows))
+	rowBest := make([]MatchResult, 0, len(rows))
 
 	for rowIdx, row := range rows {
 		cellMatches := make([]MatchResult, columnCount)
-		rowMatched := false
-		bestRank := fuzzyWorstMatchRank()
+		// A row ranks by its best-matching cell.
+		var best MatchResult
 		for colIdx := 0; colIdx < columnCount; colIdx++ {
 			match := matchCell(row, rowIdx, colIdx, query, options)
 			cellMatches[colIdx] = match
-			if match.Matched {
-				rowMatched = true
-				rank := fuzzyMatchRankFromResult(match)
-				if fuzzyMatchRankLess(rank, bestRank) {
-					bestRank = rank
-				}
+			if matchRanksAhead(match, best) {
+				best = match
 			}
 		}
-		if rowMatched {
+		if best.Matched {
 			viewRows = append(viewRows, row)
 			viewIndices = append(viewIndices, rowIdx)
 			viewMatches = append(viewMatches, cellMatches)
-			rowRanks = append(rowRanks, bestRank)
+			rowBest = append(rowBest, best)
 		}
 	}
 
@@ -958,7 +954,7 @@ func (t Table[T]) filteredRows(rows []T, columnCount int, query string, options 
 			order[i] = i
 		}
 		sort.SliceStable(order, func(i, j int) bool {
-			return fuzzyMatchRankLess(rowRanks[order[i]], rowRanks[order[j]])
+			return matchRanksAhead(rowBest[order[i]], rowBest[order[j]])
 		})
 
 		sortedRows := make([]T, len(viewRows))

@@ -29,6 +29,7 @@ type CommandPaletteItem struct {
 	Children      func() []CommandPaletteItem // Opens nested palette (lazy-loaded)
 	ChildrenTitle string                      // Breadcrumb title for nested level
 	Disabled      bool                        // Grayed out, not selectable
+	Current       bool                        // The level's current value (e.g. the active theme); the cursor rests here while the query is empty
 	Divider       string                      // Empty = plain line, non-empty = titled
 	FilterText    string                      // Override Label for filtering
 	Data          any                         // User data for custom renderers
@@ -63,6 +64,10 @@ type CommandPaletteLevel struct {
 	ScrollState *ScrollState
 	FilterState *FilterState
 	InputState  *TextInputState
+
+	// centerCursor asks the next build to scroll the cursor, just placed on
+	// the Current item, to the middle of the list.
+	centerCursor bool
 }
 
 // CommandPaletteState holds the stack of palette levels and visibility state.
@@ -84,7 +89,7 @@ func NewCommandPaletteState(title string, items []CommandPaletteItem) *CommandPa
 		Visible: NewSignal(false),
 		depth:   NewSignal(1),
 	}
-	state.ensureSelectableCursor(level)
+	state.resetCursor(level)
 	return state
 }
 
@@ -127,7 +132,7 @@ func (s *CommandPaletteState) PushLevel(title string, items []CommandPaletteItem
 	level := newCommandPaletteLevel(title, items)
 	s.stack = append(s.stack, level)
 	s.depth.Set(len(s.stack))
-	s.ensureSelectableCursor(level)
+	s.resetCursor(level)
 }
 
 // PopLevel removes the current level, returning true if a level was popped.
@@ -203,13 +208,10 @@ func (s *CommandPaletteState) SetItems(items []CommandPaletteItem) {
 func (s *CommandPaletteState) resetToRoot() {
 	root := s.stack[0]
 	s.resetLevelState(root)
-	if len(s.stack) <= 1 {
-		s.ensureSelectableCursor(root)
-		return
+	if len(s.stack) > 1 {
+		s.stack = []*CommandPaletteLevel{root}
+		s.depth.Set(1)
 	}
-	s.stack = []*CommandPaletteLevel{root}
-	s.depth.Set(1)
-	s.ensureSelectableCursor(root)
 }
 
 func (s *CommandPaletteState) ensureSelectableCursor(level *CommandPaletteLevel) {
@@ -249,26 +251,36 @@ func (s *CommandPaletteState) resetLevelState(level *CommandPaletteLevel) {
 	if level.FilterState != nil {
 		level.FilterState.Query.Set("")
 	}
-	if level.ScrollState != nil {
-		level.ScrollState.SetOffset(0)
-	}
-	s.resetCursorToStart(level)
+	s.resetCursor(level)
 }
 
-func (s *CommandPaletteState) resetCursorToStart(level *CommandPaletteLevel) {
+// resetCursor puts the cursor on the top result while searching, or on
+// the level's Current item (else its first selectable item) while the query
+// is empty, and scrolls to the top. The list then scrolls the cursor into view.
+func (s *CommandPaletteState) resetCursor(level *CommandPaletteLevel) {
 	if level == nil || level.ListState == nil {
 		return
 	}
 	view := commandPaletteFilteredView(level.Items, level.FilterState)
-	if len(view.Indices) == 0 {
-		level.ListState.CursorIndex.Set(0)
-		return
+	current, hasCurrent := -1, false
+	if strings.TrimSpace(level.FilterState.PeekQuery()) == "" {
+		current, hasCurrent = currentItemIndex(level.Items)
 	}
-	if first, ok := firstSelectableIndex(level.Items, view.Indices); ok {
+	level.centerCursor = hasCurrent
+	if hasCurrent {
+		level.ListState.SelectIndex(current)
+	} else if first, ok := firstSelectableIndex(level.Items, view.Indices); ok {
 		level.ListState.SelectIndex(first)
-		return
+	} else if len(view.Indices) > 0 {
+		level.ListState.SelectIndex(view.Indices[0])
+	} else {
+		level.ListState.CursorIndex.Set(0)
 	}
-	level.ListState.SelectIndex(view.Indices[0])
+	// Scroll after selecting: SelectIndex scrolls the cursor into view using
+	// the list's layout from before the query changed.
+	if level.ScrollState != nil {
+		level.ScrollState.SetOffset(0)
+	}
 }
 
 func newCommandPaletteLevel(title string, items []CommandPaletteItem) *CommandPaletteLevel {
@@ -283,12 +295,22 @@ func newCommandPaletteLevel(title string, items []CommandPaletteItem) *CommandPa
 		FilterState: NewFilterState(),
 		InputState:  NewTextInputState(""),
 	}
+	level.FilterState.Mode.Set(FilterFuzzy)
 	return level
 }
 
 func firstSelectableIndex(items []CommandPaletteItem, indices []int) (int, bool) {
 	for _, idx := range indices {
 		if idx >= 0 && idx < len(items) && items[idx].IsSelectable() {
+			return idx, true
+		}
+	}
+	return 0, false
+}
+
+func currentItemIndex(items []CommandPaletteItem) (int, bool) {
+	for idx, item := range items {
+		if item.Current && item.IsSelectable() {
 			return idx, true
 		}
 	}
@@ -312,31 +334,43 @@ func commandPaletteFilteredView(items []CommandPaletteItem, filter *FilterState)
 	}
 	view := ApplyFilter(items, query, matchItem)
 	if options.Mode == FilterFuzzy {
-		sortFilteredViewByFuzzyRank(&view)
+		sortFilteredViewByScore(&view)
 	}
 	return view
 }
 
+// commandPaletteKeywordPenalty ranks an item that matches only through
+// FilterText keywords, which aren't shown, below a comparable label match.
+const commandPaletteKeywordPenalty = fuzzyScoreMatch * fuzzyLengthScale
+
 func commandPaletteMatchItem(item CommandPaletteItem, query string, options FilterOptions) MatchResult {
+	if strings.TrimSpace(query) == "" {
+		return MatchResult{Matched: true}
+	}
+
+	// Search results are one list ranked by relevance, so dividers (which
+	// head groups in the unfiltered list) are hidden while searching.
 	if item.IsDivider() {
-		return MatchResult{Matched: true}
+		return MatchResult{}
 	}
 
-	if query == "" {
-		return MatchResult{Matched: true}
+	if item.FilterText == "" || item.FilterText == item.Label {
+		return MatchString(item.Label, query, options)
 	}
 
-	result := MatchString(item.GetFilterText(), query, options)
-	if !result.Matched {
-		return result
+	keywords := MatchString(item.FilterText, query, options)
+	if !keywords.Matched {
+		return keywords
 	}
+	keywords.Score -= commandPaletteKeywordPenalty
 
-	if item.FilterText != "" && item.FilterText != item.Label {
-		labelMatch := MatchString(item.Label, query, options)
-		result.Ranges = labelMatch.Ranges
+	// Highlight and rank by the label where it matches too.
+	label := MatchString(item.Label, query, options)
+	if !label.Matched {
+		return MatchResult{Matched: true, Score: keywords.Score}
 	}
-
-	return result
+	label.Score = max(label.Score, keywords.Score)
+	return label
 }
 
 // CommandPalette renders a searchable command palette with nested navigation.
@@ -456,7 +490,7 @@ func (p CommandPalette) buildContent(ctx BuildContext, level *CommandPaletteLeve
 		Spacing:    0,
 		Children:   headerChildren,
 	})
-	children = append(children, p.buildList(ctx, level, theme, containerStyle, hasBreadcrumbs))
+	children = append(children, p.buildList(level, theme, containerStyle, hasBreadcrumbs))
 
 	return Column{
 		ID:         p.ID + "-content",
@@ -473,15 +507,15 @@ func (p CommandPalette) buildInput(level *CommandPaletteLevel, theme ThemeData) 
 
 	padding := commandPaletteInputPadding()
 
+	// Every change to the query re-ranks the results, so the cursor moves to
+	// the top result rather than staying on whatever item it was on.
 	onFilterChange := func(text string) {
-		if level.FilterState != nil {
-			level.FilterState.Query.Set(text)
+		if level.FilterState == nil || level.FilterState.Query.Peek() == text {
+			return
 		}
-		if level.ScrollState != nil {
-			level.ScrollState.SetOffset(0)
-		}
+		level.FilterState.Query.Set(text)
 		if p.State != nil {
-			p.State.ensureSelectableCursor(level)
+			p.State.resetCursor(level)
 		}
 		p.notifyCursorChange()
 	}
@@ -515,11 +549,49 @@ func (p CommandPalette) buildInput(level *CommandPaletteLevel, theme ThemeData) 
 	}
 }
 
-func (p CommandPalette) buildList(ctx BuildContext, level *CommandPaletteLevel, theme ThemeData, containerStyle Style, hasBreadcrumbs bool) Widget {
+func (p CommandPalette) buildList(level *CommandPaletteLevel, theme ThemeData, containerStyle Style, hasBreadcrumbs bool) Widget {
 	if level == nil {
 		return EmptyWidget{}
 	}
 
+	listStyle := Style{
+		BackgroundColor: theme.Surface,
+	}
+	maxHeight, hasMaxHeight := p.listMaxHeight(containerStyle, hasBreadcrumbs)
+	if hasMaxHeight {
+		listStyle.MaxHeight = Cells(maxHeight)
+	} else {
+		listStyle.Height = Flex(1)
+		maxHeight = level.ScrollState.viewportHeight
+	}
+	if level.centerCursor {
+		level.centerCursor = false
+		p.scrollCursorToCenter(level, maxHeight)
+	}
+
+	return Scrollable{
+		ID:    p.scrollID(),
+		State: level.ScrollState,
+		Style: listStyle,
+		Child: commandPaletteResults{palette: p, level: level},
+	}
+}
+
+// commandPaletteResults shows a level's matching items, or an empty-state
+// label when nothing matches. It subscribes to the query itself, so typing
+// rebuilds it (and can switch to or from the empty state) without rebuilding
+// the rest of the palette.
+type commandPaletteResults struct {
+	palette CommandPalette
+	level   *CommandPaletteLevel
+}
+
+func (r commandPaletteResults) Build(ctx BuildContext) Widget {
+	p, level := r.palette, r.level
+	theme := ctx.Theme()
+
+	filterStateValues(level.FilterState)
+	level.ListState.Items.Get()
 	view := commandPaletteFilteredView(level.Items, level.FilterState)
 	hasContent := false
 	for _, idx := range view.Indices {
@@ -529,9 +601,8 @@ func (p CommandPalette) buildList(ctx BuildContext, level *CommandPaletteLevel, 
 		}
 	}
 
-	var listChild Widget
 	if !hasContent {
-		listChild = Text{
+		return Text{
 			Content:   defaultCommandPaletteEmptyLabel,
 			TextAlign: TextAlignCenter,
 			Style: Style{
@@ -540,37 +611,45 @@ func (p CommandPalette) buildList(ctx BuildContext, level *CommandPaletteLevel, 
 				Width:           Flex(1),
 			},
 		}
-	} else {
-		listChild = List[CommandPaletteItem]{
-			ID:                  p.listID(),
-			State:               level.ListState,
-			ScrollState:         level.ScrollState,
-			Filter:              level.FilterState,
-			MatchItem:           commandPaletteMatchItem,
-			RenderItemWithMatch: p.renderItem(ctx),
-			OnCursorChange: func(item CommandPaletteItem) {
-				p.notifyCursorChange()
-			},
-			Style: Style{
-				BackgroundColor: theme.Surface,
-			},
+	}
+
+	return List[CommandPaletteItem]{
+		ID:                  p.listID(),
+		State:               level.ListState,
+		ScrollState:         level.ScrollState,
+		Filter:              level.FilterState,
+		MatchItem:           commandPaletteMatchItem,
+		RenderItemWithMatch: p.renderItem(ctx),
+		OnCursorChange: func(item CommandPaletteItem) {
+			p.notifyCursorChange()
+		},
+		Style: Style{
+			BackgroundColor: theme.Surface,
+		},
+	}
+}
+
+// scrollCursorToCenter scrolls so the cursor sits mid-viewport. It is used when
+// a level opens on its Current item: the list scrolls its cursor into view
+// itself, but only once its viewport has been measured, a frame too late.
+// Item heights are those of the default renderer; layout clamps the offset.
+func (p CommandPalette) scrollCursorToCenter(level *CommandPaletteLevel, viewportHeight int) {
+	if level.ListState == nil || level.ScrollState == nil {
+		return
+	}
+	cursor := level.ListState.CursorIndex.Peek()
+	view := commandPaletteFilteredView(level.Items, level.FilterState)
+	y := 0
+	for _, idx := range view.Indices {
+		rows := 1
+		if item := level.Items[idx]; !item.IsDivider() && item.Description != "" {
+			rows = 2
 		}
-	}
-
-	listStyle := Style{
-		BackgroundColor: theme.Surface,
-	}
-	if maxHeight, ok := p.listMaxHeight(containerStyle, hasBreadcrumbs); ok {
-		listStyle.MaxHeight = Cells(maxHeight)
-	} else {
-		listStyle.Height = Flex(1)
-	}
-
-	return Scrollable{
-		ID:    p.scrollID(),
-		State: level.ScrollState,
-		Style: listStyle,
-		Child: listChild,
+		if idx == cursor {
+			level.ScrollState.Offset.Set(max(0, y-max(0, viewportHeight-rows)/2))
+			return
+		}
+		y += rows
 	}
 }
 
