@@ -1446,10 +1446,11 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 			// Auto-focus the first focusable inside the modal if focus
 			// is not already within it. This ensures modals receive focus
 			// when they open without requiring an explicit RequestFocus call.
+			// A pending request for a widget inside the modal wins.
 			focusedID := r.focusManager.FocusedID()
 			alreadyInside := false
 			for _, fe := range r.focusCollector.Focusables()[focusableCountBefore:] {
-				if fe.ID == focusedID {
+				if fe.ID == focusedID || (pendingFocusID != "" && fe.ID == pendingFocusID) {
 					alreadyInside = true
 					break
 				}

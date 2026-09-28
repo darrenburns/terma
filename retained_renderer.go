@@ -995,10 +995,13 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 				r.renderModalBackdrop(ctx, entry.Config.BackdropColor)
 			}
 
+			// A pending request for a widget inside the modal also counts:
+			// it was made while opening the modal, or after removing the
+			// focused widget, and should win over the first focusable.
 			focusedID := r.focusManager.FocusedID()
 			alreadyInside := i != topModal
 			for _, fe := range r.focusCollector.Focusables()[focusableCountBefore:] {
-				if fe.ID == focusedID {
+				if fe.ID == focusedID || (pendingFocusID != "" && fe.ID == pendingFocusID) {
 					alreadyInside = true
 					break
 				}
