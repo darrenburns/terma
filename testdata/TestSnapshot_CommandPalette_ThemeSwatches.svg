@@ -495,8 +495,8 @@
   <rect x="654.8" y="106.0" width="8.4" height="19.6" fill="#1D1D2C"/>
   <rect x="663.2" y="106.0" width="8.4" height="19.6" fill="#1D1D2C"/>
   <rect x="671.6" y="106.0" width="8.4" height="19.6" fill="#1D1D2C"/>
-  <text x="33.2" y="106.0" class="bold" fill="#9399B2">Dark</text>
-  <text x="75.2" y="106.0" class="bold" fill="#9399B2">Themes</text>
+  <text x="33.2" y="106.0" class="bold" fill="#E1CEF7">Dark</text>
+  <text x="75.2" y="106.0" class="bold" fill="#E1CEF7">Themes</text>
   <text x="134.0" y="106.0" fill="#414356">─────────────────────────────────────────────</text>
   <rect x="8.0" y="125.6" width="8.4" height="19.6" fill="#1D1D2C"/>
   <rect x="16.4" y="125.6" width="8.4" height="19.6" fill="#1D1D2C"/>
