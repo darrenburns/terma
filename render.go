@@ -1284,8 +1284,10 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 				break
 			}
 			pos := tree.Layout.Children[i]
-			// Pass relative positions - childClipCtx.X/Y already contains the origin offset
-			r.renderTree(childClipCtx, childTree, pos.X, pos.Y)
+			// Pass relative positions - childClipCtx.X/Y already contains the origin offset.
+			// Layouts position the border box; renderTree applies the margin itself.
+			margin := pos.Layout.Box.Margin
+			r.renderTree(childClipCtx, childTree, pos.X-margin.Left, pos.Y-margin.Top)
 		}
 	}
 

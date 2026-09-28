@@ -403,14 +403,22 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 
 // needsOwnNode reports whether a widget returned from Build is a composite that
 // must be built itself. Widgets that lay out or render themselves are used as
-// the node's output directly. A widget returning its own type is treated as
-// final, so self-returning widgets aren't wrapped again and again.
+// the node's output directly, unless they take focus or keys: focus and key
+// dispatch go to a node's source widget, so a TextInput returned straight from
+// a component's Build needs a node of its own to be focusable. A widget
+// returning its own type is treated as final, so self-returning widgets aren't
+// wrapped again and again.
 func needsOwnNode(built, source Widget) bool {
+	if reflect.TypeOf(built) == reflect.TypeOf(source) {
+		return false
+	}
 	switch built.(type) {
+	case Focusable, KeyHandler, KeybindProvider:
+		return true
 	case Renderable, LayoutNodeBuilder, ContainerLayoutBuilder, ChildProvider:
 		return false
 	}
-	return reflect.TypeOf(built) != reflect.TypeOf(source)
+	return true
 }
 
 func widgetIdentity(widget Widget, ctx BuildContext) string {
@@ -776,7 +784,11 @@ func (r *Renderer) forEachChildContext(ctx *RenderContext, node *widgetNode, sty
 			break
 		}
 		pos := node.layout.Children[i]
-		visit(childClipCtx, child, pos.X, pos.Y)
+		// Layouts position a child's border box, with its margin already
+		// applied. Painting starts from the margin box and applies the margin
+		// itself, so step back to the margin box origin.
+		margin := pos.Layout.Box.Margin
+		visit(childClipCtx, child, pos.X-margin.Left, pos.Y-margin.Top)
 	}
 }
 
