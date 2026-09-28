@@ -36,19 +36,28 @@ func ThemePaletteItems(onSelect func(themeName string)) []CommandPaletteItem {
 	return items
 }
 
-// ThemeSwatch returns a row of dots previewing a registered theme's primary,
-// secondary, accent and background colours. Unknown themes render nothing.
+// ThemeSwatch returns a small preview chip for a registered theme: its
+// background and surface colours fill the chip's left and right halves, with
+// primary, secondary and accent dots drawn across them. Unknown themes render
+// nothing.
 func ThemeSwatch(name string) Widget {
 	data, ok := GetTheme(name)
 	if !ok {
 		return EmptyWidget{}
 	}
-	colors := []Color{data.Primary, data.Secondary, data.Accent, data.Background}
-	spans := make([]Span, len(colors))
-	for i, c := range colors {
-		spans[i] = Span{Text: "●", Style: SpanStyle{Foreground: c}}
+	bg, surface := data.Background, data.Surface
+	cell := func(text string, fg, bg Color) Span {
+		return Span{Text: text, Style: SpanStyle{Foreground: fg, Background: bg}}
 	}
-	return Text{Spans: spans}
+	return Text{Spans: []Span{
+		cell(" ", Color{}, bg),
+		cell("●", data.Primary, bg),
+		cell(" ", Color{}, bg),
+		cell("●", data.Secondary, surface),
+		cell(" ", Color{}, surface),
+		cell("●", data.Accent, surface),
+		cell(" ", Color{}, surface),
+	}}
 }
 
 // ThemeDisplayName turns a theme name such as "rose-pine" into "Rose Pine".
