@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/darrenburns/terma/internal/textutil"
 	"github.com/darrenburns/terma/layout"
 )
 
@@ -179,34 +180,15 @@ func wrapText(content string, maxWidth int, mode WrapMode) []string {
 
 		switch mode {
 		case WrapHard:
-			// Hard wrap: break at exact character boundary using Truncate
-			remaining := line
-			for len(remaining) > 0 {
-				if ansi.StringWidth(remaining) <= maxWidth {
-					result = append(result, remaining)
-					break
-				}
-				chunk := ansi.Truncate(remaining, maxWidth, "")
-				result = append(result, chunk)
-				remaining = remaining[len(chunk):]
-			}
+			result = append(result, textutil.HardWrap(line, maxWidth)...)
 		case WrapSoft:
 			// Soft wrap: break at word boundaries
 			wrapped := ansi.Wordwrap(line, maxWidth, "")
 			wrappedLines := strings.Split(wrapped, "\n")
 			for _, wl := range wrappedLines {
 				if ansi.StringWidth(wl) > maxWidth {
-					// Word longer than maxWidth, hard-break it
-					remaining := wl
-					for len(remaining) > 0 {
-						if ansi.StringWidth(remaining) <= maxWidth {
-							result = append(result, remaining)
-							break
-						}
-						chunk := ansi.Truncate(remaining, maxWidth, "")
-						result = append(result, chunk)
-						remaining = remaining[len(chunk):]
-					}
+					// Word longer than maxWidth, hard-break it.
+					result = append(result, textutil.HardWrap(wl, maxWidth)...)
 				} else {
 					result = append(result, wl)
 				}
@@ -324,35 +306,55 @@ func collectSpanGraphemes(spans []Span) []styledGrapheme {
 	}
 	result := make([]styledGrapheme, 0, len(spans))
 	for _, span := range spans {
-		if span.Text == "" {
-			continue
-		}
-		for _, g := range splitGraphemes(span.Text) {
+		for remaining := span.Text; len(remaining) > 0; {
+			g, width := ansi.FirstGraphemeCluster(remaining, ansi.GraphemeWidth)
 			result = append(result, styledGrapheme{
 				text:  g,
 				style: span.Style,
-				width: graphemeWidth(g),
+				width: width,
 			})
+			remaining = remaining[len(g):]
 		}
 	}
 	return result
 }
 
-func appendStyledGrapheme(line *lineData, g styledGrapheme, x *int) {
+// spanLineBuilder joins adjacent graphemes without copying the accumulated
+// string for every character. It is never copied while its builder is in use.
+// finish returns only the completed line data, then resets the builder.
+type spanLineBuilder struct {
+	lineData
+	text strings.Builder
+}
+
+func (line *spanLineBuilder) finish(width int) lineData {
+	if len(line.segments) > 0 {
+		line.segments[len(line.segments)-1].span.Text = line.text.String()
+	}
+	result := line.lineData
+	result.width = width
+	*line = spanLineBuilder{}
+	return result
+}
+
+func appendStyledGrapheme(line *spanLineBuilder, g styledGrapheme, x *int) {
 	if g.width == 0 {
 		return
 	}
 	if len(line.segments) > 0 {
 		last := &line.segments[len(line.segments)-1]
 		if last.span.Style == g.style && last.relX+last.width == *x {
-			last.span.Text += g.text
+			line.text.WriteString(g.text)
 			last.width += g.width
 			*x += g.width
 			return
 		}
+		last.span.Text = line.text.String()
+		line.text.Reset()
 	}
+	line.text.WriteString(g.text)
 	line.segments = append(line.segments, spanSegment{
-		span:  Span{Text: g.text, Style: g.style},
+		span:  Span{Style: g.style},
 		relX:  *x,
 		width: g.width,
 	})
@@ -431,13 +433,11 @@ func (t Text) collectSpanLines(width, height int) []lineData {
 
 func collectSpanLinesNoWrap(graphemes []styledGrapheme, width, height int) []lineData {
 	var lines []lineData
-	var currentLine lineData
+	var currentLine spanLineBuilder
 	x := 0
 
 	flushLine := func() bool {
-		currentLine.width = x
-		lines = append(lines, currentLine)
-		currentLine = lineData{}
+		lines = append(lines, currentLine.finish(x))
 		x = 0
 		return height > 0 && len(lines) >= height
 	}
@@ -468,13 +468,11 @@ func collectSpanLinesHard(graphemes []styledGrapheme, width, height int) []lineD
 	}
 
 	var lines []lineData
-	var currentLine lineData
+	var currentLine spanLineBuilder
 	x := 0
 
 	flushLine := func() bool {
-		currentLine.width = x
-		lines = append(lines, currentLine)
-		currentLine = lineData{}
+		lines = append(lines, currentLine.finish(x))
 		x = 0
 		return height > 0 && len(lines) >= height
 	}
@@ -509,7 +507,7 @@ func collectSpanLinesSoft(graphemes []styledGrapheme, width, height int) []lineD
 	}
 
 	var lines []lineData
-	var currentLine lineData
+	var currentLine spanLineBuilder
 	x := 0
 
 	var word []styledGrapheme
@@ -518,9 +516,7 @@ func collectSpanLinesSoft(graphemes []styledGrapheme, width, height int) []lineD
 	spaceWidth := 0
 
 	flushLine := func() bool {
-		currentLine.width = x
-		lines = append(lines, currentLine)
-		currentLine = lineData{}
+		lines = append(lines, currentLine.finish(x))
 		x = 0
 		return height > 0 && len(lines) >= height
 	}
@@ -603,17 +599,15 @@ func hardWrapSpanLines(lines []lineData, width, height int) []lineData {
 			continue
 		}
 
-		var currentLine lineData
+		var currentLine spanLineBuilder
 		x := 0
 		for _, seg := range line.segments {
 			for _, g := range splitGraphemes(seg.span.Text) {
 				gWidth := graphemeWidth(g)
 				if x > 0 && x+gWidth > width {
-					currentLine.width = x
-					if appendLine(currentLine) {
+					if appendLine(currentLine.finish(x)) {
 						return wrapped
 					}
-					currentLine = lineData{}
 					x = 0
 				}
 				appendStyledGrapheme(&currentLine, styledGrapheme{
@@ -623,8 +617,7 @@ func hardWrapSpanLines(lines []lineData, width, height int) []lineData {
 				}, &x)
 			}
 		}
-		currentLine.width = x
-		if appendLine(currentLine) {
+		if appendLine(currentLine.finish(x)) {
 			return wrapped
 		}
 	}

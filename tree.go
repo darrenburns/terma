@@ -1456,7 +1456,12 @@ func (t Tree[T]) buildViewEntries(nodes []TreeNode[T], query string, options Fil
 }
 
 func (t Tree[T]) flattenVisible(nodes []TreeNode[T], path []int, depth int) []treeViewEntry[T] {
-	entries := make([]treeViewEntry[T], 0)
+	return t.appendVisible(make([]treeViewEntry[T], 0, len(nodes)), nodes, path, depth)
+}
+
+// Append descendants to the same buffer so rebuilding an expanded tree does
+// not allocate and copy a separate entries slice at every branch.
+func (t Tree[T]) appendVisible(entries []treeViewEntry[T], nodes []TreeNode[T], path []int, depth int) []treeViewEntry[T] {
 	for i, node := range nodes {
 		nextPath := appendPath(path, i)
 		expandable := t.nodeExpandable(node)
@@ -1470,7 +1475,7 @@ func (t Tree[T]) flattenVisible(nodes []TreeNode[T], path []int, depth int) []tr
 			expanded:   expanded,
 		})
 		if expanded && len(node.Children) > 0 {
-			entries = append(entries, t.flattenVisible(node.Children, nextPath, depth+1)...)
+			entries = t.appendVisible(entries, node.Children, nextPath, depth+1)
 		}
 	}
 	return entries

@@ -827,7 +827,7 @@ func (p CommandPalette) dividerWidget(theme ThemeData, title string) Widget {
 		Children: []Widget{
 			Text{
 				Content: title + " ",
-				Style:   Style{ForegroundColor: theme.TextMuted, Bold: true},
+				Style:   Style{ForegroundColor: theme.PrimaryText, Bold: true},
 			},
 			Text{
 				Content: commandPaletteDividerLine,
