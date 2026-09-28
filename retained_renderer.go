@@ -63,11 +63,12 @@ func (r *Renderer) newRetainedLayoutNode(node *widgetNode) *retainedLayoutNode {
 }
 
 func (p *retainedLayoutNode) ComputeLayout(constraints layout.Constraints) layout.ComputedLayout {
-	if p.cacheable {
-		for _, entry := range p.node.layoutCache {
-			if entry.constraints == constraints {
-				return entry.result
-			}
+	// Construction discards stale entries for dirty and forced layouts. Results
+	// computed since then are reusable too: flex and stretch can measure the
+	// same child under identical constraints several times within one frame.
+	for _, entry := range p.node.layoutCache {
+		if entry.constraints == constraints {
+			return entry.result
 		}
 	}
 	result := withSignalRead(p.node, readPhaseLayout, func() layout.ComputedLayout {
@@ -1085,6 +1086,12 @@ func (r *Renderer) collectDamageRects() (rects []Rect, found bool) {
 			}
 			if !rect.IsEmpty() {
 				rects = append(rects, rect)
+			}
+			if !ok {
+				// This repaint includes the whole visible subtree, so additional
+				// damage from its descendants would repaint the same cells again.
+				// A scrollbar-only repaint still needs to find dirty content.
+				return
 			}
 		}
 		for _, child := range node.children {

@@ -1,5 +1,9 @@
 # Measuring reactivity performance
 
+The [September 2026 performance audit](performance-audit.html) ranks six further
+improvements, with interactive before/after comparisons and
+[reproducible measurements](benchmarks/performance-audit/README.md).
+
 The reactivity benchmarks measure a state mutation followed by `Renderer.Update`
 against an in-memory terminal buffer. This includes signal notification,
 intrinsic-size checks, building, layout, and painting. It excludes terminal I/O,
@@ -154,7 +158,8 @@ constraints without building its layout node or visiting its children.
 Rebuilt nodes are marked changed, since a parent's rebuild can hand them new
 properties without any signal of their own changing. On a cache hit a node keeps
 its layout-phase signal subscriptions, because the reads that created them don't
-run. Forced full renders bypass the cache.
+run. Forced full renders discard results from earlier frames, but reuse repeated
+measurements with identical constraints within the new frame.
 
 Collected on the same machine and settings as the baseline; medians of five
 samples. Raw output: [partial repaint](benchmarks/reactivity-reflow.txt),

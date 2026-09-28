@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/darrenburns/terma/internal/textutil"
 )
 
 // WrapMode controls text wrapping behavior.
@@ -81,22 +82,7 @@ func wrapTextLines(content string, wrap WrapMode, maxWidth int) []string {
 
 // wrapLineByChar wraps a single line at character boundaries.
 func wrapLineByChar(line string, maxWidth int) []string {
-	var result []string
-	remaining := line
-
-	for len(remaining) > 0 {
-		if ansi.StringWidth(remaining) <= maxWidth {
-			result = append(result, remaining)
-			break
-		}
-
-		// Truncate to fit width
-		chunk := ansi.Truncate(remaining, maxWidth, "")
-		result = append(result, chunk)
-		remaining = remaining[len(chunk):]
-	}
-
-	return result
+	return textutil.HardWrap(line, maxWidth)
 }
 
 // wrapLineByWord wraps a single line at word boundaries.
