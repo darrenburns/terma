@@ -441,6 +441,17 @@ func (t TabBar) formatPositionKey(num int) string {
 	}
 }
 
+// TabID returns the widget ID of the tab with the given key, or "" when the
+// TabBar has no ID. Use it to point a static jump key at a single tab:
+//
+//	JumpTarget{Key: "b", ID: tabBar.TabID("body")}
+func (t TabBar) TabID(key string) string {
+	if t.ID == "" {
+		return ""
+	}
+	return t.ID + "-" + key
+}
+
 // makeSelectAction returns an action function that selects a specific tab.
 func (t TabBar) makeSelectAction(key string) func() {
 	return func() {
@@ -569,6 +580,7 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 				Children: []Widget{
 					tabLabel{
 						Text: Text{
+							ID:      t.TabID(tabKey),
 							Content: tab.Label,
 							Style:   labelStyle,
 							Click:   func(MouseEvent) { activate() },
@@ -592,6 +604,7 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 			// Tab without close button
 			children = append(children, tabLabel{
 				Text: Text{
+					ID:      t.TabID(tabKey),
 					Content: tab.Label,
 					Style:   style,
 					Click:   func(MouseEvent) { activate() },

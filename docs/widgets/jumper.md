@@ -31,6 +31,7 @@ Run `go run ./cmd/jump-example` to try it.
 - If the widget is focusable, the jump focuses it.
 - If it isn't focusable (a panel, say), the jump focuses the first focusable widget inside it.
 - If `Action` is set, it runs instead of moving focus, for example to switch tabs or press a button. The label still appears on the widget with `ID`.
+- It can point at a single item inside a widget, such as one tab. Use `TabBar.TabID(key)` (the TabBar needs an `ID`), or the ID of your own `Jumpable`. The jump does what jumping to that item does (activates the tab), and the widget holding the item gets no hint of its own.
 - A key can be longer than one character (`"gt"`). It is typed one character at a time. Don't let one key be a prefix of another.
 
 **Dynamic hints** (`Dynamic: true`) are for what can't be given a key in advance, because it comes from data. Every **item** in view gets its own hint, the way Vimium labels every link on a page:
