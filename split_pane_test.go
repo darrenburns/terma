@@ -125,6 +125,18 @@ func TestSplitPane_KeybindsHorizontalIncludesVimAliases(t *testing.T) {
 	}
 }
 
+func TestSplitPane_KeybindsEmptyWhenFocusDisabled(t *testing.T) {
+	pane := SplitPane{
+		State:        NewSplitPaneState(0.5),
+		Orientation:  SplitHorizontal,
+		DisableFocus: true,
+	}
+
+	if keybinds := pane.Keybinds(); len(keybinds) != 0 {
+		t.Fatalf("expected no keybinds, got %d", len(keybinds))
+	}
+}
+
 func TestSplitPane_KeybindsEscapeUsesOnExitFocus(t *testing.T) {
 	state := NewSplitPaneState(0.5)
 	calls := 0
