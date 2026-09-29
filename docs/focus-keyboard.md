@@ -18,6 +18,24 @@ type Focusable interface {
 When focus moves away from a widget, Terma calls `OnBlur()` for widgets that
 implement `Blurrable`.
 
+## Focus in snapshots
+
+Outside a running app, call `RequestFocus` with a stable widget ID immediately
+before `RenderToBuffer`, `Snapshot`, or `AssertSnapshot` to capture its focused
+appearance. A wrapper that requests focus from `Build` is unnecessary:
+
+```go
+terma.RequestFocus("summary-menu")
+terma.AssertSnapshot(t, widget, 80, 24)
+```
+
+Each headless render consumes its request, including an empty or invalid ID;
+without a valid request the first focusable widget receives focus. Open modals
+still pull focus inside, and a request for a widget within the modal wins over
+its default first focusable. Requests made during rendering do not carry into
+the next snapshot. When an app is running, its pending request is preserved and
+is not used by a headless snapshot.
+
 ## Pointer Hover Events
 
 Terma also supports first-class hover transition events with event payloads:

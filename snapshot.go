@@ -49,8 +49,28 @@ func RenderToBuffer(widget Widget, width, height int) *uv.Buffer {
 // space the widget actually occupies, not just the buffer size.
 //
 // The first focusable widget is automatically focused so that cursor/focus
-// styling is visible in the rendered output.
+// styling is visible in the rendered output. Outside a running app, a preceding
+// RequestFocus call instead selects that widget, if it is focusable in this tree.
+// The request is consumed by this render, including invalid IDs. Requests made
+// during rendering stay within this render; a running app's pending request is
+// preserved and is not used to focus the snapshot.
 func RenderToBufferWithSize(widget Widget, width, height int) (buf *uv.Buffer, layoutWidth, layoutHeight int) {
+	// A pre-render request belongs to this snapshot only outside an app.
+	// Requests produced by either render pass must not leak to a later snapshot
+	// or overwrite a request waiting for a running app's next frame.
+	previousFocusID := pendingFocusID
+	appCtx := currentAppContext()
+	appRunning := appCtx != nil && appCtx.Err() == nil
+	if appRunning {
+		pendingFocusID = ""
+	}
+	defer func() {
+		pendingFocusID = ""
+		if appRunning {
+			pendingFocusID = previousFocusID
+		}
+	}()
+
 	buf = uv.NewBuffer(width, height)
 
 	// Create focus manager and signals (required for rendering)
@@ -63,7 +83,6 @@ func RenderToBufferWithSize(widget Widget, width, height int) (buf *uv.Buffer, l
 	renderer := NewRenderer(buf, width, height, focusManager, focusedSignal, hoveredSignal)
 
 	// First render pass: collect focusables
-	pendingFocusID = ""
 	focusables := renderer.Render(widget)
 	focusManager.SetFocusables(focusables)
 	// Apply focus requests made while rendering, as the app does: an open
@@ -478,9 +497,9 @@ func GenerateDiffSVG(expected, actual *uv.Buffer, width, height int, opts SVGOpt
 
 	// Colors for diff visualization
 	bgColor := "#1a1a2e"
-	matchColor := "#333344"    // Dimmed color for matching cells
-	diffBgColor := "#ff00ff"   // Bright magenta background for diffs
-	diffFgColor := "#ffffff"   // White text on diff cells
+	matchColor := "#333344"  // Dimmed color for matching cells
+	diffBgColor := "#ff00ff" // Bright magenta background for diffs
+	diffFgColor := "#ffffff" // White text on diff cells
 
 	var sb strings.Builder
 
