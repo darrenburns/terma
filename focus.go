@@ -51,9 +51,26 @@ const (
 	HoverLeave
 )
 
+// HoverEventSource identifies what caused a hover transition.
+type HoverEventSource int
+
+const (
+	// HoverSourcePointer indicates a transition resolved from mouse motion input,
+	// including motion reports that change only the button or modifier state.
+	// It is the zero value for compatibility with manually constructed events.
+	HoverSourcePointer HoverEventSource = iota
+	// HoverSourceLayout indicates a transition resolved after rendering at the
+	// last known pointer position, without new pointer input. For example, a
+	// widget appeared, disappeared, moved, or changed its hit-testing behavior.
+	HoverSourceLayout
+)
+
 // HoverEvent describes a pointer hover transition for a widget.
 type HoverEvent struct {
 	Type HoverEventType
+	// Source distinguishes pointer input from layout reconciliation. Both sources
+	// update hovered state and dispatch leave before enter when the target changes.
+	Source HoverEventSource
 	// Absolute screen coordinates of the pointer.
 	X, Y int
 	// Local coordinates relative to the target widget's bounds.

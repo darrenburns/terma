@@ -34,9 +34,9 @@ func (h *hoverTracker) UpdatePointer(x, y int, mod uv.KeyMod, button uv.MouseBut
 	h.pointerKnown = true
 
 	if resolve == nil {
-		return h.applyTarget(nil, x, y, mod, button, hoveredSignal)
+		return h.applyTarget(nil, x, y, mod, button, HoverSourcePointer, hoveredSignal)
 	}
-	return h.applyTarget(resolve(x, y), x, y, mod, button, hoveredSignal)
+	return h.applyTarget(resolve(x, y), x, y, mod, button, HoverSourcePointer, hoveredSignal)
 }
 
 // Reconcile re-checks hover against the most recently known pointer position.
@@ -47,10 +47,10 @@ func (h *hoverTracker) Reconcile(resolve hoverTargetResolver, hoveredSignal AnyS
 		return false
 	}
 	entry := resolve(h.pointerX, h.pointerY)
-	return h.applyTarget(entry, h.pointerX, h.pointerY, h.pointerMod, h.pointerButton, hoveredSignal)
+	return h.applyTarget(entry, h.pointerX, h.pointerY, h.pointerMod, h.pointerButton, HoverSourceLayout, hoveredSignal)
 }
 
-func (h *hoverTracker) applyTarget(entry *WidgetEntry, x, y int, mod uv.KeyMod, button uv.MouseButton, hoveredSignal AnySignal[Widget]) bool {
+func (h *hoverTracker) applyTarget(entry *WidgetEntry, x, y int, mod uv.KeyMod, button uv.MouseButton, source HoverEventSource, hoveredSignal AnySignal[Widget]) bool {
 	var (
 		newID     string
 		newWidget Widget
@@ -80,6 +80,7 @@ func (h *hoverTracker) applyTarget(entry *WidgetEntry, x, y int, mod uv.KeyMod, 
 	if oldWidget != nil {
 		dispatchHoverEvent(oldWidget, HoverEvent{
 			Type:             HoverLeave,
+			Source:           source,
 			X:                x,
 			Y:                y,
 			LocalX:           x - oldBounds.X,
@@ -102,6 +103,7 @@ func (h *hoverTracker) applyTarget(entry *WidgetEntry, x, y int, mod uv.KeyMod, 
 	if newWidget != nil {
 		dispatchHoverEvent(newWidget, HoverEvent{
 			Type:             HoverEnter,
+			Source:           source,
 			X:                x,
 			Y:                y,
 			LocalX:           x - newBounds.X,

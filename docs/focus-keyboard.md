@@ -32,6 +32,7 @@ const (
 
 type HoverEvent struct {
     Type             HoverEventType
+    Source           HoverEventSource
     X, Y             int
     LocalX, LocalY   int
     Button           uv.MouseButton
@@ -47,6 +48,28 @@ type Hoverable interface {
 ```
 
 Hover transitions are direct-target only (no bubbling).
+
+`event.Source` is `HoverSourcePointer` for mouse motion input (including reports
+that change only buttons or modifiers), or `HoverSourceLayout` when rendering
+changes the target under the last known pointer position. Layout transitions still
+update `ctx.HoveredID()` and dispatch leave before enter, so hover styling remains
+correct when a widget appears, disappears, or moves under a stationary pointer.
+`Button` and `Mod` on layout events retain the last recorded motion report's state.
+Unchanged target identity emits no transition; moving within the same widget does
+not generate additional enter events. `HoverSourcePointer` is the zero value.
+
+To dismiss a keyboard-opened summary only on pointer input, filter its callback:
+
+```go
+Hover: func(event terma.HoverEvent) {
+    if event.Type == terma.HoverEnter && event.Source == terma.HoverSourcePointer {
+        showSummary.Set(false)
+    }
+},
+```
+
+See `go run ./cmd/hover-cause-demo` for a summary that remains visible when opened
+under a stationary mouse and dismisses after the mouse leaves and re-enters it.
 
 ## Blur Semantics
 
