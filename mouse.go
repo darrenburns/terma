@@ -106,16 +106,16 @@ func newMouseRouter(renderer *Renderer, focusManager *FocusManager, hoveredSigna
 // blocked reports whether a modal overlay covers (x, y), so nothing beneath
 // it may receive the event.
 func (m *mouseRouter) blocked(x, y int) bool {
-	return m.renderer.FloatAt(x, y) == nil && m.renderer.HasModalFloat()
+	return m.renderer.pointerFloatAt(x, y) == nil && m.renderer.HasModalFloat()
 }
 
 // target resolves the widget under (x, y). consumed reports that an overlay
 // took the event instead: a modal covers the point, or (when dismiss is set)
 // a press outside the top overlay dismissed it.
 func (m *mouseRouter) target(x, y int, dismiss bool) (entry *WidgetEntry, consumed bool) {
-	if m.renderer.FloatAt(x, y) == nil && m.renderer.HasFloats() {
+	if m.renderer.pointerFloatAt(x, y) == nil && m.renderer.HasFloats() {
 		if dismiss {
-			topFloat := m.renderer.TopFloat()
+			topFloat := m.renderer.topPointerFloat()
 			if topFloat != nil && topFloat.Config.shouldDismissOnClickOutside() && topFloat.Config.OnDismiss != nil {
 				topFloat.Config.OnDismiss()
 				return nil, true

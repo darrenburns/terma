@@ -81,6 +81,13 @@ type FloatConfig struct {
 	// Modal behavior - when true, traps focus and shows a backdrop.
 	Modal bool
 
+	// PointerPassthrough lets mouse clicks, dragging, wheel events and hover
+	// reach widgets beneath the float instead of its child subtree. The float
+	// also ignores outside-click dismissal. Useful for tooltips and previews.
+	// Modal takes precedence: modal floats always block pointer input.
+	// Keyboard focus and Escape dismissal are unaffected.
+	PointerPassthrough bool
+
 	// DismissOnEsc dismisses the float when Escape is pressed.
 	// Defaults to true if OnDismiss is set.
 	DismissOnEsc *bool
@@ -95,6 +102,11 @@ type FloatConfig struct {
 	// BackdropColor is the color of the modal backdrop.
 	// Only used when Modal is true. Defaults to semi-transparent black.
 	BackdropColor Color
+}
+
+// takesPointer reports whether the float participates in pointer routing.
+func (c FloatConfig) takesPointer() bool {
+	return c.Modal || !c.PointerPassthrough
 }
 
 // shouldDismissOnEsc returns whether the float should dismiss on Escape key.

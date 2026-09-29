@@ -1327,10 +1327,11 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 }
 
 // pointerLayer returns the range of registry entries that can take pointer
-// input at (x, y): the topmost overlay's under the point, else the main
-// tree's. Nothing beneath an overlay is reachable through it.
+// input at (x, y): the topmost interactive overlay's under the point, else
+// the main tree's. Pointer-pass-through overlays remain visible but do not
+// occlude widgets beneath them for hit testing.
 func (r *Renderer) pointerLayer(x, y int) (lo, hi int) {
-	if i := r.floatIndexAt(x, y); i >= 0 {
+	if i := r.findFloatIndexAt(x, y, true); i >= 0 {
 		return r.retainedFloats[i].registryStart, r.retainedFloats[i].registryEnd
 	}
 	if len(r.retainedFloats) > 0 {
@@ -1546,15 +1547,41 @@ func (r *Renderer) FloatAt(x, y int) *FloatEntry {
 
 // floatIndexAt returns the index of the topmost float containing (x, y), or -1.
 func (r *Renderer) floatIndexAt(x, y int) int {
+	return r.findFloatIndexAt(x, y, false)
+}
+
+// pointerFloatAt returns the topmost float accepting pointer input at (x, y).
+func (r *Renderer) pointerFloatAt(x, y int) *FloatEntry {
+	if i := r.findFloatIndexAt(x, y, true); i >= 0 {
+		return &r.retainedFloats[i].entry
+	}
+	return nil
+}
+
+func (r *Renderer) findFloatIndexAt(x, y int, pointerOnly bool) int {
 	// Search back-to-front (topmost floats are last)
 	for i := len(r.retainedFloats) - 1; i >= 0; i-- {
 		entry := &r.retainedFloats[i].entry
+		if pointerOnly && !entry.Config.takesPointer() {
+			continue
+		}
 		if x >= entry.X && x < entry.X+entry.Width &&
 			y >= entry.Y && y < entry.Y+entry.Height {
 			return i
 		}
 	}
 	return -1
+}
+
+// topPointerFloat excludes pass-through overlays from outside-click dismissal.
+func (r *Renderer) topPointerFloat() *FloatEntry {
+	for i := len(r.retainedFloats) - 1; i >= 0; i-- {
+		entry := &r.retainedFloats[i].entry
+		if entry.Config.takesPointer() {
+			return entry
+		}
+	}
+	return nil
 }
 
 // TopFloat returns the topmost (last registered) float entry, or nil if none.

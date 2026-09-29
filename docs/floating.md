@@ -131,12 +131,57 @@ type FloatConfig struct {
     Modal         bool  // Show backdrop, trap focus
     BackdropColor Color // Backdrop color (default: semi-transparent black)
 
+    // Mouse input
+    PointerPassthrough bool // Ignore pointer input; Modal takes precedence
+
     // Dismissal
     OnDismiss             func() // Called when float should close
     DismissOnEsc          *bool  // Dismiss on Escape (default: true if OnDismiss set)
     DismissOnClickOutside *bool  // Dismiss on outside click (default: true for non-modal)
 }
 ```
+
+## Pointer-Pass-Through Previews
+
+Set `PointerPassthrough: true` for a visual preview or tooltip that should allow
+mouse input to reach the widgets beneath it:
+
+```go
+Floating{
+    Visible: showPreview.Get(),
+    Config: FloatConfig{
+        AnchorID: "preview-trigger",
+        Anchor: AnchorBottomLeft,
+        PointerPassthrough: true,
+    },
+    Child: Text{Content: "Preview"},
+}
+```
+
+The entire float subtree is skipped for clicks, dragging, wheel scrolling and
+hover, including focus changes caused by a click. Input reaches the next
+interactive float beneath it, or the main widget tree. Clicks and wheel events
+use their own coordinates, so no preceding mouse movement is needed. Showing
+the preview also preserves hover beneath a stationary pointer.
+
+A pass-through float does not consume outside clicks or run outside-click
+dismissal, even when `OnDismiss` is set. Escape dismissal and keyboard focus
+behavior are unchanged. Use display-only children for previews; focusable
+children still participate in keyboard navigation. `Modal: true` overrides
+`PointerPassthrough`, so modal content and its backdrop still receive or block
+mouse input. The default `false` preserves existing interactive float behavior.
+
+Try `go run ./cmd/float-passthrough-demo`; add `-blocking` to compare the default
+behavior. For browser verification, launch:
+
+```sh
+go run ./cmd/terma-browser -- go run ./cmd/float-passthrough-demo
+```
+
+Click the preview heading to increment the underlying button's click count;
+hover over it to see `Hover: button`. Scroll over the second preview line to
+move the rows (the right-hand column remains visible). The automated regression
+also sends clicks and wheel events without preceding mouse movement.
 
 ## Modal Dialogs
 
