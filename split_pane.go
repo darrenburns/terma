@@ -183,8 +183,10 @@ func (s SplitPane) OnKey(event KeyEvent) bool {
 }
 
 // Keybinds returns the declarative keybindings for resizing the divider.
+// A pane with DisableFocus has none: keys bubbling up from its children
+// would otherwise move the divider.
 func (s SplitPane) Keybinds() []Keybind {
-	if s.State == nil || !s.State.DividerPosition.IsValid() {
+	if s.DisableFocus || s.State == nil || !s.State.DividerPosition.IsValid() {
 		return nil
 	}
 
