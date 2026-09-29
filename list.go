@@ -14,8 +14,9 @@ type ListState[T any] struct {
 	CursorIndex Signal[int]                 // Cursor position
 	Selection   AnySignal[map[int]struct{}] // Selected item indices (for multi-select)
 
-	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
-	dragging    bool // A press on an item is held, so pointer motion moves the cursor
+	anchorIndex *int           // Anchor point for shift-selection (nil = no anchor)
+	dragging    bool           // A press on an item is held, so pointer motion moves the cursor
+	hover       itemHover[int] // Source index of the item under the pointer
 
 	itemLayouts       []listItemLayout  // Cached layout metrics (per item)
 	revealCursor      func()            // Scrolls the cursor into view; set by the List that shows this state
@@ -35,6 +36,7 @@ func NewListState[T any](initialItems []T) *ListState[T] {
 		Items:       NewAnySignal(initialItems),
 		CursorIndex: NewSignal(0),
 		Selection:   NewAnySignal(make(map[int]struct{})),
+		hover:       newItemHover[int](),
 	}
 }
 
@@ -590,7 +592,7 @@ func (c listContainer[T]) ChildWidgets() []Widget {
 
 func (w defaultListItemWidget[T]) Build(ctx BuildContext) Widget {
 	content := fmt.Sprintf("%v", w.item)
-	return PresentPrefixedText(
+	return withHoverUnderlay(PresentPrefixedText(
 		padCursorPrefix("", w.prefixWidth)+content,
 		content,
 		Style{Width: Flex(1)},
@@ -598,7 +600,13 @@ func (w defaultListItemWidget[T]) Build(ctx BuildContext) Widget {
 		w.paintStyle,
 		w.paintPrefix,
 		func(*RenderContext) MatchResult { return w.match },
-	)
+	), newHoverTint(w.theme, func() bool { return w.list.itemHovered(w.sourceIdx) }))
+}
+
+func (w defaultListItemWidget[T]) hoverKey() any { return w.list.itemHoverKey(w.sourceIdx) }
+
+func (w defaultListItemWidget[T]) setHovered(hovered bool) {
+	w.list.setItemHovered(w.sourceIdx, w.item, hovered)
 }
 
 func (w defaultListItemWidget[T]) currentPrefix() string {
@@ -793,6 +801,25 @@ func (l List[T]) OnMouseMove(event MouseEvent) {
 // contentY converts a mouse event's local Y to a row within the list content.
 func (l List[T]) contentY(event MouseEvent) int {
 	return event.LocalY - l.Style.Border.Width() - l.Style.Padding.Top
+}
+
+// itemHovered reports whether the item at sourceIdx is under the pointer,
+// subscribing only to changes in that answer.
+func (l List[T]) itemHovered(sourceIdx int) bool {
+	return l.State != nil && l.State.hover.is(sourceIdx)
+}
+
+func (l List[T]) itemHoverKey(sourceIdx int) any {
+	return hoverItemKey{owner: l.State, item: sourceIdx}
+}
+
+// setItemHovered records the pointer entering or leaving an item. Items the
+// pointer can't put the cursor on (such as dividers) aren't highlighted.
+func (l List[T]) setItemHovered(sourceIdx int, item T, hovered bool) {
+	if l.State == nil || (hovered && l.pointerTargetable != nil && !l.pointerTargetable(item)) {
+		return
+	}
+	l.State.hover.set(sourceIdx, hovered)
 }
 
 func (l List[T]) pointerCanTarget(viewIdx int) bool {
@@ -1037,7 +1064,7 @@ type listRow[T any] struct {
 	child       Widget
 }
 
-func (r *listRow[T]) Build(BuildContext) Widget {
+func (r *listRow[T]) Build(ctx BuildContext) Widget {
 	l := r.list
 	active := Select(l.State.CursorIndex, func(cursor int) bool {
 		return l.renderedCursor(cursor, r.itemCount, r.firstSource) == r.sourceIdx
@@ -1045,7 +1072,16 @@ func (r *listRow[T]) Build(BuildContext) Widget {
 	selected := l.MultiSelect && l.selectedSelect(r.sourceIdx)
 	// Keep the rendered item a child so its own Build still runs.
 	r.child = r.render(r.item, active, selected, r.match)
-	return passThrough{child: r.child}
+	return hoverUnderlay{
+		passThrough: passThrough{child: r.child},
+		hoverTint:   newHoverTint(ctx.Theme(), func() bool { return l.itemHovered(r.sourceIdx) }),
+	}
+}
+
+func (r *listRow[T]) hoverKey() any { return r.list.itemHoverKey(r.sourceIdx) }
+
+func (r *listRow[T]) setHovered(hovered bool) {
+	r.list.setItemHovered(r.sourceIdx, r.item, hovered)
 }
 
 // The parent Column queries its source children for flex/percent dimensions.

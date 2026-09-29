@@ -48,6 +48,10 @@ const (
 
 const DefaultSelectionAlpha = 0.25
 
+// DefaultHoverAlpha is the opacity of the Text color that a theme's Hover
+// defaults to.
+const DefaultHoverAlpha = 0.08
+
 // ThemeData holds all semantic colors for a theme.
 // This is the data structure users provide when registering custom themes.
 type ThemeData struct {
@@ -94,6 +98,10 @@ type ThemeData struct {
 	ActiveCursor  Color // Active selection background (cursor/focused item)
 	Selection     Color // Dimmer selection background (multi-select without focus)
 	SelectionText Color // Text on selection
+	// Hover is laid beneath the item under the pointer in lists, tables, trees
+	// and tab bars. Keep it translucent so it tints whatever is beneath. If
+	// unset, it defaults to Text at DefaultHoverAlpha.
+	Hover Color
 
 	// Scrollbar colors
 	ScrollbarTrack Color
@@ -128,8 +136,12 @@ type ThemeData struct {
 	InfoBg      Color
 }
 
-// computeLabelColors fills in derived label colors from base variant colors.
+// computeLabelColors fills in derived label colors from base variant colors,
+// and the Hover color if the theme doesn't set one.
 func computeLabelColors(data *ThemeData) {
+	if !data.Hover.IsSet() {
+		data.Hover = data.Text.WithAlpha(DefaultHoverAlpha)
+	}
 	autoText := data.Background.AutoText()
 
 	// Text: 50% variant, 50% auto-text for readability with more color
@@ -2148,6 +2160,12 @@ func ExtendTheme(baseName string, opts ...ThemeOption) ThemeData {
 		return ThemeData{}
 	}
 
+	// A Hover derived from the base's Text follows the new Text, unless an
+	// option sets Hover itself.
+	if base.Hover == base.Text.WithAlpha(DefaultHoverAlpha) {
+		base.Hover = Color{}
+	}
+
 	// Apply all options to the copy
 	for _, opt := range opts {
 		opt(&base)
@@ -2368,6 +2386,14 @@ func WithSelection(c Color) ThemeOption {
 func WithSelectionText(c Color) ThemeOption {
 	return func(t *ThemeData) {
 		t.SelectionText = c
+	}
+}
+
+// WithHover sets the Hover color, laid beneath the item under the pointer.
+// Use a translucent color.
+func WithHover(c Color) ThemeOption {
+	return func(t *ThemeData) {
+		t.Hover = c
 	}
 }
 

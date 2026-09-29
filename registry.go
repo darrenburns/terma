@@ -261,6 +261,18 @@ func (r *WidgetRegistry) pointerOwnerAtIn(x, y, lo, hi int) *WidgetEntry {
 	})
 }
 
+// hoverItemAtIn returns the innermost hoverItem visible at (x, y).
+func (r *WidgetRegistry) hoverItemAtIn(x, y, lo, hi int) hoverItem {
+	entry := r.topmostIn(x, y, lo, hi, func(entry *WidgetEntry) bool {
+		_, ok := entry.EventWidget.(hoverItem)
+		return ok && !entry.Disabled
+	})
+	if entry == nil {
+		return nil
+	}
+	return entry.EventWidget.(hoverItem)
+}
+
 // Reset clears all entries for a new render pass.
 func (r *WidgetRegistry) Reset() {
 	// A fresh slice, not a truncation: retained nodes keep views of the entries

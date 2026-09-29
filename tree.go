@@ -25,7 +25,8 @@ type TreeState[T any] struct {
 	Selection  AnySignal[map[string]struct{}] // Selected node identifiers
 
 	anchorPath      []int
-	dragging        bool // A press on a node is held, so pointer motion moves the cursor
+	dragging        bool              // A press on a node is held, so pointer motion moves the cursor
+	hover           itemHover[string] // Path key of the node under the pointer
 	viewPaths       [][]int
 	viewIndexByPath map[string]int
 	rowLayouts      []treeRowLayout
@@ -49,6 +50,7 @@ func NewTreeState[T any](roots []TreeNode[T]) *TreeState[T] {
 		CursorPath: NewAnySignal(cursor),
 		Collapsed:  NewAnySignal(make(map[string]bool)),
 		Selection:  NewAnySignal(make(map[string]struct{})),
+		hover:      newItemHover[string](),
 	}
 }
 
@@ -577,10 +579,14 @@ func (c treeContainer[T]) ChildWidgets() []Widget {
 func (w defaultTreeRowWidget[T]) Build(ctx BuildContext) Widget {
 	content := fmt.Sprintf("%v", w.entry.node.Data)
 	prefixLayoutText := padCursorPrefix("", w.prefixWidth) + w.indentation + w.indicator
+	// Each part lays the hover underlay beneath itself, so together they
+	// cover the row.
+	key := pathKey(w.entry.path)
+	hover := newHoverTint(w.theme, func() bool { return w.tree.rowHovered(key) })
 	return Row{
 		Spacing: 0,
 		Children: []Widget{
-			PresentText(
+			withHoverUnderlay(PresentText(
 				prefixLayoutText,
 				Style{},
 				w.currentPrefixStyle,
@@ -590,16 +596,22 @@ func (w defaultTreeRowWidget[T]) Build(ctx BuildContext) Widget {
 						Style: w.paintPrefixStyle(ctx),
 					}
 				},
-			),
-			PresentHighlightedText(
+			), hover),
+			withHoverUnderlay(PresentHighlightedText(
 				content,
 				Style{Width: Flex(1)},
 				w.currentContentStyle,
 				w.paintContentStyle,
 				func(*RenderContext) MatchResult { return w.match },
-			),
+			), hover),
 		},
 	}
+}
+
+func (w defaultTreeRowWidget[T]) hoverKey() any { return w.tree.rowHoverKey(w.entry.path) }
+
+func (w defaultTreeRowWidget[T]) setHovered(hovered bool) {
+	w.tree.setRowHovered(w.entry.path, hovered)
 }
 
 func (w defaultTreeRowWidget[T]) currentCursorPath() []int {
@@ -700,6 +712,22 @@ func (t Tree[T]) rowStateSelect(path []int) (active, selected bool) {
 	return active, selected
 }
 
+// rowHovered reports whether the row with this path key is under the
+// pointer, subscribing only to changes in that answer.
+func (t Tree[T]) rowHovered(key string) bool {
+	return t.State != nil && t.State.hover.is(key)
+}
+
+func (t Tree[T]) rowHoverKey(path []int) any {
+	return hoverItemKey{owner: t.State, item: pathKey(path)}
+}
+
+func (t Tree[T]) setRowHovered(path []int, hovered bool) {
+	if t.State != nil {
+		t.State.hover.set(pathKey(path), hovered)
+	}
+}
+
 // treeRow renders one row of a Tree with a custom RenderNode.
 type treeRow[T any] struct {
 	tree           Tree[T]
@@ -739,14 +767,33 @@ func (r treeRow[T]) Build(ctx BuildContext) Widget {
 			expandable: r.entry.expandable,
 		}
 	}
-	return Row{
-		Spacing: 0,
-		Children: []Widget{
-			Text{Spans: treePrefixSpans(rowPrefix, r.indentation, r.indicator, r.showGuideLines, r.guideSpanStyle), Style: t.styleForContext(ctx, nodeCtx, r.widgetFocused)},
-			nodeWidget,
+	key := pathKey(r.entry.path)
+	return treeRowBox{
+		Row: Row{
+			Spacing: 0,
+			Children: []Widget{
+				Text{Spans: treePrefixSpans(rowPrefix, r.indentation, r.indicator, r.showGuideLines, r.guideSpanStyle), Style: t.styleForContext(ctx, nodeCtx, r.widgetFocused)},
+				nodeWidget,
+			},
 		},
+		hoverTint: newHoverTint(ctx.Theme(), func() bool { return t.rowHovered(key) }),
 	}
 }
+
+// treeRowBox lays out a custom tree row, painting the hover underlay beneath
+// its prefix and node.
+type treeRowBox struct {
+	Row
+	hoverTint
+}
+
+func (b treeRowBox) Build(BuildContext) Widget { return b }
+
+func (b treeRowBox) ChildWidgets() []Widget { return b.Children }
+
+func (r treeRow[T]) hoverKey() any { return r.tree.rowHoverKey(r.entry.path) }
+
+func (r treeRow[T]) setHovered(hovered bool) { r.tree.setRowHovered(r.entry.path, hovered) }
 
 // WidgetID returns the tree widget's unique identifier.
 func (t Tree[T]) WidgetID() string {

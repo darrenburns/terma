@@ -79,6 +79,7 @@ type mouseRouter struct {
 	hoveredSignal AnySignal[Widget]
 	clicks        mouseClickTracker
 	hover         hoverTracker
+	itemHover     itemHoverTracker
 	resolveHover  hoverTargetResolver
 
 	// pressed is set from a press until its release. captureID is the widget
@@ -254,11 +255,29 @@ func (m *mouseRouter) motion(ev uv.MouseMotionEvent, subX, subY float64) bool {
 	// Pixel reporting also sends motion within a cell. The hover target can't
 	// change until the pointer changes cell or a frame is drawn, and every
 	// frame reconciles hover itself.
-	if m.hover.pointerChanged(ev.X, ev.Y, ev.Mod, ev.Button) &&
-		m.hover.UpdatePointer(ev.X, ev.Y, ev.Mod, ev.Button, m.resolveHover, m.hoveredSignal) {
-		changed = true
+	if m.hover.pointerChanged(ev.X, ev.Y, ev.Mod, ev.Button) {
+		if m.hover.UpdatePointer(ev.X, ev.Y, ev.Mod, ev.Button, m.resolveHover, m.hoveredSignal) {
+			changed = true
+		}
+		if m.updateItemHover() {
+			changed = true
+		}
 	}
 	return changed
+}
+
+// updateItemHover moves the item hover highlight to the collection item under
+// the last known pointer position, reporting whether it moved.
+func (m *mouseRouter) updateItemHover() bool {
+	if !m.hover.pointerKnown {
+		return false
+	}
+	x, y := m.hover.pointerX, m.hover.pointerY
+	var item hoverItem
+	if !m.blocked(x, y) {
+		item = m.renderer.hoverItemAt(x, y)
+	}
+	return m.itemHover.update(item)
 }
 
 // wheel scrolls the innermost scrollable under the pointer that can move,
@@ -273,7 +292,11 @@ func (m *mouseRouter) wheel(ev uv.MouseWheelEvent) bool {
 // reconcileHover re-resolves hover at the last pointer position, so enter and
 // leave fire when layout moves widgets under a stationary pointer.
 func (m *mouseRouter) reconcileHover() bool {
-	return m.hover.Reconcile(m.resolveHover, m.hoveredSignal)
+	changed := m.hover.Reconcile(m.resolveHover, m.hoveredSignal)
+	if m.updateItemHover() {
+		changed = true
+	}
+	return changed
 }
 
 // dispatchMouseWheel routes wheel events to scrollable widgets under the cursor.

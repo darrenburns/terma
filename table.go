@@ -19,8 +19,9 @@ type TableState[T any] struct {
 	CursorColumn Signal[int]                 // Cursor position (column index)
 	Selection    AnySignal[map[int]struct{}] // Selected indices (row/column/cell based on selection mode)
 
-	anchorIndex *int // Anchor point for shift-selection (nil = no anchor)
-	dragging    bool // A press on a cell is held, so pointer motion moves the cursor
+	anchorIndex *int                      // Anchor point for shift-selection (nil = no anchor)
+	dragging    bool                      // A press on a cell is held, so pointer motion moves the cursor
+	hover       itemHover[tableHoverCell] // The cell, row or column under the pointer
 
 	lastSelectionMode TableSelectionMode
 	hasSelectionMode  bool
@@ -43,6 +44,7 @@ func NewTableState[T any](initialRows []T) *TableState[T] {
 		CursorIndex:  NewSignal(0),
 		CursorColumn: NewSignal(0),
 		Selection:    NewAnySignal(make(map[int]struct{})),
+		hover:        newItemHover[tableHoverCell](),
 	}
 }
 
@@ -620,13 +622,14 @@ func (c tableContainer[T]) ChildWidgets() []Widget {
 }
 
 func (w defaultTableCellWidget[T]) Build(ctx BuildContext) Widget {
+	hover := newHoverTint(w.theme, func() bool { return w.table.cellHovered(w.sourceRow, w.colIndex) })
 	content, ok := tableDefaultCellContent(w.row, w.colIndex)
 	if !ok {
 		if w.colIndex != 0 {
-			return PresentStyledText("", Style{}, w.currentStyle, w.paintStyle)
+			return withHoverUnderlay(PresentStyledText("", Style{}, w.currentStyle, w.paintStyle), hover)
 		} else {
 			content = fmt.Sprintf("%v", w.row)
-			return PresentPrefixedText(
+			return withHoverUnderlay(PresentPrefixedText(
 				padCursorPrefix("", w.prefixWidth)+content,
 				content,
 				Style{},
@@ -634,16 +637,24 @@ func (w defaultTableCellWidget[T]) Build(ctx BuildContext) Widget {
 				w.paintStyle,
 				w.paintPrefix,
 				func(*RenderContext) MatchResult { return w.match },
-			)
+			), hover)
 		}
 	}
-	return PresentHighlightedText(
+	return withHoverUnderlay(PresentHighlightedText(
 		content,
 		Style{},
 		w.currentStyle,
 		w.paintStyle,
 		func(*RenderContext) MatchResult { return w.match },
-	)
+	), hover)
+}
+
+func (w defaultTableCellWidget[T]) hoverKey() any {
+	return w.table.cellHoverKey(w.sourceRow, w.colIndex)
+}
+
+func (w defaultTableCellWidget[T]) setHovered(hovered bool) {
+	w.table.setCellHovered(w.sourceRow, w.colIndex, hovered)
 }
 
 func (w defaultTableCellWidget[T]) currentStyle() Style {
@@ -728,6 +739,40 @@ func (t Table[T]) cellSelectedSelect(mode TableSelectionMode, row, col int) bool
 	return SelectAny(t.State.Selection, func(selection map[int]struct{}) bool {
 		return tableCellSelected(mode, selection, row, col, columnCount)
 	})
+}
+
+// tableHoverCell is the part of a Table under the pointer: a cell, or with
+// row or column highlighting, a row (col -1) or column (row -1).
+type tableHoverCell struct {
+	row, col int
+}
+
+// hoverCell returns the part of the table that hovering a cell highlights,
+// following the selection mode as the cursor does.
+func (t Table[T]) hoverCell(row, col int) tableHoverCell {
+	switch t.selectionMode() {
+	case TableSelectionRow:
+		return tableHoverCell{row: row, col: -1}
+	case TableSelectionColumn:
+		return tableHoverCell{row: -1, col: col}
+	}
+	return tableHoverCell{row: row, col: col}
+}
+
+// cellHovered reports whether the cell shows the hover highlight,
+// subscribing only to changes in that answer.
+func (t Table[T]) cellHovered(row, col int) bool {
+	return t.State != nil && t.State.hover.is(t.hoverCell(row, col))
+}
+
+func (t Table[T]) cellHoverKey(row, col int) any {
+	return hoverItemKey{owner: t.State, item: t.hoverCell(row, col)}
+}
+
+func (t Table[T]) setCellHovered(row, col int, hovered bool) {
+	if t.State != nil {
+		t.State.hover.set(t.hoverCell(row, col), hovered)
+	}
 }
 
 // WidgetID returns the table's unique identifier.
@@ -1041,7 +1086,7 @@ type tableCell[T any] struct {
 	render         func(row T, rowIndex, colIndex int, active, selected bool, match MatchResult) Widget
 }
 
-func (c tableCell[T]) Build(BuildContext) Widget {
+func (c tableCell[T]) Build(ctx BuildContext) Widget {
 	active := c.table.cellActiveSelect(c.mode, c.sourceRow, c.col, c.rowFor, c.colFor)
 	selected := c.table.MultiSelect && c.table.cellSelectedSelect(c.mode, c.sourceRow, c.col)
 	cell := c.render(c.row, c.sourceRow, c.col, active, selected, c.match)
@@ -1049,8 +1094,15 @@ func (c tableCell[T]) Build(BuildContext) Widget {
 		cell = Text{}
 	}
 	// Keep the rendered cell a child so its own Build still runs.
-	return passThrough{child: cell}
+	return hoverUnderlay{
+		passThrough: passThrough{child: cell},
+		hoverTint:   newHoverTint(ctx.Theme(), func() bool { return c.table.cellHovered(c.sourceRow, c.col) }),
+	}
 }
+
+func (c tableCell[T]) hoverKey() any { return c.table.cellHoverKey(c.sourceRow, c.col) }
+
+func (c tableCell[T]) setHovered(hovered bool) { c.table.setCellHovered(c.sourceRow, c.col, hovered) }
 
 // themedDefaultRenderCell returns a themed render function for table cells.
 // Captures theme colors and widget focus state from the context for use in the render function.

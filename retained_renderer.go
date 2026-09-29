@@ -587,6 +587,17 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 	}
 
 	r.lastPaintCount++
+	node.clearDependenciesForPhase(readPhasePaint)
+
+	// A node out of view has nothing to show, and paints (and subscribes)
+	// again once it comes into view.
+	if underlay, ok := node.widget.(underlayPainter); ok && underlay.hasUnderlay() && nodeBounds.Intersects(ctx.visible) {
+		underlayCtx := ctx.SubContext(absBorderX, absBorderY, box.Width, box.Height)
+		withSignalRead(node, readPhasePaint, func() struct{} {
+			underlay.paintUnderlay(underlayCtx)
+			return struct{}{}
+		})
+	}
 
 	if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
 		sampleColor := style.BackgroundColor.ColorAt(box.Width, box.Height, 0, 0)
@@ -642,7 +653,6 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		borderCtx.DrawBorder(0, 0, box.Width, box.Height, style.Border)
 	}
 
-	node.clearDependenciesForPhase(readPhasePaint)
 	if renderable, ok := node.widget.(Renderable); ok {
 		contentCtx := ctx.SubContext(absContentX, absContentY, box.ContentWidth(), box.ContentHeight())
 		if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {

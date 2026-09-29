@@ -1359,6 +1359,13 @@ func (r *Renderer) PointerOwnerAt(x, y int) *WidgetEntry {
 	return r.widgetRegistry.pointerOwnerAtIn(x, y, lo, hi)
 }
 
+// hoverItemAt returns the innermost collection item (a List row, a Table
+// cell, a tab...) at the given coordinates, or nil if there is none.
+func (r *Renderer) hoverItemAt(x, y int) hoverItem {
+	lo, hi := r.pointerLayer(x, y)
+	return r.widgetRegistry.hoverItemAtIn(x, y, lo, hi)
+}
+
 // WidgetByID returns the widget entry with the given ID.
 // Returns nil if no widget has that ID.
 func (r *Renderer) WidgetByID(id string) *WidgetEntry {

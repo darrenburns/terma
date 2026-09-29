@@ -27,6 +27,11 @@ type PresentedText struct {
 	Paint             func(*RenderContext) PresentedTextPaint
 	WidthHint         func() int
 	HeightHint        func(width int) int
+
+	// Underlay, if set, gives a translucent color laid over what is beneath
+	// the text before its own background is drawn. A translucent background
+	// composites over it; an opaque one hides it.
+	Underlay func(*RenderContext) Color
 }
 
 func (t PresentedText) Build(ctx BuildContext) Widget {
@@ -84,6 +89,12 @@ func (t PresentedText) Render(ctx *RenderContext) {
 		text.Content = output.Content
 	}
 	text.Render(ctx)
+}
+
+func (t PresentedText) hasUnderlay() bool { return t.Underlay != nil }
+
+func (t PresentedText) paintUnderlay(ctx *RenderContext) {
+	ctx.tintRect(0, 0, ctx.Width, ctx.Height, t.Underlay(ctx))
 }
 
 func (t PresentedText) ContentWidthHint() int {

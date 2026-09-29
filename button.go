@@ -92,6 +92,7 @@ func (b Button) OnKey(event KeyEvent) bool {
 // Buttons are rendered with bracket affordance: [label]
 // When focused, the button is highlighted with variant colors (or theme.Primary for default).
 // When disabled, the button shows disabled styling and brackets are faded.
+// While the pointer is over it (which needs an ID), its background lightens.
 // If no explicit style colors are set, variant-derived defaults are applied.
 func (b Button) Build(ctx BuildContext) Widget {
 	theme := ctx.Theme()
@@ -135,15 +136,18 @@ func (b Button) Build(ctx BuildContext) Widget {
 		}
 	}
 
+	// The pointer over the button tints its background (see hoverTint).
+	hover := newHoverTint(theme, func() bool { return ctx.IsHovered(b) })
 	if ctx.IsFocused(b) {
 		// Highlight with variant colors when focused
-		style.BackgroundColor = variantBg
+		style.BackgroundColor = hover.background(variantBg)
 		style.ForegroundColor = variantFg
 		// Focused: brackets blend 55% toward background (visible but subtle)
-		bracketColor = variantFg.Blend(variantBg, 0.55)
+		bracketColor = variantFg.Blend(style.BackgroundColor.ColorAt(1, 1, 0, 0), 0.55)
 	} else {
+		style.BackgroundColor = hover.background(style.BackgroundColor)
 		// Unfocused: brackets blend 85% toward background (very faded)
-		bracketColor = fg.Blend(bg, 0.85)
+		bracketColor = fg.Blend(style.BackgroundColor.ColorAt(1, 1, 0, 0), 0.85)
 	}
 
 	return Text{

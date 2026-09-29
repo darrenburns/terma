@@ -77,6 +77,26 @@ func TestExtendTheme_LabelColorsRecomputed(t *testing.T) {
 	}
 }
 
+func TestTheme_HoverDefaultsToTranslucentText(t *testing.T) {
+	theme, ok := GetTheme("dracula")
+	if !ok {
+		t.Fatal("dracula theme not found")
+	}
+	if theme.Hover != theme.Text.WithAlpha(DefaultHoverAlpha) {
+		t.Errorf("Hover = %v, want Text at DefaultHoverAlpha", theme.Hover)
+	}
+
+	extended := ExtendTheme("dracula", WithText(Hex("#ff0000")))
+	if extended.Hover != Hex("#ff0000").WithAlpha(DefaultHoverAlpha) {
+		t.Errorf("a derived Hover should follow the extended Text, got %v", extended.Hover)
+	}
+
+	custom := ExtendTheme("dracula", WithText(Hex("#ff0000")), WithHover(Hex("#00ff00").WithAlpha(0.2)))
+	if custom.Hover != Hex("#00ff00").WithAlpha(0.2) {
+		t.Errorf("WithHover should win, got %v", custom.Hover)
+	}
+}
+
 func TestActiveTheme_LabelColorsInitialized(t *testing.T) {
 	active := getTheme()
 	if active.PrimaryText == (Color{}) {

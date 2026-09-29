@@ -14,7 +14,8 @@ type Tab struct {
 type TabState struct {
 	tabs       AnySignal[[]Tab]
 	activeKey  Signal[string]
-	editingKey Signal[string] // For rename support
+	editingKey Signal[string]    // For rename support
+	hover      itemHover[string] // Key of the tab under the pointer
 }
 
 // NewTabState creates a new TabState with the given tabs.
@@ -31,6 +32,7 @@ func NewTabState(tabs []Tab) *TabState {
 		tabs:       NewAnySignal(tabs),
 		activeKey:  NewSignal(activeKey),
 		editingKey: NewSignal(""),
+		hover:      newItemHover[string](),
 	}
 }
 
@@ -43,6 +45,7 @@ func NewTabStateWithActive(tabs []Tab, activeKey string) *TabState {
 		tabs:       NewAnySignal(tabs),
 		activeKey:  NewSignal(activeKey),
 		editingKey: NewSignal(""),
+		hover:      newItemHover[string](),
 	}
 }
 
@@ -536,8 +539,6 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 
 	for _, tab := range tabs {
 		isActive := tab.Key == activeKey
-		tabKey := tab.Key
-		activate := t.makeSelectAction(tabKey)
 
 		// Determine style
 		var style Style
@@ -566,52 +567,7 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 			style.Padding = EdgeInsetsXY(2, 0)
 		}
 
-		// Build tab content
-		if t.Closable {
-			// Tab with separate close button
-			labelStyle := style
-			labelStyle.Padding = EdgeInsets{Left: style.Padding.Left, Right: 1}
-
-			closeStyle := style
-			closeStyle.Padding = EdgeInsets{Right: style.Padding.Right}
-
-			children = append(children, Row{
-				Style: Style{BackgroundColor: style.BackgroundColor},
-				Children: []Widget{
-					tabLabel{
-						Text: Text{
-							ID:      t.TabID(tabKey),
-							Content: tab.Label,
-							Style:   labelStyle,
-							Click:   func(MouseEvent) { activate() },
-						},
-						activate: activate,
-					},
-					Text{
-						Content: "×",
-						Style:   closeStyle,
-						Click: func(MouseEvent) {
-							if t.OnTabClose != nil {
-								t.OnTabClose(tabKey)
-							} else {
-								t.State.RemoveTab(tabKey)
-							}
-						},
-					},
-				},
-			})
-		} else {
-			// Tab without close button
-			children = append(children, tabLabel{
-				Text: Text{
-					ID:      t.TabID(tabKey),
-					Content: tab.Label,
-					Style:   style,
-					Click:   func(MouseEvent) { activate() },
-				},
-				activate: activate,
-			})
-		}
+		children = append(children, tabItem{bar: t, tab: tab, active: isActive, style: style})
 	}
 
 	style := t.Style
@@ -733,6 +689,78 @@ func (t TabView) Build(ctx BuildContext) Widget {
 		},
 	}
 }
+
+// tabItem shows one tab of a TabBar. An inactive tab lightens while the
+// pointer is over it; only that tab rebuilds when the pointer comes or goes.
+type tabItem struct {
+	bar    TabBar
+	tab    Tab
+	active bool
+	style  Style
+}
+
+func (i tabItem) Build(ctx BuildContext) Widget {
+	t := i.bar
+	tabKey := i.tab.Key
+	activate := t.makeSelectAction(tabKey)
+	style := i.style
+	if !i.active {
+		// The tab draws its own opaque background, which would hide an
+		// underlay, so the hover tint is blended into it instead.
+		hover := newHoverTint(ctx.Theme(), func() bool { return t.State.hover.is(tabKey) })
+		style.BackgroundColor = hover.background(style.BackgroundColor)
+	}
+
+	if !t.Closable {
+		// A node of its own, so its ID, click and Jump belong to the label.
+		return passThrough{child: tabLabel{
+			Text: Text{
+				ID:      t.TabID(tabKey),
+				Content: i.tab.Label,
+				Style:   style,
+				Click:   func(MouseEvent) { activate() },
+			},
+			activate: activate,
+		}}
+	}
+
+	// Tab with separate close button
+	labelStyle := style
+	labelStyle.Padding = EdgeInsets{Left: style.Padding.Left, Right: 1}
+
+	closeStyle := style
+	closeStyle.Padding = EdgeInsets{Right: style.Padding.Right}
+
+	return Row{
+		Style: Style{BackgroundColor: style.BackgroundColor},
+		Children: []Widget{
+			tabLabel{
+				Text: Text{
+					ID:      t.TabID(tabKey),
+					Content: i.tab.Label,
+					Style:   labelStyle,
+					Click:   func(MouseEvent) { activate() },
+				},
+				activate: activate,
+			},
+			Text{
+				Content: "×",
+				Style:   closeStyle,
+				Click: func(MouseEvent) {
+					if t.OnTabClose != nil {
+						t.OnTabClose(tabKey)
+					} else {
+						t.State.RemoveTab(tabKey)
+					}
+				},
+			},
+		},
+	}
+}
+
+func (i tabItem) hoverKey() any { return hoverItemKey{owner: i.bar.State, item: i.tab.Key} }
+
+func (i tabItem) setHovered(hovered bool) { i.bar.State.hover.set(i.tab.Key, hovered) }
 
 // tabLabel is a tab's clickable label, which jump mode can also activate.
 type tabLabel struct {
