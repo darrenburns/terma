@@ -172,6 +172,7 @@ func (s Signal[T]) IsValid() bool {
 type anySignalCore[T any] struct {
 	mu        sync.Mutex
 	value     T
+	revision  uint64
 	listeners map[*widgetNode]dependencyMask
 	selectors selectorSet[T]
 }
@@ -197,6 +198,13 @@ func NewAnySignal[T any](initial T) AnySignal[T] {
 // the widget is automatically subscribed to future changes for that phase.
 // Thread-safe: can be called from any goroutine.
 func (s AnySignal[T]) Get() T {
+	value, _ := s.getWithRevision()
+	return value
+}
+
+// getWithRevision keeps the value and mutation revision in the same read,
+// including dependency tracking for the current phase.
+func (s AnySignal[T]) getWithRevision() (T, uint64) {
 	read := currentReadSubscription()
 
 	s.core.mu.Lock()
@@ -206,7 +214,7 @@ func (s AnySignal[T]) Get() T {
 		s.core.listeners[read.node] |= read.phase
 		read.node.trackDependency(s.core, read.phase)
 	}
-	return s.core.value
+	return s.core.value, s.core.revision
 }
 
 // Set updates the value, notifies all subscribers, and schedules a re-render.
@@ -214,6 +222,7 @@ func (s AnySignal[T]) Get() T {
 func (s AnySignal[T]) Set(value T) {
 	s.core.mu.Lock()
 	s.core.value = value
+	s.core.revision++
 	notification := captureNotification(value, s.core.listeners, &s.core.selectors)
 	s.core.mu.Unlock()
 
@@ -225,9 +234,14 @@ func (s AnySignal[T]) Set(value T) {
 // Peek returns the current value without subscribing.
 // Thread-safe: can be called from any goroutine.
 func (s AnySignal[T]) Peek() T {
+	value, _ := s.peekWithRevision()
+	return value
+}
+
+func (s AnySignal[T]) peekWithRevision() (T, uint64) {
 	s.core.mu.Lock()
 	defer s.core.mu.Unlock()
-	return s.core.value
+	return s.core.value, s.core.revision
 }
 
 // Update applies a function to the current value and sets the result.
@@ -236,6 +250,7 @@ func (s AnySignal[T]) Peek() T {
 func (s AnySignal[T]) Update(fn func(T) T) {
 	s.core.mu.Lock()
 	s.core.value = fn(s.core.value)
+	s.core.revision++
 	newValue := s.core.value
 	notification := captureNotification(newValue, s.core.listeners, &s.core.selectors)
 	s.core.mu.Unlock()

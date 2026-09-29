@@ -1074,8 +1074,9 @@ type listRow[T any] struct {
 
 func (r *listRow[T]) Build(ctx BuildContext) Widget {
 	l := r.list
-	active := Select(l.State.CursorIndex, func(cursor int) bool {
-		return l.renderedCursor(cursor, r.itemCount, r.firstSource) == r.sourceIdx
+	state := l.State
+	active := Select(state.CursorIndex, func(cursor int) bool {
+		return state.renderedCursor(cursor, r.itemCount, r.firstSource) == r.sourceIdx
 	})
 	selected := l.MultiSelect && l.selectedSelect(r.sourceIdx)
 	// Keep the rendered item a child so its own Build still runs.
@@ -1103,9 +1104,9 @@ func (r *listRow[T]) GetContentDimensions() (width, height Dimension) {
 // renderedCursor is the source index that shows the cursor: the stored cursor,
 // clamped to the items, or the first visible item if it is filtered out.
 // Interaction handlers normalize the stored cursor itself.
-func (l List[T]) renderedCursor(cursor, itemCount, firstSource int) int {
+func (s *ListState[T]) renderedCursor(cursor, itemCount, firstSource int) int {
 	cursor = clampInt(cursor, 0, itemCount-1)
-	if _, ok := l.State.viewIndexForSource(cursor); !ok {
+	if _, ok := s.viewIndexForSource(cursor); !ok {
 		return firstSource
 	}
 	return cursor

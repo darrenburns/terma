@@ -300,29 +300,31 @@ type lineData struct {
 	width    int // total width of the line
 }
 
-type styledGrapheme struct {
+// spanGrapheme carries a reference to the source style, rather than copying the
+// entire style for every character. The iterator keeps no input-sized buffer.
+type spanGrapheme struct {
 	text  string
-	style SpanStyle
+	style *SpanStyle
 	width int
 }
 
-func collectSpanGraphemes(spans []Span) []styledGrapheme {
-	if len(spans) == 0 {
-		return nil
-	}
-	result := make([]styledGrapheme, 0, len(spans))
-	for _, span := range spans {
-		for remaining := span.Text; len(remaining) > 0; {
-			g, width := ansi.FirstGraphemeCluster(remaining, ansi.GraphemeWidth)
-			result = append(result, styledGrapheme{
-				text:  g,
-				style: span.Style,
-				width: width,
-			})
-			remaining = remaining[len(g):]
+type spanGraphemeIterator struct {
+	spans     []Span
+	spanIndex int
+	remaining string
+}
+
+func (it *spanGraphemeIterator) next() (spanGrapheme, bool) {
+	for len(it.remaining) == 0 {
+		if it.spanIndex >= len(it.spans) {
+			return spanGrapheme{}, false
 		}
+		it.remaining = it.spans[it.spanIndex].Text
+		it.spanIndex++
 	}
-	return result
+	g, width := ansi.FirstGraphemeCluster(it.remaining, ansi.GraphemeWidth)
+	it.remaining = it.remaining[len(g):]
+	return spanGrapheme{text: g, style: &it.spans[it.spanIndex-1].Style, width: width}, true
 }
 
 // spanLineBuilder joins adjacent graphemes without copying the accumulated
@@ -343,13 +345,13 @@ func (line *spanLineBuilder) finish(width int) lineData {
 	return result
 }
 
-func appendStyledGrapheme(line *spanLineBuilder, g styledGrapheme, x *int) {
+func appendStyledGrapheme(line *spanLineBuilder, g spanGrapheme, x *int) {
 	if g.width == 0 {
 		return
 	}
 	if len(line.segments) > 0 {
 		last := &line.segments[len(line.segments)-1]
-		if last.span.Style == g.style && last.relX+last.width == *x {
+		if last.span.Style == *g.style && last.relX+last.width == *x {
 			line.text.WriteString(g.text)
 			last.width += g.width
 			*x += g.width
@@ -360,7 +362,7 @@ func appendStyledGrapheme(line *spanLineBuilder, g styledGrapheme, x *int) {
 	}
 	line.text.WriteString(g.text)
 	line.segments = append(line.segments, spanSegment{
-		span:  Span{Style: g.style},
+		span:  Span{Style: *g.style},
 		relX:  *x,
 		width: g.width,
 	})
@@ -379,8 +381,10 @@ func (t Text) renderSpans(ctx *RenderContext) {
 		drawBaseStyle.BackgroundColor = nil
 	}
 
-	// First pass: collect all spans per line
+	// First pass: collect visible spans per line
 	lines := t.collectSpanLines(ctx.Width, ctx.Height)
+
+	reuseWidth := !spanBoundariesMayJoin(t.Spans)
 
 	// Second pass: render each line with alignment
 	for y, line := range lines {
@@ -398,7 +402,11 @@ func (t Text) renderSpans(ctx *RenderContext) {
 
 		// Draw all spans in the line
 		for _, seg := range line.segments {
-			ctx.DrawSpan(xOffset+seg.relX, y, seg.span, drawBaseStyle)
+			if !reuseWidth {
+				ctx.DrawSpan(xOffset+seg.relX, y, seg.span, drawBaseStyle)
+			} else {
+				ctx.drawSpan(xOffset+seg.relX, y, seg.span, drawBaseStyle, seg.width)
+			}
 		}
 
 		// Draw right padding to fill remaining width
@@ -414,111 +422,215 @@ func (t Text) renderSpans(ctx *RenderContext) {
 	}
 }
 
-// collectSpanLines collects all span segments organized by line.
+// collectSpanLines collects only the visible prefix, keeping word lookahead
+// bounded by the wrap width rather than materializing all input graphemes.
 func (t Text) collectSpanLines(width, height int) []lineData {
 	if height == 0 {
 		return nil
 	}
-	graphemes := collectSpanGraphemes(t.Spans)
-	if len(graphemes) == 0 {
-		return []lineData{{}}
-	}
-
+	it := spanGraphemeIterator{spans: t.Spans}
+	collector := spanLineCollector{width: width, height: height}
 	if width <= 0 || t.Wrap == WrapNone {
-		return collectSpanLinesNoWrap(graphemes, width, height)
+		for g, ok := it.next(); ok; g, ok = it.next() {
+			if g.text == "\n" {
+				if collector.finish() {
+					return collector.lines
+				}
+			} else if width <= 0 || collector.x+g.width <= width {
+				appendStyledGrapheme(&collector.current, g, &collector.x)
+			} else if height > 0 && len(collector.lines)+1 == height && collector.x == width {
+				// The last visible row is full; later input cannot affect it.
+				collector.finish()
+				return collector.lines
+			}
+		}
+		collector.finish()
+		return collector.lines
 	}
-
-	switch t.Wrap {
-	case WrapHard:
-		return collectSpanLinesHard(graphemes, width, height)
-	default:
-		lines := collectSpanLinesSoft(graphemes, width, height)
-		return hardWrapSpanLines(lines, width, height)
+	if t.Wrap == WrapHard {
+		for g, ok := it.next(); ok; g, ok = it.next() {
+			if g.text == "\n" {
+				if collector.finish() {
+					return collector.lines
+				}
+			} else if collector.append(g) {
+				return collector.lines
+			}
+		}
+		collector.finish()
+		return collector.lines
 	}
+	if spanBoundariesMayJoin(t.Spans) {
+		return hardWrapSpanLinesBoundary(collectSpanLinesSoftBoundary(&it, width, height), width, height)
+	}
+	collector.skipZero = true
+	return collectSpanLinesSoft(&it, &collector)
 }
 
-func collectSpanLinesNoWrap(graphemes []styledGrapheme, width, height int) []lineData {
-	var lines []lineData
-	var currentLine spanLineBuilder
-	x := 0
+// spanLineCollector also hard-wraps overlong soft words as they are emitted,
+// reusing the iterator's measured widths instead of segmenting their text again.
+type spanLineCollector struct {
+	lines    []lineData
+	current  spanLineBuilder
+	x        int
+	width    int
+	height   int
+	skipZero bool
+}
 
-	flushLine := func() bool {
-		lines = append(lines, currentLine.finish(x))
-		x = 0
-		return height > 0 && len(lines) >= height
+func (c *spanLineCollector) finish() bool {
+	c.lines = append(c.lines, c.current.finish(c.x))
+	c.x = 0
+	return c.height > 0 && len(c.lines) >= c.height
+}
+
+func (c *spanLineCollector) append(g spanGrapheme) bool {
+	if c.skipZero && g.width == 0 {
+		return false
 	}
+	if c.x > 0 && c.x+g.width > c.width {
+		if c.finish() {
+			return true
+		}
+	}
+	appendStyledGrapheme(&c.current, g, &c.x)
+	return false
+}
 
-	for _, g := range graphemes {
+func collectSpanLinesSoft(it *spanGraphemeIterator, c *spanLineCollector) []lineData {
+	// x is the soft line's width, independently of the physical lines emitted
+	// for an overlong word. This preserves word/whitespace wrapping decisions.
+	x := 0
+	var word []spanGrapheme
+	var spaceStart spanGraphemeIterator
+	spaceCount := 0
+	wordWidth, spaceWidth := 0, 0
+	streamingWord := false
+	wordPresent := false
+	flushWord := func() bool {
+		if !wordPresent && !streamingWord {
+			return false
+		}
+		for i := 0; i < spaceCount; i++ {
+			g, _ := spaceStart.next()
+			if c.append(g) {
+				return true
+			}
+			x += g.width
+		}
+		spaceCount = 0
+		spaceWidth = 0
+		for _, g := range word {
+			if c.append(g) {
+				return true
+			}
+			x += g.width
+		}
+		word = word[:0]
+		wordWidth = 0
+		wordPresent = false
+		streamingWord = false
+		return false
+	}
+	for {
+		before := *it
+		g, ok := it.next()
+		if !ok {
+			break
+		}
 		if g.text == "\n" {
-			if flushLine() {
-				return lines
+			if flushWord() {
+				return c.lines
 			}
+			spaceCount = 0
+			spaceWidth = 0
+			if c.finish() {
+				return c.lines
+			}
+			x = 0
 			continue
 		}
-		if width > 0 && x+g.width > width {
+		if g.text == " " {
+			if flushWord() {
+				return c.lines
+			}
+			if spaceCount == 0 {
+				spaceStart = before
+			}
+			spaceCount++
+			spaceWidth += g.width
 			continue
 		}
-		appendStyledGrapheme(&currentLine, g, &x)
+		if streamingWord {
+			if c.append(g) {
+				return c.lines
+			}
+			x += g.width
+			continue
+		}
+		wordPresent = true
+		if g.width > 0 {
+			word = append(word, g)
+		}
+		wordWidth += g.width
+		if x+spaceWidth+wordWidth > c.width && wordWidth < c.width {
+			if x > 0 {
+				if c.finish() {
+					return c.lines
+				}
+				x = 0
+			}
+			spaceCount = 0
+			spaceWidth = 0
+		}
+		if wordWidth >= c.width {
+			// Once a word is this wide, no later character can trigger a soft
+			// break before it. Emit now so even a huge word stops at height.
+			if flushWord() {
+				return c.lines
+			}
+			streamingWord = true
+		}
 	}
-
-	flushLine()
-	if height > 0 && len(lines) > height {
-		return lines[:height]
+	if flushWord() {
+		return c.lines
 	}
-	return lines
+	c.finish()
+	return c.lines
 }
 
-func collectSpanLinesHard(graphemes []styledGrapheme, width, height int) []lineData {
+// Graphemes split between equally styled spans can join when the segment text
+// is drawn (for example, two regional indicators become one flag). Retain the
+// previous soft-line segmentation and gradient width for these rare boundaries.
+// ASCII boundaries cannot change display width, so they use the streaming path.
+func spanBoundariesMayJoin(spans []Span) bool {
+	var previous *Span
+	for i := range spans {
+		span := &spans[i]
+		if span.Text == "" {
+			continue
+		}
+		if previous != nil && previous.Style == span.Style &&
+			(previous.Text[len(previous.Text)-1] >= 0x80 || span.Text[0] >= 0x80) {
+			return true
+		}
+		previous = span
+	}
+	return false
+}
+
+func collectSpanLinesSoftBoundary(it *spanGraphemeIterator, width, height int) []lineData {
 	if width <= 0 {
-		return collectSpanLinesNoWrap(graphemes, width, height)
+		panic("soft boundary collector requires positive width")
 	}
 
 	var lines []lineData
 	var currentLine spanLineBuilder
 	x := 0
 
-	flushLine := func() bool {
-		lines = append(lines, currentLine.finish(x))
-		x = 0
-		return height > 0 && len(lines) >= height
-	}
-
-	for _, g := range graphemes {
-		if g.text == "\n" {
-			if flushLine() {
-				return lines
-			}
-			continue
-		}
-
-		if x > 0 && x+g.width > width {
-			if flushLine() {
-				return lines
-			}
-		}
-
-		appendStyledGrapheme(&currentLine, g, &x)
-	}
-
-	flushLine()
-	if height > 0 && len(lines) > height {
-		return lines[:height]
-	}
-	return lines
-}
-
-func collectSpanLinesSoft(graphemes []styledGrapheme, width, height int) []lineData {
-	if width <= 0 {
-		return collectSpanLinesNoWrap(graphemes, width, height)
-	}
-
-	var lines []lineData
-	var currentLine spanLineBuilder
-	x := 0
-
-	var word []styledGrapheme
+	var word []spanGrapheme
 	wordWidth := 0
-	var space []styledGrapheme
+	var space []spanGrapheme
 	spaceWidth := 0
 
 	flushLine := func() bool {
@@ -545,7 +657,7 @@ func collectSpanLinesSoft(graphemes []styledGrapheme, width, height int) []lineD
 		wordWidth = 0
 	}
 
-	for _, g := range graphemes {
+	for g, ok := it.next(); ok; g, ok = it.next() {
 		if g.text == "\n" {
 			flushWord()
 			space = nil
@@ -585,7 +697,7 @@ func collectSpanLinesSoft(graphemes []styledGrapheme, width, height int) []lineD
 	return lines
 }
 
-func hardWrapSpanLines(lines []lineData, width, height int) []lineData {
+func hardWrapSpanLinesBoundary(lines []lineData, width, height int) []lineData {
 	if width <= 0 {
 		return lines
 	}
@@ -608,17 +720,18 @@ func hardWrapSpanLines(lines []lineData, width, height int) []lineData {
 		var currentLine spanLineBuilder
 		x := 0
 		for _, seg := range line.segments {
-			for _, g := range splitGraphemes(seg.span.Text) {
-				gWidth := graphemeWidth(g)
+			for remaining := seg.span.Text; len(remaining) > 0; {
+				g, gWidth := ansi.FirstGraphemeCluster(remaining, ansi.GraphemeWidth)
+				remaining = remaining[len(g):]
 				if x > 0 && x+gWidth > width {
 					if appendLine(currentLine.finish(x)) {
 						return wrapped
 					}
 					x = 0
 				}
-				appendStyledGrapheme(&currentLine, styledGrapheme{
+				appendStyledGrapheme(&currentLine, spanGrapheme{
 					text:  g,
-					style: seg.span.Style,
+					style: &seg.span.Style,
 					width: gWidth,
 				}, &x)
 			}

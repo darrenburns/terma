@@ -203,6 +203,9 @@ func (a *Animation[T]) Pause() {
 // Resume continues a paused animation.
 func (a *Animation[T]) Resume() {
 	if a.state == AnimationPaused {
+		if a.handle != nil && currentController != nil {
+			currentController.resetElapsed(a.handle)
+		}
 		a.state = AnimationRunning
 	}
 }
@@ -277,9 +280,12 @@ func (a *Animation[T]) Advance(dt time.Duration) bool {
 	a.elapsed += dt
 
 	// Calculate progress (0.0 to 1.0)
-	progress := float64(a.elapsed) / float64(a.duration)
-	if progress > 1.0 {
-		progress = 1.0
+	progress := 1.0
+	if a.duration > 0 {
+		progress = float64(a.elapsed) / float64(a.duration)
+		if progress > 1.0 {
+			progress = 1.0
+		}
 	}
 
 	// Apply easing
