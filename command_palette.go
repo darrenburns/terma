@@ -388,13 +388,15 @@ type CommandPalette struct {
 	OnCursorChange        func(item CommandPaletteItem) // For live previews
 	OnDismiss             func()
 	RenderItem            func(item CommandPaletteItem, active bool, match MatchResult) Widget
-	DisableBackspaceToPop bool      // If true, backspace only edits the input (no auto-pop to previous level)
-	Width                 Dimension // Deprecated: use Style.Width (default: Cells(60))
-	Height                Dimension // Deprecated: use Style.Height (default: Cells(12))
-	Placeholder           string    // Default: "Type to search..."
-	Position              FloatPosition
-	Offset                Offset
-	BackdropColor         Color // Optional modal backdrop color override (default: theme.Overlay)
+	DisableBackspaceToPop bool          // If true, backspace only edits the input (no auto-pop to previous level)
+	Width                 Dimension     // Deprecated: use Style.Width (default: Cells(60))
+	Height                Dimension     // Deprecated: use Style.Height (default: Cells(12))
+	Placeholder           string        // Default: "Type to search..."
+	AnchorID              string        // Widget to anchor to; overrides Position when set
+	Anchor                AnchorPoint   // Where to anchor (default: AnchorBottomLeft)
+	Position              FloatPosition // Screen position when AnchorID is empty (default: FloatPositionTopCenter)
+	Offset                Offset        // Adjustment from anchor or screen position
+	BackdropColor         Color         // Optional modal backdrop color override (default: theme.Overlay)
 	Style                 Style
 }
 
@@ -446,6 +448,8 @@ func (p CommandPalette) Build(ctx BuildContext) Widget {
 	float := Floating{
 		Visible: true,
 		Config: FloatConfig{
+			AnchorID:              p.AnchorID,
+			Anchor:                p.floatAnchor(),
 			Position:              p.floatPosition(),
 			Offset:                p.floatOffset(),
 			Modal:                 true,
@@ -1071,6 +1075,9 @@ func (p CommandPalette) floatPosition() FloatPosition {
 }
 
 func (p CommandPalette) floatOffset() Offset {
+	if p.AnchorID != "" {
+		return p.Offset
+	}
 	offset := p.Offset
 	switch p.floatPosition() {
 	case FloatPositionTopLeft, FloatPositionTopCenter, FloatPositionTopRight:
@@ -1079,6 +1086,13 @@ func (p CommandPalette) floatOffset() Offset {
 		}
 	}
 	return offset
+}
+
+func (p CommandPalette) floatAnchor() AnchorPoint {
+	if p.AnchorID != "" && p.Anchor == AnchorUnset {
+		return AnchorBottomLeft
+	}
+	return p.Anchor
 }
 
 func (p CommandPalette) paletteWidth() Dimension {
