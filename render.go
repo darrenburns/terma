@@ -785,11 +785,14 @@ func (ctx *RenderContext) DrawStyledText(x, y int, text string, style Style) {
 // The baseStyle provides default colors when span style doesn't specify them.
 // Returns the number of characters drawn (for positioning subsequent spans).
 func (ctx *RenderContext) DrawSpan(x, y int, span Span, baseStyle Style) int {
+	return ctx.drawSpan(x, y, span, baseStyle, ansi.StringWidth(span.Text))
+}
+
+// drawSpan accepts a width already measured during rich text wrapping. Keeping
+// that width also preserves the coordinate system used for gradient sampling.
+func (ctx *RenderContext) drawSpan(x, y int, span Span, baseStyle Style, spanWidth int) int {
 	absX := ctx.X + x
 	absY := ctx.Y + y
-
-	// Calculate span width for foreground gradient sampling
-	spanWidth := ansi.StringWidth(span.Text)
 
 	// Skip if outside vertical clip bounds
 	if absY < ctx.clip.Y || absY >= ctx.clip.Y+ctx.clip.Height {
