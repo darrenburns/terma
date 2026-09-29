@@ -34,7 +34,9 @@ func (a *app) Build(ctx t.BuildContext) t.Widget {
 	return t.Column{Children: []t.Widget{
 		t.Text{Content: "Float pointer demo: " + mode},
 		t.Text{Content: "Click preview to press button; scroll preview; q quits."},
-		t.Text{Content: fmt.Sprintf("Clicks: %d | Hover: %s | Scroll: %d", a.clicks.Get(), a.hovered.Get(), a.scroll.GetOffset())},
+		t.ComputedText("Clicks: 999 | Hover: button | Scroll: 999", func() string {
+			return fmt.Sprintf("Clicks: %d | Hover: %s | Scroll: %d", a.clicks.Get(), a.hovered.Get(), a.scroll.Offset.Get())
+		}),
 		t.Button{
 			ID: "under-button", Label: "Underlying button", Width: t.Cells(60),
 			OnPress: func() { a.clicks.Set(a.clicks.Peek() + 1) },

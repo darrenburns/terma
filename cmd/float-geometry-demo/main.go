@@ -15,9 +15,9 @@ type anchor struct {
 
 func (*anchor) WidgetID() string { return "geometry-anchor" }
 func (a *anchor) Build(ctx t.BuildContext) t.Widget {
-	width := t.Percent(75)
+	width := t.Cells(72)
 	if a.narrow.Get() {
-		width = t.Percent(50)
+		width = t.Cells(48)
 	}
 	theme := ctx.Theme()
 	return t.Text{Content: "Anchor: summary follows size and position", Style: t.Style{
