@@ -34,12 +34,12 @@ func (d *demo) wheel(event t.MouseEvent) bool {
 func (d *demo) Build(ctx t.BuildContext) t.Widget {
 	return t.Column{Style: t.Style{Padding: t.EdgeInsetsAll(1)}, Children: []t.Widget{
 		t.Text{Content: "Scroll over the tab bar to switch tabs. Click or use left/right too. q quits."},
-		t.Row{Width: t.Flex(1), Children: []t.Widget{
-			t.TabBar{ID: "tabs", State: d.tabs, Width: t.Flex(1), Height: t.Cells(1), MouseWheel: d.wheel},
-			t.Text{Content: "|", Height: t.Cells(1)},
+		t.Row{Width: t.Cells(61), Children: []t.Widget{
+			t.TabBar{ID: "tabs", State: d.tabs, Width: t.Cells(60), Height: t.Cells(1), MouseWheel: d.wheel},
+			t.Text{Content: "|", Width: t.Cells(1), Height: t.Cells(1)},
 		}},
 		t.ComputedText("Active tab: three", func() string { return "Active tab: " + d.tabs.ActiveKey() }),
-		t.SignalText(d.last, func(value string) string { return value }),
+		t.ComputedText("Wheel at screen 999,999 local 999,999 modifiers 999", func() string { return d.last.Get() }),
 		t.Text{Content: "The tab bar is exactly one row; the right-edge | needs no scrollbar column."},
 	}}
 }
