@@ -11,10 +11,21 @@ import (
 )
 
 // CellBuffer is the interface for cell-based rendering.
-// Both *uv.Terminal and *uv.Buffer satisfy this interface.
+// Both *uv.Terminal and *uv.Buffer satisfy this interface. Buffer dimensions
+// remain the caller's responsibility unless it also implements ResizableCellBuffer.
 type CellBuffer interface {
 	SetCell(x, y int, c *uv.Cell)
 	CellAt(x, y int) *uv.Cell
+}
+
+// ResizableCellBuffer opts a cell buffer into renderer-controlled dimensions.
+// NewRenderer and Renderer.Resize call Resize to match the requested viewport.
+// *uv.Buffer implements this interface, including when embedded in a custom screen.
+// *uv.Terminal does not: its Resize method returns an error, and the application
+// updates its screen dimensions separately before resizing the renderer.
+type ResizableCellBuffer interface {
+	CellBuffer
+	Resize(width, height int)
 }
 
 // blendForeground blends a semi-transparent foreground color over a background.
@@ -967,8 +978,15 @@ type RenderStats struct {
 	DamagedRects       []Rect
 }
 
-// NewRenderer creates a new renderer for the given terminal.
+// NewRenderer creates a renderer with the given viewport dimensions.
+// If terminal implements ResizableCellBuffer, its dimensions are set to match.
+// Otherwise the caller must provide a buffer large enough for the viewport.
+// Negative dimensions are treated as zero.
 func NewRenderer(terminal CellBuffer, width, height int, fm *FocusManager, focusedSignal AnySignal[Focusable], hoveredSignal AnySignal[Widget]) *Renderer {
+	width, height = max(0, width), max(0, height)
+	if buffer, ok := terminal.(ResizableCellBuffer); ok {
+		buffer.Resize(width, height)
+	}
 	return &Renderer{
 		terminal:           terminal,
 		width:              width,
@@ -1003,8 +1021,14 @@ func (r *Renderer) Stats() RenderStats {
 	}
 }
 
-// Resize updates the renderer dimensions.
+// Resize updates the viewport dimensions and requests a full frame on the next
+// Render or Update. Buffers implementing ResizableCellBuffer are resized too;
+// other buffers must be resized by the caller. Negative dimensions become zero.
 func (r *Renderer) Resize(width, height int) {
+	width, height = max(0, width), max(0, height)
+	if buffer, ok := r.terminal.(ResizableCellBuffer); ok {
+		buffer.Resize(width, height)
+	}
 	r.width = width
 	r.height = height
 	r.fullRenderRequired = true
