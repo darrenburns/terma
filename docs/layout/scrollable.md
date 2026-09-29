@@ -228,7 +228,8 @@ Moving the thumb within a line repaints only the scrollbar.
 In terminals that support SGR-Pixels mouse reporting (such as kitty and
 Ghostty), Terma reads the pointer in pixels, so the thumb follows the pointer to
 an eighth of a cell rather than jumping a cell at a time. The mode is switched on
-only when the terminal confirms it supports it and reports its size in pixels;
+only when the terminal confirms it supports it and reports the size of its cells
+in pixels (`CSI 16 t`), which is asked for again whenever the window resizes;
 set `TERMA_DISABLE_PIXEL_MOUSE=1` to keep cell-based reporting. Widgets can use
 the pointer's position within its cell from `MouseEvent.SubCellX` and
 `MouseEvent.SubCellY`.

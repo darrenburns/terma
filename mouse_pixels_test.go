@@ -16,8 +16,8 @@ func pixelModeReport(value ansi.ModeSetting) uv.ModeReportEvent {
 
 func TestPixelPointer_EnablesOnceSupportedAndSized(t *testing.T) {
 	for name, events := range map[string][]uv.Event{
-		"report first": {pixelModeReport(ansi.ModeReset), uv.WindowSizeEvent{Width: 80, Height: 24}, uv.WindowPixelSizeEvent{Width: 800, Height: 480}},
-		"sizes first":  {uv.WindowSizeEvent{Width: 80, Height: 24}, uv.WindowPixelSizeEvent{Width: 800, Height: 480}, pixelModeReport(ansi.ModeReset)},
+		"report first":    {pixelModeReport(ansi.ModeReset), uv.CellSizeEvent{Width: 10, Height: 20}},
+		"cell size first": {uv.CellSizeEvent{Width: 10, Height: 20}, pixelModeReport(ansi.ModeReset)},
 	} {
 		t.Run(name, func(t *testing.T) {
 			p := &pixelPointer{}
@@ -30,24 +30,67 @@ func TestPixelPointer_EnablesOnceSupportedAndSized(t *testing.T) {
 			assert.Equal(t, []string{ansi.SetModeMouseExtSgrPixel}, sequences, "enabled exactly once")
 			assert.True(t, p.enabled)
 
-			// Later resizes keep it on without sending it again.
-			assert.Empty(t, p.handle(uv.WindowSizeEvent{Width: 100, Height: 30}))
-			assert.Empty(t, p.handle(uv.WindowPixelSizeEvent{Width: 1000, Height: 600}))
+			// Later cell size reports keep it on without sending it again.
+			assert.Empty(t, p.handle(uv.CellSizeEvent{Width: 12, Height: 24}))
 		})
 	}
+}
+
+func TestPixelPointer_ResizeRequeriesCellSize(t *testing.T) {
+	p := &pixelPointer{}
+	// Before the terminal says it supports pixel reporting, a resize asks nothing.
+	assert.Empty(t, p.handle(uv.WindowSizeEvent{Width: 80, Height: 24}))
+
+	p.handle(pixelModeReport(ansi.ModeReset))
+	p.handle(uv.CellSizeEvent{Width: 10, Height: 20})
+	require.True(t, p.enabled)
+
+	// A font size change arrives as a resize; the cells' new size is asked for.
+	assert.Equal(t, requestCellSize, p.handle(uv.WindowSizeEvent{Width: 64, Height: 19}))
+	assert.Equal(t, requestCellSize, p.handle(uv.WindowPixelSizeEvent{Width: 780, Height: 490}))
+	p.handle(uv.CellSizeEvent{Width: 12, Height: 25})
+	event, _, _ := p.locateEvent(uv.MouseMotionEvent{X: 125, Y: 51})
+	assert.Equal(t, uv.MouseMotionEvent{X: 10, Y: 2}, event)
+
+	p.disabled = true
+	assert.Empty(t, p.handle(uv.WindowSizeEvent{Width: 80, Height: 24}))
+}
+
+func TestPixelPointer_IgnoresWindowPixelSize(t *testing.T) {
+	// Ghostty counts its window padding in the window's size in pixels, so
+	// dividing that by the columns and rows gives cells that are too big.
+	// Here 80x24 cells of 10x20 pixels sit in an 820x500 pixel window.
+	p := &pixelPointer{}
+	p.handle(uv.WindowSizeEvent{Width: 80, Height: 24})
+	p.handle(uv.WindowPixelSizeEvent{Width: 820, Height: 500})
+	assert.Empty(t, p.handle(pixelModeReport(ansi.ModeReset)), "no cell size reported yet")
+	reply := decodeAll(t, "\x1b[6;20;10t") // The reply to CSI 16 t: height, then width.
+	require.Equal(t, []uv.Event{uv.CellSizeEvent{Width: 10, Height: 20}}, reply)
+	assert.Equal(t, ansi.SetModeMouseExtSgrPixel, p.handle(reply[0]))
+
+	// The pointer at the left edge of the bottom-right cell is in that cell.
+	event, subX, subY := p.locateEvent(uv.MouseMotionEvent{X: 790, Y: 460})
+	assert.Equal(t, uv.MouseMotionEvent{X: 79, Y: 23}, event)
+	assert.InDelta(t, 0, subX, 1e-9)
+	assert.InDelta(t, 0, subY, 1e-9)
 }
 
 func TestPixelPointer_StaysOffWhenUnsupported(t *testing.T) {
 	sized := func(p *pixelPointer) {
 		p.handle(uv.WindowSizeEvent{Width: 80, Height: 24})
-		p.handle(uv.WindowPixelSizeEvent{Width: 800, Height: 480})
+		p.handle(uv.CellSizeEvent{Width: 10, Height: 20})
 	}
 	for name, setup := range map[string]func(*pixelPointer){
 		"not recognized":    func(p *pixelPointer) { sized(p); p.handle(pixelModeReport(ansi.ModeNotRecognized)) },
 		"permanently reset": func(p *pixelPointer) { sized(p); p.handle(pixelModeReport(ansi.ModePermanentlyReset)) },
 		"no report":         sized,
-		"no pixel size": func(p *pixelPointer) {
+		"no cell size": func(p *pixelPointer) {
 			p.handle(uv.WindowSizeEvent{Width: 80, Height: 24})
+			p.handle(uv.WindowPixelSizeEvent{Width: 800, Height: 480})
+			p.handle(pixelModeReport(ansi.ModeSet))
+		},
+		"zero cell size": func(p *pixelPointer) {
+			p.handle(uv.CellSizeEvent{})
 			p.handle(pixelModeReport(ansi.ModeSet))
 		},
 		"other mode": func(p *pixelPointer) {
@@ -73,14 +116,13 @@ func TestPixelPointer_StaysOffWhenUnsupported(t *testing.T) {
 }
 
 func TestPixelPointer_OptOutSkipsQuery(t *testing.T) {
-	assert.Equal(t, ansi.RequestModeMouseExtSgrPixel, (&pixelPointer{}).query())
+	assert.Equal(t, ansi.RequestModeMouseExtSgrPixel+"\x1b[16t", (&pixelPointer{}).query())
 	assert.Empty(t, (&pixelPointer{disabled: true}).query())
 }
 
 func TestPixelPointer_LocatesWithinCell(t *testing.T) {
 	p := &pixelPointer{}
-	p.handle(uv.WindowSizeEvent{Width: 80, Height: 24})
-	p.handle(uv.WindowPixelSizeEvent{Width: 800, Height: 480}) // 10x20 pixel cells
+	p.handle(uv.CellSizeEvent{Width: 10, Height: 20})
 	p.handle(pixelModeReport(ansi.ModeReset))
 	require.True(t, p.enabled)
 

@@ -15,38 +15,52 @@ import (
 // divides those by the size of a cell to get the cell plus the position
 // within it. Dragging a scrollbar thumb then follows the pointer exactly.
 //
-// The mode is switched on only once the terminal has reported it recognises
-// it (in reply to a DECRQM query) and the window's size in pixels is known.
+// The cell size comes from the terminal's own report (CSI 16 t), not from the
+// window's size in pixels divided by its columns and rows: some terminals
+// (Ghostty, for one) count their window padding in that size, which makes the
+// cells too big and puts the pointer further off the further it is from the
+// top-left. The mode is switched on only once the terminal has reported it
+// recognises it (in reply to a DECRQM query) and has reported its cell size.
 // Set TERMA_DISABLE_PIXEL_MOUSE to keep cell-based reporting.
 type pixelPointer struct {
 	disabled  bool // Switched off by TERMA_DISABLE_PIXEL_MOUSE.
 	supported bool // The terminal recognises mode 1016.
 	enabled   bool // Mode 1016 has been switched on.
 
-	cols, rows              int
-	pixelWidth, pixelHeight int
+	cellWidth, cellHeight int // In pixels, as the terminal last reported it.
 }
+
+// requestCellSize asks the terminal for the size of a cell in pixels (CSI 16 t).
+var requestCellSize = ansi.WindowOp(16)
 
 func newPixelPointer() *pixelPointer {
 	return &pixelPointer{disabled: boolEnv("TERMA_DISABLE_PIXEL_MOUSE")}
 }
 
-// query returns the sequence asking whether the terminal supports mode 1016.
+// query returns the sequences asking whether the terminal supports mode 1016
+// and how big its cells are.
 func (p *pixelPointer) query() string {
 	if p.disabled {
 		return ""
 	}
-	return ansi.RequestModeMouseExtSgrPixel
+	return ansi.RequestModeMouseExtSgrPixel + requestCellSize
 }
 
-// handle records a size or mode report, returning the sequence that switches
-// pixel reporting on once everything it needs is known.
+// handle records a mode or cell size report, returning the sequence to write:
+// the one that switches pixel reporting on once everything it needs is known,
+// or a fresh cell size query after a resize.
 func (p *pixelPointer) handle(event uv.Event) string {
 	switch ev := event.(type) {
-	case uv.WindowSizeEvent:
-		p.cols, p.rows = ev.Width, ev.Height
-	case uv.WindowPixelSizeEvent:
-		p.pixelWidth, p.pixelHeight = ev.Width, ev.Height
+	case uv.WindowSizeEvent, uv.WindowPixelSizeEvent:
+		// Resizing the window leaves the cells' size alone, but changing the
+		// font size changes it, and is seen only as a resize: in cells, or
+		// (if the grid happens to keep its columns and rows) in pixels.
+		if p.supported && !p.disabled {
+			return requestCellSize
+		}
+		return ""
+	case uv.CellSizeEvent:
+		p.cellWidth, p.cellHeight = ev.Width, ev.Height
 	case uv.ModeReportEvent:
 		if ev.Mode != ansi.ModeMouseExtSgrPixel {
 			return ""
@@ -67,10 +81,10 @@ func (p *pixelPointer) handle(event uv.Event) string {
 
 // cellSize returns the size of a cell in pixels.
 func (p *pixelPointer) cellSize() (width, height float64, ok bool) {
-	if p.cols <= 0 || p.rows <= 0 || p.pixelWidth < p.cols || p.pixelHeight < p.rows {
+	if p.cellWidth <= 0 || p.cellHeight <= 0 {
 		return 0, 0, false
 	}
-	return float64(p.pixelWidth) / float64(p.cols), float64(p.pixelHeight) / float64(p.rows), true
+	return float64(p.cellWidth), float64(p.cellHeight), true
 }
 
 // locateEvent applies locate to mouse events and returns other events as

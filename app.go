@@ -670,7 +670,7 @@ func Run(root Widget) (runErr error) {
 					height = ev.Height
 					t.Erase()
 					requestRender()
-				case uv.WindowPixelSizeEvent, uv.ModeReportEvent:
+				case uv.WindowPixelSizeEvent, uv.CellSizeEvent, uv.ModeReportEvent:
 					// Only used to set up pixel mouse reporting (above).
 				case uv.KeyPressEvent:
 					// Check for app-level quit keys
