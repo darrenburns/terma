@@ -18,7 +18,8 @@ type Animator interface {
 
 // animationHandle is an opaque reference to a registered animation.
 type animationHandle struct {
-	animation Animator
+	animation   Animator
+	lastAdvance time.Time
 }
 
 // AnimationController manages all active animations.
@@ -30,6 +31,7 @@ type AnimationController struct {
 	ticker     *time.Ticker
 	fps        int
 	stopped    bool
+	now        func() time.Time
 }
 
 // NewAnimationController creates a new controller with the given target FPS.
@@ -40,6 +42,7 @@ func NewAnimationController(fps int) *AnimationController {
 	return &AnimationController{
 		animations: make(map[*animationHandle]struct{}),
 		fps:        fps,
+		now:        time.Now,
 	}
 }
 
@@ -65,7 +68,7 @@ func (ac *AnimationController) Register(anim Animator) *animationHandle {
 		return nil
 	}
 
-	handle := &animationHandle{animation: anim}
+	handle := &animationHandle{animation: anim, lastAdvance: ac.now()}
 	ac.animations[handle] = struct{}{}
 
 	// Start ticker if this is the first animation
@@ -102,19 +105,30 @@ func (ac *AnimationController) Update() {
 		return
 	}
 
-	dt := time.Duration(float64(time.Second) / float64(ac.fps))
-
-	// Copy handles to iterate outside the lock
+	// Sample processing time rather than ticker timestamps: ticks may be dropped
+	// while rendering is slow. Each handle starts at its own registration time.
+	now := ac.now()
 	handles := make([]*animationHandle, 0, len(ac.animations))
 	for handle := range ac.animations {
 		handles = append(handles, handle)
 	}
 	ac.mu.Unlock()
 
-	// Advance animations outside the lock (callbacks may call Register/Unregister)
+	// Advance outside the lock (callbacks may register, remove, or resume an
+	// animation). Read its timestamp immediately before advancing so a resume
+	// from another callback cannot inherit elapsed time from before the pause.
 	var toRemove []*animationHandle
 	for _, handle := range handles {
-		if !handle.animation.Advance(dt) {
+		ac.mu.Lock()
+		_, active := ac.animations[handle]
+		dt := now.Sub(handle.lastAdvance)
+		if dt < 0 {
+			dt = 0
+		} else {
+			handle.lastAdvance = now
+		}
+		ac.mu.Unlock()
+		if active && !handle.animation.Advance(dt) {
 			toRemove = append(toRemove, handle)
 		}
 	}
@@ -130,6 +144,15 @@ func (ac *AnimationController) Update() {
 		ac.stopTicker()
 	}
 	ac.mu.Unlock()
+}
+
+// resetElapsed excludes paused time even if no update ran during the pause.
+func (ac *AnimationController) resetElapsed(handle *animationHandle) {
+	ac.mu.Lock()
+	defer ac.mu.Unlock()
+	if _, active := ac.animations[handle]; active {
+		handle.lastAdvance = ac.now()
+	}
 }
 
 // Stop halts the controller and cleans up resources.

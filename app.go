@@ -553,58 +553,12 @@ func Run(root Widget) (runErr error) {
 		Log("Render complete in %.3fms, %d widgets registered", float64(elapsed.Microseconds())/1000.0, len(renderer.widgetRegistry.entries))
 	}
 
-	var (
-		lastRender    time.Time
-		renderPending bool
-		renderTimer   *time.Timer
-		renderTimerCh <-chan time.Time
-	)
-
-	stopRenderTimer := func() {
-		if renderTimer == nil {
-			renderTimerCh = nil
-			return
-		}
-		if !renderTimer.Stop() {
-			select {
-			case <-renderTimer.C:
-			default:
-			}
-		}
-		renderTimerCh = nil
-	}
-
-	renderNow := func() {
-		stopRenderTimer()
-		renderPending = false
-		display()
-		lastRender = time.Now()
-	}
-
+	scheduler := newFrameScheduler(renderInterval, display)
+	renderNow := scheduler.renderNow
 	requestRender := func() {
-		now := time.Now()
-		if lastRender.IsZero() || now.Sub(lastRender) >= renderInterval {
-			renderNow()
-			return
-		}
-		if renderPending {
+		if scheduler.request() {
 			coalescedRenderRequests++
-			return
 		}
-		renderPending = true
-		wait := renderInterval - now.Sub(lastRender)
-		if renderTimer == nil {
-			renderTimer = time.NewTimer(wait)
-		} else {
-			if !renderTimer.Stop() {
-				select {
-				case <-renderTimer.C:
-				default:
-				}
-			}
-			renderTimer.Reset(wait)
-		}
-		renderTimerCh = renderTimer.C
 	}
 
 	// suspend hands the terminal back to the shell, runs fn, then takes the
@@ -650,6 +604,7 @@ func Run(root Widget) (runErr error) {
 	eventLoopStarted = true
 	go func() {
 		defer close(eventLoopDone)
+		defer scheduler.stopTimer()
 		defer func() {
 			if r := recover(); r != nil {
 				recordPanic(Panic{
@@ -669,8 +624,8 @@ func Run(root Widget) (runErr error) {
 			case <-animController.Tick():
 				animController.Update()
 				requestRender()
-			case <-renderTimerCh:
-				if renderPending {
+			case <-scheduler.timerCh:
+				if scheduler.pending {
 					renderNow()
 				}
 			case <-blinkTicker.C:
@@ -741,7 +696,7 @@ func Run(root Widget) (runErr error) {
 					// Keys are routed by what's on screen: a key that opened jump
 					// mode or a dialog, or moved focus, must be drawn before the
 					// next key is routed, even when it arrives within a frame.
-					if renderPending {
+					if scheduler.pending {
 						renderNow()
 					}
 					restartCursorBlink()
@@ -752,7 +707,7 @@ func Run(root Widget) (runErr error) {
 
 				case uv.PasteEvent:
 					// Like a key, a paste goes to what's on screen.
-					if renderPending {
+					if scheduler.pending {
 						renderNow()
 					}
 					restartCursorBlink()
