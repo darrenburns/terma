@@ -285,6 +285,7 @@ func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []Focus
 	r.modalCount = 0
 
 	buildCtx := NewBuildContext(r.focusManager, r.focusedSignal, r.hoveredSignal, r.floatCollector)
+	buildCtx.hoverTarget = r.hoverTarget
 	r.rootNode = r.buildRetainedNode(r.rootNode, root, buildCtx, r.focusCollector, rebuildAll)
 	r.floatCollector.raiseTopmost()
 
@@ -426,6 +427,9 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 	}
 	eventID := node.eventID
 	rebuild = rebuild || node.dirtyLevel() == DirtyBuild
+	// Hover selectors and retained hit entries capture the overlay scope.
+	// A moved overlay may retain its widget identity but need a new scope.
+	rebuild = rebuild || node.buildContext.hoverScope != ctx.hoverScope
 
 	node.source = widget
 	node.eventWidget = widget
@@ -1141,7 +1145,7 @@ func (r *Renderer) recordRegistry(node *widgetNode, bounds, clip Rect) {
 	if eventWidget == nil {
 		eventWidget = node.widget
 	}
-	r.widgetRegistry.Record(node.widget, eventWidget, node.eventID, bounds, bounds.Intersect(clip), node.buildContext.IsDisabled())
+	r.widgetRegistry.recordTree(node.widget, eventWidget, node.eventID, node.buildContext.hoverScope+node.autoID, bounds, bounds.Intersect(clip), node.buildContext.IsDisabled())
 	if node.parent != nil {
 		r.widgetRegistry.entries[len(r.widgetRegistry.entries)-1].parentID = node.parent.eventID
 	}
@@ -1312,7 +1316,12 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 		if i < len(oldFloats) {
 			oldRoot = oldFloats[i].root
 		}
-		floatRoot := r.buildRetainedNode(oldRoot, child, buildCtx, r.focusCollector, !measure || entry.fresh || geometryChanged)
+		floatCtx := buildCtx
+		floatCtx.hoverScope = fmt.Sprintf("float:%d/", i)
+		if entry.Config.hoverScope != "" {
+			floatCtx.hoverScope = entry.Config.hoverScope
+		}
+		floatRoot := r.buildRetainedNode(oldRoot, child, floatCtx, r.focusCollector, !measure || entry.fresh || geometryChanged)
 		if measure && oldRoot != nil && floatRoot != oldRoot {
 			// Nothing else records where the replaced overlay was drawn.
 			r.reflowDamage = append(r.reflowDamage, oldRoot.subtreeBounds)

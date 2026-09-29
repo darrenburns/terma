@@ -2,6 +2,7 @@ package terma
 
 import (
 	"strconv"
+	"strings"
 )
 
 // pendingFocusID holds the ID of a widget that should receive focus after the next render.
@@ -24,6 +25,9 @@ type BuildContext struct {
 	focusedSignal AnySignal[Focusable]
 	// Signal that holds the currently hovered widget (nil if none)
 	hoveredSignal AnySignal[Widget]
+	// hoverTarget preserves tree identity even for anonymous hover targets.
+	hoverTarget Signal[hoverTargetInfo]
+	hoverScope  string // Separates overlay trees from the main tree.
 	// path tracks the current position in the widget tree for auto-ID generation
 	path []int
 	// floatCollector gathers Floating widgets for deferred rendering
@@ -74,6 +78,8 @@ func (ctx BuildContext) PushChild(index int) BuildContext {
 		focusManager:   ctx.focusManager,
 		focusedSignal:  ctx.focusedSignal,
 		hoveredSignal:  ctx.hoveredSignal,
+		hoverTarget:    ctx.hoverTarget,
+		hoverScope:     ctx.hoverScope,
 		path:           newPath,
 		floatCollector: ctx.floatCollector,
 		disabled:       ctx.disabled,
@@ -93,10 +99,24 @@ func (ctx BuildContext) WithDisabled() BuildContext {
 		focusManager:   ctx.focusManager,
 		focusedSignal:  ctx.focusedSignal,
 		hoveredSignal:  ctx.hoveredSignal,
+		hoverTarget:    ctx.hoverTarget,
+		hoverScope:     ctx.hoverScope,
 		path:           ctx.path,
 		floatCollector: ctx.floatCollector,
 		disabled:       true,
 	}
+}
+
+// isSubtreeHovered subscribes to whether an enabled target is in this tree
+// branch, rather than every pointer move between its descendants.
+func (ctx BuildContext) isSubtreeHovered() bool {
+	if !ctx.hoverTarget.IsValid() {
+		return false
+	}
+	path := ctx.hoverScope + ctx.AutoID()
+	return Select(ctx.hoverTarget, func(target hoverTargetInfo) bool {
+		return !target.disabled && (target.path == path || strings.HasPrefix(target.path, path+"."))
+	})
 }
 
 // IsFocused returns true if the given widget currently has focus.

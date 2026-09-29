@@ -5,11 +5,27 @@ import uv "github.com/charmbracelet/ultraviolet"
 // hoverTargetResolver resolves the event target at the given screen coordinates.
 type hoverTargetResolver func(x, y int) *WidgetEntry
 
+// hoverTargetInfo keeps the target's tree position independently of its public
+// widget ID, which may be absent or unrelated to its ancestor identities.
+type hoverTargetInfo struct {
+	path     string
+	disabled bool
+}
+
+// hoverRegionResolver gives a painted part of a widget, such as a split
+// divider, its own hover identity. Returning nil keeps the normal
+// widget target. This only changes hover; presses and pointer capture still
+// belong to the original widget.
+type hoverRegionResolver interface {
+	hoverRegionAt(entry *WidgetEntry, x, y int) *WidgetEntry
+}
+
 // hoverTracker tracks pointer hover state and emits transition events on changes.
 type hoverTracker struct {
 	currentID     string
 	currentWidget Widget
 	currentBounds Rect
+	targetSignal  Signal[hoverTargetInfo]
 
 	pointerX      int
 	pointerY      int
@@ -51,6 +67,15 @@ func (h *hoverTracker) Reconcile(resolve hoverTargetResolver, hoveredSignal AnyS
 }
 
 func (h *hoverTracker) applyTarget(entry *WidgetEntry, x, y int, mod uv.KeyMod, button uv.MouseButton, source HoverEventSource, hoveredSignal AnySignal[Widget]) bool {
+	targetChanged := false
+	if h.targetSignal.IsValid() {
+		target := hoverTargetInfo{}
+		if entry != nil {
+			target = hoverTargetInfo{path: entry.treePath, disabled: entry.Disabled}
+		}
+		targetChanged = h.targetSignal.Peek() != target
+		h.targetSignal.Set(target)
+	}
 	var (
 		newID     string
 		newWidget Widget
@@ -69,7 +94,7 @@ func (h *hoverTracker) applyTarget(entry *WidgetEntry, x, y int, mod uv.KeyMod, 
 			h.currentWidget = newWidget
 			h.currentBounds = newBounds
 		}
-		return false
+		return targetChanged
 	}
 
 	oldID := h.currentID

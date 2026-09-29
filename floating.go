@@ -67,6 +67,10 @@ var DefaultModalBackdropColor = RGBA(0, 0, 0, 0.5)
 
 // FloatConfig configures positioning and behavior for a floating widget.
 type FloatConfig struct {
+	// hoverScope lets contextual help remain part of its trigger's hover area
+	// when screen clamping places the overlay beneath the pointer.
+	hoverScope string
+
 	// Anchor-based positioning (use AnchorID + Anchor).
 	// If AnchorID is set, the float is positioned relative to that widget.
 	AnchorID string      // ID of the widget to anchor to

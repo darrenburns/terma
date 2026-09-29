@@ -86,6 +86,7 @@ func (c *Checkbox) OnKey(event KeyEvent) bool {
 
 // Build returns a Text widget with the checkbox indicator and label.
 // The checkbox is rendered with appropriate styling based on focus and disabled state.
+// While the pointer is over it (which needs an ID), its background lightens.
 func (c *Checkbox) Build(ctx BuildContext) Widget {
 	theme := ctx.Theme()
 	style := c.Style
@@ -137,10 +138,19 @@ func (c *Checkbox) Build(ctx BuildContext) Widget {
 		style.ForegroundColor = theme.SelectionText
 	}
 
-	return Text{
-		Content: content,
-		Style:   style,
+	hoverStyle := func(hovered bool) Style {
+		paintStyle := style
+		paintStyle.BackgroundColor = newHoverTint(theme, func() bool { return hovered }).background(style.BackgroundColor)
+		return paintStyle
 	}
+	return PresentStyledText(content, style, func() Style {
+		// Layout and background painting need the current style without
+		// subscribing to hover; the paint callback tracks it below.
+		hovered := c.ID != "" && ctx.hoveredSignal.IsValid() && hoveredWidgetID(ctx.hoveredSignal.Peek()) == c.ID
+		return hoverStyle(hovered)
+	}, func(paintCtx *RenderContext) Style {
+		return hoverStyle(paintCtx.buildContext.IsHovered(c))
+	})
 }
 
 // GetContentDimensions returns the width and height dimension preferences.

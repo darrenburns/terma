@@ -17,7 +17,8 @@ type RenderTree struct {
 	EventWidget Widget
 
 	// EventID is the ID used for hit testing and focus (explicit or auto).
-	EventID string
+	EventID  string
+	treePath string
 
 	// Disabled is true inside a DisabledWhen subtree, so the widget receives
 	// no presses or clicks.
@@ -113,6 +114,7 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 		Widget:      built,
 		EventWidget: widget,
 		EventID:     eventID,
+		treePath:    ctx.hoverScope + autoID,
 		Disabled:    ctx.IsDisabled(),
 		Layout:      computed,
 		Children:    children,

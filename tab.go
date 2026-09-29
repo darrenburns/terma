@@ -749,7 +749,7 @@ func (i tabItem) Build(ctx BuildContext) Widget {
 				},
 				activate: activate,
 			},
-			Text{
+			tabClose{text: Text{
 				Content: "×",
 				Style:   closeStyle,
 				Click: func(MouseEvent) {
@@ -759,7 +759,7 @@ func (i tabItem) Build(ctx BuildContext) Widget {
 						t.State.RemoveTab(tabKey)
 					}
 				},
-			},
+			}},
 		},
 	}
 }
@@ -767,6 +767,22 @@ func (i tabItem) Build(ctx BuildContext) Widget {
 func (i tabItem) hoverKey() any { return hoverItemKey{owner: i.bar.State, item: i.tab.Key} }
 
 func (i tabItem) setHovered(hovered bool) { i.bar.State.hover.set(i.tab.Key, hovered) }
+
+// tabClose adds feedback for the close action, independently of the tab's
+// selection and whole-tab hover highlight.
+type tabClose struct{ text Text }
+
+func (c tabClose) Build(ctx BuildContext) Widget {
+	text := c.text
+	text.ID = ctx.PushChild(0).AutoID()
+	if ctx.IsDisabled() {
+		return passThrough{child: text}
+	}
+	if ctx.IsHovered(text) {
+		text.Style.ForegroundColor = ctx.Theme().Text
+	}
+	return passThrough{child: text}
+}
 
 // tabLabel is a tab's clickable label, which jump mode can also activate.
 type tabLabel struct {

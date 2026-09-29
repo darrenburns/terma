@@ -1,13 +1,15 @@
 package terma
 
+import "fmt"
+
 // Breadcrumbs renders a clickable breadcrumb path.
 type Breadcrumbs struct {
 	ID        string
 	Path      []string
 	OnSelect  func(index int) // Click to navigate
 	Separator string          // Default: ">"
-	Width     Dimension // Deprecated: use Style.Width
-	Height    Dimension // Deprecated: use Style.Height
+	Width     Dimension       // Deprecated: use Style.Width
+	Height    Dimension       // Deprecated: use Style.Height
 	Style     Style
 }
 
@@ -42,11 +44,16 @@ func (b Breadcrumbs) Build(ctx BuildContext) Widget {
 			Style:   style,
 		}
 		if b.OnSelect != nil {
+			if b.ID != "" {
+				text.ID = fmt.Sprintf("%s-segment-%d", b.ID, index)
+			}
 			text.Click = func(MouseEvent) {
 				b.OnSelect(index)
 			}
+			children = append(children, breadcrumbSegment{text: text})
+		} else {
+			children = append(children, text)
 		}
-		children = append(children, text)
 
 		if i < len(b.Path)-1 {
 			sepStyle := b.Style
@@ -75,4 +82,24 @@ func (b Breadcrumbs) Build(ctx BuildContext) Widget {
 		Children:   children,
 		Style:      rowStyle,
 	}
+}
+
+// breadcrumbSegment keeps hover local to a clickable label. Anonymous paths
+// use the text child's tree identity, so separate paths never share hover.
+type breadcrumbSegment struct{ text Text }
+
+func (s breadcrumbSegment) Build(ctx BuildContext) Widget {
+	text := s.text
+	if text.ID == "" {
+		text.ID = ctx.PushChild(0).AutoID()
+	}
+	if ctx.IsDisabled() {
+		return passThrough{child: text}
+	}
+	tint := newHoverTint(ctx.Theme(), func() bool { return ctx.IsHovered(text) })
+	if text.Style.BackgroundColor != nil && text.Style.BackgroundColor.IsSet() {
+		text.Style.BackgroundColor = tint.background(text.Style.BackgroundColor)
+		return passThrough{child: text}
+	}
+	return hoverUnderlay{passThrough: passThrough{child: text}, hoverTint: tint}
 }

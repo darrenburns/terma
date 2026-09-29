@@ -928,6 +928,7 @@ type Renderer struct {
 	focusManager   *FocusManager
 	focusedSignal  AnySignal[Focusable]
 	hoveredSignal  AnySignal[Widget]
+	hoverTarget    Signal[hoverTargetInfo]
 	widgetRegistry *WidgetRegistry
 	floatCollector *FloatCollector
 	// modalCount tracks the number of modal floats rendered in the last pass.
@@ -998,6 +999,7 @@ func NewRenderer(terminal CellBuffer, width, height int, fm *FocusManager, focus
 		focusManager:       fm,
 		focusedSignal:      focusedSignal,
 		hoveredSignal:      hoveredSignal,
+		hoverTarget:        NewSignal(hoverTargetInfo{}),
 		widgetRegistry:     NewWidgetRegistry(),
 		floatCollector:     NewFloatCollector(),
 		fullRenderRequired: true,
@@ -1099,6 +1101,7 @@ func (r *Renderer) renderInternal(root Widget) (focusables []FocusableEntry, lay
 
 	// Create build context
 	buildCtx := NewBuildContext(r.focusManager, r.focusedSignal, r.hoveredSignal, r.floatCollector)
+	buildCtx.hoverTarget = r.hoverTarget
 
 	// Phase 1+2: Build complete render tree (layout + focus collection)
 	constraints := layout.Loose(r.width, r.height)
@@ -1259,7 +1262,7 @@ func (r *Renderer) renderTreeWithParent(ctx *RenderContext, tree RenderTree, scr
 		Width:  box.Width,
 		Height: box.Height,
 	}
-	r.widgetRegistry.Record(tree.Widget, eventWidget, tree.EventID, bounds, bounds.Intersect(ctx.clip), tree.Disabled)
+	r.widgetRegistry.recordTree(tree.Widget, eventWidget, tree.EventID, tree.treePath, bounds, bounds.Intersect(ctx.clip), tree.Disabled)
 	r.widgetRegistry.entries[len(r.widgetRegistry.entries)-1].parentID = parentID
 
 	// 5. Render children at their computed positions
@@ -1462,7 +1465,12 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 		// Build the float's widget tree to determine its size
 		// Use loose constraints - floats size to their content
 		constraints := layout.Loose(r.width, r.height)
-		floatTree := BuildRenderTree(child, buildCtx, constraints, r.focusCollector)
+		floatCtx := buildCtx
+		floatCtx.hoverScope = fmt.Sprintf("float:%d/", i)
+		if entry.Config.hoverScope != "" {
+			floatCtx.hoverScope = entry.Config.hoverScope
+		}
+		floatTree := BuildRenderTree(child, floatCtx, constraints, r.focusCollector)
 
 		floatWidth := floatTree.Layout.Box.MarginBoxWidth()
 		floatHeight := floatTree.Layout.Box.MarginBoxHeight()

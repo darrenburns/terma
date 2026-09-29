@@ -100,6 +100,9 @@ func newMouseRouter(renderer *Renderer, focusManager *FocusManager, hoveredSigna
 		hoveredSignal: hoveredSignal,
 	}
 	m.resolveHover = m.hoverTarget
+	if renderer != nil {
+		m.hover.targetSignal = renderer.hoverTarget
+	}
 	return m
 }
 
@@ -132,6 +135,13 @@ func (m *mouseRouter) hoverTarget(x, y int) *WidgetEntry {
 	entry, consumed := m.target(x, y, false)
 	if consumed {
 		return nil
+	}
+	if entry != nil && !entry.Disabled {
+		if regions, ok := entry.EventWidget.(hoverRegionResolver); ok {
+			if region := regions.hoverRegionAt(entry, x, y); region != nil {
+				return region
+			}
+		}
 	}
 	return entry
 }

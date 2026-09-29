@@ -89,7 +89,7 @@ func (t Tooltip) anchorID(ctx BuildContext) string {
 
 // Build constructs the tooltip widget tree.
 func (t Tooltip) Build(ctx BuildContext) Widget {
-	// Determine visibility (tooltip shows when child is focused)
+	// Determine visibility from child hover or keyboard focus.
 	visible := t.isVisible(ctx)
 
 	// Register tooltip overlay if visible
@@ -99,9 +99,10 @@ func (t Tooltip) Build(ctx BuildContext) Widget {
 		Floating{
 			Visible: true,
 			Config: FloatConfig{
-				AnchorID: anchorID,
-				Anchor:   t.anchorPoint(),
-				Offset:   t.offsetValue(),
+				AnchorID:   anchorID,
+				Anchor:     t.anchorPoint(),
+				Offset:     t.offsetValue(),
+				hoverScope: ctx.hoverScope + ctx.PushChild(0).AutoID() + ".tooltip/",
 			},
 			Child: t.buildContent(ctx),
 		}.Build(ctx)
@@ -149,12 +150,20 @@ func (t Tooltip) BuildContainerLayoutNode(ctx BuildContext, children []layout.La
 	}
 }
 
-// isVisible determines if the tooltip should be shown (when child is focused).
+// isVisible determines if the child is hovered or focused.
 func (t Tooltip) isVisible(ctx BuildContext) bool {
-	if t.Child == nil {
+	if t.Child == nil || ctx.IsDisabled() {
 		return false
 	}
-	return ctx.IsFocused(t.Child)
+	childCtx := ctx.PushChild(0)
+	if childCtx.IsFocused(t.Child) {
+		return true
+	}
+	if ctx.hoverTarget.IsValid() {
+		return childCtx.isSubtreeHovered()
+	}
+	// Manually constructed contexts have no renderer-owned tree hover signal.
+	return ctx.IsHovered(t.Child)
 }
 
 // anchorPoint maps TooltipPosition to AnchorPoint.

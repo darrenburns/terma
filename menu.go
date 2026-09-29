@@ -37,6 +37,7 @@ type MenuState struct {
 	cursorIndex  Signal[int]
 	openSubmenu  Signal[int] // Index of item with open submenu (-1 if none)
 	submenuState *MenuState  // State for the open submenu (recursive)
+	hover        itemHover[int]
 
 	itemBounds []Rect // Cached bounds of each item, in content coordinates
 	dragging   bool   // A press on an item is held, so pointer motion moves the cursor
@@ -51,6 +52,7 @@ func NewMenuState(items []MenuItem) *MenuState {
 		items:       items,
 		cursorIndex: NewSignal(0),
 		openSubmenu: NewSignal(-1),
+		hover:       newItemHover[int](),
 	}
 	state.cursorIndex.Set(state.firstSelectableIndex())
 	return state
@@ -449,7 +451,7 @@ func (m Menu) renderItem(ctx BuildContext, item MenuItem, index int, active bool
 		suffixStyle.ForegroundColor = theme.ActiveCursor.AutoText()
 	}
 
-	return Row{
+	row := Row{
 		ID:         fmt.Sprintf("%s-item-%d", m.ID, index),
 		Spacing:    layout.spacing,
 		Style:      itemStyle,
@@ -466,7 +468,30 @@ func (m Menu) renderItem(ctx BuildContext, item MenuItem, index int, active bool
 			},
 		},
 	}
+	if !item.IsSelectable() {
+		return row
+	}
+	return menuItemRow{Row: row, state: m.State, index: index}
 }
+
+// menuItemRow gives a selectable item a hover highlight independent of the
+// keyboard cursor. The cursor's opaque background still covers the tint.
+type menuItemRow struct {
+	Row
+	state *MenuState
+	index int
+}
+
+func (r menuItemRow) Build(ctx BuildContext) Widget {
+	return hoverUnderlay{
+		passThrough: passThrough{child: r.Row},
+		hoverTint:   newHoverTint(ctx.Theme(), func() bool { return r.state.hover.is(r.index) }),
+	}
+}
+
+func (r menuItemRow) hoverKey() any { return hoverItemKey{owner: r.state, item: r.index} }
+
+func (r menuItemRow) setHovered(hovered bool) { r.state.hover.set(r.index, hovered) }
 
 func (m Menu) moveNext() {
 	if m.State == nil {

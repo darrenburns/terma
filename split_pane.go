@@ -22,6 +22,7 @@ type SplitPaneState struct {
 	// and releasing the divider repaint it.
 	dragging   Signal[bool]
 	dragOffset int
+	hovered    Signal[bool]
 
 	layoutCache splitPaneLayoutCache
 }
@@ -47,6 +48,7 @@ func NewSplitPaneState(initialPosition float64) *SplitPaneState {
 	return &SplitPaneState{
 		DividerPosition: NewSignal(initialPosition),
 		dragging:        NewSignal(false),
+		hovered:         NewSignal(false),
 	}
 }
 
@@ -60,6 +62,53 @@ func (s *SplitPaneState) setDragging(dragging bool) {
 	if s != nil && s.dragging.IsValid() {
 		s.dragging.Set(dragging)
 	}
+}
+
+func (s *SplitPaneState) isHovered() bool {
+	return s != nil && s.hovered.IsValid() && s.hovered.Get()
+}
+
+// hoverRegionAt distinguishes the divider from the pane's padding and content.
+// Mouse presses still target the SplitPane, retaining its existing capture.
+func (s SplitPane) hoverRegionAt(entry *WidgetEntry, x, y int) *WidgetEntry {
+	if s.State == nil || !s.State.layoutCache.valid {
+		return nil
+	}
+	cache := s.State.layoutCache
+	bounds := Rect{
+		X: entry.Bounds.X + cache.contentOffsetX, Y: entry.Bounds.Y + cache.contentOffsetY,
+		Width: cache.contentWidth, Height: cache.contentHeight,
+	}
+	if cache.orientation == SplitVertical {
+		bounds.Y += cache.dividerPos
+		bounds.Height = cache.dividerSize
+	} else {
+		bounds.X += cache.dividerPos
+		bounds.Width = cache.dividerSize
+	}
+	visible := bounds.Intersect(entry.Visible)
+	if !visible.Contains(x, y) {
+		return nil
+	}
+	region := *entry
+	region.ID = entry.ID + "-divider-hover"
+	region.Bounds, region.Visible = bounds, visible
+	region.EventWidget = splitPaneDividerHover{pane: s, id: region.ID}
+	return &region
+}
+
+type splitPaneDividerHover struct {
+	pane SplitPane
+	id   string
+}
+
+func (h splitPaneDividerHover) Build(BuildContext) Widget { return EmptyWidget{} }
+func (h splitPaneDividerHover) WidgetID() string          { return h.id }
+func (h splitPaneDividerHover) OnHover(event HoverEvent) {
+	if h.pane.State.hovered.IsValid() {
+		h.pane.State.hovered.Set(event.Type == HoverEnter)
+	}
+	h.pane.OnHover(event)
 }
 
 // SetPosition sets the divider position (clamped to valid range).
@@ -492,6 +541,12 @@ func (s SplitPane) Render(ctx *RenderContext) {
 		dividerHighlighted = true
 	}
 	fgProvider, bgProvider := s.dividerProviders(dividerHighlighted)
+	if !ctx.buildContext.IsDisabled() {
+		hover := newHoverTint(ctx.buildContext.Theme(), s.State.isHovered)
+		if hover.active() && colorProviderIsSet(fgProvider) {
+			fgProvider = tintedColors{base: fgProvider, tint: hover.color}
+		}
+	}
 
 	dividerChar := s.dividerChar()
 	if s.Orientation == SplitVertical {

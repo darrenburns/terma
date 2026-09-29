@@ -1,11 +1,11 @@
 # Tooltip
 
-Displays contextual help text when a child widget has focus.
+Displays contextual help text when a child widget is hovered or has focus.
 Tooltips appear as floating overlays positioned relative to their child widget.
 
 ## Overview
 
-`Tooltip` wraps a child widget and shows a floating text overlay when that child receives focus. This is useful for providing additional context, keyboard shortcuts, or help text without cluttering the interface.
+`Tooltip` wraps a child widget and shows a floating text overlay when the pointer rests over the child or the child receives focus. This is useful for providing additional context, keyboard shortcuts, or help text without cluttering the interface.
 
 ```go
 Tooltip{
@@ -14,7 +14,7 @@ Tooltip{
 }
 ```
 
-When the button is focused (via Tab navigation), the tooltip appears above it.
+When the button is hovered or focused (via Tab navigation), the tooltip appears above it. Moving the pointer away from the child and tooltip hides it unless the child still has focus.
 
 ## Fields
 
@@ -156,8 +156,10 @@ func (a *App) Build(ctx BuildContext) Widget {
 
 ## Notes
 
-- Tooltips only appear when the child widget has focus (keyboard navigation)
-- The child must be a focusable widget (Button, TextInput, etc.) for the tooltip to show
+- Tooltips appear on pointer hover or child focus (keyboard navigation)
+- Non-focusable widgets such as `Text` can show a tooltip on hover
+- Hover includes descendants of composite children and works without explicit IDs
+- Disabled children do not trigger hover tooltips
 - Default styling uses `theme.Surface` background and `theme.Text` foreground
 - Tooltips render as floating overlays and won't affect layout of other widgets
 - If no `ID` is provided, one is auto-generated

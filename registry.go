@@ -57,6 +57,7 @@ type WidgetEntry struct {
 	Widget      Widget
 	EventWidget Widget
 	ID          string
+	treePath    string // Stable tree identity, including for explicitly named widgets.
 	// Bounds is the widget's border box in screen coordinates. Local mouse
 	// coordinates are relative to it. It can extend past what is drawn, for
 	// example when an ancestor has scrolled part of the widget out of view.
@@ -93,6 +94,10 @@ func NewWidgetRegistry() *WidgetRegistry {
 // Record adds a widget to the registry with its bounds, visible area,
 // optional ID and whether it is disabled.
 func (r *WidgetRegistry) Record(widget Widget, eventWidget Widget, id string, bounds, visible Rect, disabled bool) {
+	r.recordTree(widget, eventWidget, id, "", bounds, visible, disabled)
+}
+
+func (r *WidgetRegistry) recordTree(widget Widget, eventWidget Widget, id, treePath string, bounds, visible Rect, disabled bool) {
 	if eventWidget == nil {
 		eventWidget = widget
 	}
@@ -100,6 +105,7 @@ func (r *WidgetRegistry) Record(widget Widget, eventWidget Widget, id string, bo
 		Widget:      widget,
 		EventWidget: eventWidget,
 		ID:          id,
+		treePath:    treePath,
 		Bounds:      bounds,
 		Visible:     visible,
 		Disabled:    disabled,
