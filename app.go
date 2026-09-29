@@ -783,7 +783,7 @@ func Run(root Widget) (runErr error) {
 					}
 
 				case uv.MouseWheelEvent:
-					if mouse.wheel(ev) {
+					if mouse.wheelAt(ev, subX, subY) {
 						requestRender()
 					}
 

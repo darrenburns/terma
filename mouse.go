@@ -280,13 +280,16 @@ func (m *mouseRouter) updateItemHover() bool {
 	return m.itemHover.update(item)
 }
 
-// wheel scrolls the innermost scrollable under the pointer that can move,
-// reporting whether one did.
+// wheel delivers cell-based wheel input; wheelAt also preserves pixel offsets.
 func (m *mouseRouter) wheel(ev uv.MouseWheelEvent) bool {
+	return m.wheelAt(ev, 0.5, 0.5)
+}
+
+func (m *mouseRouter) wheelAt(ev uv.MouseWheelEvent, subX, subY float64) bool {
 	if m.blocked(ev.X, ev.Y) {
 		return false
 	}
-	return dispatchMouseWheel(m.renderer, ev.X, ev.Y, ev.Button)
+	return dispatchMouseWheelEvent(m.renderer, ev, subX, subY)
 }
 
 // reconcileHover re-resolves hover at the last pointer position, so enter and
@@ -299,26 +302,66 @@ func (m *mouseRouter) reconcileHover() bool {
 	return changed
 }
 
-// dispatchMouseWheel routes wheel events to scrollable widgets under the cursor.
-// Scrollables are tried from innermost to outermost until one handles the event.
-func dispatchMouseWheel(renderer *Renderer, x int, y int, button uv.MouseButton) bool {
+// dispatchMouseWheel is the cell-based convenience path used by scroll tests.
+func dispatchMouseWheel(renderer *Renderer, x, y int, button uv.MouseButton) bool {
+	return dispatchMouseWheelEvent(renderer, uv.MouseWheelEvent{X: x, Y: y, Button: button}, 0.5, 0.5)
+}
+
+// dispatchMouseWheelEvent follows the topmost target's ancestor chain within
+// its pointer layer. Each handler gets first refusal before normal scrolling
+// at that widget, so a declining child still allows its viewport to scroll.
+func dispatchMouseWheelEvent(renderer *Renderer, ev uv.MouseWheelEvent, subX, subY float64) bool {
 	if renderer == nil {
 		return false
 	}
-	for _, scrollable := range renderer.ScrollablesAt(x, y) {
-		var handled bool
-		switch button {
-		case uv.MouseWheelUp:
-			handled = scrollable.ScrollUp(1)
-		case uv.MouseWheelDown:
-			handled = scrollable.ScrollDown(1)
-		case uv.MouseWheelLeft:
-			handled = scrollable.ScrollLeft(1)
-		case uv.MouseWheelRight:
-			handled = scrollable.ScrollRight(1)
+	lo, hi := renderer.pointerLayer(ev.X, ev.Y)
+	entry := renderer.widgetRegistry.widgetAtIn(ev.X, ev.Y, lo, hi)
+	for entry != nil {
+		if !entry.Disabled && entry.Visible.Contains(ev.X, ev.Y) {
+			event := buildMouseEvent(uv.Mouse(ev), subX, subY, entry, 0)
+			handler, ok := entry.EventWidget.(MouseWheelHandler)
+			if !ok {
+				handler, ok = entry.Widget.(MouseWheelHandler)
+			}
+			if ok && handler.OnMouseWheel(event) {
+				return true
+			}
+			var scrollable *Scrollable
+			switch widget := entry.Widget.(type) {
+			case Scrollable:
+				scrollable = &widget
+			case *Scrollable:
+				scrollable = widget
+			}
+			if scrollable != nil {
+				var handled bool
+				switch ev.Button {
+				case uv.MouseWheelUp:
+					handled = scrollable.ScrollUp(1)
+				case uv.MouseWheelDown:
+					handled = scrollable.ScrollDown(1)
+				case uv.MouseWheelLeft:
+					handled = scrollable.ScrollLeft(1)
+				case uv.MouseWheelRight:
+					handled = scrollable.ScrollRight(1)
+				}
+				if handled {
+					return true
+				}
+			}
 		}
-		if handled {
-			return true
+		// Search only earlier entries in this layer: ancestors are recorded before
+		// descendants, and no sibling beneath the target may receive the event.
+		parentID := entry.parentID
+		entry = nil
+		if parentID != "" {
+			for i := hi - 1; i >= lo; i-- {
+				if renderer.widgetRegistry.entries[i].ID == parentID {
+					entry = &renderer.widgetRegistry.entries[i]
+					hi = i
+					break
+				}
+			}
 		}
 	}
 	return false

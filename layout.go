@@ -41,10 +41,11 @@ type Row struct {
 	MainAlign  MainAxisAlign  // Main axis (horizontal) alignment
 	CrossAlign CrossAxisAlign // Cross axis (vertical) alignment
 	Children   []Widget
-	Click      func(MouseEvent) // Optional callback invoked when clicked
-	MouseDown  func(MouseEvent) // Optional callback invoked when mouse is pressed
-	MouseUp    func(MouseEvent) // Optional callback invoked when mouse is released
-	Hover      func(HoverEvent) // Optional callback invoked when hover state changes
+	Click      func(MouseEvent)      // Optional callback invoked when clicked
+	MouseDown  func(MouseEvent)      // Optional callback invoked when mouse is pressed
+	MouseWheel func(MouseEvent) bool // Return true to consume wheel input before scrolling or bubbling
+	MouseUp    func(MouseEvent)      // Optional callback invoked when mouse is released
+	Hover      func(HoverEvent)      // Optional callback invoked when hover state changes
 }
 
 // GetContentDimensions returns the width and height dimension preferences.
@@ -77,6 +78,11 @@ func (r Row) OnClick(event MouseEvent) {
 	if r.Click != nil {
 		r.Click(event)
 	}
+}
+
+// OnMouseWheel invokes the optional consumable wheel callback.
+func (r Row) OnMouseWheel(event MouseEvent) bool {
+	return r.MouseWheel != nil && r.MouseWheel(event)
 }
 
 // OnMouseDown is called when the mouse is pressed on the widget.
@@ -199,10 +205,11 @@ type Column struct {
 	MainAlign  MainAxisAlign  // Main axis (vertical) alignment
 	CrossAlign CrossAxisAlign // Cross axis (horizontal) alignment
 	Children   []Widget
-	Click      func(MouseEvent) // Optional callback invoked when clicked
-	MouseDown  func(MouseEvent) // Optional callback invoked when mouse is pressed
-	MouseUp    func(MouseEvent) // Optional callback invoked when mouse is released
-	Hover      func(HoverEvent) // Optional callback invoked when hover state changes
+	Click      func(MouseEvent)      // Optional callback invoked when clicked
+	MouseDown  func(MouseEvent)      // Optional callback invoked when mouse is pressed
+	MouseWheel func(MouseEvent) bool // Return true to consume wheel input before scrolling or bubbling
+	MouseUp    func(MouseEvent)      // Optional callback invoked when mouse is released
+	Hover      func(HoverEvent)      // Optional callback invoked when hover state changes
 }
 
 // GetContentDimensions returns the width and height dimension preferences.
@@ -235,6 +242,11 @@ func (c Column) OnClick(event MouseEvent) {
 	if c.Click != nil {
 		c.Click(event)
 	}
+}
+
+// OnMouseWheel invokes the optional consumable wheel callback.
+func (c Column) OnMouseWheel(event MouseEvent) bool {
+	return c.MouseWheel != nil && c.MouseWheel(event)
 }
 
 // OnMouseDown is called when the mouse is pressed on the widget.

@@ -363,20 +363,21 @@ func (s *ScrollState) updateHorizontalLayout(viewportWidth, contentWidth int) {
 //	    Child:  myContent,
 //	}
 type Scrollable struct {
-	ID            string           // Optional unique identifier for the widget
-	Child         Widget           // The child widget to scroll
-	State         *ScrollState     // Required - holds scroll position
-	DisableScroll bool             // If true, scrolling is disabled and scrollbar hidden (default: false)
-	Focusable     bool             // If true, widget can receive keyboard focus for scroll navigation
-	DisableFocus  bool             // If true, prevent keyboard focus
-	Width         Dimension        // Deprecated: use Style.Width
-	Height        Dimension        // Deprecated: use Style.Height
-	Style         Style            // Optional styling
-	Click         func(MouseEvent) // Optional callback invoked when clicked
-	MouseDown     func(MouseEvent) // Optional callback invoked when mouse is pressed
-	MouseUp       func(MouseEvent) // Optional callback invoked when mouse is released
-	MouseMove     func(MouseEvent) // Optional callback invoked when mouse is moved while dragging
-	Hover         func(HoverEvent) // Optional callback invoked when hover state changes
+	ID            string                // Optional unique identifier for the widget
+	Child         Widget                // The child widget to scroll
+	State         *ScrollState          // Required - holds scroll position
+	DisableScroll bool                  // If true, scrolling is disabled and scrollbar hidden (default: false)
+	Focusable     bool                  // If true, widget can receive keyboard focus for scroll navigation
+	DisableFocus  bool                  // If true, prevent keyboard focus
+	Width         Dimension             // Deprecated: use Style.Width
+	Height        Dimension             // Deprecated: use Style.Height
+	Style         Style                 // Optional styling
+	Click         func(MouseEvent)      // Optional callback invoked when clicked
+	MouseDown     func(MouseEvent)      // Optional callback invoked when mouse is pressed
+	MouseWheel    func(MouseEvent) bool // Return true to consume wheel input before scrolling or bubbling
+	MouseUp       func(MouseEvent)      // Optional callback invoked when mouse is released
+	MouseMove     func(MouseEvent)      // Optional callback invoked when mouse is moved while dragging
+	Hover         func(HoverEvent)      // Optional callback invoked when hover state changes
 
 	// Scrollbar appearance customization
 	ScrollbarThumbColor Color // Custom thumb color (default: White unfocused, BrightCyan focused)
@@ -414,6 +415,11 @@ func (s Scrollable) OnClick(event MouseEvent) {
 	if s.Click != nil {
 		s.Click(event)
 	}
+}
+
+// OnMouseWheel invokes the optional consumable wheel callback.
+func (s Scrollable) OnMouseWheel(event MouseEvent) bool {
+	return s.MouseWheel != nil && s.MouseWheel(event)
 }
 
 // OnMouseDown is called when the mouse is pressed on the widget.

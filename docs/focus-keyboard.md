@@ -75,3 +75,50 @@ under a stationary mouse and dismisses after the mouse leaves and re-enters it.
 
 `HoverLeave` is a pointer leave transition, not keyboard focus blur.
 Keyboard focus blur remains `Blurrable.OnBlur()` and is unchanged.
+
+## Mouse Wheel Events
+
+Any custom widget can implement a consumable wheel handler:
+
+```go
+type MouseWheelHandler interface {
+    OnMouseWheel(event MouseEvent) bool
+}
+```
+
+Wheel input starts at the topmost visible widget under the pointer and bubbles
+through its ancestors, innermost first. A handler returning `true` consumes the
+event. If it returns `false`, normal `Scrollable` behavior at that widget runs
+before the event continues to its parent. Scrollable viewports that reach their
+limit still allow an outer viewport or handler to consume the event. Covered
+siblings, clipped widgets, disabled handlers, and widgets beneath an overlay do
+not receive the event. Wheel handling does not require keyboard focus.
+
+`MouseEvent.Button` identifies `uv.MouseWheelUp`, `uv.MouseWheelDown`,
+`uv.MouseWheelLeft`, or `uv.MouseWheelRight`. The event includes absolute and
+widget-local coordinates, modifiers, widget ID, and sub-cell pointer position;
+`ClickCount` is zero.
+
+`Text`, `Row`, `Column`, `Stack`, `TabBar`, and `Scrollable` also expose a
+`MouseWheel func(MouseEvent) bool` callback. For example, a one-row tab bar can
+switch tabs directly, without artificial scroll overflow or a scrollbar:
+
+```go
+TabBar{
+    ID: "tabs",
+    State: tabs,
+    MouseWheel: func(event MouseEvent) bool {
+        switch event.Button {
+        case uv.MouseWheelDown, uv.MouseWheelRight:
+            tabs.SelectNext()
+        case uv.MouseWheelUp, uv.MouseWheelLeft:
+            tabs.SelectPrevious()
+        default:
+            return false
+        }
+        return true
+    },
+}
+```
+
+Run `go run ./cmd/wheel-tabs-demo` for a working example.

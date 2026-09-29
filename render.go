@@ -1091,6 +1091,10 @@ func (r *Renderer) renderInternal(root Widget) (focusables []FocusableEntry, lay
 // All positions come from BoxModel utilities - no manual offset calculations.
 // This is the new rendering path that uses computed layout geometry.
 func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, screenY int) {
+	r.renderTreeWithParent(ctx, tree, screenX, screenY, "")
+}
+
+func (r *Renderer) renderTreeWithParent(ctx *RenderContext, tree RenderTree, screenX, screenY int, parentID string) {
 	// Bind current event ID to this render node so auto-ID focus works in Render().
 	selfCtx := *ctx
 	selfCtx.currentEventID = tree.EventID
@@ -1225,6 +1229,7 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 		Height: box.Height,
 	}
 	r.widgetRegistry.Record(tree.Widget, eventWidget, tree.EventID, bounds, bounds.Intersect(ctx.clip), tree.Disabled)
+	r.widgetRegistry.entries[len(r.widgetRegistry.entries)-1].parentID = parentID
 
 	// 5. Render children at their computed positions
 	// If tree.Children is empty but widget has children, the widget handles them in Render() (fallback)
@@ -1290,7 +1295,7 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 			// Pass relative positions - childClipCtx.X/Y already contains the origin offset.
 			// Layouts position the border box; renderTree applies the margin itself.
 			margin := pos.Layout.Box.Margin
-			r.renderTree(childClipCtx, childTree, pos.X-margin.Left, pos.Y-margin.Top)
+			r.renderTreeWithParent(childClipCtx, childTree, pos.X-margin.Left, pos.Y-margin.Top, tree.EventID)
 		}
 	}
 

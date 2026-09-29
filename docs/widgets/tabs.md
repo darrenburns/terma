@@ -41,6 +41,7 @@ The tab system consists of three main components:
 | `DisableFocus` | `bool` | `false` | Prevent keyboard focus |
 | `State` | `*TabState` | — | Required - holds tabs and active key |
 | `KeybindPattern` | `TabKeybindPattern` | `TabKeybindNone` | Position-based keybind style |
+| `MouseWheel` | `func(MouseEvent) bool` | `nil` | Consumable wheel callback; see [Mouse Wheel Events](../focus-keyboard.md#mouse-wheel-events) |
 | `OnTabChange` | `func(key string)` | `nil` | Called when active tab changes |
 | `OnTabClose` | `func(key string)` | `nil` | Called when close button is clicked |
 | `Closable` | `bool` | `false` | Show close buttons on tabs |

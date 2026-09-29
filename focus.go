@@ -26,6 +26,7 @@ func (k KeyEvent) Text() string {
 }
 
 // MouseEvent wraps a mouse interaction with click-chain metadata.
+// Wheel events use Button for direction and have ClickCount zero.
 type MouseEvent struct {
 	X, Y       int // Absolute screen coordinates
 	LocalX     int // X offset within the widget (0 = left edge)
@@ -133,6 +134,14 @@ type MouseUpHandler interface {
 // pointer goes; LocalX and LocalY can then lie outside the widget.
 type MouseMoveHandler interface {
 	OnMouseMove(event MouseEvent)
+}
+
+// MouseWheelHandler receives wheel input over a widget or its descendants.
+// Return true to consume the event. Returning false lets the widget's normal
+// scrolling run, then bubbles to its ancestors, innermost first.
+// Button is MouseWheelUp, MouseWheelDown, MouseWheelLeft or MouseWheelRight.
+type MouseWheelHandler interface {
+	OnMouseWheel(event MouseEvent) bool
 }
 
 // Hoverable is implemented by widgets that respond to hover transitions.

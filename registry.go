@@ -53,6 +53,7 @@ func (r Rect) Union(other Rect) Rect {
 
 // WidgetEntry stores a widget along with its position and identity.
 type WidgetEntry struct {
+	parentID    string // Event identity of the containing widget, for pointer bubbling.
 	Widget      Widget
 	EventWidget Widget
 	ID          string

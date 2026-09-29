@@ -34,18 +34,19 @@ const (
 
 // Text is a leaf widget that displays text content.
 type Text struct {
-	ID        string           // Optional unique identifier for the widget
-	Content   string           // Plain text (used if Spans is empty)
-	Spans     []Span           // Rich text segments (takes precedence if non-empty)
-	Wrap      WrapMode         // Wrapping mode (default = WrapNone)
-	TextAlign TextAlign        // Horizontal alignment (default = TextAlignLeft)
-	Width     Dimension        // Deprecated: use Style.Width
-	Height    Dimension        // Deprecated: use Style.Height
-	Style     Style            // Optional styling (colors, inherited by spans)
-	Click     func(MouseEvent) // Optional callback invoked when clicked
-	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
-	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
-	Hover     func(HoverEvent) // Optional callback invoked when hover state changes
+	ID         string                // Optional unique identifier for the widget
+	Content    string                // Plain text (used if Spans is empty)
+	Spans      []Span                // Rich text segments (takes precedence if non-empty)
+	Wrap       WrapMode              // Wrapping mode (default = WrapNone)
+	TextAlign  TextAlign             // Horizontal alignment (default = TextAlignLeft)
+	Width      Dimension             // Deprecated: use Style.Width
+	Height     Dimension             // Deprecated: use Style.Height
+	Style      Style                 // Optional styling (colors, inherited by spans)
+	Click      func(MouseEvent)      // Optional callback invoked when clicked
+	MouseDown  func(MouseEvent)      // Optional callback invoked when mouse is pressed
+	MouseWheel func(MouseEvent) bool // Return true to consume wheel input before scrolling or bubbling
+	MouseUp    func(MouseEvent)      // Optional callback invoked when mouse is released
+	Hover      func(HoverEvent)      // Optional callback invoked when hover state changes
 }
 
 // Build returns itself as Text is a leaf widget.
@@ -65,6 +66,11 @@ func (t Text) OnClick(event MouseEvent) {
 	if t.Click != nil {
 		t.Click(event)
 	}
+}
+
+// OnMouseWheel invokes the optional consumable wheel callback.
+func (t Text) OnMouseWheel(event MouseEvent) bool {
+	return t.MouseWheel != nil && t.MouseWheel(event)
 }
 
 // OnMouseDown is called when the mouse is pressed on the widget.

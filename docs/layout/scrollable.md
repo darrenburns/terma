@@ -29,6 +29,7 @@ Scrollable{
 | `ScrollbarThumbColor` | `Color` | Theme `ScrollbarThumb` (`Primary` when focused) | Scrollbar thumb color |
 | `ScrollbarTrackColor` | `Color` | Theme `ScrollbarTrack` | Scrollbar track color |
 | `Click` | `func(MouseEvent)` | — | Click callback |
+| `MouseWheel` | `func(MouseEvent) bool` | — | Return true to consume before normal scrolling |
 | `MouseDown` | `func(MouseEvent)` | — | Mouse down callback |
 | `MouseUp` | `func(MouseEvent)` | — | Mouse up callback |
 | `Hover` | `func(HoverEvent)` | — | Hover transition callback |

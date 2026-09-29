@@ -49,16 +49,17 @@ func (p Positioned) Build(ctx BuildContext) Widget {
 // Stack sizes itself based on the largest non-positioned child.
 // Positioned children do not affect Stack's size.
 type Stack struct {
-	ID        string           // Optional unique identifier for the widget
-	Children  []Widget         // Children to overlay (first at bottom, last on top)
-	Alignment Alignment        // Default alignment for non-positioned children (default: top-start)
-	Width     Dimension        // Deprecated: use Style.Width
-	Height    Dimension        // Deprecated: use Style.Height
-	Style     Style            // Optional styling
-	Click     func(MouseEvent) // Optional callback invoked when clicked
-	MouseDown func(MouseEvent) // Optional callback invoked when mouse is pressed
-	MouseUp   func(MouseEvent) // Optional callback invoked when mouse is released
-	Hover     func(HoverEvent) // Optional callback invoked when hover state changes
+	ID         string                // Optional unique identifier for the widget
+	Children   []Widget              // Children to overlay (first at bottom, last on top)
+	Alignment  Alignment             // Default alignment for non-positioned children (default: top-start)
+	Width      Dimension             // Deprecated: use Style.Width
+	Height     Dimension             // Deprecated: use Style.Height
+	Style      Style                 // Optional styling
+	Click      func(MouseEvent)      // Optional callback invoked when clicked
+	MouseDown  func(MouseEvent)      // Optional callback invoked when mouse is pressed
+	MouseWheel func(MouseEvent) bool // Return true to consume wheel input before scrolling or bubbling
+	MouseUp    func(MouseEvent)      // Optional callback invoked when mouse is released
+	Hover      func(HoverEvent)      // Optional callback invoked when hover state changes
 }
 
 // GetContentDimensions returns the width and height dimension preferences.
@@ -89,6 +90,11 @@ func (s Stack) OnClick(event MouseEvent) {
 	if s.Click != nil {
 		s.Click(event)
 	}
+}
+
+// OnMouseWheel invokes the optional consumable wheel callback.
+func (s Stack) OnMouseWheel(event MouseEvent) bool {
+	return s.MouseWheel != nil && s.MouseWheel(event)
 }
 
 // OnMouseDown is called when the mouse is pressed on the widget.

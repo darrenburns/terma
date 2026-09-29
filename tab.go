@@ -304,23 +304,24 @@ const (
 // TabBar is a focusable widget that renders a horizontal row of tabs.
 // It supports keyboard navigation and position-based keybindings.
 type TabBar struct {
-	ID             string            // Optional unique identifier
-	DisableFocus   bool              // If true, prevent keyboard focus
-	State          *TabState         // Required - holds tabs and active key
-	KeybindPattern TabKeybindPattern // Position keybind style
-	OnTabChange    func(key string)  // Tab selection callback
-	OnTabClose     func(key string)  // Close button callback
-	Closable       bool              // Show close buttons
-	AllowReorder   bool              // Enable ctrl+left/right reordering
-	Width          Dimension         // Deprecated: use Style.Width
-	Height         Dimension         // Deprecated: use Style.Height
-	Style          Style             // Container style
-	TabStyle       Style             // Inactive tab style
-	ActiveTabStyle Style             // Active tab style
-	Click          func(MouseEvent)  // Optional callback invoked when clicked
-	MouseDown      func(MouseEvent)  // Optional callback invoked when mouse is pressed
-	MouseUp        func(MouseEvent)  // Optional callback invoked when mouse is released
-	Hover          func(HoverEvent)  // Optional callback invoked when hover state changes
+	ID             string                // Optional unique identifier
+	DisableFocus   bool                  // If true, prevent keyboard focus
+	State          *TabState             // Required - holds tabs and active key
+	KeybindPattern TabKeybindPattern     // Position keybind style
+	OnTabChange    func(key string)      // Tab selection callback
+	OnTabClose     func(key string)      // Close button callback
+	Closable       bool                  // Show close buttons
+	AllowReorder   bool                  // Enable ctrl+left/right reordering
+	Width          Dimension             // Deprecated: use Style.Width
+	Height         Dimension             // Deprecated: use Style.Height
+	Style          Style                 // Container style
+	TabStyle       Style                 // Inactive tab style
+	ActiveTabStyle Style                 // Active tab style
+	Click          func(MouseEvent)      // Optional callback invoked when clicked
+	MouseDown      func(MouseEvent)      // Optional callback invoked when mouse is pressed
+	MouseWheel     func(MouseEvent) bool // Return true to consume wheel input before scrolling or bubbling
+	MouseUp        func(MouseEvent)      // Optional callback invoked when mouse is released
+	Hover          func(HoverEvent)      // Optional callback invoked when hover state changes
 }
 
 // WidgetID returns the widget's unique identifier.
@@ -356,6 +357,11 @@ func (t TabBar) OnClick(event MouseEvent) {
 	if t.Click != nil {
 		t.Click(event)
 	}
+}
+
+// OnMouseWheel invokes the optional consumable wheel callback.
+func (t TabBar) OnMouseWheel(event MouseEvent) bool {
+	return t.MouseWheel != nil && t.MouseWheel(event)
 }
 
 // OnMouseDown is called when the mouse is pressed.
