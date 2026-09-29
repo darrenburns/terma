@@ -514,6 +514,7 @@ type List[T any] struct {
 	CursorStyle                                                                            // Embedded - CursorPrefix/SelectedPrefix fields for customizable indicators
 	State               *ListState[T]                                                      // Required - holds items and cursor position
 	OnSelect            func(item T)                                                       // Callback invoked when Enter is pressed or an item is double-clicked
+	ActivateOnClick     bool                                                               // Invoke OnSelect on a single left click instead of a double-click
 	OnCursorChange      func(item T)                                                       // Callback invoked when cursor moves to a different item
 	ScrollState         *ScrollState                                                       // Optional state for scroll-into-view
 	RenderItem          func(item T, active bool, selected bool) Widget                    // Function to render each item (uses default if nil). Called per row; on cursor or selection changes only affected rows are re-rendered, so it should be free of side effects.
@@ -738,7 +739,8 @@ func (l List[T]) OnClick(event MouseEvent) {
 func (l List[T]) ownsDescendantPointer() {}
 
 // OnMouseDown moves the cursor to the clicked item, extends the selection on
-// shift+click in multi-select mode, and selects the item on double-click.
+// shift+click in multi-select mode, and selects the item on double-click (or
+// on a single click with ActivateOnClick).
 // Implements the MouseDownHandler interface.
 func (l List[T]) OnMouseDown(event MouseEvent) {
 	l.handleMouseDown(event)
@@ -774,7 +776,7 @@ func (l List[T]) handleMouseDown(event MouseEvent) {
 	if view[viewIdx] != previous {
 		l.notifyCursorChange()
 	}
-	if event.ClickCount == 2 {
+	if clickActivates(event, l.ActivateOnClick) {
 		l.selectItem()
 	}
 }

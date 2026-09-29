@@ -129,3 +129,39 @@ func TestSpacer_Render_IsNoOp(t *testing.T) {
 	s := Spacer{}
 	s.Render(nil) // Should not panic even with nil context
 }
+
+// A bare Spacer pushing buttons apart in a Row must not make the Row claim
+// the height a Flex(1) sibling needs.
+func TestSnapshot_Spacer_InRowFlexesHorizontallyOnly(t *testing.T) {
+	widget := Column{
+		Style: Style{Width: Cells(30), Height: Cells(6)},
+		Children: []Widget{
+			TextArea{ID: "body", State: NewTextAreaState("line one\nline two"), Style: Style{Height: Flex(1)}},
+			Row{Children: []Widget{
+				Text{Content: "[x] wrap"},
+				Spacer{},
+				Text{Content: "Cancel"},
+				Text{Content: " Save"},
+			}},
+		},
+	}
+	AssertSnapshot(t, widget, 30, 6,
+		"The text area fills the top 5 rows; the button row is 1 row tall at the bottom, '[x] wrap' left and 'Cancel Save' pushed right.")
+}
+
+// A bare Spacer in an auto-width Column must not make the Column as wide as
+// it can be.
+func TestSnapshot_Spacer_InColumnFlexesVerticallyOnly(t *testing.T) {
+	widget := Row{
+		Style: Style{Width: Cells(20), Height: Cells(4)},
+		Children: []Widget{
+			Column{
+				Style:    Style{BackgroundColor: Hex("#444444")},
+				Children: []Widget{Text{Content: "top"}, Spacer{}, Text{Content: "end"}},
+			},
+			Text{Content: "|side"},
+		},
+	}
+	AssertSnapshot(t, widget, 20, 4,
+		"A 3-wide grey column ('top' at the top, 'end' at the bottom) with '|side' right beside it.")
+}

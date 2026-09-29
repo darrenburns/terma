@@ -240,7 +240,7 @@ func TestAutocomplete_FindTriggerPosition(t *testing.T) {
 		text         string
 		cursorPos    int
 		triggerChars []rune
-		wordBoundary bool
+		anywhere     bool
 		expected     int
 	}{
 		{
@@ -248,7 +248,6 @@ func TestAutocomplete_FindTriggerPosition(t *testing.T) {
 			text:         "hello @john",
 			cursorPos:    11,
 			triggerChars: []rune{'@'},
-			wordBoundary: true,
 			expected:     6,
 		},
 		{
@@ -256,7 +255,6 @@ func TestAutocomplete_FindTriggerPosition(t *testing.T) {
 			text:         "fix #123",
 			cursorPos:    8,
 			triggerChars: []rune{'#'},
-			wordBoundary: true,
 			expected:     4,
 		},
 		{
@@ -264,7 +262,6 @@ func TestAutocomplete_FindTriggerPosition(t *testing.T) {
 			text:         "hello world",
 			cursorPos:    11,
 			triggerChars: []rune{'@'},
-			wordBoundary: true,
 			expected:     -1,
 		},
 		{
@@ -272,7 +269,6 @@ func TestAutocomplete_FindTriggerPosition(t *testing.T) {
 			text:         "user@example.com",
 			cursorPos:    16,
 			triggerChars: []rune{'@'},
-			wordBoundary: true,
 			expected:     -1, // @ is not at word boundary
 		},
 		{
@@ -280,7 +276,6 @@ func TestAutocomplete_FindTriggerPosition(t *testing.T) {
 			text:         "hello @user #tag",
 			cursorPos:    16,
 			triggerChars: []rune{'@', '#'},
-			wordBoundary: true,
 			expected:     12, // #tag is closer to cursor
 		},
 		{
@@ -288,16 +283,54 @@ func TestAutocomplete_FindTriggerPosition(t *testing.T) {
 			text:         "@mention",
 			cursorPos:    8,
 			triggerChars: []rune{'@'},
-			wordBoundary: true,
 			expected:     0,
+		},
+		{
+			name:         "mid-word trigger with TriggerAnywhere",
+			text:         "https://api/users/$",
+			cursorPos:    19,
+			triggerChars: []rune{'$'},
+			anywhere:     true,
+			expected:     18,
+		},
+		{
+			name:         "mid-word trigger with query and TriggerAnywhere",
+			text:         `"name": "$TOK`,
+			cursorPos:    13,
+			triggerChars: []rune{'$'},
+			anywhere:     true,
+			expected:     9,
+		},
+		{
+			name:         "mid-word trigger ignored by default",
+			text:         "https://api/users/$",
+			cursorPos:    19,
+			triggerChars: []rune{'$'},
+			expected:     -1,
+		},
+		{
+			name:         "TriggerAnywhere still finds a trigger after whitespace",
+			text:         "Bearer $TOKEN",
+			cursorPos:    13,
+			triggerChars: []rune{'$'},
+			anywhere:     true,
+			expected:     7,
+		},
+		{
+			name:         "TriggerAnywhere query stops at whitespace",
+			text:         "$A then",
+			cursorPos:    7,
+			triggerChars: []rune{'$'},
+			anywhere:     true,
+			expected:     -1,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ac := Autocomplete{
-				TriggerChars:          tt.triggerChars,
-				TriggerAtWordBoundary: tt.wordBoundary,
+				TriggerChars:    tt.triggerChars,
+				TriggerAnywhere: tt.anywhere,
 			}
 			result := ac.findTriggerPosition(tt.text, tt.cursorPos)
 			assert.Equal(t, tt.expected, result)
@@ -669,6 +702,32 @@ func TestSnapshot_Autocomplete_WithTrigger(t *testing.T) {
 	}
 
 	AssertSnapshot(t, ac, 35, 10, "Autocomplete with @ trigger showing matching usernames")
+}
+
+func midWordTriggerAutocomplete(anywhere bool) Autocomplete {
+	acState := NewAutocompleteState()
+	acState.SetSuggestions([]Suggestion{
+		{Label: "TOKEN", Value: "${TOKEN}"},
+		{Label: "TOPIC_ID", Value: "${TOPIC_ID}"},
+		{Label: "BASE_URL", Value: "${BASE_URL}"},
+	})
+	return Autocomplete{
+		ID:              "ac-mid-word",
+		State:           acState,
+		TriggerChars:    []rune{'$'},
+		TriggerAnywhere: anywhere,
+		Child:           TextInput{ID: "url", State: NewTextInputState("https://api/users/$TO"), Width: Cells(28)},
+	}
+}
+
+func TestSnapshot_Autocomplete_TriggerAnywhereMidWord(t *testing.T) {
+	AssertSnapshot(t, midWordTriggerAutocomplete(true), 35, 8,
+		"TriggerAnywhere: the $ in 'https://api/users/$TO' opens the popup, listing TOKEN and TOPIC_ID.")
+}
+
+func TestSnapshot_Autocomplete_MidWordTriggerIgnoredByDefault(t *testing.T) {
+	AssertSnapshot(t, midWordTriggerAutocomplete(false), 35, 8,
+		"Default word-boundary triggers: the mid-word $ in 'https://api/users/$TO' opens no popup.")
 }
 
 func TestSnapshot_Autocomplete_CustomRender(t *testing.T) {

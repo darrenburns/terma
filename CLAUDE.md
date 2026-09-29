@@ -203,16 +203,16 @@ func main() {
 |--------|---------|------------|
 | `Text` | Display text (plain or rich with Spans) | `Content`, `Spans`, `Wrap`, `TextAlign` |
 | `Button` | Focusable button with press handler | `ID` (required), `Label`, `Variant`, `OnPress` |
-| `List[T]` | Generic navigable list | `State` (required), `OnSelect`, `RenderItem`, `MultiSelect` |
+| `List[T]` | Generic navigable list | `State` (required), `OnSelect`, `ActivateOnClick`, `RenderItem`, `MultiSelect` |
 | `Table[T]` | Generic navigable table | `State` (required), `Columns`, `RenderCell`, `SelectionMode` |
-| `Tree[T]` | Generic navigable tree | `State` (required), `RenderNode`, `OnExpand`, `MultiSelect` |
+| `Tree[T]` | Generic navigable tree | `State` (required), `RenderNode`, `OnExpand`, `OnSelect`, `ActivateOnClick`, `MultiSelect` |
 
 ### Input Widgets
 
 | Widget | Purpose | Key Fields |
 |--------|---------|------------|
-| `TextInput` | Single-line text entry | `ID` (required), `State` (required), `Placeholder`, `OnChange`, `OnSubmit` |
-| `TextArea` | Multi-line text editing | `ID` (required), `State` (required), `Placeholder`, `OnChange`, `OnSubmit` |
+| `TextInput` | Single-line text entry | `ID` (required), `State` (required), `Placeholder`, `OnChange`, `OnSubmit`, `OnPaste` |
+| `TextArea` | Multi-line text editing | `ID` (required), `State` (required), `Placeholder`, `OnChange`, `OnSubmit`, `OnPaste` |
 
 ### Navigation Widgets
 
@@ -235,7 +235,7 @@ func main() {
 
 | Widget | Purpose | Key Fields |
 |--------|---------|------------|
-| `KeybindBar` | Displays active keybinds from focused widget | `Style`, `FormatKey` |
+| `KeybindBar` | Displays active keybinds from focused widget; drops hints that don't fit | `Width` (default `Flex(1)`), `Style`, `FormatKey` |
 | `Spacer` | Flexible empty space for layout control | `Width`, `Height` (default Flex(1)) |
 | `FocusTrap` | Constrains Tab/Shift+Tab cycling to its subtree | `ID` (required), `Active`, `Child` |
 | `Jumper` | Jump mode: ctrl+o overlays key labels that move focus to their widget | `State` (required), `Targets` (static key→ID), `Dynamic` (Vimium-style hints on list/tree/table rows, tabs, `Jumpable`s), `Child` |
@@ -415,6 +415,19 @@ Stack{
     },
 }
 ```
+
+### Terminal Integration
+
+- **Clipboard**: `SetClipboard(SystemClipboard, text)` copies via OSC 52; the sequence is queued and written
+  between frames (`WriteTerminal(seq)` does the same for any raw sequence). `ReadClipboard(sel, func(string))`
+  asks the terminal for its clipboard; the callback runs on the event loop, and may never run if the terminal
+  doesn't allow OSC 52 reads.
+- **Paste**: bracketed paste is on. A paste goes to the focused widget's `HandlePaste` (`PasteHandler`), then
+  bubbles to ancestors and the root; unhandled pastes are dropped. `TextInput`/`TextArea` insert it as one edit,
+  and their `OnPaste func(string) bool` hook can consume it first.
+- **External programs**: `RunExternal(cmd)` suspends the UI, runs `$EDITOR`/`$PAGER` attached to the terminal and
+  redraws when it exits. Call it from an event handler or `Dispatch` callback (it blocks the event loop).
+- **Cursor blink**: text cursors don't blink unless `SetCursorBlink(true)`.
 
 ### Rich Text with Markup
 

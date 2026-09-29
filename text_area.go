@@ -713,12 +713,16 @@ type TextArea struct {
 	ScrollState       *ScrollState      // Optional state for scroll-into-view
 	OnChange          func(text string) // Callback when text changes
 	OnSubmit          func(text string) // Callback when submit key is pressed
-	Click             func(MouseEvent)  // Optional click callback
-	MouseDown         func(MouseEvent)  // Optional mouse down callback
-	MouseUp           func(MouseEvent)  // Optional mouse up callback
-	Hover             func(HoverEvent)  // Optional hover callback
-	Blur              func()            // Optional blur callback
-	ExtraKeybinds     []Keybind         // Optional additional keybinds (checked before defaults)
+	// OnPaste is called with pasted text (line endings normalized to "\n")
+	// before it is inserted. Return true to consume the paste and skip
+	// inserting it.
+	OnPaste       func(text string) bool
+	Click         func(MouseEvent) // Optional click callback
+	MouseDown     func(MouseEvent) // Optional mouse down callback
+	MouseUp       func(MouseEvent) // Optional mouse up callback
+	Hover         func(HoverEvent) // Optional hover callback
+	Blur          func()           // Optional blur callback
+	ExtraKeybinds []Keybind        // Optional additional keybinds (checked before defaults)
 }
 
 // WidgetID returns the text area's unique identifier.
@@ -1104,6 +1108,26 @@ func (t TextArea) OnKey(event KeyEvent) bool {
 	return false
 }
 
+// HandlePaste inserts pasted text at the cursor as a single edit, replacing
+// any selection, newlines included. OnPaste sees it first and can consume it.
+// Tabs become four spaces. Implements the PasteHandler interface.
+func (t TextArea) HandlePaste(text string) bool {
+	if t.State == nil {
+		return false
+	}
+	text = normalizePastedText(text)
+	if t.OnPaste != nil && t.OnPaste(text) {
+		return true
+	}
+	if !t.canInsert() {
+		return false
+	}
+	text = strings.ReplaceAll(text, "\t", "    ")
+	t.State.ReplaceSelection(text)
+	t.notifyChange()
+	return true
+}
+
 // Build returns self since TextArea is a leaf widget with custom rendering.
 func (t TextArea) Build(ctx BuildContext) Widget {
 	t.registerScrollCallbacks()
@@ -1254,6 +1278,7 @@ func (t TextArea) Render(ctx *RenderContext) {
 		}
 	}
 	t.State.lastFocused = focused
+	cursorShown := focused && cursorVisible()
 	t.State.lastWidth = ctx.Width
 	t.State.lastHeight = ctx.Height
 
@@ -1285,7 +1310,7 @@ func (t TextArea) Render(ctx *RenderContext) {
 			}
 			ctx.DrawStyledText(0, i, line, placeholderStyle)
 		}
-		if focused && ctx.Width > 0 && ctx.Height > 0 {
+		if cursorShown && ctx.Width > 0 && ctx.Height > 0 {
 			cursorStyle := baseStyle
 			cursorStyle.Reverse = true
 
@@ -1316,7 +1341,7 @@ func (t TextArea) Render(ctx *RenderContext) {
 	lineHighlightMap := buildLineHighlightMap(t.LineHighlights, len(layout.lines))
 
 	selStart, selEnd := t.State.GetSelectionBounds()
-	t.renderContent(ctx, graphemes, layout, cursorIdx, focused, baseStyle, contentWidth, selStart, selEnd, theme, highlightMap, lineHighlightMap)
+	t.renderContent(ctx, graphemes, layout, cursorIdx, cursorShown, baseStyle, contentWidth, selStart, selEnd, theme, highlightMap, lineHighlightMap)
 }
 
 func (t TextArea) updateScrollOffsets(layout textAreaLayout, contentWidth, viewportHeight int) {
@@ -1346,7 +1371,7 @@ func (t TextArea) updateScrollOffsets(layout textAreaLayout, contentWidth, viewp
 	}
 }
 
-func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout textAreaLayout, cursorIdx int, focused bool, baseStyle Style, contentWidth int, selStart, selEnd int, theme ThemeData, highlightMap map[int]SpanStyle, lineHighlightMap map[int]Style) {
+func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout textAreaLayout, cursorIdx int, cursorShown bool, baseStyle Style, contentWidth int, selStart, selEnd int, theme ThemeData, highlightMap map[int]SpanStyle, lineHighlightMap map[int]Style) {
 	scrollY := t.State.scrollOffsetY
 	scrollX := t.State.scrollOffsetX
 	hasSelection := selStart >= 0
@@ -1399,7 +1424,7 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 			}
 
 			isSelected := hasSelection && i >= selStart && i < selEnd
-			isCursor := focused && i == cursorIdx
+			isCursor := cursorShown && i == cursorIdx
 
 			// Cursor style (reverse) takes precedence over selection
 			if isCursor {
@@ -1413,7 +1438,7 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 			displayX += gWidth
 		}
 
-		if focused && cursorIdx == line.end && layout.cursorLine == lineIdx {
+		if cursorShown && cursorIdx == line.end && layout.cursorLine == lineIdx {
 			cursorX := layout.cursorCol - scrollX
 			if cursorX >= 0 && cursorX < ctx.Width {
 				cursorStyle := baseStyle

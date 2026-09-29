@@ -134,6 +134,7 @@ func (r Row) BuildContainerLayoutNode(ctx BuildContext, children []layout.Layout
 	wrappedChildren := make([]layout.LayoutNode, len(children))
 	for i, childNode := range children {
 		if i < len(r.Children) {
+			childNode = mainAxisSpacerNode(ctx, r.Children[i], childNode, true)
 			mainAxisDim := getChildMainAxisDimension(r.Children[i], true)
 			childNode = wrapInPercentIfNeeded(childNode, mainAxisDim, layout.Horizontal)
 			childNode = wrapInFlexIfNeeded(childNode, mainAxisDim)
@@ -290,6 +291,7 @@ func (c Column) BuildContainerLayoutNode(ctx BuildContext, children []layout.Lay
 	wrappedChildren := make([]layout.LayoutNode, len(children))
 	for i, childNode := range children {
 		if i < len(c.Children) {
+			childNode = mainAxisSpacerNode(ctx, c.Children[i], childNode, false)
 			mainAxisDim := getChildMainAxisDimension(c.Children[i], false)
 			childNode = wrapInPercentIfNeeded(childNode, mainAxisDim, layout.Vertical)
 			childNode = wrapInFlexIfNeeded(childNode, mainAxisDim)

@@ -187,9 +187,14 @@ type Autocomplete struct {
 	Child Widget             // TextInput or TextArea
 
 	// Trigger behavior
-	TriggerChars          []rune // e.g., {'@', '#'} - empty = always on
-	TriggerAtWordBoundary bool   // Only trigger at word start (default: true)
-	MinChars              int    // Min chars after trigger to show popup (default 0)
+	TriggerChars []rune // e.g., {'@', '#'} - empty = always on
+	// TriggerAnywhere lets a trigger character open the popup mid-word, as
+	// in "https://api/users/$". By default a trigger only counts at the
+	// start of the text or after whitespace, so the "@" in an email address
+	// doesn't open it. Either way the query after the trigger ends at
+	// whitespace.
+	TriggerAnywhere bool
+	MinChars        int // Min chars after trigger to show popup (default 0)
 
 	// Selection & matching
 	MaxVisible int            // Max visible items (default 8)
@@ -641,32 +646,18 @@ func (a Autocomplete) findTriggerPosition(text string, cursorPos int) int {
 		cursorPos = len(runes)
 	}
 
-	// Search backwards from cursor
+	// Search backwards from cursor; the query can't span whitespace.
 	for i := cursorPos - 1; i >= 0; i-- {
 		r := runes[i]
-
-		// Stop at whitespace if looking for word-boundary triggers
-		triggerAtWordBoundary := a.TriggerAtWordBoundary
-		// Default to true if not explicitly set (zero value bool is false)
-		if !a.TriggerAtWordBoundary && len(a.TriggerChars) > 0 {
-			// Check if this is actually the default (field not set) vs explicitly false
-			// Since we can't distinguish, we'll default to true behavior for triggers
-			triggerAtWordBoundary = true
-		}
-
-		if triggerAtWordBoundary && unicode.IsSpace(r) {
+		if unicode.IsSpace(r) {
 			break
 		}
-
-		// Check if this is a trigger char
-		if a.isTriggerChar(r) {
-			if !triggerAtWordBoundary {
-				return i
-			}
-			// Word boundary check: must be at start or preceded by whitespace
-			if i == 0 || unicode.IsSpace(runes[i-1]) {
-				return i
-			}
+		if !a.isTriggerChar(r) {
+			continue
+		}
+		// Unless TriggerAnywhere is set, a trigger must start a word.
+		if a.TriggerAnywhere || i == 0 || unicode.IsSpace(runes[i-1]) {
+			return i
 		}
 	}
 

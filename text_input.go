@@ -82,11 +82,13 @@ func (s *TextInputState) GetText() string {
 	return joinGraphemes(s.Content.Peek())
 }
 
-// SetText replaces the content and clamps the cursor.
+// SetText replaces the content and clamps the cursor. The view scrolls back
+// to the start, then as far as needed to show the cursor.
 func (s *TextInputState) SetText(text string) {
 	graphemes := splitGraphemes(text)
 	s.Content.Set(graphemes)
 	s.clampCursor()
+	s.scrollOffset = 0
 }
 
 // Insert inserts text at the cursor position and advances the cursor.
@@ -447,22 +449,26 @@ func (s *TextInputState) SetCursorFromLocalPosition(localX int) {
 // Content height is always 1 cell (single line). Use Style.Padding to add
 // visual space around the text - the framework automatically accounts for padding.
 type TextInput struct {
-	ID            string            // Optional unique identifier
-	DisableFocus  bool              // If true, prevent keyboard focus
-	State         *TextInputState   // Required - holds text and cursor position
-	Placeholder   string            // Text shown when empty and unfocused
-	Highlighter   Highlighter       // Optional: dynamic text highlighting
-	Width         Dimension         // Deprecated: use Style.Width
-	Height        Dimension         // Deprecated: use Style.Height (ignored; content height is always 1)
-	Style         Style             // Optional styling (padding adds to outer size automatically)
-	OnChange      func(text string) // Callback when text changes
-	OnSubmit      func(text string) // Callback when Enter pressed
-	Click         func(MouseEvent)  // Optional click callback
-	MouseDown     func(MouseEvent)  // Optional mouse down callback
-	MouseUp       func(MouseEvent)  // Optional mouse up callback
-	Hover         func(HoverEvent)  // Optional hover callback
-	Blur          func()            // Optional blur callback
-	ExtraKeybinds []Keybind         // Optional additional keybinds (checked before defaults)
+	ID           string            // Optional unique identifier
+	DisableFocus bool              // If true, prevent keyboard focus
+	State        *TextInputState   // Required - holds text and cursor position
+	Placeholder  string            // Text shown when empty and unfocused
+	Highlighter  Highlighter       // Optional: dynamic text highlighting
+	Width        Dimension         // Deprecated: use Style.Width
+	Height       Dimension         // Deprecated: use Style.Height (ignored; content height is always 1)
+	Style        Style             // Optional styling (padding adds to outer size automatically)
+	OnChange     func(text string) // Callback when text changes
+	OnSubmit     func(text string) // Callback when Enter pressed
+	// OnPaste is called with pasted text (line endings normalized to "\n")
+	// before it is inserted. Return true to consume the paste and skip
+	// inserting it, e.g. to import a pasted curl command.
+	OnPaste       func(text string) bool
+	Click         func(MouseEvent) // Optional click callback
+	MouseDown     func(MouseEvent) // Optional mouse down callback
+	MouseUp       func(MouseEvent) // Optional mouse up callback
+	Hover         func(HoverEvent) // Optional hover callback
+	Blur          func()           // Optional blur callback
+	ExtraKeybinds []Keybind        // Optional additional keybinds (checked before defaults)
 }
 
 // WidgetID returns the text input's unique identifier.
@@ -729,6 +735,31 @@ func (t TextInput) OnKey(event KeyEvent) bool {
 	return false
 }
 
+// HandlePaste inserts pasted text at the cursor as a single edit, replacing
+// any selection. OnPaste sees it first and can consume it. The input is one
+// line, so a trailing newline is dropped and other newlines and tabs become
+// spaces. Implements the PasteHandler interface.
+func (t TextInput) HandlePaste(text string) bool {
+	if t.State == nil {
+		return false
+	}
+	text = normalizePastedText(text)
+	if t.OnPaste != nil && t.OnPaste(text) {
+		return true
+	}
+	if !t.canEdit() {
+		return false
+	}
+	text = strings.TrimSuffix(text, "\n")
+	text = strings.NewReplacer("\n", " ", "\t", " ").Replace(text)
+	if text == "" {
+		return true
+	}
+	t.State.ReplaceSelection(text)
+	t.notifyChange()
+	return true
+}
+
 // Build returns self since TextInput is a leaf widget with custom rendering.
 func (t TextInput) Build(ctx BuildContext) Widget {
 	return t
@@ -844,6 +875,7 @@ func (t TextInput) Render(ctx *RenderContext) {
 	}
 
 	focused := ctx.IsFocused(t)
+	cursorShown := focused && cursorVisible()
 	theme := ctx.buildContext.Theme()
 
 	// Subscribe to state changes by calling Get()
@@ -876,7 +908,7 @@ func (t TextInput) Render(ctx *RenderContext) {
 		}
 		ctx.DrawStyledText(0, 0, text, placeholderStyle)
 		// Draw cursor at position 0 if focused
-		if focused {
+		if cursorShown {
 			cursorStyle := baseStyle
 			cursorStyle.Reverse = true
 			// Show the first placeholder character under the cursor, or space if no placeholder
@@ -892,37 +924,45 @@ func (t TextInput) Render(ctx *RenderContext) {
 		return
 	}
 
-	// Update scroll offset to keep cursor visible
-	t.updateScrollOffset(viewportWidth)
+	// A focused input scrolls to keep the cursor visible; an unfocused one
+	// shows the start of its text.
+	if focused {
+		t.updateScrollOffset(viewportWidth)
+	} else {
+		t.State.scrollOffset = 0
+	}
 	scrollOffset := t.State.scrollOffset
 
 	// Get selection bounds
 	selStart, selEnd := t.State.GetSelectionBounds()
 
 	// Render text with cursor and selection
-	t.renderContent(ctx, graphemes, cursorIdx, scrollOffset, viewportWidth, focused, baseStyle, selStart, selEnd, theme)
+	t.renderContent(ctx, graphemes, cursorIdx, scrollOffset, viewportWidth, cursorShown, baseStyle, selStart, selEnd, theme)
 }
 
-// updateScrollOffset ensures the cursor is visible within the viewport.
+// updateScrollOffset ensures the cursor is visible within the viewport,
+// without scrolling further than needed to show the end of the text and the
+// cursor cell after it.
 func (t TextInput) updateScrollOffset(viewportWidth int) {
 	cursorX := t.State.cursorDisplayX()
 	scrollOffset := t.State.scrollOffset
 
-	// Cursor left of viewport - scroll left
 	if cursorX < scrollOffset {
-		t.State.scrollOffset = cursorX
-		return
+		// Cursor left of viewport - scroll left
+		scrollOffset = cursorX
+	} else if cursorX >= scrollOffset+viewportWidth {
+		// Cursor right of viewport - scroll right
+		// We need at least 1 cell for the cursor
+		scrollOffset = cursorX - viewportWidth + 1
 	}
 
-	// Cursor right of viewport - scroll right
-	// We need at least 1 cell for the cursor
-	if cursorX >= scrollOffset+viewportWidth {
-		t.State.scrollOffset = cursorX - viewportWidth + 1
-	}
+	// Don't leave empty space after the text when it got shorter.
+	maxOffset := max(0, t.State.contentWidth()+1-viewportWidth)
+	t.State.scrollOffset = clampInt(scrollOffset, 0, maxOffset)
 }
 
 // renderContent renders the text with cursor and selection highlighting.
-func (t TextInput) renderContent(ctx *RenderContext, graphemes []string, cursorIdx, scrollOffset, viewportWidth int, focused bool, baseStyle Style, selStart, selEnd int, theme ThemeData) {
+func (t TextInput) renderContent(ctx *RenderContext, graphemes []string, cursorIdx, scrollOffset, viewportWidth int, cursorShown bool, baseStyle Style, selStart, selEnd int, theme ThemeData) {
 	// Build highlight map from grapheme index -> SpanStyle
 	var highlightMap map[int]SpanStyle
 	if t.Highlighter != nil && len(graphemes) > 0 {
@@ -969,7 +1009,7 @@ func (t TextInput) renderContent(ctx *RenderContext, graphemes []string, cursorI
 		}
 
 		isSelected := hasSelection && i >= selStart && i < selEnd
-		isCursor := focused && i == cursorIdx
+		isCursor := cursorShown && i == cursorIdx
 
 		// Cursor style (reverse) takes precedence over selection
 		if isCursor {
@@ -984,7 +1024,7 @@ func (t TextInput) renderContent(ctx *RenderContext, graphemes []string, cursorI
 	}
 
 	// Draw cursor at end if focused and cursor is at end
-	if focused && cursorIdx >= len(graphemes) {
+	if cursorShown && cursorIdx >= len(graphemes) {
 		cursorX := t.State.cursorDisplayX() - scrollOffset
 		if cursorX >= 0 && cursorX < viewportWidth {
 			cursorStyle := baseStyle

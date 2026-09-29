@@ -492,6 +492,7 @@ type Tree[T any] struct {
 	Filter              *FilterState
 	MatchNode           func(node T, query string, options FilterOptions) MatchResult
 	OnSelect            func(node T, selected []T)
+	ActivateOnClick     bool // Call OnSelect on a single left click on a node instead of a double-click
 	OnCursorChange      func(node T)
 	ScrollState         *ScrollState
 	Width               Dimension // Deprecated: use Style.Width
@@ -827,7 +828,8 @@ func (t Tree[T]) ownsDescendantPointer() {}
 
 // OnMouseDown moves the cursor to the clicked node, extends the selection on
 // shift+click in multi-select mode, toggles expansion when the expand
-// indicator is clicked, and selects the node on double-click elsewhere.
+// indicator is clicked, and selects the node on double-click elsewhere (or on
+// a single click with ActivateOnClick).
 // Implements the MouseDownHandler interface.
 func (t Tree[T]) OnMouseDown(event MouseEvent) {
 	if t.State == nil {
@@ -854,7 +856,7 @@ func (t Tree[T]) OnMouseDown(event MouseEvent) {
 		return
 	}
 	t.State.dragging = event.Button == uv.MouseLeft
-	if event.ClickCount == 2 {
+	if clickActivates(event, t.ActivateOnClick) {
 		t.selectNode()
 	}
 }

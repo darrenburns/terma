@@ -240,6 +240,16 @@ func (fm *FocusManager) FocusedID() string {
 	return fm.focusedID
 }
 
+// focusedEntry returns the focused widget's entry, or nil if none.
+func (fm *FocusManager) focusedEntry() *FocusableEntry {
+	for i := range fm.focusables {
+		if fm.focusables[i].ID == fm.focusedID {
+			return &fm.focusables[i]
+		}
+	}
+	return nil
+}
+
 // ActiveKeybinds returns all declarative keybindings currently active
 // based on the focused widget and its ancestors, plus root widget keybinds.
 // Keybindings are returned in order from focused widget to root,
@@ -619,11 +629,12 @@ func (fc *FocusCollector) PopAncestor() {
 }
 
 // ShouldTrackAncestor returns true if the widget should be added to the ancestor chain.
-// A widget is tracked if it implements KeyHandler or KeybindProvider.
+// A widget is tracked if it implements KeyHandler, KeybindProvider or PasteHandler.
 func (fc *FocusCollector) ShouldTrackAncestor(widget Widget) bool {
 	_, isHandler := widget.(KeyHandler)
 	_, isProvider := widget.(KeybindProvider)
-	return isHandler || isProvider
+	_, isPasteHandler := widget.(PasteHandler)
+	return isHandler || isProvider || isPasteHandler
 }
 
 // Collect adds a focusable widget to the collection.
