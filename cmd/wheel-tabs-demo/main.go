@@ -38,7 +38,7 @@ func (d *demo) Build(ctx t.BuildContext) t.Widget {
 			t.TabBar{ID: "tabs", State: d.tabs, Width: t.Flex(1), Height: t.Cells(1), MouseWheel: d.wheel},
 			t.Text{Content: "|", Height: t.Cells(1)},
 		}},
-		t.ComputedText("active", func() string { return "Active tab: " + d.tabs.ActiveKey() }),
+		t.ComputedText("Active tab: three", func() string { return "Active tab: " + d.tabs.ActiveKey() }),
 		t.SignalText(d.last, func(value string) string { return value }),
 		t.Text{Content: "The tab bar is exactly one row; the right-edge | needs no scrollbar column."},
 	}}
