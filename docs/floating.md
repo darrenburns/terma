@@ -24,6 +24,72 @@ Floating{
 | `Visible` | `bool` | Whether the floating widget is shown |
 | `Config` | `FloatConfig` | Positioning and behavior options |
 | `Child` | `Widget` | The widget to render as an overlay |
+| `BuildChild` | `func(BuildContext, FloatGeometry) Widget` | Build content using current-frame screen and anchor geometry; takes precedence over `Child` |
+
+## Building content from geometry
+
+Ordinary `Build()` runs before layout. Its own final size and screen position
+are not available yet, and reading a previous-frame cache can leave a summary
+or popup missing or misplaced on the first frame. For overlays whose content
+depends on another widget's geometry, use `BuildChild`:
+
+```go
+Floating{
+    Visible: true,
+    Config: FloatConfig{
+        AnchorID: "message",
+        Anchor:   AnchorBottomLeft,
+    },
+    BuildChild: func(ctx BuildContext, geometry FloatGeometry) Widget {
+        if !geometry.AnchorFound || geometry.AnchorVisibleBounds.Height == 0 {
+            return nil
+        }
+        return Text{
+            ID:      "message-summary",
+            Content: summary.Get(),
+            Style:   Style{Width: Cells(geometry.AnchorBounds.Width)},
+        }
+    },
+}
+```
+
+Give the anchor a stable explicit widget ID. The callback runs after the main
+tree has been laid out and its screen coordinates resolved, before measuring
+and positioning the overlay. It receives current-frame geometry on the first
+render, movement, terminal resize, and scrolling. Signal reads in the callback
+subscribe just as they do in `Build()`. Keep the callback free of signal writes
+and layout side effects; it may run again when content or geometry changes.
+The callback's result keeps its widget IDs and input handlers. Returning `nil`
+produces empty content.
+
+`FloatGeometry` contains:
+
+| Field | Meaning |
+|-------|---------|
+| `Screen` | Terminal bounds, with origin `(0, 0)` |
+| `AnchorFound` | Whether the configured `AnchorID` is currently registered |
+| `AnchorBounds` | Anchor border box in screen cells, including padding and border but excluding margin |
+| `AnchorVisibleBounds` | Anchor bounds clipped by ancestor viewports and the screen |
+
+Missing anchors (including an empty `AnchorID`) have `AnchorFound == false`
+and zero anchor rectangles. Partially scrolled anchors retain their full
+`AnchorBounds`, including negative coordinates, while `AnchorVisibleBounds`
+reports the portion still visible. Completely clipped anchors may be missing
+from the registry or have an empty visible rectangle. The callback can hide
+the overlay in either case, as above. If it returns content anyway, the usual
+missing-anchor positioning fallback and screen clamping still apply.
+
+This is a one-way layout dependency: the main tree and already placed overlays
+can be anchors. A nested overlay can use an anchor inside its parent overlay.
+An overlay cannot read its own future geometry or the geometry of a later
+overlay, and its content cannot change the anchor's layout. Use `Config.Anchor`
+for alignment that depends on the overlay's measured size. Geometry is a plain
+snapshot, not a signal that triggers another frame. Geometry-aware anchored
+overlays use a layout pass on paint updates so scrolling cannot leave their
+snapshot stale; unchanged geometry reuses their content build.
+
+Run `go run ./cmd/float-geometry-demo` to try first-frame sizing, movement,
+reactive content, resizing, and scroll clipping.
 
 ## Positioning
 

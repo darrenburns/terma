@@ -167,20 +167,63 @@ type Floating struct {
 
 	// Child is the widget to render as an overlay.
 	Child Widget
+
+	// BuildChild builds overlay content after the main tree has been laid out.
+	// Geometry contains the current frame's screen and anchor bounds, so content
+	// can use the anchor's size without an OnLayout or Render cache. When set,
+	// BuildChild takes precedence over Child. Signal reads are tracked just as
+	// in Widget.Build. Do not mutate signals in this function.
+	BuildChild func(BuildContext, FloatGeometry) Widget
+}
+
+// FloatGeometry is a current-frame snapshot supplied to Floating.BuildChild.
+// All rectangles use screen coordinates, in terminal cells. The anchor's
+// border box excludes margin and includes padding and border.
+//
+// Only the main tree and earlier overlays are available. The overlay being
+// built has not been measured yet; using its own future size here would create
+// a layout cycle. Use FloatConfig.Anchor to align the completed overlay instead.
+type FloatGeometry struct {
+	Screen Rect
+	// AnchorFound is false when AnchorID is empty or has not been laid out.
+	AnchorFound bool
+	// AnchorBounds can extend beyond the screen or a scroll viewport.
+	AnchorBounds Rect
+	// AnchorVisibleBounds is clipped by ancestor viewports and the screen.
+	// It can be empty even when AnchorFound is true.
+	AnchorVisibleBounds Rect
+}
+
+// floatChildBuilder makes deferred callbacks ordinary retained Build nodes:
+// their reactive reads are tracked, and geometry changes force a rebuild.
+type floatChildBuilder struct {
+	build    func(BuildContext, FloatGeometry) Widget
+	geometry FloatGeometry
+}
+
+func (b floatChildBuilder) Build(ctx BuildContext) Widget {
+	child := b.build(ctx, b.geometry)
+	if child == nil {
+		child = EmptyWidget{}
+	}
+	// Give the result its own node so its explicit ID and input handlers
+	// survive even when the builder returns a leaf such as Text.
+	return passThrough{child: child}
 }
 
 // Build registers the floating widget with the collector if visible.
 // Returns an empty widget since the actual rendering happens in the overlay phase.
 func (f Floating) Build(ctx BuildContext) Widget {
-	if !f.Visible || f.Child == nil {
+	if !f.Visible || (f.Child == nil && f.BuildChild == nil) {
 		return EmptyWidget{}
 	}
 
 	// Register with the float collector for deferred rendering
 	if ctx.floatCollector != nil {
 		ctx.floatCollector.Add(FloatEntry{
-			Config: f.Config,
-			Child:  f.Child,
+			Config:     f.Config,
+			Child:      f.Child,
+			BuildChild: f.BuildChild,
 		})
 	}
 
@@ -189,8 +232,10 @@ func (f Floating) Build(ctx BuildContext) Widget {
 
 // FloatEntry stores a registered floating widget for deferred rendering.
 type FloatEntry struct {
-	Config FloatConfig
-	Child  Widget
+	Config     FloatConfig
+	Child      Widget
+	BuildChild func(BuildContext, FloatGeometry) Widget
+	geometry   FloatGeometry
 	// Computed position after layout (set during render phase)
 	X, Y          int
 	Width, Height int
@@ -206,6 +251,16 @@ type FloatEntry struct {
 	// captureKey, if set on the top overlay, receives every key press before
 	// the focused widget does. The overlay doesn't need to take focus.
 	captureKey func(KeyEvent) bool
+}
+
+func (r *Renderer) floatGeometry(config FloatConfig) FloatGeometry {
+	geometry := FloatGeometry{Screen: Rect{Width: r.width, Height: r.height}}
+	if anchor := r.widgetRegistry.WidgetByID(config.AnchorID); anchor != nil {
+		geometry.AnchorFound = true
+		geometry.AnchorBounds = anchor.Bounds
+		geometry.AnchorVisibleBounds = anchor.Visible
+	}
+	return geometry
 }
 
 // FloatCollector gathers Floating widgets during the build phase

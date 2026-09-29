@@ -1410,6 +1410,10 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 		// Wrap modal children in a FocusTrap so Tab/Shift+Tab cycling
 		// is constrained to focusables within the modal.
 		child := entry.Child
+		if entry.BuildChild != nil {
+			entry.geometry = r.floatGeometry(entry.Config)
+			child = floatChildBuilder{build: entry.BuildChild, geometry: entry.geometry}
+		}
 		if entry.Config.Modal {
 			modalID := fmt.Sprintf("__modal_float_%d", i)
 			child = FocusTrap{

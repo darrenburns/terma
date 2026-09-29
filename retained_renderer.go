@@ -246,6 +246,13 @@ func (r *Renderer) updateInternal(root Widget) (focusables []FocusableEntry, lay
 		return r.renderFrame(root, false)
 	}
 	if r.hasPaintDirty() {
+		// A paint-only update can scroll an anchor. Resolve its geometry after
+		// measuring the main tree, rather than reusing the previous snapshot.
+		for _, float := range r.retainedFloats {
+			if float.entry.BuildChild != nil && float.entry.Config.AnchorID != "" {
+				return r.renderFrame(root, false)
+			}
+		}
 		return r.renderPartial(root)
 	}
 	return r.lastFocusables, r.lastLayoutWidth, r.lastLayoutHeight
@@ -1283,6 +1290,12 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 		entry := r.floatCollector.entries[i]
 		focusableCountBefore := r.focusCollector.Len()
 		child := entry.Child
+		geometryChanged := false
+		if entry.BuildChild != nil {
+			entry.geometry = r.floatGeometry(entry.Config)
+			geometryChanged = i >= len(oldFloats) || oldFloats[i].entry.geometry != entry.geometry
+			child = floatChildBuilder{build: entry.BuildChild, geometry: entry.geometry}
+		}
 		if entry.Config.Modal {
 			child = FocusTrap{
 				ID:     fmt.Sprintf("__modal_float_%d", i),
@@ -1295,7 +1308,7 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 		if i < len(oldFloats) {
 			oldRoot = oldFloats[i].root
 		}
-		floatRoot := r.buildRetainedNode(oldRoot, child, buildCtx, r.focusCollector, !measure || entry.fresh)
+		floatRoot := r.buildRetainedNode(oldRoot, child, buildCtx, r.focusCollector, !measure || entry.fresh || geometryChanged)
 		if measure && oldRoot != nil && floatRoot != oldRoot {
 			// Nothing else records where the replaced overlay was drawn.
 			r.reflowDamage = append(r.reflowDamage, oldRoot.subtreeBounds)
