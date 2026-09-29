@@ -167,6 +167,24 @@ type widgetNode struct {
 	registered   []WidgetEntry      // Hit-test entries its subtree recorded when last measured or painted.
 	hitClip      Rect               // Clip it was recorded under; its entries' visible areas depend on it.
 	layoutCache  []layoutCacheEntry // Recent results by constraints, valid while the subtree is clean.
+	// The node's layout adapter for the pass identified by layoutEpoch.
+	layoutAdapter retainedLayoutNode
+	layoutEpoch   uint64
+	// boxOnlyLayout: its layout node depends on children only through their
+	// boxes, so patchLayoutCache may revalidate it (see boxOnlyLayout).
+	boxOnlyLayout bool
+	// parentDims are this node's widget dimensions as its parent last read
+	// them to lay it out.
+	parentDims      DimensionSet
+	parentDimsKnown bool
+
+	// stackedAxis is the axis its laid-out children follow one another along
+	// without overlapping, if any (see stackedAxis). Children outside
+	// [shownLo, shownHi) showed nothing when last measured or painted.
+	stackedAxis int8
+	shownLo     int
+	shownHi     int
+	shownValid  bool
 
 	// Cached layout.SizePreserver answers, valid under the same condition.
 	sizePreserveKnown bool
@@ -174,6 +192,12 @@ type widgetNode struct {
 	preservesHeight   bool
 	bounds            Rect
 	subtreeBounds     Rect
+
+	// walkQuiet reports that nothing in this subtree contributes to what a
+	// frame collects while walking the tree (focusables, key bindings,
+	// overlays, focus traps), and that no widget in it can change its own
+	// identity. Frames that don't rebuild it can then skip walking it.
+	walkQuiet bool
 
 	dirtySelf    atomic.Int32
 	dirtySubtree atomic.Int32

@@ -936,6 +936,8 @@ type Renderer struct {
 	floatsChanged bool
 	// layoutCacheEnabled lets clean subtrees reuse cached layout results.
 	layoutCacheEnabled bool
+	// layoutEpoch identifies the current layout pass (see newRetainedLayoutNode).
+	layoutEpoch uint64
 
 	// Nodes visited by each whole-tree pass in the last frame, to check that
 	// work follows what changed rather than the size of the tree.

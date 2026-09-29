@@ -135,8 +135,16 @@ func (s *ScrollableNode) measureChildForViewport(maxWidth, viewportMaxHeight int
 		MaxHeight: scrollableUnboundedMeasureHeight,
 	}
 
-	boundedLayout := s.Child.ComputeLayout(boundedConstraints)
 	unboundedLayout := s.Child.ComputeLayout(unboundedConstraints)
+	// Content that overflows the viewport by a finite amount is measured by
+	// its unbounded size: a bounded measurement fits the viewport, so it can
+	// neither be taller nor be preferred. Skipping it saves laying out long
+	// content (a list of thousands of rows) a second time.
+	unboundedBox := unboundedLayout.Box
+	if unboundedBox.Margin.Vertical() == 0 && !isUnbounded(unboundedBox.BorderBoxHeight()) && unboundedBox.BorderBoxHeight() >= boundedMaxHeight {
+		return unboundedLayout, unboundedBox.MarginBoxWidth(), unboundedBox.MarginBoxHeight()
+	}
+	boundedLayout := s.Child.ComputeLayout(boundedConstraints)
 	selected := s.chooseViewportMeasurement(boundedLayout, unboundedLayout, boundedMaxHeight)
 
 	return selected, selected.Box.MarginBoxWidth(), selected.Box.MarginBoxHeight()

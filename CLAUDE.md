@@ -57,6 +57,11 @@ and capture the same key sequence; `cmp` the `.ansi` files to confirm identical 
 `reactivity_sequence_test.go` drives state changes through a persistent renderer and compares every
 incremental frame against a forced full render (cells, focus order, hit targets). Use it for any change
 to invalidation or the retained renderer. `TERMA_REACTIVITY_OUTPUT=<dir>` writes expected/actual/diff SVGs.
+`reactivity_long_collection_test.go` covers the paths only long content takes (off-screen skipping,
+binary-searched visible children, layout patching); keep collections there above `minStackedChildren`.
+
+`BenchmarkCollectionScroll` (`collection_scroll_bench_test.go`) measures one scroll step of a 1k/10k-row
+List, Table and Tree. Frame cost should track what is on screen, not the collection's length.
 
 ## Snapshot Testing
 
