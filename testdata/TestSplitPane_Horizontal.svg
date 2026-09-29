@@ -1,25 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="352" height="212" viewBox="0 0 352 212">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
     .strikethrough { text-decoration: line-through; }
   </style>
   <rect width="100%" height="100%" fill="#000000"/>
-  <text x="8.0" y="8.0" fill="#E0DEF4">Left</text>
-  <text x="50.0" y="8.0" fill="#E0DEF4">pane</text>
-  <text x="167.6" y="8.0" fill="#C4A7E7">│</text>
-  <text x="176.0" y="8.0" fill="#E0DEF4">Right</text>
-  <text x="226.4" y="8.0" fill="#E0DEF4">pane</text>
-  <text x="167.6" y="27.6" fill="#C4A7E7">│</text>
-  <text x="167.6" y="47.2" fill="#C4A7E7">│</text>
-  <text x="167.6" y="66.8" fill="#C4A7E7">│</text>
-  <text x="167.6" y="86.4" fill="#C4A7E7">│</text>
-  <text x="167.6" y="106.0" fill="#C4A7E7">│</text>
-  <text x="167.6" y="125.6" fill="#C4A7E7">│</text>
-  <text x="167.6" y="145.2" fill="#C4A7E7">│</text>
-  <text x="167.6" y="164.8" fill="#C4A7E7">│</text>
-  <text x="167.6" y="184.4" fill="#C4A7E7">│</text>
+  <text x="8.0" y="17.8" fill="#E0DEF4">Left</text>
+  <text x="50.0" y="17.8" fill="#E0DEF4">pane</text>
+  <path d="M 171.8000 8.0000 L 171.8000 27.6000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <text x="176.0" y="17.8" fill="#E0DEF4">Right</text>
+  <text x="226.4" y="17.8" fill="#E0DEF4">pane</text>
+  <path d="M 171.8000 27.6000 L 171.8000 47.2000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 171.8000 47.2000 L 171.8000 66.8000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 171.8000 66.8000 L 171.8000 86.4000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 171.8000 86.4000 L 171.8000 106.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 171.8000 106.0000 L 171.8000 125.6000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 171.8000 125.6000 L 171.8000 145.2000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 171.8000 145.2000 L 171.8000 164.8000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 171.8000 164.8000 L 171.8000 184.4000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 171.8000 184.4000 L 171.8000 204.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
 </svg>

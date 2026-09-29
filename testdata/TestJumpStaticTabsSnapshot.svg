@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="352" height="94" viewBox="0 0 352 94">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
@@ -48,12 +49,12 @@
   <rect x="318.8" y="8.0" width="8.4" height="19.6" fill="#0A090E"/>
   <rect x="327.2" y="8.0" width="8.4" height="19.6" fill="#0A090E"/>
   <rect x="335.6" y="8.0" width="8.4" height="19.6" fill="#0A090E"/>
-  <text x="16.4" y="8.0" fill="#191724">1</text>
-  <text x="33.2" y="8.0" fill="#191724">ne</text>
-  <text x="75.2" y="8.0" fill="#191724">2</text>
-  <text x="92.0" y="8.0" fill="#605D74">wo</text>
-  <text x="134.0" y="8.0" fill="#191724">3</text>
-  <text x="150.8" y="8.0" fill="#605D74">hree</text>
+  <text x="16.4" y="17.8" fill="#191724">1</text>
+  <text x="33.2" y="17.8" fill="#191724">ne</text>
+  <text x="75.2" y="17.8" fill="#191724">2</text>
+  <text x="92.0" y="17.8" fill="#605D74">wo</text>
+  <text x="134.0" y="17.8" fill="#191724">3</text>
+  <text x="150.8" y="17.8" fill="#605D74">hree</text>
   <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#F6C177"/>
@@ -94,9 +95,9 @@
   <rect x="318.8" y="27.6" width="8.4" height="19.6" fill="#0A090E"/>
   <rect x="327.2" y="27.6" width="8.4" height="19.6" fill="#0A090E"/>
   <rect x="335.6" y="27.6" width="8.4" height="19.6" fill="#0A090E"/>
-  <text x="16.4" y="27.6" fill="#191724">a</text>
-  <text x="33.2" y="27.6" fill="#908EA1">ve</text>
-  <text x="50.0" y="27.6" fill="#2E2C3C">]</text>
+  <text x="16.4" y="37.4" fill="#191724">a</text>
+  <text x="33.2" y="37.4" fill="#908EA1">ve</text>
+  <text x="50.0" y="37.4" fill="#2E2C3C">]</text>
   <rect x="8.0" y="47.2" width="8.4" height="19.6" fill="#0A090E"/>
   <rect x="16.4" y="47.2" width="8.4" height="19.6" fill="#0A090E"/>
   <rect x="24.8" y="47.2" width="8.4" height="19.6" fill="#0A090E"/>

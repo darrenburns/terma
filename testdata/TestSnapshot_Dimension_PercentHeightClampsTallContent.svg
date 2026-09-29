@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="134" height="447" viewBox="0 0 134 447">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
@@ -20,8 +21,8 @@
   <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="92.0" y="8.0" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="100.4" y="8.0" width="8.4" height="19.6" fill="#468C46"/>
-  <text x="8.0" y="8.0" fill="#E0DEF4">alpha</text>
-  <text x="58.4" y="8.0" fill="#E0DEF4">beta</text>
+  <text x="8.0" y="17.8" fill="#E0DEF4">alpha</text>
+  <text x="58.4" y="17.8" fill="#E0DEF4">beta</text>
   <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#468C46"/>
@@ -34,8 +35,8 @@
   <rect x="83.6" y="27.6" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#468C46"/>
-  <text x="8.0" y="27.6" fill="#E0DEF4">gamma</text>
-  <text x="58.4" y="27.6" fill="#E0DEF4">delta</text>
+  <text x="8.0" y="37.4" fill="#E0DEF4">gamma</text>
+  <text x="58.4" y="37.4" fill="#E0DEF4">delta</text>
   <rect x="8.0" y="47.2" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="16.4" y="47.2" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="24.8" y="47.2" width="8.4" height="19.6" fill="#468C46"/>
@@ -48,8 +49,8 @@
   <rect x="83.6" y="47.2" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="92.0" y="47.2" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="100.4" y="47.2" width="8.4" height="19.6" fill="#468C46"/>
-  <text x="8.0" y="47.2" fill="#E0DEF4">epsilon</text>
-  <text x="75.2" y="47.2" fill="#E0DEF4">zeta</text>
+  <text x="8.0" y="57.0" fill="#E0DEF4">epsilon</text>
+  <text x="75.2" y="57.0" fill="#E0DEF4">zeta</text>
   <rect x="8.0" y="66.8" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="16.4" y="66.8" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="24.8" y="66.8" width="8.4" height="19.6" fill="#468C46"/>
@@ -62,8 +63,8 @@
   <rect x="83.6" y="66.8" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="92.0" y="66.8" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="100.4" y="66.8" width="8.4" height="19.6" fill="#468C46"/>
-  <text x="8.0" y="66.8" fill="#E0DEF4">eta</text>
-  <text x="41.6" y="66.8" fill="#E0DEF4">theta</text>
+  <text x="8.0" y="76.6" fill="#E0DEF4">eta</text>
+  <text x="41.6" y="76.6" fill="#E0DEF4">theta</text>
   <rect x="8.0" y="86.4" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="16.4" y="86.4" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="24.8" y="86.4" width="8.4" height="19.6" fill="#468C46"/>
@@ -76,8 +77,8 @@
   <rect x="83.6" y="86.4" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="92.0" y="86.4" width="8.4" height="19.6" fill="#468C46"/>
   <rect x="100.4" y="86.4" width="8.4" height="19.6" fill="#468C46"/>
-  <text x="8.0" y="86.4" fill="#E0DEF4">iota</text>
-  <text x="50.0" y="86.4" fill="#E0DEF4">kappa</text>
+  <text x="8.0" y="96.2" fill="#E0DEF4">iota</text>
+  <text x="50.0" y="96.2" fill="#E0DEF4">kappa</text>
   <rect x="8.0" y="106.0" width="8.4" height="19.6" fill="#646464"/>
   <rect x="16.4" y="106.0" width="8.4" height="19.6" fill="#646464"/>
   <rect x="24.8" y="106.0" width="8.4" height="19.6" fill="#646464"/>

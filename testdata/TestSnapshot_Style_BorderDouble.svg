@@ -1,20 +1,49 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="142" height="114" viewBox="0 0 142 114">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
     .strikethrough { text-decoration: line-through; }
   </style>
   <rect width="100%" height="100%" fill="#000000"/>
-  <text x="8.0" y="8.0" fill="#C8C8C8">╔═════════════╗</text>
-  <text x="8.0" y="27.6" fill="#C8C8C8">║</text>
-  <text x="16.4" y="27.6" fill="#E0DEF4">Double</text>
-  <text x="125.6" y="27.6" fill="#C8C8C8">║</text>
-  <text x="8.0" y="47.2" fill="#C8C8C8">║</text>
-  <text x="125.6" y="47.2" fill="#C8C8C8">║</text>
-  <text x="8.0" y="66.8" fill="#C8C8C8">║</text>
-  <text x="125.6" y="66.8" fill="#C8C8C8">║</text>
-  <text x="8.0" y="86.4" fill="#C8C8C8">╚═════════════╝</text>
+  <path d="M 11.1500 27.6000 L 11.1500 16.7500 M 16.4000 16.7500 L 11.1500 16.7500 M 16.4000 18.8500 L 13.2500 18.8500 L 13.2500 27.6000" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 16.4000 16.7500 L 20.6000 16.7500 M 16.4000 18.8500 L 20.6000 18.8500 M 24.8000 16.7500 L 20.6000 16.7500 M 24.8000 18.8500 L 20.6000 18.8500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 24.8000 16.7500 L 29.0000 16.7500 M 24.8000 18.8500 L 29.0000 18.8500 M 33.2000 16.7500 L 29.0000 16.7500 M 33.2000 18.8500 L 29.0000 18.8500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 33.2000 16.7500 L 37.4000 16.7500 M 33.2000 18.8500 L 37.4000 18.8500 M 41.6000 16.7500 L 37.4000 16.7500 M 41.6000 18.8500 L 37.4000 18.8500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 41.6000 16.7500 L 45.8000 16.7500 M 41.6000 18.8500 L 45.8000 18.8500 M 50.0000 16.7500 L 45.8000 16.7500 M 50.0000 18.8500 L 45.8000 18.8500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 50.0000 16.7500 L 54.2000 16.7500 M 50.0000 18.8500 L 54.2000 18.8500 M 58.4000 16.7500 L 54.2000 16.7500 M 58.4000 18.8500 L 54.2000 18.8500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 58.4000 16.7500 L 62.6000 16.7500 M 58.4000 18.8500 L 62.6000 18.8500 M 66.8000 16.7500 L 62.6000 16.7500 M 66.8000 18.8500 L 62.6000 18.8500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 66.8000 16.7500 L 71.0000 16.7500 M 66.8000 18.8500 L 71.0000 18.8500 M 75.2000 16.7500 L 71.0000 16.7500 M 75.2000 18.8500 L 71.0000 18.8500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 75.2000 16.7500 L 79.4000 16.7500 M 75.2000 18.8500 L 79.4000 18.8500 M 83.6000 16.7500 L 79.4000 16.7500 M 83.6000 18.8500 L 79.4000 18.8500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 83.6000 16.7500 L 87.8000 16.7500 M 83.6000 18.8500 L 87.8000 18.8500 M 92.0000 16.7500 L 87.8000 16.7500 M 92.0000 18.8500 L 87.8000 18.8500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 92.0000 16.7500 L 96.2000 16.7500 M 92.0000 18.8500 L 96.2000 18.8500 M 100.4000 16.7500 L 96.2000 16.7500 M 100.4000 18.8500 L 96.2000 18.8500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 100.4000 16.7500 L 104.6000 16.7500 M 100.4000 18.8500 L 104.6000 18.8500 M 108.8000 16.7500 L 104.6000 16.7500 M 108.8000 18.8500 L 104.6000 18.8500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 108.8000 16.7500 L 113.0000 16.7500 M 108.8000 18.8500 L 113.0000 18.8500 M 117.2000 16.7500 L 113.0000 16.7500 M 117.2000 18.8500 L 113.0000 18.8500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 117.2000 16.7500 L 121.4000 16.7500 M 117.2000 18.8500 L 121.4000 18.8500 M 125.6000 16.7500 L 121.4000 16.7500 M 125.6000 18.8500 L 121.4000 18.8500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 125.6000 16.7500 L 130.8500 16.7500 M 125.6000 18.8500 L 128.7500 18.8500 L 128.7500 27.6000 M 130.8500 27.6000 L 130.8500 16.7500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 11.1500 27.6000 L 11.1500 37.4000 M 11.1500 47.2000 L 11.1500 37.4000 M 13.2500 27.6000 L 13.2500 37.4000 M 13.2500 47.2000 L 13.2500 37.4000" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <text x="16.4" y="37.4" fill="#E0DEF4">Double</text>
+  <path d="M 128.7500 27.6000 L 128.7500 37.4000 M 128.7500 47.2000 L 128.7500 37.4000 M 130.8500 27.6000 L 130.8500 37.4000 M 130.8500 47.2000 L 130.8500 37.4000" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 11.1500 47.2000 L 11.1500 57.0000 M 11.1500 66.8000 L 11.1500 57.0000 M 13.2500 47.2000 L 13.2500 57.0000 M 13.2500 66.8000 L 13.2500 57.0000" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 128.7500 47.2000 L 128.7500 57.0000 M 128.7500 66.8000 L 128.7500 57.0000 M 130.8500 47.2000 L 130.8500 57.0000 M 130.8500 66.8000 L 130.8500 57.0000" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 11.1500 66.8000 L 11.1500 76.6000 M 11.1500 86.4000 L 11.1500 76.6000 M 13.2500 66.8000 L 13.2500 76.6000 M 13.2500 86.4000 L 13.2500 76.6000" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 128.7500 66.8000 L 128.7500 76.6000 M 128.7500 86.4000 L 128.7500 76.6000 M 130.8500 66.8000 L 130.8500 76.6000 M 130.8500 86.4000 L 130.8500 76.6000" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 11.1500 86.4000 L 11.1500 97.2500 M 16.4000 95.1500 L 13.2500 95.1500 L 13.2500 86.4000 M 16.4000 97.2500 L 11.1500 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 16.4000 95.1500 L 20.6000 95.1500 M 16.4000 97.2500 L 20.6000 97.2500 M 24.8000 95.1500 L 20.6000 95.1500 M 24.8000 97.2500 L 20.6000 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 24.8000 95.1500 L 29.0000 95.1500 M 24.8000 97.2500 L 29.0000 97.2500 M 33.2000 95.1500 L 29.0000 95.1500 M 33.2000 97.2500 L 29.0000 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 33.2000 95.1500 L 37.4000 95.1500 M 33.2000 97.2500 L 37.4000 97.2500 M 41.6000 95.1500 L 37.4000 95.1500 M 41.6000 97.2500 L 37.4000 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 41.6000 95.1500 L 45.8000 95.1500 M 41.6000 97.2500 L 45.8000 97.2500 M 50.0000 95.1500 L 45.8000 95.1500 M 50.0000 97.2500 L 45.8000 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 50.0000 95.1500 L 54.2000 95.1500 M 50.0000 97.2500 L 54.2000 97.2500 M 58.4000 95.1500 L 54.2000 95.1500 M 58.4000 97.2500 L 54.2000 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 58.4000 95.1500 L 62.6000 95.1500 M 58.4000 97.2500 L 62.6000 97.2500 M 66.8000 95.1500 L 62.6000 95.1500 M 66.8000 97.2500 L 62.6000 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 66.8000 95.1500 L 71.0000 95.1500 M 66.8000 97.2500 L 71.0000 97.2500 M 75.2000 95.1500 L 71.0000 95.1500 M 75.2000 97.2500 L 71.0000 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 75.2000 95.1500 L 79.4000 95.1500 M 75.2000 97.2500 L 79.4000 97.2500 M 83.6000 95.1500 L 79.4000 95.1500 M 83.6000 97.2500 L 79.4000 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 83.6000 95.1500 L 87.8000 95.1500 M 83.6000 97.2500 L 87.8000 97.2500 M 92.0000 95.1500 L 87.8000 95.1500 M 92.0000 97.2500 L 87.8000 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 92.0000 95.1500 L 96.2000 95.1500 M 92.0000 97.2500 L 96.2000 97.2500 M 100.4000 95.1500 L 96.2000 95.1500 M 100.4000 97.2500 L 96.2000 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 100.4000 95.1500 L 104.6000 95.1500 M 100.4000 97.2500 L 104.6000 97.2500 M 108.8000 95.1500 L 104.6000 95.1500 M 108.8000 97.2500 L 104.6000 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 108.8000 95.1500 L 113.0000 95.1500 M 108.8000 97.2500 L 113.0000 97.2500 M 117.2000 95.1500 L 113.0000 95.1500 M 117.2000 97.2500 L 113.0000 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 117.2000 95.1500 L 121.4000 95.1500 M 117.2000 97.2500 L 121.4000 97.2500 M 125.6000 95.1500 L 121.4000 95.1500 M 125.6000 97.2500 L 121.4000 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 125.6000 95.1500 L 128.7500 95.1500 L 128.7500 86.4000 M 125.6000 97.2500 L 130.8500 97.2500 M 130.8500 86.4000 L 130.8500 97.2500" fill="none" stroke="#C8C8C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
 </svg>

@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="150" height="134" viewBox="0 0 150 134">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
@@ -16,9 +17,9 @@
   <rect x="50.0" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <text x="8.0" y="8.0" fill="#767487">[</text>
-  <text x="16.4" y="8.0" fill="#E0DEF4">Target</text>
-  <text x="66.8" y="8.0" fill="#767487">]</text>
+  <text x="8.0" y="17.8" fill="#767487">[</text>
+  <text x="16.4" y="17.8" fill="#E0DEF4">Target</text>
+  <text x="66.8" y="17.8" fill="#767487">]</text>
   <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#323264"/>
   <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#323264"/>
   <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#323264"/>
@@ -29,7 +30,16 @@
   <rect x="66.8" y="27.6" width="8.4" height="19.6" fill="#323264"/>
   <rect x="75.2" y="27.6" width="8.4" height="19.6" fill="#323264"/>
   <rect x="83.6" y="27.6" width="8.4" height="19.6" fill="#323264"/>
-  <text x="8.0" y="27.6" fill="#6464C8">╔════════╗</text>
+  <path d="M 11.1500 47.2000 L 11.1500 36.3500 M 16.4000 36.3500 L 11.1500 36.3500 M 16.4000 38.4500 L 13.2500 38.4500 L 13.2500 47.2000" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 16.4000 36.3500 L 20.6000 36.3500 M 16.4000 38.4500 L 20.6000 38.4500 M 24.8000 36.3500 L 20.6000 36.3500 M 24.8000 38.4500 L 20.6000 38.4500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 24.8000 36.3500 L 29.0000 36.3500 M 24.8000 38.4500 L 29.0000 38.4500 M 33.2000 36.3500 L 29.0000 36.3500 M 33.2000 38.4500 L 29.0000 38.4500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 33.2000 36.3500 L 37.4000 36.3500 M 33.2000 38.4500 L 37.4000 38.4500 M 41.6000 36.3500 L 37.4000 36.3500 M 41.6000 38.4500 L 37.4000 38.4500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 41.6000 36.3500 L 45.8000 36.3500 M 41.6000 38.4500 L 45.8000 38.4500 M 50.0000 36.3500 L 45.8000 36.3500 M 50.0000 38.4500 L 45.8000 38.4500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 50.0000 36.3500 L 54.2000 36.3500 M 50.0000 38.4500 L 54.2000 38.4500 M 58.4000 36.3500 L 54.2000 36.3500 M 58.4000 38.4500 L 54.2000 38.4500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 58.4000 36.3500 L 62.6000 36.3500 M 58.4000 38.4500 L 62.6000 38.4500 M 66.8000 36.3500 L 62.6000 36.3500 M 66.8000 38.4500 L 62.6000 38.4500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 66.8000 36.3500 L 71.0000 36.3500 M 66.8000 38.4500 L 71.0000 38.4500 M 75.2000 36.3500 L 71.0000 36.3500 M 75.2000 38.4500 L 71.0000 38.4500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 75.2000 36.3500 L 79.4000 36.3500 M 75.2000 38.4500 L 79.4000 38.4500 M 83.6000 36.3500 L 79.4000 36.3500 M 83.6000 38.4500 L 79.4000 38.4500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 83.6000 36.3500 L 88.8500 36.3500 M 83.6000 38.4500 L 86.7500 38.4500 L 86.7500 47.2000 M 88.8500 47.2000 L 88.8500 36.3500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="47.2" width="8.4" height="19.6" fill="#323264"/>
   <rect x="16.4" y="47.2" width="8.4" height="19.6" fill="#323264"/>
   <rect x="24.8" y="47.2" width="8.4" height="19.6" fill="#323264"/>
@@ -40,8 +50,8 @@
   <rect x="66.8" y="47.2" width="8.4" height="19.6" fill="#323264"/>
   <rect x="75.2" y="47.2" width="8.4" height="19.6" fill="#323264"/>
   <rect x="83.6" y="47.2" width="8.4" height="19.6" fill="#323264"/>
-  <text x="8.0" y="47.2" fill="#6464C8">║</text>
-  <text x="83.6" y="47.2" fill="#6464C8">║</text>
+  <path d="M 11.1500 47.2000 L 11.1500 57.0000 M 11.1500 66.8000 L 11.1500 57.0000 M 13.2500 47.2000 L 13.2500 57.0000 M 13.2500 66.8000 L 13.2500 57.0000" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 86.7500 47.2000 L 86.7500 57.0000 M 86.7500 66.8000 L 86.7500 57.0000 M 88.8500 47.2000 L 88.8500 57.0000 M 88.8500 66.8000 L 88.8500 57.0000" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="66.8" width="8.4" height="19.6" fill="#323264"/>
   <rect x="16.4" y="66.8" width="8.4" height="19.6" fill="#323264"/>
   <rect x="24.8" y="66.8" width="8.4" height="19.6" fill="#323264"/>
@@ -52,9 +62,9 @@
   <rect x="66.8" y="66.8" width="8.4" height="19.6" fill="#323264"/>
   <rect x="75.2" y="66.8" width="8.4" height="19.6" fill="#323264"/>
   <rect x="83.6" y="66.8" width="8.4" height="19.6" fill="#323264"/>
-  <text x="8.0" y="66.8" fill="#6464C8">║</text>
-  <text x="24.8" y="66.8" fill="#FFFFFF">Styled</text>
-  <text x="83.6" y="66.8" fill="#6464C8">║</text>
+  <path d="M 11.1500 66.8000 L 11.1500 76.6000 M 11.1500 86.4000 L 11.1500 76.6000 M 13.2500 66.8000 L 13.2500 76.6000 M 13.2500 86.4000 L 13.2500 76.6000" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <text x="24.8" y="76.6" fill="#FFFFFF">Styled</text>
+  <path d="M 86.7500 66.8000 L 86.7500 76.6000 M 86.7500 86.4000 L 86.7500 76.6000 M 88.8500 66.8000 L 88.8500 76.6000 M 88.8500 86.4000 L 88.8500 76.6000" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="86.4" width="8.4" height="19.6" fill="#323264"/>
   <rect x="16.4" y="86.4" width="8.4" height="19.6" fill="#323264"/>
   <rect x="24.8" y="86.4" width="8.4" height="19.6" fill="#323264"/>
@@ -65,8 +75,8 @@
   <rect x="66.8" y="86.4" width="8.4" height="19.6" fill="#323264"/>
   <rect x="75.2" y="86.4" width="8.4" height="19.6" fill="#323264"/>
   <rect x="83.6" y="86.4" width="8.4" height="19.6" fill="#323264"/>
-  <text x="8.0" y="86.4" fill="#6464C8">║</text>
-  <text x="83.6" y="86.4" fill="#6464C8">║</text>
+  <path d="M 11.1500 86.4000 L 11.1500 96.2000 M 11.1500 106.0000 L 11.1500 96.2000 M 13.2500 86.4000 L 13.2500 96.2000 M 13.2500 106.0000 L 13.2500 96.2000" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 86.7500 86.4000 L 86.7500 96.2000 M 86.7500 106.0000 L 86.7500 96.2000 M 88.8500 86.4000 L 88.8500 96.2000 M 88.8500 106.0000 L 88.8500 96.2000" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="106.0" width="8.4" height="19.6" fill="#323264"/>
   <rect x="16.4" y="106.0" width="8.4" height="19.6" fill="#323264"/>
   <rect x="24.8" y="106.0" width="8.4" height="19.6" fill="#323264"/>
@@ -77,5 +87,14 @@
   <rect x="66.8" y="106.0" width="8.4" height="19.6" fill="#323264"/>
   <rect x="75.2" y="106.0" width="8.4" height="19.6" fill="#323264"/>
   <rect x="83.6" y="106.0" width="8.4" height="19.6" fill="#323264"/>
-  <text x="8.0" y="106.0" fill="#6464C8">╚════════╝</text>
+  <path d="M 11.1500 106.0000 L 11.1500 116.8500 M 16.4000 114.7500 L 13.2500 114.7500 L 13.2500 106.0000 M 16.4000 116.8500 L 11.1500 116.8500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 16.4000 114.7500 L 20.6000 114.7500 M 16.4000 116.8500 L 20.6000 116.8500 M 24.8000 114.7500 L 20.6000 114.7500 M 24.8000 116.8500 L 20.6000 116.8500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 24.8000 114.7500 L 29.0000 114.7500 M 24.8000 116.8500 L 29.0000 116.8500 M 33.2000 114.7500 L 29.0000 114.7500 M 33.2000 116.8500 L 29.0000 116.8500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 33.2000 114.7500 L 37.4000 114.7500 M 33.2000 116.8500 L 37.4000 116.8500 M 41.6000 114.7500 L 37.4000 114.7500 M 41.6000 116.8500 L 37.4000 116.8500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 41.6000 114.7500 L 45.8000 114.7500 M 41.6000 116.8500 L 45.8000 116.8500 M 50.0000 114.7500 L 45.8000 114.7500 M 50.0000 116.8500 L 45.8000 116.8500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 50.0000 114.7500 L 54.2000 114.7500 M 50.0000 116.8500 L 54.2000 116.8500 M 58.4000 114.7500 L 54.2000 114.7500 M 58.4000 116.8500 L 54.2000 116.8500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 58.4000 114.7500 L 62.6000 114.7500 M 58.4000 116.8500 L 62.6000 116.8500 M 66.8000 114.7500 L 62.6000 114.7500 M 66.8000 116.8500 L 62.6000 116.8500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 66.8000 114.7500 L 71.0000 114.7500 M 66.8000 116.8500 L 71.0000 116.8500 M 75.2000 114.7500 L 71.0000 114.7500 M 75.2000 116.8500 L 71.0000 116.8500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 75.2000 114.7500 L 79.4000 114.7500 M 75.2000 116.8500 L 79.4000 116.8500 M 83.6000 114.7500 L 79.4000 114.7500 M 83.6000 116.8500 L 79.4000 116.8500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 83.6000 114.7500 L 86.7500 114.7500 L 86.7500 106.0000 M 83.6000 116.8500 L 88.8500 116.8500 M 88.8500 106.0000 L 88.8500 116.8500" fill="none" stroke="#6464C8" stroke-width="1.0500" shape-rendering="crispEdges"/>
 </svg>

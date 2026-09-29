@@ -1,67 +1,68 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="268" height="114" viewBox="0 0 268 114">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
     .strikethrough { text-decoration: line-through; }
   </style>
   <rect width="100%" height="100%" fill="#000000"/>
-  <text x="8.0" y="8.0" fill="#FF0000">╭</text>
-  <text x="24.8" y="8.0" class="bold" fill="#00FF00">Green</text>
-  <text x="75.2" y="8.0" class="bold" fill="#00FF00">Title</text>
-  <text x="125.6" y="8.0" fill="#84007B">─</text>
-  <text x="134.0" y="8.0" fill="#7B0084">─</text>
-  <text x="142.4" y="8.0" fill="#72008D">─</text>
-  <text x="150.8" y="8.0" fill="#6A0095">─</text>
-  <text x="159.2" y="8.0" fill="#61009E">─</text>
-  <text x="167.6" y="8.0" fill="#5800A7">─</text>
-  <text x="176.0" y="8.0" fill="#4F00B0">─</text>
-  <text x="184.4" y="8.0" fill="#4600B9">─</text>
-  <text x="192.8" y="8.0" fill="#3E00C1">─</text>
-  <text x="201.2" y="8.0" fill="#3500CA">─</text>
-  <text x="209.6" y="8.0" fill="#2C00D3">─</text>
-  <text x="218.0" y="8.0" fill="#2300DC">─</text>
-  <text x="226.4" y="8.0" fill="#1A00E5">─</text>
-  <text x="234.8" y="8.0" fill="#1200ED">─</text>
-  <text x="243.2" y="8.0" fill="#0900F6">─</text>
-  <text x="251.6" y="8.0" fill="#0000FF">╮</text>
-  <text x="8.0" y="27.6" fill="#FF0000">│</text>
-  <text x="16.4" y="27.6" fill="#E0DEF4">Content</text>
-  <text x="251.6" y="27.6" fill="#0000FF">│</text>
-  <text x="8.0" y="47.2" fill="#FF0000">│</text>
-  <text x="251.6" y="47.2" fill="#0000FF">│</text>
-  <text x="8.0" y="66.8" fill="#FF0000">│</text>
-  <text x="251.6" y="66.8" fill="#0000FF">│</text>
-  <text x="8.0" y="86.4" fill="#FF0000">╰</text>
-  <text x="16.4" y="86.4" fill="#F60009">─</text>
-  <text x="24.8" y="86.4" fill="#ED0012">─</text>
-  <text x="33.2" y="86.4" fill="#E5001A">─</text>
-  <text x="41.6" y="86.4" fill="#DC0023">─</text>
-  <text x="50.0" y="86.4" fill="#D3002C">─</text>
-  <text x="58.4" y="86.4" fill="#CA0035">─</text>
-  <text x="66.8" y="86.4" fill="#C1003E">─</text>
-  <text x="75.2" y="86.4" fill="#B90046">─</text>
-  <text x="83.6" y="86.4" fill="#B0004F">─</text>
-  <text x="92.0" y="86.4" fill="#A70058">─</text>
-  <text x="100.4" y="86.4" fill="#9E0061">─</text>
-  <text x="108.8" y="86.4" fill="#95006A">─</text>
-  <text x="117.2" y="86.4" fill="#8D0072">─</text>
-  <text x="125.6" y="86.4" fill="#84007B">─</text>
-  <text x="134.0" y="86.4" fill="#7B0084">─</text>
-  <text x="142.4" y="86.4" fill="#72008D">─</text>
-  <text x="150.8" y="86.4" fill="#6A0095">─</text>
-  <text x="159.2" y="86.4" fill="#61009E">─</text>
-  <text x="167.6" y="86.4" fill="#5800A7">─</text>
-  <text x="176.0" y="86.4" fill="#4F00B0">─</text>
-  <text x="184.4" y="86.4" fill="#4600B9">─</text>
-  <text x="192.8" y="86.4" fill="#3E00C1">─</text>
-  <text x="201.2" y="86.4" fill="#3500CA">─</text>
-  <text x="209.6" y="86.4" fill="#2C00D3">─</text>
-  <text x="218.0" y="86.4" fill="#2300DC">─</text>
-  <text x="226.4" y="86.4" fill="#1A00E5">─</text>
-  <text x="234.8" y="86.4" fill="#1200ED">─</text>
-  <text x="243.2" y="86.4" fill="#0900F6">─</text>
-  <text x="251.6" y="86.4" fill="#0000FF">╯</text>
+  <path d="M 16.4000 17.8000 L 16.4000 17.8000 Q 12.2000 17.8000 12.2000 22.0000 L 12.2000 27.6000" fill="none" stroke="#FF0000" stroke-width="1.0500"/>
+  <text x="24.8" y="17.8" class="bold" fill="#00FF00">Green</text>
+  <text x="75.2" y="17.8" class="bold" fill="#00FF00">Title</text>
+  <path d="M 125.6000 17.8000 L 134.0000 17.8000" fill="none" stroke="#84007B" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 134.0000 17.8000 L 142.4000 17.8000" fill="none" stroke="#7B0084" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 142.4000 17.8000 L 150.8000 17.8000" fill="none" stroke="#72008D" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 150.8000 17.8000 L 159.2000 17.8000" fill="none" stroke="#6A0095" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 159.2000 17.8000 L 167.6000 17.8000" fill="none" stroke="#61009E" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 167.6000 17.8000 L 176.0000 17.8000" fill="none" stroke="#5800A7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 176.0000 17.8000 L 184.4000 17.8000" fill="none" stroke="#4F00B0" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 184.4000 17.8000 L 192.8000 17.8000" fill="none" stroke="#4600B9" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 192.8000 17.8000 L 201.2000 17.8000" fill="none" stroke="#3E00C1" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 201.2000 17.8000 L 209.6000 17.8000" fill="none" stroke="#3500CA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 209.6000 17.8000 L 218.0000 17.8000" fill="none" stroke="#2C00D3" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 218.0000 17.8000 L 226.4000 17.8000" fill="none" stroke="#2300DC" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 226.4000 17.8000 L 234.8000 17.8000" fill="none" stroke="#1A00E5" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 234.8000 17.8000 L 243.2000 17.8000" fill="none" stroke="#1200ED" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 243.2000 17.8000 L 251.6000 17.8000" fill="none" stroke="#0900F6" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 251.6000 17.8000 L 251.6000 17.8000 Q 255.8000 17.8000 255.8000 22.0000 L 255.8000 27.6000" fill="none" stroke="#0000FF" stroke-width="1.0500"/>
+  <path d="M 12.2000 27.6000 L 12.2000 47.2000" fill="none" stroke="#FF0000" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <text x="16.4" y="37.4" fill="#E0DEF4">Content</text>
+  <path d="M 255.8000 27.6000 L 255.8000 47.2000" fill="none" stroke="#0000FF" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 12.2000 47.2000 L 12.2000 66.8000" fill="none" stroke="#FF0000" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 255.8000 47.2000 L 255.8000 66.8000" fill="none" stroke="#0000FF" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 12.2000 66.8000 L 12.2000 86.4000" fill="none" stroke="#FF0000" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 255.8000 66.8000 L 255.8000 86.4000" fill="none" stroke="#0000FF" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 16.4000 96.2000 L 16.4000 96.2000 Q 12.2000 96.2000 12.2000 92.0000 L 12.2000 86.4000" fill="none" stroke="#FF0000" stroke-width="1.0500"/>
+  <path d="M 16.4000 96.2000 L 24.8000 96.2000" fill="none" stroke="#F60009" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 24.8000 96.2000 L 33.2000 96.2000" fill="none" stroke="#ED0012" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 33.2000 96.2000 L 41.6000 96.2000" fill="none" stroke="#E5001A" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 41.6000 96.2000 L 50.0000 96.2000" fill="none" stroke="#DC0023" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 50.0000 96.2000 L 58.4000 96.2000" fill="none" stroke="#D3002C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 58.4000 96.2000 L 66.8000 96.2000" fill="none" stroke="#CA0035" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 66.8000 96.2000 L 75.2000 96.2000" fill="none" stroke="#C1003E" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 75.2000 96.2000 L 83.6000 96.2000" fill="none" stroke="#B90046" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 83.6000 96.2000 L 92.0000 96.2000" fill="none" stroke="#B0004F" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 92.0000 96.2000 L 100.4000 96.2000" fill="none" stroke="#A70058" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 100.4000 96.2000 L 108.8000 96.2000" fill="none" stroke="#9E0061" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 108.8000 96.2000 L 117.2000 96.2000" fill="none" stroke="#95006A" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 117.2000 96.2000 L 125.6000 96.2000" fill="none" stroke="#8D0072" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 125.6000 96.2000 L 134.0000 96.2000" fill="none" stroke="#84007B" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 134.0000 96.2000 L 142.4000 96.2000" fill="none" stroke="#7B0084" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 142.4000 96.2000 L 150.8000 96.2000" fill="none" stroke="#72008D" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 150.8000 96.2000 L 159.2000 96.2000" fill="none" stroke="#6A0095" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 159.2000 96.2000 L 167.6000 96.2000" fill="none" stroke="#61009E" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 167.6000 96.2000 L 176.0000 96.2000" fill="none" stroke="#5800A7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 176.0000 96.2000 L 184.4000 96.2000" fill="none" stroke="#4F00B0" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 184.4000 96.2000 L 192.8000 96.2000" fill="none" stroke="#4600B9" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 192.8000 96.2000 L 201.2000 96.2000" fill="none" stroke="#3E00C1" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 201.2000 96.2000 L 209.6000 96.2000" fill="none" stroke="#3500CA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 209.6000 96.2000 L 218.0000 96.2000" fill="none" stroke="#2C00D3" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 218.0000 96.2000 L 226.4000 96.2000" fill="none" stroke="#2300DC" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 226.4000 96.2000 L 234.8000 96.2000" fill="none" stroke="#1A00E5" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 234.8000 96.2000 L 243.2000 96.2000" fill="none" stroke="#1200ED" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 243.2000 96.2000 L 251.6000 96.2000" fill="none" stroke="#0900F6" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 251.6000 96.2000 L 251.6000 96.2000 Q 255.8000 96.2000 255.8000 92.0000 L 255.8000 86.4000" fill="none" stroke="#0000FF" stroke-width="1.0500"/>
 </svg>

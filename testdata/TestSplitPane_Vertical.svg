@@ -1,16 +1,56 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="352" height="212" viewBox="0 0 352 212">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
     .strikethrough { text-decoration: line-through; }
   </style>
   <rect width="100%" height="100%" fill="#000000"/>
-  <text x="8.0" y="8.0" fill="#E0DEF4">Top</text>
-  <text x="41.6" y="8.0" fill="#E0DEF4">pane</text>
-  <text x="8.0" y="47.2" fill="#C4A7E7">────────────────────────────────────────</text>
-  <text x="8.0" y="66.8" fill="#E0DEF4">Bottom</text>
-  <text x="66.8" y="66.8" fill="#E0DEF4">pane</text>
+  <text x="8.0" y="17.8" fill="#E0DEF4">Top</text>
+  <text x="41.6" y="17.8" fill="#E0DEF4">pane</text>
+  <path d="M 8.0000 57.0000 L 16.4000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 16.4000 57.0000 L 24.8000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 24.8000 57.0000 L 33.2000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 33.2000 57.0000 L 41.6000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 41.6000 57.0000 L 50.0000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 50.0000 57.0000 L 58.4000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 58.4000 57.0000 L 66.8000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 66.8000 57.0000 L 75.2000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 75.2000 57.0000 L 83.6000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 83.6000 57.0000 L 92.0000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 92.0000 57.0000 L 100.4000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 100.4000 57.0000 L 108.8000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 108.8000 57.0000 L 117.2000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 117.2000 57.0000 L 125.6000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 125.6000 57.0000 L 134.0000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 134.0000 57.0000 L 142.4000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 142.4000 57.0000 L 150.8000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 150.8000 57.0000 L 159.2000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 159.2000 57.0000 L 167.6000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 167.6000 57.0000 L 176.0000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 176.0000 57.0000 L 184.4000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 184.4000 57.0000 L 192.8000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 192.8000 57.0000 L 201.2000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 201.2000 57.0000 L 209.6000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 209.6000 57.0000 L 218.0000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 218.0000 57.0000 L 226.4000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 226.4000 57.0000 L 234.8000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 234.8000 57.0000 L 243.2000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 243.2000 57.0000 L 251.6000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 251.6000 57.0000 L 260.0000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 260.0000 57.0000 L 268.4000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 268.4000 57.0000 L 276.8000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 276.8000 57.0000 L 285.2000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 285.2000 57.0000 L 293.6000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 293.6000 57.0000 L 302.0000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 302.0000 57.0000 L 310.4000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 310.4000 57.0000 L 318.8000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 318.8000 57.0000 L 327.2000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 327.2000 57.0000 L 335.6000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 335.6000 57.0000 L 344.0000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <text x="8.0" y="76.6" fill="#E0DEF4">Bottom</text>
+  <text x="66.8" y="76.6" fill="#E0DEF4">pane</text>
 </svg>

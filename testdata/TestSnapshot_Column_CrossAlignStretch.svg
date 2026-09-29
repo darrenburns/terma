@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="184" height="114" viewBox="0 0 184 114">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
@@ -28,5 +29,5 @@
   <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#4664B4"/>
   <rect x="159.2" y="8.0" width="8.4" height="19.6" fill="#4664B4"/>
   <rect x="167.6" y="8.0" width="8.4" height="19.6" fill="#4664B4"/>
-  <text x="8.0" y="8.0" fill="#E0DEF4">Stretched</text>
+  <text x="8.0" y="17.8" fill="#E0DEF4">Stretched</text>
 </svg>

@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="310" height="251" viewBox="0 0 310 251">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
@@ -32,9 +33,9 @@
   <rect x="192.8" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="201.2" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="209.6" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <text x="8.0" y="8.0" fill="#E0DEF4">he</text>
+  <text x="8.0" y="17.8" fill="#E0DEF4">he</text>
   <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#E0DEF4"/>
-  <text x="24.8" y="8.0" fill="#1F1D2E"> </text>
+  <text x="24.8" y="17.8" fill="#1F1D2E"> </text>
   <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#F6C177"/>
@@ -70,9 +71,9 @@
   <rect x="276.8" y="27.6" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="285.2" y="27.6" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="293.6" y="27.6" width="8.4" height="19.6" fill="#F6C177"/>
-  <text x="16.4" y="27.6" class="underline" fill="#191724">he</text>
-  <text x="33.2" y="27.6" fill="#191724">llo</text>
-  <text x="226.4" y="27.6" fill="#191724">greeting</text>
+  <text x="16.4" y="37.4" class="underline" fill="#191724">he</text>
+  <text x="33.2" y="37.4" fill="#191724">llo</text>
+  <text x="226.4" y="37.4" fill="#191724">greeting</text>
   <rect x="8.0" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="16.4" y="47.2" width="8.4" height="19.6" fill="#554640"/>
   <rect x="24.8" y="47.2" width="8.4" height="19.6" fill="#554640"/>
@@ -108,9 +109,9 @@
   <rect x="276.8" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="285.2" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="293.6" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <text x="16.4" y="47.2" class="underline" fill="#E0DEF4">he</text>
-  <text x="33.2" y="47.2" fill="#E0DEF4">lp</text>
-  <text x="209.6" y="47.2" fill="#908CAA">assistance</text>
+  <text x="16.4" y="57.0" class="underline" fill="#E0DEF4">he</text>
+  <text x="33.2" y="57.0" fill="#E0DEF4">lp</text>
+  <text x="209.6" y="57.0" fill="#908CAA">assistance</text>
   <rect x="8.0" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="16.4" y="66.8" width="8.4" height="19.6" fill="#554640"/>
   <rect x="24.8" y="66.8" width="8.4" height="19.6" fill="#554640"/>
@@ -146,6 +147,6 @@
   <rect x="276.8" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="285.2" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="293.6" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <text x="16.4" y="66.8" class="underline" fill="#E0DEF4">he</text>
-  <text x="33.2" y="66.8" fill="#E0DEF4">licopter</text>
+  <text x="16.4" y="76.6" class="underline" fill="#E0DEF4">he</text>
+  <text x="33.2" y="76.6" fill="#E0DEF4">licopter</text>
 </svg>

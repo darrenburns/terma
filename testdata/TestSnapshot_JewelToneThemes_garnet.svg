@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="386" height="251" viewBox="0 0 386 251">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
@@ -96,7 +97,7 @@
   <rect x="352.4" y="27.6" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="360.8" y="27.6" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="369.2" y="27.6" width="8.4" height="19.6" fill="#24191E"/>
-  <text x="16.4" y="27.6" class="bold" fill="#EFE0DD">garnet</text>
+  <text x="16.4" y="37.4" class="bold" fill="#EFE0DD">garnet</text>
   <rect x="8.0" y="47.2" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="16.4" y="47.2" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="24.8" y="47.2" width="8.4" height="19.6" fill="#24191E"/>
@@ -185,9 +186,9 @@
   <rect x="352.4" y="66.8" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="360.8" y="66.8" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="369.2" y="66.8" width="8.4" height="19.6" fill="#24191E"/>
-  <text x="16.4" y="66.8" fill="#C0A6AC">Muted</text>
-  <text x="66.8" y="66.8" fill="#C0A6AC">secondary</text>
-  <text x="150.8" y="66.8" fill="#C0A6AC">text</text>
+  <text x="16.4" y="76.6" fill="#C0A6AC">Muted</text>
+  <text x="66.8" y="76.6" fill="#C0A6AC">secondary</text>
+  <text x="150.8" y="76.6" fill="#C0A6AC">text</text>
   <rect x="8.0" y="86.4" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="16.4" y="86.4" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="24.8" y="86.4" width="8.4" height="19.6" fill="#24191E"/>
@@ -276,15 +277,15 @@
   <rect x="352.4" y="106.0" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="360.8" y="106.0" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="369.2" y="106.0" width="8.4" height="19.6" fill="#24191E"/>
-  <text x="16.4" y="106.0" fill="#865D65">[</text>
-  <text x="24.8" y="106.0" fill="#090707">Primary</text>
-  <text x="83.6" y="106.0" fill="#865D65">]</text>
-  <text x="100.4" y="106.0" fill="#CBAD83">[</text>
-  <text x="108.8" y="106.0" fill="#090806">Accent</text>
-  <text x="159.2" y="106.0" fill="#CBAD83">]</text>
-  <text x="176.0" y="106.0" fill="#82AEB4">[</text>
-  <text x="184.4" y="106.0" fill="#060808">Info</text>
-  <text x="218.0" y="106.0" fill="#82AEB4">]</text>
+  <text x="16.4" y="115.8" fill="#865D65">[</text>
+  <text x="24.8" y="115.8" fill="#090707">Primary</text>
+  <text x="83.6" y="115.8" fill="#865D65">]</text>
+  <text x="100.4" y="115.8" fill="#CBAD83">[</text>
+  <text x="108.8" y="115.8" fill="#090806">Accent</text>
+  <text x="159.2" y="115.8" fill="#CBAD83">]</text>
+  <text x="176.0" y="115.8" fill="#82AEB4">[</text>
+  <text x="184.4" y="115.8" fill="#060808">Info</text>
+  <text x="218.0" y="115.8" fill="#82AEB4">]</text>
   <rect x="8.0" y="125.6" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="16.4" y="125.6" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="24.8" y="125.6" width="8.4" height="19.6" fill="#24191E"/>
@@ -373,15 +374,15 @@
   <rect x="352.4" y="145.2" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="360.8" y="145.2" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="369.2" y="145.2" width="8.4" height="19.6" fill="#24191E"/>
-  <text x="16.4" y="145.2" fill="#8CAA8A">[</text>
-  <text x="24.8" y="145.2" fill="#070806">Success</text>
-  <text x="83.6" y="145.2" fill="#8CAA8A">]</text>
-  <text x="100.4" y="145.2" fill="#C3A671">[</text>
-  <text x="108.8" y="145.2" fill="#090805">Warning</text>
-  <text x="167.6" y="145.2" fill="#C3A671">]</text>
-  <text x="184.4" y="145.2" fill="#CD817B">[</text>
-  <text x="192.8" y="145.2" fill="#0A0606">Error</text>
-  <text x="234.8" y="145.2" fill="#CD817B">]</text>
+  <text x="16.4" y="155.0" fill="#8CAA8A">[</text>
+  <text x="24.8" y="155.0" fill="#070806">Success</text>
+  <text x="83.6" y="155.0" fill="#8CAA8A">]</text>
+  <text x="100.4" y="155.0" fill="#C3A671">[</text>
+  <text x="108.8" y="155.0" fill="#090805">Warning</text>
+  <text x="167.6" y="155.0" fill="#C3A671">]</text>
+  <text x="184.4" y="155.0" fill="#CD817B">[</text>
+  <text x="192.8" y="155.0" fill="#0A0606">Error</text>
+  <text x="234.8" y="155.0" fill="#CD817B">]</text>
   <rect x="8.0" y="164.8" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="16.4" y="164.8" width="8.4" height="19.6" fill="#24191E"/>
   <rect x="24.8" y="164.8" width="8.4" height="19.6" fill="#24191E"/>

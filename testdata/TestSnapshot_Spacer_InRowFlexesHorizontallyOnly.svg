@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="268" height="134" viewBox="0 0 268 134">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
@@ -17,8 +18,8 @@
   <rect x="58.4" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <text x="8.0" y="8.0" fill="#E0DEF4">line</text>
-  <text x="50.0" y="8.0" fill="#E0DEF4">one</text>
+  <text x="8.0" y="17.8" fill="#E0DEF4">line</text>
+  <text x="50.0" y="17.8" fill="#E0DEF4">one</text>
   <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
@@ -27,10 +28,10 @@
   <rect x="50.0" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="58.4" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="66.8" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <text x="8.0" y="27.6" fill="#E0DEF4">line</text>
-  <text x="50.0" y="27.6" fill="#E0DEF4">two</text>
+  <text x="8.0" y="37.4" fill="#E0DEF4">line</text>
+  <text x="50.0" y="37.4" fill="#E0DEF4">two</text>
   <rect x="75.2" y="27.6" width="8.4" height="19.6" fill="#E0DEF4"/>
-  <text x="75.2" y="27.6" fill="#1F1D2E"> </text>
+  <text x="75.2" y="37.4" fill="#1F1D2E"> </text>
   <rect x="8.0" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="16.4" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="24.8" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
@@ -58,8 +59,8 @@
   <rect x="58.4" y="86.4" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="66.8" y="86.4" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="75.2" y="86.4" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <text x="8.0" y="106.0" fill="#E0DEF4">[x]</text>
-  <text x="41.6" y="106.0" fill="#E0DEF4">wrap</text>
-  <text x="167.6" y="106.0" fill="#E0DEF4">Cancel</text>
-  <text x="226.4" y="106.0" fill="#E0DEF4">Save</text>
+  <text x="8.0" y="115.8" fill="#E0DEF4">[x]</text>
+  <text x="41.6" y="115.8" fill="#E0DEF4">wrap</text>
+  <text x="167.6" y="115.8" fill="#E0DEF4">Cancel</text>
+  <text x="226.4" y="115.8" fill="#E0DEF4">Save</text>
 </svg>

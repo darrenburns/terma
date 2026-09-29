@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="268" height="251" viewBox="0 0 268 251">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
@@ -36,24 +37,24 @@
   <rect x="218.0" y="8.0" width="8.4" height="19.6" fill="#1E288C"/>
   <rect x="226.4" y="8.0" width="8.4" height="19.6" fill="#192891"/>
   <rect x="234.8" y="8.0" width="8.4" height="19.6" fill="#142896"/>
-  <text x="8.0" y="8.0" fill="#E0DEF4">D</text>
-  <text x="16.4" y="8.0" fill="#E0DEF4">i</text>
-  <text x="24.8" y="8.0" fill="#E0DEF4">r</text>
-  <text x="33.2" y="8.0" fill="#E0DEF4">e</text>
-  <text x="41.6" y="8.0" fill="#E0DEF4">c</text>
-  <text x="50.0" y="8.0" fill="#E0DEF4">t</text>
-  <text x="66.8" y="8.0" fill="#E0DEF4">T</text>
-  <text x="75.2" y="8.0" fill="#E0DEF4">e</text>
-  <text x="83.6" y="8.0" fill="#E0DEF4">x</text>
-  <text x="92.0" y="8.0" fill="#E0DEF4">t</text>
-  <text x="108.8" y="8.0" fill="#E0DEF4">g</text>
-  <text x="117.2" y="8.0" fill="#E0DEF4">r</text>
-  <text x="125.6" y="8.0" fill="#E0DEF4">a</text>
-  <text x="134.0" y="8.0" fill="#E0DEF4">d</text>
-  <text x="142.4" y="8.0" fill="#E0DEF4">i</text>
-  <text x="150.8" y="8.0" fill="#E0DEF4">e</text>
-  <text x="159.2" y="8.0" fill="#E0DEF4">n</text>
-  <text x="167.6" y="8.0" fill="#E0DEF4">t</text>
+  <text x="8.0" y="17.8" fill="#E0DEF4">D</text>
+  <text x="16.4" y="17.8" fill="#E0DEF4">i</text>
+  <text x="24.8" y="17.8" fill="#E0DEF4">r</text>
+  <text x="33.2" y="17.8" fill="#E0DEF4">e</text>
+  <text x="41.6" y="17.8" fill="#E0DEF4">c</text>
+  <text x="50.0" y="17.8" fill="#E0DEF4">t</text>
+  <text x="66.8" y="17.8" fill="#E0DEF4">T</text>
+  <text x="75.2" y="17.8" fill="#E0DEF4">e</text>
+  <text x="83.6" y="17.8" fill="#E0DEF4">x</text>
+  <text x="92.0" y="17.8" fill="#E0DEF4">t</text>
+  <text x="108.8" y="17.8" fill="#E0DEF4">g</text>
+  <text x="117.2" y="17.8" fill="#E0DEF4">r</text>
+  <text x="125.6" y="17.8" fill="#E0DEF4">a</text>
+  <text x="134.0" y="17.8" fill="#E0DEF4">d</text>
+  <text x="142.4" y="17.8" fill="#E0DEF4">i</text>
+  <text x="150.8" y="17.8" fill="#E0DEF4">e</text>
+  <text x="159.2" y="17.8" fill="#E0DEF4">n</text>
+  <text x="167.6" y="17.8" fill="#E0DEF4">t</text>
   <rect x="8.0" y="47.2" width="8.4" height="19.6" fill="#0A5A46"/>
   <rect x="16.4" y="47.2" width="8.4" height="19.6" fill="#0C5846"/>
   <rect x="24.8" y="47.2" width="8.4" height="19.6" fill="#0E5646"/>
@@ -84,36 +85,36 @@
   <rect x="234.8" y="47.2" width="8.4" height="19.6" fill="#412346"/>
   <rect x="243.2" y="47.2" width="8.4" height="19.6" fill="#432146"/>
   <rect x="251.6" y="47.2" width="8.4" height="19.6" fill="#451F46"/>
-  <text x="8.0" y="47.2" fill="#AAAAAA">╭</text>
-  <text x="16.4" y="47.2" fill="#AAAAAA">─</text>
-  <text x="24.8" y="47.2" fill="#AAAAAA">─</text>
-  <text x="33.2" y="47.2" fill="#AAAAAA">─</text>
-  <text x="41.6" y="47.2" fill="#AAAAAA">─</text>
-  <text x="50.0" y="47.2" fill="#AAAAAA">─</text>
-  <text x="58.4" y="47.2" fill="#AAAAAA">─</text>
-  <text x="66.8" y="47.2" fill="#AAAAAA">─</text>
-  <text x="75.2" y="47.2" fill="#AAAAAA">─</text>
-  <text x="83.6" y="47.2" fill="#AAAAAA">─</text>
-  <text x="92.0" y="47.2" fill="#AAAAAA">─</text>
-  <text x="100.4" y="47.2" fill="#AAAAAA">─</text>
-  <text x="108.8" y="47.2" fill="#AAAAAA">─</text>
-  <text x="117.2" y="47.2" fill="#AAAAAA">─</text>
-  <text x="125.6" y="47.2" fill="#AAAAAA">─</text>
-  <text x="134.0" y="47.2" fill="#AAAAAA">─</text>
-  <text x="142.4" y="47.2" fill="#AAAAAA">─</text>
-  <text x="150.8" y="47.2" fill="#AAAAAA">─</text>
-  <text x="159.2" y="47.2" fill="#AAAAAA">─</text>
-  <text x="167.6" y="47.2" fill="#AAAAAA">─</text>
-  <text x="176.0" y="47.2" fill="#AAAAAA">─</text>
-  <text x="184.4" y="47.2" fill="#AAAAAA">─</text>
-  <text x="192.8" y="47.2" fill="#AAAAAA">─</text>
-  <text x="201.2" y="47.2" fill="#AAAAAA">─</text>
-  <text x="209.6" y="47.2" fill="#AAAAAA">─</text>
-  <text x="218.0" y="47.2" fill="#AAAAAA">─</text>
-  <text x="226.4" y="47.2" fill="#AAAAAA">─</text>
-  <text x="234.8" y="47.2" fill="#AAAAAA">─</text>
-  <text x="243.2" y="47.2" fill="#AAAAAA">─</text>
-  <text x="251.6" y="47.2" fill="#AAAAAA">╮</text>
+  <path d="M 16.4000 57.0000 L 16.4000 57.0000 Q 12.2000 57.0000 12.2000 61.2000 L 12.2000 66.8000" fill="none" stroke="#AAAAAA" stroke-width="1.0500"/>
+  <path d="M 16.4000 57.0000 L 24.8000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 24.8000 57.0000 L 33.2000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 33.2000 57.0000 L 41.6000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 41.6000 57.0000 L 50.0000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 50.0000 57.0000 L 58.4000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 58.4000 57.0000 L 66.8000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 66.8000 57.0000 L 75.2000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 75.2000 57.0000 L 83.6000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 83.6000 57.0000 L 92.0000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 92.0000 57.0000 L 100.4000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 100.4000 57.0000 L 108.8000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 108.8000 57.0000 L 117.2000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 117.2000 57.0000 L 125.6000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 125.6000 57.0000 L 134.0000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 134.0000 57.0000 L 142.4000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 142.4000 57.0000 L 150.8000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 150.8000 57.0000 L 159.2000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 159.2000 57.0000 L 167.6000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 167.6000 57.0000 L 176.0000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 176.0000 57.0000 L 184.4000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 184.4000 57.0000 L 192.8000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 192.8000 57.0000 L 201.2000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 201.2000 57.0000 L 209.6000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 209.6000 57.0000 L 218.0000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 218.0000 57.0000 L 226.4000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 226.4000 57.0000 L 234.8000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 234.8000 57.0000 L 243.2000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 243.2000 57.0000 L 251.6000 57.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 251.6000 57.0000 L 251.6000 57.0000 Q 255.8000 57.0000 255.8000 61.2000 L 255.8000 66.8000" fill="none" stroke="#AAAAAA" stroke-width="1.0500"/>
   <rect x="8.0" y="66.8" width="8.4" height="19.6" fill="#0C5846"/>
   <rect x="16.4" y="66.8" width="8.4" height="19.6" fill="#0E5646"/>
   <rect x="24.8" y="66.8" width="8.4" height="19.6" fill="#105446"/>
@@ -144,8 +145,8 @@
   <rect x="234.8" y="66.8" width="8.4" height="19.6" fill="#432146"/>
   <rect x="243.2" y="66.8" width="8.4" height="19.6" fill="#451F46"/>
   <rect x="251.6" y="66.8" width="8.4" height="19.6" fill="#481C46"/>
-  <text x="8.0" y="66.8" fill="#AAAAAA">│</text>
-  <text x="251.6" y="66.8" fill="#AAAAAA">│</text>
+  <path d="M 12.2000 66.8000 L 12.2000 86.4000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 255.8000 66.8000 L 255.8000 86.4000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="86.4" width="8.4" height="19.6" fill="#0E5646"/>
   <rect x="16.4" y="86.4" width="8.4" height="19.6" fill="#105446"/>
   <rect x="24.8" y="86.4" width="8.4" height="19.6" fill="#125246"/>
@@ -176,30 +177,30 @@
   <rect x="234.8" y="86.4" width="8.4" height="19.6" fill="#451F46"/>
   <rect x="243.2" y="86.4" width="8.4" height="19.6" fill="#481C46"/>
   <rect x="251.6" y="86.4" width="8.4" height="19.6" fill="#4A1A46"/>
-  <text x="8.0" y="86.4" fill="#AAAAAA">│</text>
-  <text x="24.8" y="86.4" fill="#E0DEF4">W</text>
-  <text x="33.2" y="86.4" fill="#E0DEF4">r</text>
-  <text x="41.6" y="86.4" fill="#E0DEF4">a</text>
-  <text x="50.0" y="86.4" fill="#E0DEF4">p</text>
-  <text x="58.4" y="86.4" fill="#E0DEF4">p</text>
-  <text x="66.8" y="86.4" fill="#E0DEF4">e</text>
-  <text x="75.2" y="86.4" fill="#E0DEF4">d</text>
-  <text x="92.0" y="86.4" fill="#E0DEF4">a</text>
-  <text x="100.4" y="86.4" fill="#E0DEF4">n</text>
-  <text x="108.8" y="86.4" fill="#E0DEF4">d</text>
-  <text x="125.6" y="86.4" fill="#E0DEF4">c</text>
-  <text x="134.0" y="86.4" fill="#E0DEF4">e</text>
-  <text x="142.4" y="86.4" fill="#E0DEF4">n</text>
-  <text x="150.8" y="86.4" fill="#E0DEF4">t</text>
-  <text x="159.2" y="86.4" fill="#E0DEF4">e</text>
-  <text x="167.6" y="86.4" fill="#E0DEF4">r</text>
-  <text x="176.0" y="86.4" fill="#E0DEF4">e</text>
-  <text x="184.4" y="86.4" fill="#E0DEF4">d</text>
-  <text x="201.2" y="86.4" fill="#E0DEF4">t</text>
-  <text x="209.6" y="86.4" fill="#E0DEF4">e</text>
-  <text x="218.0" y="86.4" fill="#E0DEF4">x</text>
-  <text x="226.4" y="86.4" fill="#E0DEF4">t</text>
-  <text x="251.6" y="86.4" fill="#AAAAAA">│</text>
+  <path d="M 12.2000 86.4000 L 12.2000 106.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <text x="24.8" y="96.2" fill="#E0DEF4">W</text>
+  <text x="33.2" y="96.2" fill="#E0DEF4">r</text>
+  <text x="41.6" y="96.2" fill="#E0DEF4">a</text>
+  <text x="50.0" y="96.2" fill="#E0DEF4">p</text>
+  <text x="58.4" y="96.2" fill="#E0DEF4">p</text>
+  <text x="66.8" y="96.2" fill="#E0DEF4">e</text>
+  <text x="75.2" y="96.2" fill="#E0DEF4">d</text>
+  <text x="92.0" y="96.2" fill="#E0DEF4">a</text>
+  <text x="100.4" y="96.2" fill="#E0DEF4">n</text>
+  <text x="108.8" y="96.2" fill="#E0DEF4">d</text>
+  <text x="125.6" y="96.2" fill="#E0DEF4">c</text>
+  <text x="134.0" y="96.2" fill="#E0DEF4">e</text>
+  <text x="142.4" y="96.2" fill="#E0DEF4">n</text>
+  <text x="150.8" y="96.2" fill="#E0DEF4">t</text>
+  <text x="159.2" y="96.2" fill="#E0DEF4">e</text>
+  <text x="167.6" y="96.2" fill="#E0DEF4">r</text>
+  <text x="176.0" y="96.2" fill="#E0DEF4">e</text>
+  <text x="184.4" y="96.2" fill="#E0DEF4">d</text>
+  <text x="201.2" y="96.2" fill="#E0DEF4">t</text>
+  <text x="209.6" y="96.2" fill="#E0DEF4">e</text>
+  <text x="218.0" y="96.2" fill="#E0DEF4">x</text>
+  <text x="226.4" y="96.2" fill="#E0DEF4">t</text>
+  <path d="M 255.8000 86.4000 L 255.8000 106.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="106.0" width="8.4" height="19.6" fill="#105446"/>
   <rect x="16.4" y="106.0" width="8.4" height="19.6" fill="#125246"/>
   <rect x="24.8" y="106.0" width="8.4" height="19.6" fill="#145046"/>
@@ -230,8 +231,8 @@
   <rect x="234.8" y="106.0" width="8.4" height="19.6" fill="#481C46"/>
   <rect x="243.2" y="106.0" width="8.4" height="19.6" fill="#4A1A46"/>
   <rect x="251.6" y="106.0" width="8.4" height="19.6" fill="#4C1846"/>
-  <text x="8.0" y="106.0" fill="#AAAAAA">│</text>
-  <text x="251.6" y="106.0" fill="#AAAAAA">│</text>
+  <path d="M 12.2000 106.0000 L 12.2000 125.6000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 255.8000 106.0000 L 255.8000 125.6000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="125.6" width="8.4" height="19.6" fill="#125246"/>
   <rect x="16.4" y="125.6" width="8.4" height="19.6" fill="#145046"/>
   <rect x="24.8" y="125.6" width="8.4" height="19.6" fill="#164E46"/>
@@ -262,8 +263,8 @@
   <rect x="234.8" y="125.6" width="8.4" height="19.6" fill="#4A1A46"/>
   <rect x="243.2" y="125.6" width="8.4" height="19.6" fill="#4C1846"/>
   <rect x="251.6" y="125.6" width="8.4" height="19.6" fill="#4E1646"/>
-  <text x="8.0" y="125.6" fill="#AAAAAA">│</text>
-  <text x="251.6" y="125.6" fill="#AAAAAA">│</text>
+  <path d="M 12.2000 125.6000 L 12.2000 145.2000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 255.8000 125.6000 L 255.8000 145.2000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="145.2" width="8.4" height="19.6" fill="#145046"/>
   <rect x="16.4" y="145.2" width="8.4" height="19.6" fill="#164E46"/>
   <rect x="24.8" y="145.2" width="8.4" height="19.6" fill="#184C46"/>
@@ -294,8 +295,8 @@
   <rect x="234.8" y="145.2" width="8.4" height="19.6" fill="#4C1846"/>
   <rect x="243.2" y="145.2" width="8.4" height="19.6" fill="#4E1646"/>
   <rect x="251.6" y="145.2" width="8.4" height="19.6" fill="#501446"/>
-  <text x="8.0" y="145.2" fill="#AAAAAA">│</text>
-  <text x="251.6" y="145.2" fill="#AAAAAA">│</text>
+  <path d="M 12.2000 145.2000 L 12.2000 164.8000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 255.8000 145.2000 L 255.8000 164.8000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="164.8" width="8.4" height="19.6" fill="#164E46"/>
   <rect x="16.4" y="164.8" width="8.4" height="19.6" fill="#184C46"/>
   <rect x="24.8" y="164.8" width="8.4" height="19.6" fill="#1A4A46"/>
@@ -326,8 +327,8 @@
   <rect x="234.8" y="164.8" width="8.4" height="19.6" fill="#4E1646"/>
   <rect x="243.2" y="164.8" width="8.4" height="19.6" fill="#501446"/>
   <rect x="251.6" y="164.8" width="8.4" height="19.6" fill="#521246"/>
-  <text x="8.0" y="164.8" fill="#AAAAAA">│</text>
-  <text x="251.6" y="164.8" fill="#AAAAAA">│</text>
+  <path d="M 12.2000 164.8000 L 12.2000 184.4000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 255.8000 164.8000 L 255.8000 184.4000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="184.4" width="8.4" height="19.6" fill="#184C46"/>
   <rect x="16.4" y="184.4" width="8.4" height="19.6" fill="#1A4A46"/>
   <rect x="24.8" y="184.4" width="8.4" height="19.6" fill="#1C4846"/>
@@ -358,8 +359,8 @@
   <rect x="234.8" y="184.4" width="8.4" height="19.6" fill="#501446"/>
   <rect x="243.2" y="184.4" width="8.4" height="19.6" fill="#521246"/>
   <rect x="251.6" y="184.4" width="8.4" height="19.6" fill="#541046"/>
-  <text x="8.0" y="184.4" fill="#AAAAAA">│</text>
-  <text x="251.6" y="184.4" fill="#AAAAAA">│</text>
+  <path d="M 12.2000 184.4000 L 12.2000 204.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 255.8000 184.4000 L 255.8000 204.0000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="204.0" width="8.4" height="19.6" fill="#1A4A46"/>
   <rect x="16.4" y="204.0" width="8.4" height="19.6" fill="#1C4846"/>
   <rect x="24.8" y="204.0" width="8.4" height="19.6" fill="#1F4546"/>
@@ -390,8 +391,8 @@
   <rect x="234.8" y="204.0" width="8.4" height="19.6" fill="#521246"/>
   <rect x="243.2" y="204.0" width="8.4" height="19.6" fill="#541046"/>
   <rect x="251.6" y="204.0" width="8.4" height="19.6" fill="#560E46"/>
-  <text x="8.0" y="204.0" fill="#AAAAAA">│</text>
-  <text x="251.6" y="204.0" fill="#AAAAAA">│</text>
+  <path d="M 12.2000 204.0000 L 12.2000 223.6000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 255.8000 204.0000 L 255.8000 223.6000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="223.6" width="8.4" height="19.6" fill="#1C4846"/>
   <rect x="16.4" y="223.6" width="8.4" height="19.6" fill="#1F4546"/>
   <rect x="24.8" y="223.6" width="8.4" height="19.6" fill="#214346"/>
@@ -422,6 +423,6 @@
   <rect x="234.8" y="223.6" width="8.4" height="19.6" fill="#541046"/>
   <rect x="243.2" y="223.6" width="8.4" height="19.6" fill="#560E46"/>
   <rect x="251.6" y="223.6" width="8.4" height="19.6" fill="#580C46"/>
-  <text x="8.0" y="223.6" fill="#AAAAAA">│</text>
-  <text x="251.6" y="223.6" fill="#AAAAAA">│</text>
+  <path d="M 12.2000 223.6000 L 12.2000 243.2000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 255.8000 223.6000 L 255.8000 243.2000" fill="none" stroke="#AAAAAA" stroke-width="1.0500" shape-rendering="crispEdges"/>
 </svg>

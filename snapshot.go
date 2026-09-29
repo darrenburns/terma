@@ -160,7 +160,8 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 	// Style block with Google Fonts import for Fira Code
 	sb.WriteString(fmt.Sprintf(`  <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: %s; font-size: %dpx; dominant-baseline: text-before-edge; }
+    text { font-family: %s; font-size: %dpx; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
@@ -222,6 +223,10 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 				x++
 				continue
 			}
+			if writeBoxDrawing(&sb, cell, float64(opts.Padding)+float64(x)*opts.CellWidth, rowY, opts.CellWidth, cellHeight, opts.Background) {
+				x++
+				continue
+			}
 
 			// Check if cell has styling that requires spaces to be rendered in text spans
 			// (reverse swaps fg/bg so needs text span; underline needs text span for decoration)
@@ -252,13 +257,17 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 				x++
 			}
 
-			// Look ahead for same-style cells (including spaces with same style)
-			for x < width {
+			// Wide graphemes get their own cell position: fallback fonts need
+			// not advance by exactly two terminal cells. Keep narrow runs grouped.
+			for cell.Width <= 1 && x < width {
 				nextCell := buf.CellAt(x, y)
-				if nextCell == nil || nextCell.Content == "" {
+				if nextCell == nil || nextCell.Content == "" || nextCell.Width > 1 {
 					break
 				}
 				if _, _, _, _, ok := blockElementBox(nextCell.Content); ok {
+					break
+				}
+				if _, ok := boxDrawingShape(nextCell.Content); ok {
 					break
 				}
 				nextFg := FromANSI(nextCell.Style.Fg)
@@ -284,7 +293,9 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 
 			// Render the text span
 			textX := float64(opts.Padding) + float64(startX)*opts.CellWidth
-			textY := rowY
+			// Center the font's ascent/descent box in the terminal cell. Using
+			// text-before-edge at rowY crowds glyphs against the cell's top edge.
+			textY := rowY + cellHeight/2
 
 			// Handle reverse video: swap foreground and background
 			textFg := baseFg
@@ -337,14 +348,25 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 				fillAttr = ` fill="#FFFFFF"` // default to white text
 			}
 
-			sb.WriteString(fmt.Sprintf(`  <text x="%.1f" y="%.1f"%s%s>%s</text>`,
-				textX, textY, classAttr, fillAttr, html.EscapeString(textContent.String())))
+			glyphX, anchorAttr := svgGlyphPosition(textX, cell.Width, opts.CellWidth)
+			sb.WriteString(fmt.Sprintf(`  <text x="%.1f" y="%.1f"%s%s%s>%s</text>`,
+				glyphX, textY, classAttr, fillAttr, anchorAttr, html.EscapeString(textContent.String())))
 			sb.WriteString("\n")
 		}
 	}
 
 	sb.WriteString("</svg>\n")
 	return sb.String()
+}
+
+// Center a wide grapheme in its reserved cells without stretching the glyph.
+// The following text can then start at its actual terminal column, independent
+// of the CJK fallback font's advance width.
+func svgGlyphPosition(x float64, width int, cellWidth float64) (float64, string) {
+	if width > 1 {
+		return x + float64(width)*cellWidth/2, ` text-anchor="middle"`
+	}
+	return x, ""
 }
 
 // blockElementBox returns the part of a cell that a block element fills, as
@@ -511,7 +533,8 @@ func GenerateDiffSVG(expected, actual *uv.Buffer, width, height int, opts SVGOpt
 	// Style block
 	sb.WriteString(fmt.Sprintf(`  <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: %s; font-size: %dpx; dominant-baseline: text-before-edge; }
+    text { font-family: %s; font-size: %dpx; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
   </style>`, opts.FontFamily, opts.FontSize))
 	sb.WriteString("\n")
 
@@ -522,6 +545,16 @@ func GenerateDiffSVG(expected, actual *uv.Buffer, width, height int, opts SVGOpt
 	// Render each cell
 	for y := 0; y < height; y++ {
 		rowY := float64(opts.Padding) + float64(y)*cellHeight
+		textY := rowY + cellHeight/2
+
+		// Paint the row's backgrounds before any text. A continuation cell's
+		// highlight must not cover the right half of a wide grapheme.
+		for x := 0; x < width; x++ {
+			if !cellsEqual(expected.CellAt(x, y), actual.CellAt(x, y)) {
+				cellX := float64(opts.Padding) + float64(x)*opts.CellWidth
+				fmt.Fprintf(&sb, "  <rect x=\"%.1f\" y=\"%.1f\" width=\"%.1f\" height=\"%.1f\" fill=\"%s\"/>\n", cellX, rowY, opts.CellWidth, cellHeight, diffBgColor)
+			}
+		}
 
 		for x := 0; x < width; x++ {
 			expectedCell := expected.CellAt(x, y)
@@ -532,28 +565,29 @@ func GenerateDiffSVG(expected, actual *uv.Buffer, width, height int, opts SVGOpt
 
 			// Get content to display (prefer actual, fall back to expected)
 			content := ""
+			displayCell := actualCell
 			if actualCell != nil && actualCell.Content != "" {
 				content = actualCell.Content
 			} else if expectedCell != nil && expectedCell.Content != "" {
 				content = expectedCell.Content
+				displayCell = expectedCell
+			}
+			glyphX, anchorAttr := cellX, ""
+			if displayCell != nil {
+				glyphX, anchorAttr = svgGlyphPosition(cellX, displayCell.Width, opts.CellWidth)
 			}
 
 			if isDiff {
-				// Highlight differing cell with bright background
-				sb.WriteString(fmt.Sprintf(`  <rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="%s"/>`,
-					cellX, rowY, opts.CellWidth, cellHeight, diffBgColor))
-				sb.WriteString("\n")
-
 				if content != "" && content != " " {
-					sb.WriteString(fmt.Sprintf(`  <text x="%.1f" y="%.1f" fill="%s">%s</text>`,
-						cellX, rowY, diffFgColor, html.EscapeString(content)))
+					sb.WriteString(fmt.Sprintf(`  <text x="%.1f" y="%.1f" fill="%s"%s>%s</text>`,
+						glyphX, textY, diffFgColor, anchorAttr, html.EscapeString(content)))
 					sb.WriteString("\n")
 				}
 			} else {
 				// Show matching cell dimmed
 				if content != "" && content != " " {
-					sb.WriteString(fmt.Sprintf(`  <text x="%.1f" y="%.1f" fill="%s">%s</text>`,
-						cellX, rowY, matchColor, html.EscapeString(content)))
+					sb.WriteString(fmt.Sprintf(`  <text x="%.1f" y="%.1f" fill="%s"%s>%s</text>`,
+						glyphX, textY, matchColor, anchorAttr, html.EscapeString(content)))
 					sb.WriteString("\n")
 				}
 			}

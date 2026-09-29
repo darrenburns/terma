@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="226" height="153" viewBox="0 0 226 153">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
@@ -30,7 +31,28 @@
   <rect x="167.6" y="8.0" width="8.4" height="19.6" fill="#646464"/>
   <rect x="176.0" y="8.0" width="8.4" height="19.6" fill="#646464"/>
   <rect x="184.4" y="8.0" width="8.4" height="19.6" fill="#646464"/>
-  <text x="8.0" y="8.0" fill="#8C468C">╭────────────────────╮</text>
+  <path d="M 16.4000 17.8000 L 16.4000 17.8000 Q 12.2000 17.8000 12.2000 22.0000 L 12.2000 27.6000" fill="none" stroke="#8C468C" stroke-width="1.0500"/>
+  <path d="M 16.4000 17.8000 L 24.8000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 24.8000 17.8000 L 33.2000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 33.2000 17.8000 L 41.6000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 41.6000 17.8000 L 50.0000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 50.0000 17.8000 L 58.4000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 58.4000 17.8000 L 66.8000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 66.8000 17.8000 L 75.2000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 75.2000 17.8000 L 83.6000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 83.6000 17.8000 L 92.0000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 92.0000 17.8000 L 100.4000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 100.4000 17.8000 L 108.8000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 108.8000 17.8000 L 117.2000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 117.2000 17.8000 L 125.6000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 125.6000 17.8000 L 134.0000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 134.0000 17.8000 L 142.4000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 142.4000 17.8000 L 150.8000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 150.8000 17.8000 L 159.2000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 159.2000 17.8000 L 167.6000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 167.6000 17.8000 L 176.0000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 176.0000 17.8000 L 184.4000 17.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 184.4000 17.8000 L 184.4000 17.8000 Q 188.6000 17.8000 188.6000 22.0000 L 188.6000 27.6000" fill="none" stroke="#8C468C" stroke-width="1.0500"/>
   <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#646464"/>
   <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#4664B4"/>
   <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#4664B4"/>
@@ -53,10 +75,10 @@
   <rect x="167.6" y="27.6" width="8.4" height="19.6" fill="#646464"/>
   <rect x="176.0" y="27.6" width="8.4" height="19.6" fill="#646464"/>
   <rect x="184.4" y="27.6" width="8.4" height="19.6" fill="#646464"/>
-  <text x="8.0" y="27.6" fill="#8C468C">│</text>
-  <text x="16.4" y="27.6" fill="#E0DEF4">Bordered</text>
-  <text x="92.0" y="27.6" fill="#E0DEF4">Stack</text>
-  <text x="184.4" y="27.6" fill="#8C468C">│</text>
+  <path d="M 12.2000 27.6000 L 12.2000 47.2000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <text x="16.4" y="37.4" fill="#E0DEF4">Bordered</text>
+  <text x="92.0" y="37.4" fill="#E0DEF4">Stack</text>
+  <path d="M 188.6000 27.6000 L 188.6000 47.2000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="47.2" width="8.4" height="19.6" fill="#646464"/>
   <rect x="16.4" y="47.2" width="8.4" height="19.6" fill="#646464"/>
   <rect x="24.8" y="47.2" width="8.4" height="19.6" fill="#646464"/>
@@ -79,8 +101,8 @@
   <rect x="167.6" y="47.2" width="8.4" height="19.6" fill="#646464"/>
   <rect x="176.0" y="47.2" width="8.4" height="19.6" fill="#646464"/>
   <rect x="184.4" y="47.2" width="8.4" height="19.6" fill="#646464"/>
-  <text x="8.0" y="47.2" fill="#8C468C">│</text>
-  <text x="184.4" y="47.2" fill="#8C468C">│</text>
+  <path d="M 12.2000 47.2000 L 12.2000 66.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 188.6000 47.2000 L 188.6000 66.8000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="66.8" width="8.4" height="19.6" fill="#646464"/>
   <rect x="16.4" y="66.8" width="8.4" height="19.6" fill="#646464"/>
   <rect x="24.8" y="66.8" width="8.4" height="19.6" fill="#646464"/>
@@ -103,8 +125,8 @@
   <rect x="167.6" y="66.8" width="8.4" height="19.6" fill="#646464"/>
   <rect x="176.0" y="66.8" width="8.4" height="19.6" fill="#646464"/>
   <rect x="184.4" y="66.8" width="8.4" height="19.6" fill="#646464"/>
-  <text x="8.0" y="66.8" fill="#8C468C">│</text>
-  <text x="184.4" y="66.8" fill="#8C468C">│</text>
+  <path d="M 12.2000 66.8000 L 12.2000 86.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 188.6000 66.8000 L 188.6000 86.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="86.4" width="8.4" height="19.6" fill="#646464"/>
   <rect x="16.4" y="86.4" width="8.4" height="19.6" fill="#646464"/>
   <rect x="24.8" y="86.4" width="8.4" height="19.6" fill="#646464"/>
@@ -127,8 +149,8 @@
   <rect x="167.6" y="86.4" width="8.4" height="19.6" fill="#646464"/>
   <rect x="176.0" y="86.4" width="8.4" height="19.6" fill="#646464"/>
   <rect x="184.4" y="86.4" width="8.4" height="19.6" fill="#646464"/>
-  <text x="8.0" y="86.4" fill="#8C468C">│</text>
-  <text x="184.4" y="86.4" fill="#8C468C">│</text>
+  <path d="M 12.2000 86.4000 L 12.2000 106.0000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 188.6000 86.4000 L 188.6000 106.0000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="106.0" width="8.4" height="19.6" fill="#646464"/>
   <rect x="16.4" y="106.0" width="8.4" height="19.6" fill="#646464"/>
   <rect x="24.8" y="106.0" width="8.4" height="19.6" fill="#646464"/>
@@ -151,8 +173,8 @@
   <rect x="167.6" y="106.0" width="8.4" height="19.6" fill="#646464"/>
   <rect x="176.0" y="106.0" width="8.4" height="19.6" fill="#646464"/>
   <rect x="184.4" y="106.0" width="8.4" height="19.6" fill="#646464"/>
-  <text x="8.0" y="106.0" fill="#8C468C">│</text>
-  <text x="184.4" y="106.0" fill="#8C468C">│</text>
+  <path d="M 12.2000 106.0000 L 12.2000 125.6000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 188.6000 106.0000 L 188.6000 125.6000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="125.6" width="8.4" height="19.6" fill="#646464"/>
   <rect x="16.4" y="125.6" width="8.4" height="19.6" fill="#646464"/>
   <rect x="24.8" y="125.6" width="8.4" height="19.6" fill="#646464"/>
@@ -175,5 +197,26 @@
   <rect x="167.6" y="125.6" width="8.4" height="19.6" fill="#646464"/>
   <rect x="176.0" y="125.6" width="8.4" height="19.6" fill="#646464"/>
   <rect x="184.4" y="125.6" width="8.4" height="19.6" fill="#646464"/>
-  <text x="8.0" y="125.6" fill="#8C468C">╰────────────────────╯</text>
+  <path d="M 16.4000 135.4000 L 16.4000 135.4000 Q 12.2000 135.4000 12.2000 131.2000 L 12.2000 125.6000" fill="none" stroke="#8C468C" stroke-width="1.0500"/>
+  <path d="M 16.4000 135.4000 L 24.8000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 24.8000 135.4000 L 33.2000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 33.2000 135.4000 L 41.6000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 41.6000 135.4000 L 50.0000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 50.0000 135.4000 L 58.4000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 58.4000 135.4000 L 66.8000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 66.8000 135.4000 L 75.2000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 75.2000 135.4000 L 83.6000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 83.6000 135.4000 L 92.0000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 92.0000 135.4000 L 100.4000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 100.4000 135.4000 L 108.8000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 108.8000 135.4000 L 117.2000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 117.2000 135.4000 L 125.6000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 125.6000 135.4000 L 134.0000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 134.0000 135.4000 L 142.4000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 142.4000 135.4000 L 150.8000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 150.8000 135.4000 L 159.2000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 159.2000 135.4000 L 167.6000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 167.6000 135.4000 L 176.0000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 176.0000 135.4000 L 184.4000 135.4000" fill="none" stroke="#8C468C" stroke-width="1.0500" shape-rendering="crispEdges"/>
+  <path d="M 184.4000 135.4000 L 184.4000 135.4000 Q 188.6000 135.4000 188.6000 131.2000 L 188.6000 125.6000" fill="none" stroke="#8C468C" stroke-width="1.0500"/>
 </svg>

@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="234" height="36" viewBox="0 0 234 36">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
-    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: text-before-edge; }
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
     .bold { font-weight: bold; }
     .italic { font-style: italic; }
     .underline { text-decoration: underline; }
@@ -22,8 +23,8 @@
   <rect x="134.0" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <text x="50.0" y="8.0" fill="#E0DEF4">Help</text>
-  <text x="92.0" y="8.0" fill="#767487">[</text>
-  <text x="100.4" y="8.0" fill="#E0DEF4">Target</text>
-  <text x="150.8" y="8.0" fill="#767487">]</text>
+  <text x="50.0" y="17.8" fill="#E0DEF4">Help</text>
+  <text x="92.0" y="17.8" fill="#767487">[</text>
+  <text x="100.4" y="17.8" fill="#E0DEF4">Target</text>
+  <text x="150.8" y="17.8" fill="#767487">]</text>
 </svg>
