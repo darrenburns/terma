@@ -37,7 +37,7 @@ func (a *app) Build(ctx t.BuildContext) t.Widget {
 	return t.Column{Children: []t.Widget{
 		t.Text{Content: "Hover cause demo: s toggles summary; q quits"},
 		t.Text{Content: "Park mouse in the box, press s. Move away and back to dismiss."},
-		t.ComputedText("summary-status", func() string {
+		t.ComputedText("Summary visible: false | Last summary enter: pointer", func() string {
 			return fmt.Sprintf("Summary visible: %t | Last summary enter: %s", a.visible.Get(), a.lastEnter.Get())
 		}),
 		t.Text{Content: "", Height: t.Cells(1)},
