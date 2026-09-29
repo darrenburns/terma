@@ -1,6 +1,7 @@
 package terma
 
 import (
+	"sort"
 	"strings"
 	"unicode"
 
@@ -27,6 +28,7 @@ type TextAreaState struct {
 	lastFocused   bool
 
 	preferredColumn int
+	geometry        textAreaGeometry
 }
 
 // NewTextAreaState creates a new TextAreaState with optional initial text.
@@ -406,12 +408,12 @@ func (s *TextAreaState) ReplaceSelection(text string) {
 }
 
 func (s *TextAreaState) cursorVerticalMove(delta int) {
-	graphemes := s.Content.Peek()
+	graphemes, revision := s.Content.peekWithRevision()
 	if len(graphemes) == 0 {
 		return
 	}
 	contentWidth := reservedContentWidth(s.lastWidth)
-	layout := buildTextAreaLayout(graphemes, s.WrapMode.Peek(), contentWidth, s.CursorIndex.Peek())
+	layout := s.layoutFor(graphemes, revision, s.WrapMode.Peek(), contentWidth, s.CursorIndex.Peek())
 	if len(layout.lines) == 0 {
 		return
 	}
@@ -426,9 +428,9 @@ func (s *TextAreaState) cursorVerticalMove(delta int) {
 }
 
 func (s *TextAreaState) updatePreferredColumn() {
-	graphemes := s.Content.Peek()
+	graphemes, revision := s.Content.peekWithRevision()
 	contentWidth := reservedContentWidth(s.lastWidth)
-	layout := buildTextAreaLayout(graphemes, s.WrapMode.Peek(), contentWidth, s.CursorIndex.Peek())
+	layout := s.layoutFor(graphemes, revision, s.WrapMode.Peek(), contentWidth, s.CursorIndex.Peek())
 	s.preferredColumn = layout.cursorCol
 }
 
@@ -443,9 +445,9 @@ func (s *TextAreaState) SetCursorFromLocalPosition(localX, localY int, contentWi
 	displayLine := localY + s.scrollOffsetY
 	displayCol := localX + s.scrollOffsetX
 
-	graphemes := s.Content.Peek()
+	graphemes, revision := s.Content.peekWithRevision()
 	wrapMode := s.WrapMode.Peek()
-	layout := buildTextAreaLayout(graphemes, wrapMode, contentWidth, s.CursorIndex.Peek())
+	layout := s.layoutFor(graphemes, revision, wrapMode, contentWidth, s.CursorIndex.Peek())
 	newIdx := cursorIndexForLineColumn(layout.lines, graphemes, displayLine, displayCol)
 	s.CursorIndex.Set(newIdx)
 	s.updatePreferredColumn()
@@ -466,8 +468,8 @@ func (s *TextAreaState) clampCursor() {
 // the cursor location.
 func (s *TextAreaState) CursorScreenPosition(widgetX, widgetY int) (screenX, screenY int) {
 	contentWidth := reservedContentWidth(s.lastWidth)
-	graphemes := s.Content.Peek()
-	layout := buildTextAreaLayout(graphemes, s.WrapMode.Peek(), contentWidth, s.CursorIndex.Peek())
+	graphemes, revision := s.Content.peekWithRevision()
+	layout := s.layoutFor(graphemes, revision, s.WrapMode.Peek(), contentWidth, s.CursorIndex.Peek())
 	return widgetX + layout.cursorCol - s.scrollOffsetX, widgetY + layout.cursorLine - s.scrollOffsetY
 }
 
@@ -484,7 +486,64 @@ type textAreaLayout struct {
 	maxWidth   int
 }
 
+// textAreaGeometry caches content geometry independently of the cursor and
+// selection. Content's mutation revision also detects in-place slice edits
+// published through the public Content.Set and Content.Update methods.
+type textAreaGeometry struct {
+	core     *anySignalCore[[]string]
+	revision uint64
+	width    int
+	wrap     WrapMode
+	columns  []int // cumulative grapheme widths; newlines contribute zero
+	layout   textAreaLayout
+}
+
+func (s *TextAreaState) layoutFor(graphemes []string, revision uint64, wrap WrapMode, width, cursor int) textAreaLayout {
+	cache := &s.geometry
+	contentChanged := cache.core != s.Content.core || cache.revision != revision || cache.columns == nil
+	if contentChanged {
+		cache.core = s.Content.core
+		cache.revision = revision
+		if cap(cache.columns) < len(graphemes)+1 {
+			cache.columns = make([]int, len(graphemes)+1)
+		} else {
+			cache.columns = cache.columns[:len(graphemes)+1]
+			cache.columns[0] = 0
+		}
+		for i, grapheme := range graphemes {
+			cache.columns[i+1] = cache.columns[i]
+			if grapheme != "\n" {
+				cache.columns[i+1] += graphemeWidth(grapheme)
+			}
+		}
+	}
+	if contentChanged || cache.width != width || cache.wrap != wrap {
+		cache.width = width
+		cache.wrap = wrap
+		cache.layout = buildTextAreaLayoutWithColumns(graphemes, cache.columns, wrap, width, -1)
+	}
+	layout := cache.layout
+	if cursor >= 0 && cursor <= len(graphemes) {
+		// A wrap boundary belongs to the following display line, while a
+		// newline belongs to the end of the previous line.
+		line := sort.Search(len(layout.lines), func(i int) bool { return layout.lines[i].start > cursor }) - 1
+		layout.cursorLine = line
+		layout.cursorCol = cache.columns[cursor] - cache.columns[layout.lines[line].start]
+	}
+	return layout
+}
+
 func buildTextAreaLayout(graphemes []string, wrap WrapMode, maxWidth, cursorIdx int) textAreaLayout {
+	return buildTextAreaLayoutWithColumns(graphemes, nil, wrap, maxWidth, cursorIdx)
+}
+
+func buildTextAreaLayoutWithColumns(graphemes []string, columns []int, wrap WrapMode, maxWidth, cursorIdx int) textAreaLayout {
+	widthAt := func(index int) int {
+		if columns != nil {
+			return columns[index+1] - columns[index]
+		}
+		return graphemeWidth(graphemes[index])
+	}
 	if maxWidth <= 0 || wrap == WrapNone {
 		wrap = WrapNone
 	}
@@ -530,7 +589,7 @@ func buildTextAreaLayout(graphemes []string, wrap WrapMode, maxWidth, cursorIdx 
 			lastSpaceWidth = lineWidth
 		}
 
-		gWidth := graphemeWidth(g)
+		gWidth := widthAt(i)
 		if wrap != WrapNone && lineWidth+gWidth > maxWidth && lineWidth > 0 {
 			// For soft wrap, try to break at the last space
 			if wrap == WrapSoft && lastSpaceIdx > lineStart {
@@ -548,7 +607,7 @@ func buildTextAreaLayout(graphemes []string, wrap WrapMode, maxWidth, cursorIdx 
 				lineStart = breakAt
 				lineWidth = 0
 				for j := breakAt; j < i; j++ {
-					lineWidth += graphemeWidth(graphemes[j])
+					lineWidth += widthAt(j)
 				}
 				lineIndex++
 
@@ -557,7 +616,7 @@ func buildTextAreaLayout(graphemes []string, wrap WrapMode, maxWidth, cursorIdx 
 					cursorLine = lineIndex
 					cursorCol = 0
 					for j := breakAt; j < cursorIdx; j++ {
-						cursorCol += graphemeWidth(graphemes[j])
+						cursorCol += widthAt(j)
 					}
 				}
 
@@ -1219,10 +1278,10 @@ func (t TextArea) ContentHeightHint(width int) int {
 	contentLines := 1
 	wrapMode := WrapSoft
 	if t.State != nil {
-		graphemes := t.State.Content.Get()
+		graphemes, revision := t.State.Content.getWithRevision()
 		wrapMode = t.State.WrapMode.Get()
 		contentWidth := reservedContentWidth(width)
-		layout := buildTextAreaLayout(graphemes, wrapMode, contentWidth, 0)
+		layout := t.State.layoutFor(graphemes, revision, wrapMode, contentWidth, 0)
 		contentLines = max(1, len(layout.lines))
 	}
 	placeholderLines := wrapLineCount(t.Placeholder, reservedContentWidth(width), wrapMode)
@@ -1283,7 +1342,7 @@ func (t TextArea) Render(ctx *RenderContext) {
 	t.State.lastHeight = ctx.Height
 
 	theme := ctx.buildContext.Theme()
-	graphemes := t.State.Content.Get()
+	graphemes, revision := t.State.Content.getWithRevision()
 	cursorIdx := t.State.CursorIndex.Get()
 	wrapMode := t.State.WrapMode.Get()
 	contentWidth := reservedContentWidth(ctx.Width)
@@ -1327,7 +1386,7 @@ func (t TextArea) Render(ctx *RenderContext) {
 		return
 	}
 
-	layout := buildTextAreaLayout(graphemes, wrapMode, contentWidth, cursorIdx)
+	layout := t.State.layoutFor(graphemes, revision, wrapMode, contentWidth, cursorIdx)
 	t.updateScrollOffsets(layout, contentWidth, ctx.Height)
 	t.scrollCursorIntoViewWithLayout(layout)
 
@@ -1454,7 +1513,8 @@ func (t TextArea) scrollCursorIntoView() {
 		return
 	}
 	contentWidth := reservedContentWidth(t.State.lastWidth)
-	layout := buildTextAreaLayout(t.State.Content.Peek(), t.State.WrapMode.Peek(), contentWidth, t.State.CursorIndex.Peek())
+	graphemes, revision := t.State.Content.peekWithRevision()
+	layout := t.State.layoutFor(graphemes, revision, t.State.WrapMode.Peek(), contentWidth, t.State.CursorIndex.Peek())
 	t.scrollCursorIntoViewWithLayout(layout)
 }
 
