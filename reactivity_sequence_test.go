@@ -239,7 +239,7 @@ func TestReactivityBuildIsolation(t *testing.T) {
 	work := sequence.frame("Only the left widget changes", func(s *reactivityBuildScene) { s.value.Set("after") })
 	require.Equal(t, 1, work.BuildCount, "a leaf's build dependency must not rebuild its parent or sibling")
 	require.Equal(t, "reflow", work.FrameMode)
-	require.Equal(t, 2, work.LayoutCount, "the unchanged sibling reuses its cached layout")
+	require.Equal(t, 1, work.LayoutCount, "the leaf keeps its size, so the row and its sibling reuse their cached layouts")
 	require.Equal(t, []Rect{{X: 0, Y: 0, Width: 12, Height: 1}}, work.DamagedRects, "only the rebuilt leaf is repainted")
 	sequence.frame("Shorter text clears the old value", func(s *reactivityBuildScene) { s.value.Set("x") })
 }

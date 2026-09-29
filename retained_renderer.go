@@ -2,7 +2,9 @@ package terma
 
 import (
 	"fmt"
+	"math"
 	"reflect"
+	"sort"
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/screen"
@@ -50,32 +52,146 @@ type layoutCacheEntry struct {
 }
 
 func (r *Renderer) newRetainedLayoutNode(node *widgetNode) *retainedLayoutNode {
+	// Each node has one adapter per layout pass, kept on the node, so a pass
+	// allocates nothing per child and never discards results it computed.
+	if node.layoutEpoch == r.layoutEpoch {
+		return &node.layoutAdapter
+	}
+	node.layoutEpoch = r.layoutEpoch
 	// A layout result depends only on constraints and the subtree's widgets
 	// and layout-phase reads; any change there marks the subtree dirty.
 	cacheable := r.layoutCacheEnabled && node.subtreeDirtyLevel() < DirtyLayout
+	node.layoutAdapter = retainedLayoutNode{renderer: r, node: node, cacheable: cacheable}
+	if !cacheable && r.layoutCacheEnabled && node.dirtyLevel() < DirtyLayout && r.patchLayoutCache(node) {
+		node.layoutAdapter.cacheable = true
+		cacheable = true
+	}
 	if !cacheable {
 		node.layoutCache = node.layoutCache[:0]
 		// Reads are recorded afresh as the layout is recomputed. A cacheable
 		// node keeps its subscriptions, since a hit skips those reads.
 		node.clearDependenciesForPhase(readPhaseLayout)
 	}
-	return &retainedLayoutNode{renderer: r, node: node, cacheable: cacheable}
+	return &node.layoutAdapter
+}
+
+// boxOnlyLayout reports whether a layout node uses its children's results
+// only through their boxes (and SizePreserver answers), and wraps them only
+// according to their widgets' dimensions. Such a node's result, given the
+// same constraints, is unchanged by a child whose box is unchanged.
+func boxOnlyLayout(raw layout.LayoutNode) bool {
+	switch raw.(type) {
+	case *layout.ColumnNode, *layout.RowNode, *layout.ScrollableNode, passThroughLayoutNode:
+		return true
+	}
+	return false
+}
+
+// patchLayoutCache revalidates the cached layouts of a clean node whose
+// subtree changed, without laying out its clean children again. Each changed
+// child is laid out under every constraint it was measured with last time;
+// if all of its boxes are unchanged, the node's own results are too, apart
+// from the child layouts they embed, which are replaced in place. A row
+// rebuilding in a list of thousands then costs one row's layout.
+//
+// It reports false, leaving the node to be laid out in full, whenever that
+// can't be shown: a changed box or size preference, changed dimensions that
+// decide how the node wraps the child, or a child layout it can't match to a
+// constraint.
+func (r *Renderer) patchLayoutCache(node *widgetNode) bool {
+	if !node.boxOnlyLayout || len(node.layoutCache) == 0 {
+		return false
+	}
+	widgets := extractChildren(node.widget)
+	if len(widgets) != len(node.children) {
+		return false
+	}
+	type childPatch struct {
+		index  int
+		before []layoutCacheEntry
+		after  []layout.ComputedLayout
+	}
+	var patches []childPatch
+	for i, child := range node.children {
+		if child.subtreeDirtyLevel() < DirtyLayout {
+			continue
+		}
+		if !child.parentDimsKnown || GetWidgetDimensionSet(widgets[i]) != child.parentDims || len(child.layoutCache) == 0 {
+			return false
+		}
+		patch := childPatch{index: i, before: append([]layoutCacheEntry(nil), child.layoutCache...)}
+		preserveKnown, preservesWidth, preservesHeight := child.sizePreserveKnown, child.preservesWidth, child.preservesHeight
+		adapter := r.newRetainedLayoutNode(child)
+		patch.after = make([]layout.ComputedLayout, len(patch.before))
+		for k := range patch.before {
+			patch.after[k] = adapter.ComputeLayout(patch.before[k].constraints)
+			if patch.after[k].Box != patch.before[k].result.Box {
+				return false
+			}
+		}
+		if preserveKnown {
+			if width, height := adapter.sizePreserve(); width != preservesWidth || height != preservesHeight {
+				return false
+			}
+		}
+		patches = append(patches, patch)
+	}
+
+	// Match every embedded layout of a changed child to the constraint it was
+	// computed under before changing anything.
+	type replacement struct {
+		target *layout.ComputedLayout
+		layout layout.ComputedLayout
+	}
+	var replacements []replacement
+	for e := range node.layoutCache {
+		children := node.layoutCache[e].result.Children
+		for _, patch := range patches {
+			if patch.index >= len(children) {
+				return false
+			}
+			target := &children[patch.index].Layout
+			match := -1
+			for k := range patch.before {
+				old := patch.before[k].result
+				if old.Box != target.Box || !sameChildren(old.Children, target.Children) {
+					continue
+				}
+				// Equal boxes with no children can come from several
+				// constraints; any of them serves only if the new results
+				// are childless too, and so identical.
+				if match >= 0 && (len(patch.after[match].Children) > 0 || len(patch.after[k].Children) > 0) {
+					return false
+				}
+				match = k
+			}
+			if match < 0 {
+				return false
+			}
+			replacements = append(replacements, replacement{target: target, layout: patch.after[match]})
+		}
+	}
+	for _, rep := range replacements {
+		*rep.target = rep.layout
+	}
+	return true
 }
 
 func (p *retainedLayoutNode) ComputeLayout(constraints layout.Constraints) layout.ComputedLayout {
 	// Construction discards stale entries for dirty and forced layouts. Results
 	// computed since then are reusable too: flex and stretch can measure the
 	// same child under identical constraints several times within one frame.
-	for _, entry := range p.node.layoutCache {
-		if entry.constraints == constraints {
-			return entry.result
+	cache := p.node.layoutCache
+	for i := range cache {
+		if cache[i].constraints == constraints {
+			return cache[i].result
 		}
 	}
 	result := withSignalRead(p.node, readPhaseLayout, func() layout.ComputedLayout {
 		return p.child().ComputeLayout(constraints)
 	})
 	p.renderer.lastLayoutCount++
-	cache := p.node.layoutCache
+	cache = p.node.layoutCache
 	if len(cache) == maxLayoutCacheEntries {
 		cache = append(cache[:0], cache[1:]...)
 	}
@@ -310,6 +426,11 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 	if rebuild {
 		// Its widget may have new properties even if no signal of its own
 		// changed, so treat it as changed for layout caching and damage.
+		// Its recorded hit targets hold the old widget, so they can't be
+		// replayed even if it's measured at the same place again.
+		node.registered = nil
+		// Its children may change, so which of them show must be found again.
+		node.shownValid = false
 		node.setDirtySelf(DirtyBuild)
 		node.setDirtySubtree(DirtyBuild)
 		node.clearDependenciesForPhase(readPhaseBuild)
@@ -359,23 +480,32 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 	}
 
 	childWidgets := extractChildren(node.widget)
+	quiet := walkQuietWidget(widget, node)
 	if !rebuild {
 		// The retained build still supplies the same children and wrappers.
 		// Walk them to reach dirty descendants and recollect focus scopes.
+		// A quiet subtree with nothing to rebuild has neither, so a long list
+		// of plain rows costs nothing here.
 		for i, childWidget := range childWidgets {
 			previous := node.children[i]
+			if previous.walkQuiet && previous.subtreeDirtyLevel() < DirtyBuild {
+				continue
+			}
 			child := r.buildRetainedNode(previous, childWidget, ctx.PushChild(i), fc, false)
 			if child != previous {
 				// A child replaced itself beneath this clean node. Connect it so
 				// its signal changes reach the renderer, and mark the ancestors
 				// changed so none reuses a layout computed for the old child.
 				child.parent = node
+				node.shownValid = false
 				for ancestor := node; ancestor != nil; ancestor = ancestor.parent {
 					ancestor.setDirtySubtree(DirtyBuild)
 				}
 			}
 			node.children[i] = child
+			quiet = quiet && child.walkQuiet
 		}
+		node.walkQuiet = quiet
 		return node
 	}
 	oldChildren := make(map[string]*widgetNode, len(node.children))
@@ -394,6 +524,7 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 		childNode.parent = node
 		children = append(children, childNode)
 		delete(oldChildren, childID)
+		quiet = quiet && childNode.walkQuiet
 	}
 
 	for _, child := range oldChildren {
@@ -401,7 +532,26 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 	}
 
 	node.children = children
+	node.walkQuiet = quiet
 	return node
+}
+
+// walkQuietWidget reports whether a node adds nothing of its own to what a
+// frame collects while walking the tree, and cannot change its identity
+// without being rebuilt. Such subtrees need no walk until something in them
+// rebuilds.
+func walkQuietWidget(widget Widget, node *widgetNode) bool {
+	if len(node.floats) > 0 {
+		return false
+	}
+	switch widget.(type) {
+	case Focusable, FocusTrapper, globalKeybindProvider:
+		return false
+	case Identifiable:
+		// A pointer widget can change its own ID (see buildRetainedNode).
+		return reflect.ValueOf(widget).Kind() != reflect.Pointer
+	}
+	return true
 }
 
 // needsOwnNode reports whether a widget returned from Build is a composite that
@@ -449,8 +599,9 @@ func (r *Renderer) computeRetainedLayout(node *widgetNode, constraints layout.Co
 	if node == nil {
 		return
 	}
+	r.layoutEpoch++
 	computed := r.newRetainedLayoutNode(node).ComputeLayout(constraints)
-	r.assignComputedLayout(node, computed)
+	r.assignComputedLayout(node, &computed)
 }
 
 // sameChildren reports whether two child layout slices are the same slice.
@@ -470,8 +621,21 @@ func (r *Renderer) widgetLayoutNode(node *widgetNode) layout.LayoutNode {
 			for i, child := range node.children {
 				children[i] = r.newRetainedLayoutNode(child)
 			}
-			return builder.BuildContainerLayoutNode(node.buildContext, children)
+			raw := builder.BuildContainerLayoutNode(node.buildContext, children)
+			// Record what patchLayoutCache must check is unchanged.
+			node.boxOnlyLayout = boxOnlyLayout(raw)
+			if node.boxOnlyLayout {
+				widgets := extractChildren(node.widget)
+				for i, child := range node.children {
+					child.parentDimsKnown = i < len(widgets)
+					if child.parentDimsKnown {
+						child.parentDims = GetWidgetDimensionSet(widgets[i])
+					}
+				}
+			}
+			return raw
 		}
+		node.boxOnlyLayout = false
 		if builder, ok := node.widget.(LayoutNodeBuilder); ok {
 			return builder.BuildLayoutNode(node.buildContext)
 		}
@@ -479,29 +643,43 @@ func (r *Renderer) widgetLayoutNode(node *widgetNode) layout.LayoutNode {
 	})
 }
 
-func (r *Renderer) assignComputedLayout(node *widgetNode, computed layout.ComputedLayout) {
+func (r *Renderer) assignComputedLayout(node *widgetNode, computed *layout.ComputedLayout) {
 	if node == nil {
 		return
 	}
 	// A clean subtree handed back the very result it was last assigned (a
 	// cache hit returns the same Children slice) has nothing to update.
-	if node.subtreeDirtyLevel() == DirtyNone && computed.Box == node.layout.Box && sameChildren(computed.Children, node.layout.Children) {
+	// Paint-only changes beneath it can't have changed any layout in it.
+	sameSlice := sameChildren(computed.Children, node.layout.Children)
+	if node.subtreeDirtyLevel() < DirtyLayout && computed.Box == node.layout.Box && sameSlice {
 		node.layoutReused = true
 		return
 	}
 	node.layoutReused = false
-	node.layout = computed
+	node.layout = *computed
+	if !sameSlice {
+		node.stackedAxis = stackedAxis(node, computed.Children)
+	}
 	r.lastAssignCount++
 	if observer, ok := node.widget.(LayoutObserver); ok {
 		withSignalRead(node, readPhaseLayout, func() struct{} {
-			observer.OnLayout(node.buildContext, LayoutMetrics{layout: computed})
+			observer.OnLayout(node.buildContext, LayoutMetrics{layout: *computed})
 			return struct{}{}
 		})
 	}
 	node.updateIntrinsicCache()
 	limit := min(len(node.children), len(computed.Children))
 	for i := 0; i < limit; i++ {
-		r.assignComputedLayout(node.children[i], computed.Children[i].Layout)
+		child := node.children[i]
+		if sameSlice && node.stackedAxis != stackedNone && child.subtreeDirtyLevel() >= DirtyLayout {
+			// The same layout, patched for changed children with unchanged
+			// boxes (see patchLayoutCache), keeps its stacking unless a
+			// changed child became a Stack, which can draw beyond its box.
+			if _, isStack := child.widget.(Stack); isStack {
+				node.stackedAxis = stackedNone
+			}
+		}
+		r.assignComputedLayout(child, &computed.Children[i].Layout)
 	}
 	for i := limit; i < len(node.children); i++ {
 		node.children[i].layoutReused = false
@@ -518,11 +696,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		return Rect{}
 	}
 
-	selfCtx := *ctx
-	selfCtx.currentEventID = node.eventID
-	ctx = &selfCtx
-
-	box := node.layout.Box
+	box := &node.layout.Box
 	borderX, borderY := box.BorderOrigin()
 	contentX, contentY := box.ContentOrigin()
 
@@ -544,10 +718,28 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		return Rect{}
 	}
 
-	var style Style
-	if styled, ok := node.widget.(Styled); ok {
-		style = styled.GetStyle()
+	// Outside a Stack, a node and everything beneath it draw only within its
+	// border box. If that is entirely out of view (a row scrolled out of a
+	// long list, say) there is nothing to draw, measure or hit-test, so its
+	// subtree is not visited: scrolling costs what is on screen, not what
+	// could be scrolled to. Its empty subtreeBounds tells later frames that
+	// nothing beneath it is visible (see collectDamageRects).
+	if !partial && !nodeBounds.Intersects(ctx.visible) {
+		if _, isStack := node.widget.(Stack); !isStack {
+			if r.geometryOnly {
+				r.recordReflowDamage(node, nodeBounds, Rect{}, ctx.visible)
+			}
+			node.registered = nil
+			node.prevBox = *box
+			node.bounds = nodeBounds
+			node.subtreeBounds = Rect{}
+			return Rect{}
+		}
 	}
+
+	selfCtx := *ctx
+	selfCtx.currentEventID = node.eventID
+	ctx = &selfCtx
 
 	if r.geometryOnly {
 		// A clean subtree with the same layout in the same place is exactly as
@@ -566,7 +758,8 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 			r.recordRegistry(node, nodeBounds, ctx.clip)
 		}
 		subtreeBounds := nodeBounds
-		r.forEachChildContext(ctx, node, style, absBorderX, absBorderY, absContentX, absContentY, func(childCtx *RenderContext, child *widgetNode, x, y int) {
+		// Measuring needs no style: it only affects how children are drawn.
+		r.forEachChildContext(ctx, node, Style{}, partial, absBorderX, absBorderY, absContentX, absContentY, func(childCtx *RenderContext, child *widgetNode, x, y int) {
 			subtreeBounds = subtreeBounds.Union(r.paintRetainedNode(childCtx, child, x, y, damage, partial, recordRegistry))
 		})
 		subtreeBounds = subtreeBounds.Intersect(ctx.visible)
@@ -580,7 +773,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 			node.registered = r.registeredSince(registryStart)
 			node.hitClip = ctx.clip
 		}
-		node.prevBox = box
+		node.prevBox = *box
 		node.bounds = nodeBounds
 		node.subtreeBounds = subtreeBounds
 		return subtreeBounds
@@ -597,6 +790,11 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 			underlay.paintUnderlay(underlayCtx)
 			return struct{}{}
 		})
+	}
+
+	var style Style
+	if styled, ok := node.widget.(Styled); ok {
+		style = styled.GetStyle()
 	}
 
 	if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
@@ -687,7 +885,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 	}
 
 	subtreeBounds := nodeBounds
-	r.forEachChildContext(ctx, node, style, absBorderX, absBorderY, absContentX, absContentY, func(childCtx *RenderContext, child *widgetNode, x, y int) {
+	r.forEachChildContext(ctx, node, style, partial, absBorderX, absBorderY, absContentX, absContentY, func(childCtx *RenderContext, child *widgetNode, x, y int) {
 		childBounds := r.paintRetainedNode(childCtx, child, x, y, damage, partial, recordRegistry)
 		if childBounds.IsEmpty() && partial {
 			// Skipped outside the damage; its recorded area is still current.
@@ -732,7 +930,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		node.hitClip = ctx.clip
 	}
 	if !partial {
-		node.prevBox = box
+		node.prevBox = *box
 	}
 	node.bounds = nodeBounds
 	node.subtreeBounds = subtreeBounds
@@ -748,7 +946,11 @@ func (r *Renderer) registeredSince(start int) []WidgetEntry {
 
 // forEachChildContext derives each child's clipped/scrolled context exactly as
 // painting does, so measuring and painting agree on where children land.
-func (r *Renderer) forEachChildContext(ctx *RenderContext, node *widgetNode, style Style, absBorderX, absBorderY, absContentX, absContentY int, visit func(*RenderContext, *widgetNode, int, int)) {
+//
+// Of children stacked along an axis (see stackedAxis), it visits only those
+// that can be on screen or were last time: the rest are out of view and
+// were left so, which is all that visiting them would record.
+func (r *Renderer) forEachChildContext(ctx *RenderContext, node *widgetNode, style Style, partial bool, absBorderX, absBorderY, absContentX, absContentY int, visit func(*RenderContext, *widgetNode, int, int)) {
 	if len(node.children) == 0 {
 		return
 	}
@@ -792,17 +994,136 @@ func (r *Renderer) forEachChildContext(ctx *RenderContext, node *widgetNode, sty
 		}
 	}
 
-	for i, child := range node.children {
-		if i >= len(node.layout.Children) {
-			break
+	positions := node.layout.Children
+	n := min(len(node.children), len(positions))
+	lo, hi := 0, n
+	if node.stackedAxis != stackedNone && node.shownValid {
+		// Children outside [shownLo, shownHi) show nothing, so a partial
+		// repaint has nothing else to redraw.
+		lo, hi = min(node.shownLo, n), min(node.shownHi, n)
+		if !partial {
+			visibleLo, visibleHi := stackedVisibleRange(positions[:n], node.stackedAxis, childClipCtx.X, childClipCtx.Y, childClipCtx.visible)
+			if visibleLo < visibleHi {
+				if lo >= hi {
+					lo, hi = visibleLo, visibleHi
+				} else {
+					lo, hi = min(lo, visibleLo), max(hi, visibleHi)
+				}
+			}
 		}
-		pos := node.layout.Children[i]
+	}
+	shownLo, shownHi := n, 0
+	for i := lo; i < hi; i++ {
+		child := node.children[i]
+		pos := positions[i]
 		// Layouts position a child's border box, with its margin already
 		// applied. Painting starts from the margin box and applies the margin
 		// itself, so step back to the margin box origin.
 		margin := pos.Layout.Box.Margin
 		visit(childClipCtx, child, pos.X-margin.Left, pos.Y-margin.Top)
+		if !child.subtreeBounds.IsEmpty() {
+			shownLo, shownHi = min(shownLo, i), i+1
+		}
 	}
+	if !partial {
+		// Every child outside what was visited shows nothing.
+		if shownLo >= shownHi {
+			shownLo, shownHi = 0, 0
+		}
+		node.shownLo, node.shownHi, node.shownValid = shownLo, shownHi, true
+	}
+}
+
+// Axes along which a node's children are stacked (see stackedAxis).
+const (
+	stackedNone int8 = iota
+	stackedVertical
+	stackedHorizontal
+)
+
+// minStackedChildren is how many children make finding the visible ones by
+// binary search worthwhile.
+const minStackedChildren = 32
+
+// stackedAxis reports an axis along which a node's laid-out children are
+// stacked: they start in non-decreasing order, and those starting at the same
+// place form a group that everything before it ends ahead of. A Column's or
+// Row's children are stacked, as are a table's cells, a row of them per
+// group. The ones in a given area can then be found by binary search. A Stack
+// child can draw beyond its box, so it rules this out.
+func stackedAxis(node *widgetNode, positions []layout.PositionedChild) int8 {
+	n := min(len(node.children), len(positions))
+	if n < minStackedChildren {
+		return stackedNone
+	}
+	for i := 0; i < n; i++ {
+		if _, isStack := node.children[i].widget.(Stack); isStack {
+			return stackedNone
+		}
+	}
+	for _, axis := range []int8{stackedVertical, stackedHorizontal} {
+		if stackedAlong(positions[:n], axis) {
+			return axis
+		}
+	}
+	return stackedNone
+}
+
+func stackedAlong(positions []layout.PositionedChild, axis int8) bool {
+	groupStart, endBefore, maxEnd := math.MinInt, math.MinInt, math.MinInt
+	for i := range positions {
+		start, end := stackedSpan(positions, i, axis)
+		if end < start {
+			return false
+		}
+		switch {
+		case start < groupStart:
+			return false
+		case start > groupStart:
+			// A new group: everything before it must end ahead of it.
+			endBefore = maxEnd
+			if endBefore > start {
+				return false
+			}
+			groupStart = start
+		}
+		maxEnd = max(maxEnd, end)
+	}
+	return true
+}
+
+// stackedSpan returns where a child's border box starts and ends on an axis.
+func stackedSpan(positions []layout.PositionedChild, i int, axis int8) (start, end int) {
+	pos := &positions[i]
+	if axis == stackedHorizontal {
+		return pos.X, pos.X + pos.Layout.Box.Width
+	}
+	return pos.Y, pos.Y + pos.Layout.Box.Height
+}
+
+// stackedVisibleRange returns the children of a node stacked along axis
+// whose border boxes, placed from originX/originY, may intersect visible; all
+// others don't.
+func stackedVisibleRange(positions []layout.PositionedChild, axis int8, originX, originY int, visible Rect) (lo, hi int) {
+	if visible.IsEmpty() {
+		return 0, 0
+	}
+	viewStart, viewEnd := visible.Y-originY, visible.Y+visible.Height-originY
+	if axis == stackedHorizontal {
+		viewStart, viewEnd = visible.X-originX, visible.X+visible.Width-originX
+	}
+	start := func(i int) int {
+		s, _ := stackedSpan(positions, i, axis)
+		return s
+	}
+	// Groups before the last one starting at or ahead of the view end ahead
+	// of it, so they can't be visible.
+	if k := sort.Search(len(positions), func(i int) bool { return start(i) > viewStart }); k > 0 {
+		groupStart := start(k - 1)
+		lo = sort.Search(len(positions), func(i int) bool { return start(i) >= groupStart })
+	}
+	hi = sort.Search(len(positions), func(i int) bool { return start(i) >= viewEnd })
+	return lo, max(lo, hi)
 }
 
 // recordRegistry records the node as a hit target. clip is the area it may
@@ -1133,9 +1454,16 @@ func (r *Renderer) collectDamageRects() (rects []Rect, found bool) {
 		}
 		for _, child := range node.children {
 			// Dirty nodes only lie beneath ancestors whose subtree flag is set.
-			if child.subtreeDirtyLevel() != DirtyNone {
-				appendDirty(child)
+			if child.subtreeDirtyLevel() == DirtyNone {
+				continue
 			}
+			if child.subtreeBounds.IsEmpty() {
+				// Nothing beneath it is visible, and painting may have skipped
+				// it, leaving its descendants' recorded areas out of date.
+				found = true
+				continue
+			}
+			appendDirty(child)
 		}
 	}
 	appendDirty(r.rootNode)

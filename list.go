@@ -573,10 +573,16 @@ func (c listContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 		return
 	}
 
-	layouts := make([]listItemLayout, count)
+	// Reuse the previous frame's buffer: long lists lay out often.
+	layouts := c.list.State.itemLayouts
+	if cap(layouts) < count {
+		layouts = make([]listItemLayout, count)
+	}
+	layouts = layouts[:count]
 	for i := 0; i < count; i++ {
 		bounds, ok := metrics.ChildBounds(i)
 		if !ok {
+			layouts[i] = listItemLayout{}
 			continue
 		}
 		layouts[i] = listItemLayout{y: bounds.Y, height: bounds.Height}
