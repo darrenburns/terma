@@ -46,9 +46,10 @@ func (q *dispatchQueue) drain() {
 }
 
 var (
-	appRuntimeMu     sync.RWMutex
-	appDispatchQueue *dispatchQueue
-	appLifecycleCtx  context.Context
+	appRuntimeMu          sync.RWMutex
+	appDispatchQueue      *dispatchQueue
+	appLifecycleCtx       context.Context
+	headlessDispatchQueue *dispatchQueue
 )
 
 func setAppRuntimeState(ctx context.Context, queue *dispatchQueue) {
@@ -101,7 +102,9 @@ func drainPendingDispatches() {
 }
 
 // Dispatch schedules fn to run on the app/event-loop goroutine before the next
-// rendered frame. If no app is running, fn runs immediately.
+// rendered frame. During a headless Renderer render, fn runs after the frame
+// finishes, and the renderer draws again before returning. Outside an app or a
+// headless render, fn runs immediately.
 func Dispatch(fn func()) {
 	if fn == nil {
 		return
@@ -109,5 +112,39 @@ func Dispatch(fn func()) {
 	if dispatchIfRunning(fn) {
 		return
 	}
+	appRuntimeMu.RLock()
+	queue := headlessDispatchQueue
+	appRuntimeMu.RUnlock()
+	if queue != nil {
+		queue.enqueue(fn)
+		return
+	}
 	fn()
+}
+
+// beginHeadlessDispatch gives only the outermost headless render ownership of
+// frame-boundary work. A running app keeps its queue and event-loop ownership.
+func beginHeadlessDispatch() (*dispatchQueue, func()) {
+	appRuntimeMu.Lock()
+	defer appRuntimeMu.Unlock()
+	if (appLifecycleCtx != nil && appLifecycleCtx.Err() == nil && appDispatchQueue != nil) || headlessDispatchQueue != nil {
+		return nil, nil
+	}
+	queue := newDispatchQueue()
+	headlessDispatchQueue = queue
+	return queue, func() {
+		appRuntimeMu.Lock()
+		headlessDispatchQueue = nil
+		appRuntimeMu.Unlock()
+	}
+}
+
+// takePending drains one batch only. Work dispatched by a callback is handled
+// at the next boundary, so self-dispatch cannot trap the headless caller here.
+func (q *dispatchQueue) takePending() []func() {
+	q.mu.Lock()
+	pending := q.pending
+	q.pending = nil
+	q.mu.Unlock()
+	return pending
 }

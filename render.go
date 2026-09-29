@@ -1069,17 +1069,21 @@ func (r *Renderer) ScreenText() string {
 }
 
 // Render renders the widget tree to the terminal and returns collected focusables.
+// Outside a running app, work scheduled with Dispatch during rendering runs at
+// frame boundaries, and the returned output includes those updates. A headless
+// render panics if dispatched work fails to settle within 16 frames.
 // This uses the tree-based rendering path which builds the complete layout tree first,
 // then renders using BoxModel utilities for clean separation of layout and painting.
 func (r *Renderer) Render(root Widget) []FocusableEntry {
-	focusables, _, _ := r.renderFull(root)
+	focusables, _, _ := r.renderHeadlessFrames(root, false)
 	return focusables
 }
 
 // RenderWithSize renders the widget and returns the computed border-box dimensions.
 // The border-box includes the widget's content, padding, and borders.
+// Headless Dispatch work settles as described by Render.
 func (r *Renderer) RenderWithSize(root Widget) (layoutWidth, layoutHeight int) {
-	_, layoutWidth, layoutHeight = r.renderFull(root)
+	_, layoutWidth, layoutHeight = r.renderHeadlessFrames(root, false)
 	return layoutWidth, layoutHeight
 }
 

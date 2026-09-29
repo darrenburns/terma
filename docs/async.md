@@ -83,6 +83,19 @@ func (a *App) Build(ctx terma.BuildContext) terma.Widget {
 
 Use `Dispatch` when completion needs to touch plain Go fields or other UI-thread-only state.
 
+During a running app, callbacks run on the event loop before its next frame.
+Outside an app, callbacks run immediately unless a headless render is in progress.
+`Renderer.Render`, `Renderer.RenderWithSize`, `Renderer.Update`, and snapshot
+helpers queue callbacks issued during rendering until the frame finishes, then
+render the updated state before returning. Layout observers can therefore use
+`Dispatch` to update responsive state, and a test needs only one render after a
+resize. The returned buffer and dimensions describe the settled output.
+
+Headless settling is bounded to 16 frames. A callback that dispatches itself
+forever, or an observer that dispatches on every layout without checking whether
+its state changed, causes a panic instead of hanging the caller. Headless renders
+inside a running app keep using the app's queue; they do not run its pending work.
+
 ```go
 type App struct {
 	loadUser *terma.Task[*User]

@@ -233,8 +233,9 @@ func (p *retainedLayoutNode) sizePreserve() (width, height bool) {
 // Update renders the next frame using the retained tree when possible.
 // Paint-only signal changes take the partial repaint fast path. Build and
 // layout changes reuse clean builds, then lay out and paint the whole tree.
+// Headless Dispatch work settles as described by Render.
 func (r *Renderer) Update(root Widget) []FocusableEntry {
-	focusables, _, _ := r.updateInternal(root)
+	focusables, _, _ := r.renderHeadlessFrames(root, true)
 	return focusables
 }
 
