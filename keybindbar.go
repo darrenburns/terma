@@ -1,6 +1,10 @@
 package terma
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/charmbracelet/x/ansi"
+)
 
 // KeybindBar displays available keybinds based on the currently focused widget.
 // It automatically updates when focus changes, showing keybinds from the focused
@@ -11,9 +15,12 @@ import "strings"
 //
 // Consecutive keybinds with the same Name are grouped together, displaying
 // their keys joined with "/" (e.g., "enter/space Press").
+//
+// Hints that don't fit in the bar's width are left out, from the end, so the
+// bar never draws past its box.
 type KeybindBar struct {
 	Style  Style     // Optional styling (background, padding, etc.)
-	Width  Dimension // Width dimension (default: Fr(1) to fill available width)
+	Width  Dimension // Width dimension (default: Flex(1) to fill available width)
 	Height Dimension // Height dimension (default: Cells(1) for single-line bar)
 
 	// FormatKey transforms key strings for display. If nil, uses minimal
@@ -23,18 +30,23 @@ type KeybindBar struct {
 	FormatKey func(string) string
 }
 
-// GetDimensions returns the width and height dimension preferences.
-// Width defaults to Auto if not explicitly set, sizing to content.
-// Height defaults to Cells(1) if not explicitly set, as KeybindBar is a single-line widget.
-func (f KeybindBar) GetDimensions() (width, height Dimension) {
+// GetContentDimensions returns the width and height dimension preferences.
+// Width defaults to Flex(1), filling the space its siblings leave. Height
+// defaults to Cells(1), as KeybindBar is a single-line widget.
+func (f KeybindBar) GetContentDimensions() (width, height Dimension) {
 	w, h := f.Width, f.Height
 	if w.IsUnset() {
-		w = Auto
+		w = Flex(1)
 	}
 	if h.IsUnset() {
 		h = Cells(1)
 	}
 	return w, h
+}
+
+// GetStyle returns the style.
+func (f KeybindBar) GetStyle() Style {
+	return f.Style
 }
 
 // keybindGroup represents a group of keys that share the same action name.
@@ -47,7 +59,7 @@ type keybindGroup struct {
 func (f KeybindBar) Build(ctx BuildContext) Widget {
 	keybinds := ctx.ActiveKeybinds()
 	theme := ctx.Theme()
-	width, height := f.GetDimensions()
+	width, height := f.GetContentDimensions()
 
 	if len(keybinds) == 0 {
 		return Text{Width: width, Height: height, Style: f.Style}
@@ -81,6 +93,7 @@ func (f KeybindBar) Build(ctx BuildContext) Widget {
 
 	// Build spans from groups
 	var spans []Span
+	hints := make([][]Span, 0, len(groups))
 
 	for _, g := range groups {
 		if len(spans) > 0 {
@@ -89,16 +102,56 @@ func (f KeybindBar) Build(ctx BuildContext) Widget {
 
 		// Join keys with /
 		keyStr := strings.Join(g.keys, "/")
-		spans = append(spans, ColorSpan(keyStr, theme.Accent))
-		spans = append(spans, ColorSpan(" "+g.name, theme.TextMuted))
+		hint := []Span{ColorSpan(keyStr, theme.Accent), ColorSpan(" "+g.name, theme.TextMuted)}
+		spans = append(spans, hint...)
+		hints = append(hints, hint)
 	}
 
-	return Text{
-		Spans:  spans,
-		Style:  f.Style,
-		Width:  width,
-		Height: height,
+	return keybindBarLine{
+		Text: Text{
+			Spans:  spans,
+			Style:  f.Style,
+			Width:  width,
+			Height: height,
+		},
+		hints: hints,
 	}
+}
+
+// keybindBarLine is the text of a KeybindBar. It lays out like the Text it
+// embeds, but paints only the hints that fit whole: a hint cut off mid-word
+// would read as a different one.
+type keybindBarLine struct {
+	Text
+	hints [][]Span
+}
+
+func (l keybindBarLine) Build(ctx BuildContext) Widget {
+	return l
+}
+
+func (l keybindBarLine) Render(ctx *RenderContext) {
+	var spans []Span
+	used := 0
+	for _, hint := range l.hints {
+		width := 0
+		for _, span := range hint {
+			width += ansi.StringWidth(span.Text)
+		}
+		if len(spans) > 0 {
+			width++ // The space before the hint.
+		}
+		if used+width > ctx.Width {
+			break
+		}
+		if len(spans) > 0 {
+			spans = append(spans, PlainSpan(" "))
+		}
+		spans = append(spans, hint...)
+		used += width
+	}
+	l.Text.Spans = spans
+	l.Text.Render(ctx)
 }
 
 // formatKey applies the custom FormatKey function if set, otherwise uses

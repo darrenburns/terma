@@ -11,6 +11,7 @@ const (
 	defaultCommandPaletteEmptyLabel  = "No results"
 	defaultCommandPaletteTopOffsetY  = 2
 	commandPaletteNestedIndicator    = "▸"
+	commandPaletteCurrentIndicator   = "✓"
 )
 
 var commandPaletteDividerLine = strings.Repeat("─", 120)
@@ -29,7 +30,7 @@ type CommandPaletteItem struct {
 	Children      func() []CommandPaletteItem // Opens nested palette (lazy-loaded)
 	ChildrenTitle string                      // Breadcrumb title for nested level
 	Disabled      bool                        // Grayed out, not selectable
-	Current       bool                        // The level's current value (e.g. the active theme); the cursor rests here while the query is empty
+	Current       bool                        // The level's current value (e.g. the active theme), marked with a check; the cursor rests here while the query is empty
 	Divider       string                      // Empty = plain line, non-empty = titled
 	FilterText    string                      // Override Label for filtering
 	Data          any                         // User data for custom renderers
@@ -733,18 +734,40 @@ func (p CommandPalette) defaultRenderItem(theme ThemeData, item CommandPaletteIt
 		hintStyle.ForegroundColor = theme.SelectionText
 	}
 
-	labelWidget := p.labelWidget(item.Label, labelStyle, match, theme)
-	suffixWidgets := p.suffixWidgets(item, hintStyle)
-	rowChildren := []Widget{labelWidget}
-	if len(suffixWidgets) > 0 {
-		rowChildren = append(rowChildren, Spacer{Width: Flex(1)})
-		rowChildren = append(rowChildren, suffixWidgets...)
+	markerStyle := SpanStyle{Foreground: theme.Accent}
+	if active {
+		markerStyle.Foreground = theme.SelectionText
 	}
-	rowStyle := Style{Width: Flex(1)}
-	row := Row{
-		Style:      rowStyle,
-		CrossAlign: CrossAxisCenter,
-		Children:   rowChildren,
+
+	var row Widget
+	if item.HintWidget != nil {
+		labelWidget := p.labelWidget(item.Label, labelStyle, match, theme)
+		suffixWidgets := p.suffixWidgets(item, hintStyle)
+		rowChildren := []Widget{labelWidget}
+		if len(suffixWidgets) > 0 {
+			rowChildren = append(rowChildren, Spacer{Width: Flex(1)})
+			rowChildren = append(rowChildren, suffixWidgets...)
+		}
+		row = Row{
+			Style:      Style{Width: Flex(1)},
+			CrossAlign: CrossAxisCenter,
+			Children:   rowChildren,
+		}
+	} else {
+		var markers []Span
+		if item.Children != nil {
+			markers = append(markers, Span{Text: " " + commandPaletteNestedIndicator})
+		}
+		if item.Current {
+			markers = append(markers, Span{Text: " " + commandPaletteCurrentIndicator, Style: markerStyle})
+		}
+		row = commandPaletteItemLine{
+			label:      p.labelSpans(item.Label, match, theme),
+			labelStyle: labelStyle,
+			hint:       item.Hint,
+			hintStyle:  hintStyle,
+			markers:    markers,
+		}
 	}
 
 	var content Widget = row
@@ -756,18 +779,26 @@ func (p CommandPalette) defaultRenderItem(theme ThemeData, item CommandPaletteIt
 		}
 	}
 
-	return Stack{
-		Children: []Widget{
-			Column{
-				Style: func() Style {
-					style := itemStyle
-					style.Width = Flex(1)
-					return style
-				}(),
-				Children: []Widget{content},
-			},
+	children := []Widget{
+		Column{
+			Style: func() Style {
+				style := itemStyle
+				style.Width = Flex(1)
+				return style
+			}(),
+			Children: []Widget{content},
 		},
 	}
+	if item.Current && item.HintWidget != nil {
+		// A custom hint widget can't make room for the check, so it goes in
+		// the item's right padding, keeping hints lined up across items.
+		children = append(children, Positioned{
+			Top:   IntPtr(0),
+			Right: IntPtr(0),
+			Child: Text{Spans: []Span{{Text: commandPaletteCurrentIndicator, Style: markerStyle}}, Style: hintStyle},
+		})
+	}
+	return Stack{Children: children}
 }
 
 func (p CommandPalette) labelWidget(label string, style Style, match MatchResult, theme ThemeData) Widget {
@@ -784,6 +815,13 @@ func (p CommandPalette) labelWidget(label string, style Style, match MatchResult
 		Content: label,
 		Style:   style,
 	}
+}
+
+func (p CommandPalette) labelSpans(label string, match MatchResult, theme ThemeData) []Span {
+	if match.Matched && len(match.Ranges) > 0 {
+		return HighlightSpans(label, match.Ranges, MatchHighlightStyle(theme))
+	}
+	return []Span{{Text: label}}
 }
 
 func (p CommandPalette) hintWidget(item CommandPaletteItem, style Style) Widget {

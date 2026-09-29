@@ -11,7 +11,10 @@ import "github.com/darrenburns/terma/layout"
 //   - Add fixed-size empty regions with Cells()
 //
 // Default behavior: An unset dimension defaults to Flex(1), so a bare
-// Spacer{} expands to fill available space in both directions.
+// Spacer{} expands to fill available space in both directions. As a child of
+// a Row or Column, though, a bare Spacer{} expands only along that
+// container's main axis: a Spacer pushing buttons apart in a Row doesn't make
+// the Row as tall as it can be.
 //
 // Note: Explicitly setting Auto results in 0 size since Spacer has no
 // content to fit. Use Flex(1) instead if you want the spacer to expand.
@@ -51,6 +54,22 @@ func (s Spacer) GetContentDimensions() (width, height Dimension) {
 		h = Auto
 	}
 	return w, h
+}
+
+// mainAxisSpacerNode returns the layout node for child in a Row (horizontal)
+// or Column. A bare Spacer{} there flexes along the main axis only; any other
+// child keeps node.
+func mainAxisSpacerNode(ctx BuildContext, child Widget, node layout.LayoutNode, horizontal bool) layout.LayoutNode {
+	spacer, ok := child.(Spacer)
+	if !ok || !spacer.Width.IsUnset() || !spacer.Height.IsUnset() {
+		return node
+	}
+	if horizontal {
+		spacer.Width = Flex(1)
+	} else {
+		spacer.Height = Flex(1)
+	}
+	return spacer.BuildLayoutNode(ctx)
 }
 
 // BuildLayoutNode builds a layout node for this Spacer widget.

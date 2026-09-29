@@ -54,6 +54,8 @@ var terminalEnableSequences = []string{
 	// is reported even when no mouse button is pressed.
 	ansi.SetModeMouseAnyEvent,
 	ansi.SetModeMouseExtSgr,
+	// Pastes arrive as one PasteEvent instead of a burst of key presses.
+	ansi.SetModeBracketedPaste,
 }
 
 var terminalDisableSequences = []string{
@@ -61,6 +63,7 @@ var terminalDisableSequences = []string{
 	ansi.ResetModeMouseButtonEvent,
 	ansi.ResetModeMouseNormal,
 	ansi.ResetModeMouseExtSgr,
+	ansi.ResetModeBracketedPaste,
 	// Switched on later if the terminal supports it (see pixelPointer).
 	ansi.ResetModeMouseExtSgrPixel,
 }
@@ -308,6 +311,9 @@ func Run(root Widget) (runErr error) {
 
 		appCancel = nil
 		appRenderer = nil
+		setSuspender(nil)
+		takeTerminalWrites()
+		resetClipboardReads()
 		swapRenderTrigger(nil)
 		currentController = nil
 		clearAppRuntimeState()
@@ -531,6 +537,11 @@ func Run(root Widget) (runErr error) {
 		}
 
 		drawDebugOverlay()
+		// Sequences queued with WriteTerminal (clipboard writes and reads)
+		// go out with this frame.
+		for _, seq := range takeTerminalWrites() {
+			_, _ = t.WriteString(seq)
+		}
 		_ = t.Display()
 
 		elapsed := time.Since(startTime)
@@ -596,6 +607,42 @@ func Run(root Widget) (runErr error) {
 		renderTimerCh = renderTimer.C
 	}
 
+	// suspend hands the terminal back to the shell, runs fn, then takes the
+	// terminal back and redraws everything. Used for ctrl+z and RunExternal.
+	suspend := func(fn func() error) error {
+		// Disable input reporting modes so the shell (or the program run)
+		// gets plain keyboard input.
+		disableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard, false)
+		t.ExitAltScreen()
+		// Pause stops reading input and restores the tty.
+		_ = t.Pause()
+
+		err := fn()
+
+		_ = t.Resume()
+		t.EnterAltScreen()
+		enableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard)
+		if pointer.enabled {
+			_, _ = t.WriteString(ansi.SetModeMouseExtSgrPixel)
+		}
+		// The screen was used by something else meanwhile; repaint it all.
+		// Schedule the frame rather than drawing it here: fn may have been
+		// run from a Dispatch callback, inside a frame.
+		t.Erase()
+		scheduleRender()
+		return err
+	}
+	setSuspender(suspend)
+
+	// The text cursor blinks on this ticker when SetCursorBlink is on. Input
+	// restarts it so the cursor stays shown while someone types.
+	blinkTicker := time.NewTicker(cursorBlinkInterval)
+	defer blinkTicker.Stop()
+	restartCursorBlink := func() {
+		showCursorForInput()
+		blinkTicker.Reset(cursorBlinkInterval)
+	}
+
 	// Initial render
 	renderNow()
 
@@ -626,6 +673,8 @@ func Run(root Widget) (runErr error) {
 				if renderPending {
 					renderNow()
 				}
+			case <-blinkTicker.C:
+				toggleCursorBlink()
 			case ev, ok := <-termEvents:
 				if !ok {
 					return
@@ -683,31 +732,9 @@ func Run(root Widget) (runErr error) {
 
 					// Suspend on Ctrl+Z
 					if ev.MatchString("ctrl+z") {
-						// Disable input reporting modes before suspending so
-						// the shell gets plain keyboard input while suspended.
-						disableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard, false)
-
-						// Exit alternate screen to show shell
-						t.ExitAltScreen()
-
-						// Pause input reading and suspend process
-						_ = t.Pause()
-						_ = uv.Suspend() // Blocks until resumed via `fg`
-
-						// Resume input reading
-						_ = t.Resume()
-
-						// Re-enter alternate screen
-						t.EnterAltScreen()
-
-						// Re-enable mouse tracking
-						enableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard)
-						if pointer.enabled {
-							_, _ = t.WriteString(ansi.SetModeMouseExtSgrPixel)
-						}
-
-						// Redraw the screen
-						requestRender()
+						_ = suspend(func() error {
+							return uv.Suspend() // Blocks until resumed via `fg`
+						})
 						continue
 					}
 
@@ -717,12 +744,32 @@ func Run(root Widget) (runErr error) {
 					if renderPending {
 						renderNow()
 					}
+					restartCursorBlink()
 					dispatchKey(renderer, focusManager, root, KeyEvent{event: ev})
 
 					// Re-render after key press (for signal updates and focus changes)
 					requestRender()
 
+				case uv.PasteEvent:
+					// Like a key, a paste goes to what's on screen.
+					if renderPending {
+						renderNow()
+					}
+					restartCursorBlink()
+					if !dispatchPaste(focusManager, root, ev.Content) {
+						Log("Paste not handled (%d bytes)", len(ev.Content))
+					}
+					requestRender()
+
+				case uv.PasteStartEvent, uv.PasteEndEvent:
+					// The terminal reader assembles the paste into a PasteEvent.
+
+				case uv.ClipboardEvent:
+					deliverClipboard(ev.Content)
+					requestRender()
+
 				case uv.MouseClickEvent:
+					restartCursorBlink()
 					mouse.press(ev, subX, subY, time.Now())
 					requestRender()
 

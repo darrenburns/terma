@@ -509,6 +509,7 @@ type Table[T any] struct {
 	MatchCell           func(row T, rowIndex int, colIndex int, query string, options FilterOptions) MatchResult      // Optional matcher per cell
 	RenderHeader        func(colIndex int) Widget                                                                     // Optional header renderer (takes precedence over column headers)
 	OnSelect            func(row T)                                                                                   // Callback invoked when Enter is pressed on a row or a row is double-clicked
+	ActivateOnClick     bool                                                                                          // Invoke OnSelect on a single left click instead of a double-click
 	OnCursorChange      func(row T)                                                                                   // Callback invoked when cursor moves to a different row
 	ScrollState         *ScrollState                                                                                  // Optional state for scroll-into-view
 	RowHeight           int                                                                                           // Optional uniform row height override (default 0 = layout metrics / fallback 1)
@@ -846,7 +847,7 @@ func (t Table[T]) handleMouseDown(event MouseEvent) {
 	if t.State.CursorIndex.Peek() != previous {
 		t.notifyCursorChange()
 	}
-	if event.ClickCount == 2 {
+	if clickActivates(event, t.ActivateOnClick) {
 		t.selectRow()
 	}
 }

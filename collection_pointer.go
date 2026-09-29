@@ -1,5 +1,18 @@
 package terma
 
+import uv "github.com/charmbracelet/ultraviolet"
+
+// clickActivates reports whether a press on an item of a list, table or tree
+// activates it (calls OnSelect): a double-click, or with activateOnClick a
+// plain left click. A shift+click extends the selection instead, and the
+// second click of a double-click doesn't activate again.
+func clickActivates(event MouseEvent, activateOnClick bool) bool {
+	if !activateOnClick {
+		return event.ClickCount == 2
+	}
+	return event.ClickCount == 1 && event.Button == uv.MouseLeft && !event.Mod.Contains(uv.ModShift)
+}
+
 // spanAt returns the index of the span containing pos, where span(i) gives
 // the start and size of span i of n, in increasing order. It is how
 // collections find the item, row or column under the pointer. Empty spans are
