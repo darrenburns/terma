@@ -11,6 +11,10 @@ const terminal = new Terminal({
   cursorBlink: false, scrollback: 1000, screenReaderMode: true,
   theme: { background: '#101216' }
 });
+terminal.loadAddon(new ImageAddon.ImageAddon({
+  sixelSupport: true, enableSizeReports: true, iipSupport: false,
+  showPlaceholder: false, storageLimit: 64
+}));
 terminal.open(container);
 function fit() {
   if (fixedSize) return;

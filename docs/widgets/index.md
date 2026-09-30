@@ -19,6 +19,7 @@ Widgets that arrange and position other widgets:
 Widgets that display content:
 
 - Text - Display plain or rich text
+- [Image](image.md) - Static images with Kitty, Sixel and coloured block fallback
 - [TextInput](textinput.md) - Single-line text entry
 - Button - Focusable button with press handler
 - List - Generic navigable list

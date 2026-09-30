@@ -62,7 +62,9 @@ func toUVUnderline(u UnderlineStyle) uv.Underline {
 // RenderContext provides drawing primitives for widgets.
 // It tracks the current region where the widget should render.
 type RenderContext struct {
-	terminal CellBuffer
+	terminal   CellBuffer
+	imageOwner *widgetNode
+	imageSlot  *int
 	// Absolute position in terminal (may be outside clip for virtual/scrolled positioning)
 	X, Y int
 	// Available size for this widget's content
@@ -95,8 +97,14 @@ type RenderContext struct {
 
 // NewRenderContext creates a root render context for the terminal.
 func NewRenderContext(terminal CellBuffer, width, height int, fc *FocusCollector, fm *FocusManager, bc BuildContext, wr *WidgetRegistry) *RenderContext {
+	var imageSlot *int
+	if bc.renderer != nil {
+		bc.renderer.imageSlot = 0
+		imageSlot = &bc.renderer.imageSlot
+	}
 	return &RenderContext{
 		terminal:       terminal,
+		imageSlot:      imageSlot,
 		X:              0,
 		Y:              0,
 		Width:          width,
@@ -143,6 +151,8 @@ func (ctx *RenderContext) SubContext(xOffset, yOffset, width, height int) *Rende
 
 	return &RenderContext{
 		terminal:       ctx.terminal,
+		imageOwner:     ctx.imageOwner,
+		imageSlot:      ctx.imageSlots(),
 		X:              childX,
 		Y:              childY,
 		Width:          width,
@@ -178,6 +188,8 @@ func (ctx *RenderContext) OverflowSubContext(xOffset, yOffset, width, height int
 	// Keep parent's clip rect to allow overflow
 	return &RenderContext{
 		terminal:       ctx.terminal,
+		imageOwner:     ctx.imageOwner,
+		imageSlot:      ctx.imageSlots(),
 		X:              childX,
 		Y:              childY,
 		Width:          width,
@@ -222,6 +234,8 @@ func (ctx *RenderContext) ScrolledSubContext(xOffset, yOffset, width, height, sc
 
 	return &RenderContext{
 		terminal:       ctx.terminal,
+		imageOwner:     ctx.imageOwner,
+		imageSlot:      ctx.imageSlots(),
 		X:              contentX,
 		Y:              contentY,
 		Width:          width,
@@ -921,16 +935,21 @@ func (ctx *RenderContext) drawSpan(x, y int, span Span, baseStyle Style, spanWid
 
 // Renderer handles the widget tree rendering pipeline.
 type Renderer struct {
-	terminal       CellBuffer
-	width          int
-	height         int
-	focusCollector *FocusCollector
-	focusManager   *FocusManager
-	focusedSignal  AnySignal[Focusable]
-	hoveredSignal  AnySignal[Widget]
-	hoverTarget    Signal[hoverTargetInfo]
-	widgetRegistry *WidgetRegistry
-	floatCollector *FloatCollector
+	imageSlot                       int
+	images                          *imageBuffer
+	presentation                    CellBuffer
+	imageUsed                       bool
+	imageCellWidth, imageCellHeight int
+	terminal                        CellBuffer
+	width                           int
+	height                          int
+	focusCollector                  *FocusCollector
+	focusManager                    *FocusManager
+	focusedSignal                   AnySignal[Focusable]
+	hoveredSignal                   AnySignal[Widget]
+	hoverTarget                     Signal[hoverTargetInfo]
+	widgetRegistry                  *WidgetRegistry
+	floatCollector                  *FloatCollector
 	// modalCount tracks the number of modal floats rendered in the last pass.
 	modalCount int
 	rootNode   *widgetNode
@@ -1033,6 +1052,11 @@ func (r *Renderer) Resize(width, height int) {
 	width, height = max(0, width), max(0, height)
 	if buffer, ok := r.terminal.(ResizableCellBuffer); ok {
 		buffer.Resize(width, height)
+	}
+	if r.presentation != nil {
+		if b, ok := r.presentation.(ResizableCellBuffer); ok {
+			b.Resize(width, height)
+		}
 	}
 	r.width = width
 	r.height = height

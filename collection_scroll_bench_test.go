@@ -113,6 +113,27 @@ func BenchmarkCollectionScroll(b *testing.B) {
 				}
 			})
 		})
+
+		b.Run(fmt.Sprintf("list/items=%d/images", count), func(b *testing.B) {
+			source := testImage(b, 48, 24)
+			items := make([]int, count)
+			for i := range items {
+				items[i] = i
+			}
+			state := NewListState(items)
+			scroll := NewScrollState()
+			list := List[int]{ID: "bench-image-list", State: state, ScrollState: scroll, RenderItem: func(item int, active, selected bool) Widget {
+				return Row{Children: []Widget{Image{Source: source, Style: Style{Width: Cells(6), Height: Cells(2)}}, Text{Content: fmt.Sprintf("Image %d", item)}}}
+			}}
+			root := Scrollable{State: scroll, Height: Cells(collectionScrollBenchViewport), Child: list}
+			runCollectionScrollBench(b, collectionScrollBenchRenderer(list.ID, list), root, func(down bool) {
+				if down {
+					scroll.ScrollDown(1)
+				} else {
+					scroll.ScrollUp(1)
+				}
+			})
+		})
 		b.Run(fmt.Sprintf("table/rows=%d/cursor", count), func(b *testing.B) {
 			rows := make([][]string, count)
 			for i := range rows {

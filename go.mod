@@ -4,6 +4,7 @@ go 1.25.5
 
 require (
 	github.com/alecthomas/chroma/v2 v2.23.1
+	github.com/charmbracelet/colorprofile v0.4.1
 	github.com/charmbracelet/ultraviolet v0.0.0-20251217160852-6b0c0e26fad9
 	github.com/charmbracelet/x/ansi v0.11.3
 	github.com/charmbracelet/x/term v0.2.2
@@ -14,7 +15,7 @@ require (
 )
 
 require (
-	github.com/charmbracelet/colorprofile v0.4.1 // indirect
+	github.com/bits-and-blooms/bitset v1.24.4 // indirect
 	github.com/charmbracelet/x/termios v0.1.1 // indirect
 	github.com/charmbracelet/x/windows v0.2.2 // indirect
 	github.com/clipperhouse/displaywidth v0.6.1 // indirect
@@ -31,3 +32,5 @@ require (
 	golang.org/x/sync v0.19.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/charmbracelet/ultraviolet => github.com/darrenburns/ultraviolet v0.0.0-20260930153435-8cafcd59bdf3

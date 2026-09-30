@@ -241,6 +241,7 @@ func Run(root Widget) (runErr error) {
 	_, _ = t.WriteString(pointer.query())
 	// Reassembles mouse reports the decoder splits; see sgrMouseRepair.
 	var sgrRepair sgrMouseRepair
+	images := newImageSession(t, pointer)
 
 	// awaitCellSizeReply waits a little for the reply to a cell size query
 	// that is still out, so it isn't left for the shell (or the program run
@@ -271,6 +272,7 @@ func Run(root Widget) (runErr error) {
 	// Safe to call multiple times (Shutdown is idempotent).
 	shutdownTerminal := func() {
 		awaitCellSizeReply()
+		images.close(t)
 		// First, disable modes while the terminal session is still active.
 		// Some emulators/shell multiplexer stacks can scope keyboard protocol
 		// state to screen buffers, so doing this before shutdown is more
@@ -373,6 +375,8 @@ func Run(root Widget) (runErr error) {
 
 	// Create renderer with focus manager and signal
 	renderer := NewRenderer(t, width, height, focusManager, focusedSignal, hoveredSignal)
+	pointer.setWindow(windowGeometry{cols: width, rows: height})
+	images.geometry(renderer)
 	appRenderer = renderer
 
 	updateFocusedSignal := func() bool {
@@ -567,13 +571,18 @@ func Run(root Widget) (runErr error) {
 			}
 		}
 
-		drawDebugOverlay()
 		// Sequences queued with WriteTerminal (clipboard writes and reads)
 		// go out with this frame.
 		for _, seq := range takeTerminalWrites() {
 			_, _ = t.WriteString(seq)
 		}
-		_ = t.Display()
+		debugRows := 0
+		if debugOverlayEnabled {
+			debugRows = min(height, 4)
+		}
+		if err := images.present(t, renderer, drawDebugOverlay, debugRows); err != nil {
+			Log("Image presentation: %v", err)
+		}
 
 		elapsed := time.Since(startTime)
 		lastFrameDuration = elapsed
@@ -612,6 +621,8 @@ func Run(root Widget) (runErr error) {
 		// The screen was used by something else meanwhile; repaint it all.
 		// Schedule the frame rather than drawing it here: fn may have been
 		// run from a Dispatch callback, inside a frame.
+		images.reset(t)
+		renderer.fullRenderRequired = true
 		t.Erase()
 		scheduleRender()
 		return err
@@ -689,6 +700,13 @@ func Run(root Widget) (runErr error) {
 					_, _ = t.WriteString(seq)
 					_ = t.Flush()
 				}
+				images.handle(ev, renderer)
+				if renderer.imageUsed {
+					switch ev.(type) {
+					case uv.CellSizeEvent, uv.WindowPixelSizeEvent, uv.ModeReportEvent, uv.PrimaryDeviceAttributesEvent, uv.TerminalVersionEvent, uv.KittyGraphicsEvent:
+						requestRender()
+					}
+				}
 				// Pixel positions become cells, keeping the pointer's place
 				// within its cell for widgets that track it precisely.
 				ev, subX, subY := pointer.locateEvent(ev)
@@ -696,12 +714,13 @@ func Run(root Widget) (runErr error) {
 				case uv.WindowSizeEvent:
 					_ = t.Resize(ev.Width, ev.Height)
 					renderer.Resize(ev.Width, ev.Height)
+					images.erased()
 					width = ev.Width
 					height = ev.Height
 					t.Erase()
 					requestRender()
 				case uv.WindowPixelSizeEvent, uv.CellSizeEvent, uv.ModeReportEvent:
-					// Only used to set up pixel mouse reporting (above).
+					// Shared mouse/image geometry and capability replies (above).
 				case uv.KeyPressEvent:
 					// Check for app-level quit keys
 					if ev.MatchString("ctrl+c") {

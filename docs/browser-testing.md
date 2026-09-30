@@ -63,6 +63,11 @@ development tool, not a public hosting service or an app sandbox.
 ## Bundled dependencies
 
 Browser files in `cmd/terma-browser/web/vendor` come from `@xterm/xterm` 5.5.0
-(`lib/xterm.js`, `css/xterm.css`, and `LICENSE` in the npm package). Keep the license
+(`lib/xterm.js`, `css/xterm.css`, and `LICENSE` in the npm package), plus
+`@xterm/addon-image` 0.8.0 (`lib/addon-image.js` and `addon-image.LICENSE`).
+The image addon enables Sixel and cell/window size reports. The content policy
+allows its bundled WebAssembly decoder through `wasm-unsafe-eval`; arbitrary
+JavaScript evaluation remains disabled. Provenance and verified SHA-256 hashes
+are recorded in `web/vendor/README.md`. Keep the license
 alongside the assets when upgrading. The server uses `creack/pty` for the terminal
 and `gorilla/websocket` for transport.

@@ -149,6 +149,8 @@ type intrinsicSizeCache struct {
 
 // widgetNode is an internal retained node in the widget tree.
 type widgetNode struct {
+	imageBuffer *imageBuffer
+	imageSlot   int
 	parent      *widgetNode
 	source      Widget
 	widget      Widget
@@ -363,6 +365,9 @@ func (n *widgetNode) clearAllDependencies() {
 }
 
 func (n *widgetNode) dispose() {
+	if n != nil && n.imageBuffer != nil {
+		n.imageBuffer.removeNode(n)
+	}
 	if n == nil {
 		return
 	}
