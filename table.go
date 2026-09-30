@@ -1326,7 +1326,7 @@ func (t Table[T]) selectRow() {
 func (t Table[T]) keyCursorUp() {
 	mode := t.selectionMode()
 	if mode == TableSelectionColumn {
-		t.scrollBy(-1)
+		t.scrollBy(-1, false)
 		return
 	}
 	_, cursorViewIdx, ok := t.normalizeRowCursorForInteraction()
@@ -1348,7 +1348,7 @@ func (t Table[T]) keyCursorUp() {
 func (t Table[T]) keyCursorDown() {
 	mode := t.selectionMode()
 	if mode == TableSelectionColumn {
-		t.scrollBy(1)
+		t.scrollBy(1, false)
 		return
 	}
 	view, cursorViewIdx, ok := t.normalizeRowCursorForInteraction()
@@ -1371,7 +1371,7 @@ func (t Table[T]) keyCursorToFirst() {
 	mode := t.selectionMode()
 	if mode == TableSelectionColumn {
 		if t.ScrollState != nil {
-			t.ScrollState.SetOffset(0)
+			t.ScrollState.animateOffset(0)
 		}
 		return
 	}
@@ -1380,7 +1380,7 @@ func (t Table[T]) keyCursorToFirst() {
 		t.State.ClearAnchor()
 	}
 	t.setCursorToViewIndex(0)
-	t.scrollCursorIntoView()
+	t.glideCursorIntoView()
 	t.notifyCursorChange()
 }
 
@@ -1388,7 +1388,7 @@ func (t Table[T]) keyCursorToLast() {
 	mode := t.selectionMode()
 	if mode == TableSelectionColumn {
 		if t.ScrollState != nil {
-			t.ScrollState.SetOffset(maxTableInt())
+			t.ScrollState.animateOffset(maxTableInt())
 		}
 		return
 	}
@@ -1401,14 +1401,14 @@ func (t Table[T]) keyCursorToLast() {
 		t.State.ClearAnchor()
 	}
 	t.setCursorToViewIndex(len(view) - 1)
-	t.scrollCursorIntoView()
+	t.glideCursorIntoView()
 	t.notifyCursorChange()
 }
 
 func (t Table[T]) pageUp() {
 	mode := t.selectionMode()
 	if mode == TableSelectionColumn {
-		t.scrollBy(-10)
+		t.scrollBy(-10, true)
 		return
 	}
 	_, cursorViewIdx, ok := t.normalizeRowCursorForInteraction()
@@ -1420,14 +1420,14 @@ func (t Table[T]) pageUp() {
 		t.State.ClearAnchor()
 	}
 	t.setCursorToViewIndex(cursorViewIdx - 10)
-	t.scrollCursorIntoView()
+	t.glideCursorIntoView()
 	t.notifyCursorChange()
 }
 
 func (t Table[T]) pageDown() {
 	mode := t.selectionMode()
 	if mode == TableSelectionColumn {
-		t.scrollBy(10)
+		t.scrollBy(10, true)
 		return
 	}
 	_, cursorViewIdx, ok := t.normalizeRowCursorForInteraction()
@@ -1439,7 +1439,7 @@ func (t Table[T]) pageDown() {
 		t.State.ClearAnchor()
 	}
 	t.setCursorToViewIndex(cursorViewIdx + 10)
-	t.scrollCursorIntoView()
+	t.glideCursorIntoView()
 	t.notifyCursorChange()
 }
 
@@ -1705,19 +1705,31 @@ func (t Table[T]) handleShiftMoveCellTo(targetRow, targetCol, columnCount int) {
 	t.scrollCursorIntoView()
 }
 
-func (t Table[T]) scrollBy(lines int) bool {
+// scrollBy scrolls the viewport by lines, gliding there if animate.
+func (t Table[T]) scrollBy(lines int, animate bool) bool {
 	if t.ScrollState == nil {
 		return false
 	}
 	if lines < 0 {
-		return t.ScrollState.ScrollUp(-lines)
+		return t.ScrollState.scrollUp(-lines, animate)
 	}
-	return t.ScrollState.ScrollDown(lines)
+	return t.ScrollState.scrollDown(lines, animate)
 }
 
 // scrollCursorIntoView uses the ScrollState to ensure
 // the cursor row is visible in the viewport.
 func (t Table[T]) scrollCursorIntoView() {
+	t.revealCursor(false)
+}
+
+// glideCursorIntoView is scrollCursorIntoView after a long move (a page, or to
+// the start or end): the viewport glides to the cursor so the eye can follow
+// the content.
+func (t Table[T]) glideCursorIntoView() {
+	t.revealCursor(true)
+}
+
+func (t Table[T]) revealCursor(animate bool) {
 	if t.ScrollState == nil || t.State == nil {
 		return
 	}
@@ -1727,7 +1739,11 @@ func (t Table[T]) scrollCursorIntoView() {
 		return
 	}
 	t.State.revealed.record(cursorIdx, rowY, rowHeight, t.ScrollState)
-	t.ScrollState.ScrollToView(rowY, rowHeight)
+	if animate {
+		t.ScrollState.glideToView(rowY, rowHeight)
+	} else {
+		t.ScrollState.ScrollToView(rowY, rowHeight)
+	}
 }
 
 // revealMovedCursor scrolls the cursor into view after layout, unless it was

@@ -1247,7 +1247,7 @@ func (t Tree[T]) keyCursorToFirst() {
 		t.State.clearAnchor()
 	}
 	t.setCursorToViewIndex(0)
-	t.scrollCursorIntoView()
+	t.glideCursorIntoView()
 	t.notifyCursorChange()
 }
 
@@ -1261,7 +1261,7 @@ func (t Tree[T]) keyCursorToLast() {
 		t.State.clearAnchor()
 	}
 	t.setCursorToViewIndex(len(view) - 1)
-	t.scrollCursorIntoView()
+	t.glideCursorIntoView()
 	t.notifyCursorChange()
 }
 
@@ -1734,6 +1734,17 @@ func (t Tree[T]) selectViewRange(anchor, cursor []int) {
 }
 
 func (t Tree[T]) scrollCursorIntoView() {
+	t.revealCursor(false)
+}
+
+// glideCursorIntoView is scrollCursorIntoView after a long move (to the start
+// or end): the viewport glides to the cursor so the eye can follow the
+// content.
+func (t Tree[T]) glideCursorIntoView() {
+	t.revealCursor(true)
+}
+
+func (t Tree[T]) revealCursor(animate bool) {
 	if t.ScrollState == nil || t.State == nil {
 		return
 	}
@@ -1743,7 +1754,11 @@ func (t Tree[T]) scrollCursorIntoView() {
 		return
 	}
 	t.State.revealed.record(pathKey(cursor), rowY, rowHeight, t.ScrollState)
-	t.ScrollState.ScrollToView(rowY, rowHeight)
+	if animate {
+		t.ScrollState.glideToView(rowY, rowHeight)
+	} else {
+		t.ScrollState.ScrollToView(rowY, rowHeight)
+	}
 }
 
 // revealMovedCursor scrolls the cursor into view after layout, unless it was

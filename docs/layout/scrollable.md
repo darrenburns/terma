@@ -50,6 +50,8 @@ state := NewScrollState()
 | `SetOffset(n)` | Set scroll offset (auto-clamps to bounds) |
 | `ScrollUp(n)` | Scroll up by n lines |
 | `ScrollDown(n)` | Scroll down by n lines |
+| `PageUp()` | Glide up by one viewport height |
+| `PageDown()` | Glide down by one viewport height |
 | `ScrollToView(y, height)` | Ensure a region is visible |
 
 ### Reactive Offset
@@ -80,10 +82,21 @@ When focused (requires an ID), Scrollable responds to these keys:
 |-----|--------|
 | `↑` / `k` | Scroll up 1 line |
 | `↓` / `j` | Scroll down 1 line |
-| `PageUp` / `Ctrl+U` | Scroll up half viewport |
-| `PageDown` / `Ctrl+D` | Scroll down half viewport |
+| `PageUp` / `Ctrl+U` | Scroll up one viewport |
+| `PageDown` / `Ctrl+D` | Scroll down one viewport |
 | `Home` / `g` | Scroll to top |
 | `End` / `G` | Scroll to bottom |
+
+### Animated Scrolling
+
+Page and Home/End keys glide the viewport to its new position over 150ms
+instead of jumping, so the eye can follow the content and keep its place. The
+same applies to page and first/last moves in `List`, `Table` and `Tree` (and
+page moves in `TextArea`): the cursor moves at once and the viewport glides
+after it. Pages pressed during a glide add up.
+
+The mouse wheel, scrollbar dragging, `ScrollUp`/`ScrollDown` and `SetOffset`
+move immediately, and stop any glide in progress.
 
 ## Examples
 
