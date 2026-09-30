@@ -4,6 +4,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
@@ -15,38 +16,96 @@ import (
 // divides those by the size of a cell to get the cell plus the position
 // within it. Dragging a scrollbar thumb then follows the pointer exactly.
 //
+// The cell size comes from the terminal's own report (CSI 16 t) where it
+// gives one. The window's size in pixels divided by its columns and rows is
+// only a stand-in: some terminals (Ghostty, for one) count their window
+// padding in that size, which makes the cells too big and puts the pointer
+// further off the further it is from the top-left. So it stands in only when
+// it divides evenly (padding rarely does), or, unevenly, for a report the
+// window has outgrown.
+//
+// Changing the font size changes the cells' size, and is seen only as a
+// resize. Resizing the window leaves the pixels not covered by cells (the
+// padding, and less than a cell besides) within a cell of what they were, so
+// a resize that moves them further than that asks the terminal again. One
+// question is out at a time, and none are asked of a terminal that hasn't
+// answered, or when the window's size in pixels explains the resize.
+//
 // The mode is switched on only once the terminal has reported it recognises
-// it (in reply to a DECRQM query) and the window's size in pixels is known.
+// it (in reply to a DECRQM query) and a cell size is known.
 // Set TERMA_DISABLE_PIXEL_MOUSE to keep cell-based reporting.
 type pixelPointer struct {
 	disabled  bool // Switched off by TERMA_DISABLE_PIXEL_MOUSE.
 	supported bool // The terminal recognises mode 1016.
 	enabled   bool // Mode 1016 has been switched on.
 
+	// The window: in cells, and in pixels where the terminal says (0 if not).
+	window windowGeometry
+	// readWindow reads the window's current size, if it can. The size in
+	// pixels arrives in an event of its own after the size in cells (and only
+	// if it changed), so reading both at once keeps them in step. Nil in tests.
+	readWindow func() (windowGeometry, bool)
+
+	// The cell size in pixels, as the terminal last reported it.
+	cellWidth, cellHeight int
+	// The window's pixels not covered by cells when the cell size was last
+	// confirmed, if the window's size in pixels was known.
+	slackX, slackY int
+	haveSlack      bool
+
+	answered bool           // The terminal has answered a cell size query.
+	awaiting bool           // A cell size query is unanswered.
+	askedFor windowGeometry // The window when the unanswered query was sent.
+}
+
+// windowGeometry is the window's size in cells and in pixels.
+type windowGeometry struct {
 	cols, rows              int
 	pixelWidth, pixelHeight int
 }
+
+// requestCellSize asks the terminal for the size of a cell in pixels.
+var requestCellSize = ansi.WindowOp(ansi.RequestCellSizeWinOp)
+
+// cellSizeReplyTimeout bounds the wait for a cell size reply before the
+// terminal is handed over (see replyDue).
+const cellSizeReplyTimeout = 200 * time.Millisecond
 
 func newPixelPointer() *pixelPointer {
 	return &pixelPointer{disabled: boolEnv("TERMA_DISABLE_PIXEL_MOUSE")}
 }
 
-// query returns the sequence asking whether the terminal supports mode 1016.
+// query returns the sequences asking whether the terminal supports mode 1016
+// and how big its cells are.
 func (p *pixelPointer) query() string {
 	if p.disabled {
 		return ""
 	}
-	return ansi.RequestModeMouseExtSgrPixel
+	p.awaiting = true
+	return ansi.RequestModeMouseExtSgrPixel + requestCellSize
 }
 
-// handle records a size or mode report, returning the sequence that switches
+// handle records a mode, cell size or window size report, returning the
+// sequences to write: a fresh cell size query when the window has changed in
+// a way the last reported cell size can't explain, and the one that switches
 // pixel reporting on once everything it needs is known.
 func (p *pixelPointer) handle(event uv.Event) string {
+	var seq string
 	switch ev := event.(type) {
 	case uv.WindowSizeEvent:
-		p.cols, p.rows = ev.Width, ev.Height
+		window := p.window
+		window.cols, window.rows = ev.Width, ev.Height
+		seq = p.resized(window)
 	case uv.WindowPixelSizeEvent:
-		p.pixelWidth, p.pixelHeight = ev.Width, ev.Height
+		window := p.window
+		window.pixelWidth, window.pixelHeight = ev.Width, ev.Height
+		seq = p.resized(window)
+	case uv.CellSizeEvent:
+		if p.recordCellSize(ev) && p.askedFor.cols > 0 && p.askedFor != p.window {
+			// The window changed while the question was out; the answer may
+			// be for the font size it had then.
+			seq = p.ask()
+		}
 	case uv.ModeReportEvent:
 		if ev.Mode != ansi.ModeMouseExtSgrPixel {
 			return ""
@@ -55,6 +114,122 @@ func (p *pixelPointer) handle(event uv.Event) string {
 	default:
 		return ""
 	}
+	return seq + p.enable()
+}
+
+// resized records the window's new size, returning a cell size query if the
+// cells may have changed size.
+func (p *pixelPointer) resized(window windowGeometry) string {
+	p.setWindow(window)
+	if p.disabled || !p.answered || p.awaiting {
+		// Nothing to ask, or the answer on its way is checked against the
+		// window as it is by then.
+		return ""
+	}
+	if p.window.pixelWidth > 0 {
+		if !p.haveSlack {
+			// The first size in pixels since the cell size was reported.
+			p.noteSlack()
+			return ""
+		}
+		if p.reportFits() {
+			return ""
+		}
+	}
+	return p.ask()
+}
+
+// setWindow records the window's size, read afresh where that is possible.
+func (p *pixelPointer) setWindow(window windowGeometry) {
+	if p.readWindow != nil {
+		if current, ok := p.readWindow(); ok {
+			window = current
+		}
+	}
+	if window.pixelWidth <= 0 || window.pixelHeight <= 0 {
+		// Keep the last size in pixels known, rather than none.
+		window.pixelWidth, window.pixelHeight = p.window.pixelWidth, p.window.pixelHeight
+	}
+	p.window = window
+}
+
+// ask returns a cell size query, noting that it is out.
+func (p *pixelPointer) ask() string {
+	p.awaiting = true
+	p.askedFor = p.window
+	return requestCellSize
+}
+
+// recordCellSize records the reply to a cell size query, reporting whether
+// it gave a size. Terminals may reply 0 (while minimised, say); the last size
+// given is kept then.
+func (p *pixelPointer) recordCellSize(ev uv.CellSizeEvent) bool {
+	p.awaiting = false
+	if ev.Width <= 0 || ev.Height <= 0 {
+		return false
+	}
+	p.answered = true
+	p.cellWidth, p.cellHeight = ev.Width, ev.Height
+	p.noteSlack()
+	return true
+}
+
+// noteSlack records the window's pixels not covered by cells, the measure
+// later resizes are checked against.
+func (p *pixelPointer) noteSlack() {
+	w := p.window
+	p.haveSlack = p.cellWidth > 0 && w.cols > 0 && w.pixelWidth > 0
+	if p.haveSlack {
+		p.slackX = w.pixelWidth - w.cols*p.cellWidth
+		p.slackY = w.pixelHeight - w.rows*p.cellHeight
+	}
+}
+
+// reportFits reports whether the reported cell size still explains the
+// window: a resize leaves the pixels not covered by cells within a cell of
+// where they were, while a new font size moves them by a little per cell.
+// Without the window's size in pixels there is nothing to check against.
+func (p *pixelPointer) reportFits() bool {
+	if !p.haveSlack || p.window.pixelWidth <= 0 {
+		return true
+	}
+	slackX := p.window.pixelWidth - p.window.cols*p.cellWidth
+	slackY := p.window.pixelHeight - p.window.rows*p.cellHeight
+	return absInt(slackX-p.slackX) < p.cellWidth && absInt(slackY-p.slackY) < p.cellHeight
+}
+
+func absInt(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
+}
+
+// resume is called when the terminal is taken back after being handed to
+// another program, returning the sequences to write. Pixel reporting was
+// switched off meanwhile, and the font size may have changed, so the cell
+// size is asked for again before it is switched back on.
+func (p *pixelPointer) resume() string {
+	p.enabled = false
+	p.setWindow(p.window)
+	if p.disabled || !p.answered {
+		return p.enable()
+	}
+	p.cellWidth, p.cellHeight = 0, 0
+	p.haveSlack = false
+	return p.ask() + p.enable()
+}
+
+// replyDue reports whether a cell size reply is on its way from a terminal
+// known to answer. Left unread when the terminal is handed to another program
+// (or back to the shell), it would reach that as typing.
+func (p *pixelPointer) replyDue() bool {
+	return p.answered && p.awaiting
+}
+
+// enable returns the sequence that switches pixel reporting on, once the
+// terminal supports it and a cell size is known.
+func (p *pixelPointer) enable() string {
 	if p.enabled || p.disabled || !p.supported {
 		return ""
 	}
@@ -65,12 +240,36 @@ func (p *pixelPointer) handle(event uv.Event) string {
 	return ansi.SetModeMouseExtSgrPixel
 }
 
-// cellSize returns the size of a cell in pixels.
+// cellSize returns the size of a cell in pixels: the terminal's report while
+// the window fits it, or else the window's size in pixels over its cells.
 func (p *pixelPointer) cellSize() (width, height float64, ok bool) {
-	if p.cols <= 0 || p.rows <= 0 || p.pixelWidth < p.cols || p.pixelHeight < p.rows {
+	reported := p.cellWidth > 0 && p.cellHeight > 0
+	if reported && p.reportFits() {
+		return float64(p.cellWidth), float64(p.cellHeight), true
+	}
+	// A report the window no longer fits (the font size changed, and the
+	// terminal is being asked again) is further off than the window's size
+	// divided unevenly, which is off by at most the padding.
+	if width, height, ok := p.windowCellSize(reported); ok {
+		return width, height, true
+	}
+	if reported {
+		return float64(p.cellWidth), float64(p.cellHeight), true
+	}
+	return 0, 0, false
+}
+
+// windowCellSize returns the window's size in pixels over its columns and
+// rows, only if they divide evenly unless uneven is set.
+func (p *pixelPointer) windowCellSize(uneven bool) (width, height float64, ok bool) {
+	w := p.window
+	if w.cols <= 0 || w.rows <= 0 || w.pixelWidth < w.cols || w.pixelHeight < w.rows {
 		return 0, 0, false
 	}
-	return float64(p.pixelWidth) / float64(p.cols), float64(p.pixelHeight) / float64(p.rows), true
+	if !uneven && (w.pixelWidth%w.cols != 0 || w.pixelHeight%w.rows != 0) {
+		return 0, 0, false
+	}
+	return float64(w.pixelWidth) / float64(w.cols), float64(w.pixelHeight) / float64(w.rows), true
 }
 
 // locateEvent applies locate to mouse events and returns other events as
