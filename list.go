@@ -770,7 +770,7 @@ func (l List[T]) handleMouseDown(event MouseEvent) {
 			l.State.ClearAnchor()
 		}
 		l.setCursorToViewIndex(viewIdx)
-		l.scrollCursorIntoView()
+		l.jumpCursorIntoView()
 	}
 
 	if view[viewIdx] != previous {
@@ -795,13 +795,14 @@ func (l List[T]) OnMouseMove(event MouseEvent) {
 	}
 	view := l.viewIndices()
 	if view[viewIdx] == l.State.CursorIndex.Peek() {
+		l.jumpCursorIntoView()
 		return
 	}
 	if l.MultiSelect {
 		l.handleShiftMoveTo(viewIdx)
 	} else {
 		l.setCursorToViewIndex(viewIdx)
-		l.scrollCursorIntoView()
+		l.jumpCursorIntoView()
 	}
 	l.notifyCursorChange()
 }
@@ -1359,7 +1360,7 @@ func (l List[T]) handleShiftMove(delta int) {
 	newCursor := view[newViewIdx]
 	l.State.CursorIndex.Set(newCursor)
 	l.selectViewRange(l.State.GetAnchor(), newCursor)
-	l.scrollCursorIntoView()
+	l.jumpCursorIntoView()
 }
 
 // handleShiftMoveTo extends selection to a specific index.
@@ -1382,7 +1383,7 @@ func (l List[T]) handleShiftMoveTo(targetIdx int) {
 	newCursor := view[targetViewIdx]
 	l.State.CursorIndex.Set(newCursor)
 	l.selectViewRange(l.State.GetAnchor(), newCursor)
-	l.scrollCursorIntoView()
+	l.jumpCursorIntoView()
 }
 
 func (l List[T]) setCursorToViewIndex(viewIdx int) {
@@ -1459,6 +1460,14 @@ func (l List[T]) selectViewRange(anchorSource, cursorSource int) {
 		sel[view[i]] = struct{}{}
 	}
 	l.State.Selection.Set(sel)
+}
+
+// jumpCursorIntoView interrupts a glide for range selection and pointer moves.
+func (l List[T]) jumpCursorIntoView() {
+	if l.ScrollState != nil {
+		l.ScrollState.stopAnimation()
+	}
+	l.scrollCursorIntoView()
 }
 
 // scrollCursorIntoView uses the ScrollState to ensure

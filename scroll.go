@@ -169,10 +169,19 @@ func (s *ScrollState) exactPosition() float64 {
 // scrollTarget returns the offset the viewport is heading for: the end of a
 // running scroll animation, or else the current offset.
 func (s *ScrollState) scrollTarget() int {
+	s.stopAnimationIfOffsetChanged()
 	if s.animation != nil {
 		return s.animationTarget
 	}
 	return s.Offset.Peek()
+}
+
+// stopAnimationIfOffsetChanged honors direct writes to the public Offset
+// signal before another scroll operation can reuse the old animation target.
+func (s *ScrollState) stopAnimationIfOffsetChanged() {
+	if s.animation != nil && s.Offset.Peek() != s.animationOffset {
+		s.stopAnimation()
+	}
 }
 
 // animateOffset glides the viewport to offset, clamped to valid bounds.
@@ -282,6 +291,7 @@ func (r *cursorReveal[K]) record(cursor K, y, height int, scroll *ScrollState) {
 // the viewport is heading, and the animation is retargeted rather than cut
 // short, so moving the cursor during a glide doesn't make the viewport jump.
 func (s *ScrollState) ScrollToView(y, height int) {
+	s.stopAnimationIfOffsetChanged()
 	s.scrollToView(y, height, s.animation != nil)
 }
 
@@ -496,11 +506,17 @@ func (s *ScrollState) pinnedToEnd() bool {
 // If the content was pinned to the bottom, the layout has already scrolled to
 // the new end (see pinnedToEnd), so the offset is brought into line with it.
 func (s *ScrollState) updateLayout(viewportHeight, contentHeight int) {
+	s.stopAnimationIfOffsetChanged()
 	pinned := s.pinnedToEnd()
+	// End (or PageDown to the bottom) engages the pin before its glide
+	// arrives. Keep that destination at the bottom as content changes.
+	glidingToEnd := s.PinToBottom && s.isPinned && s.animation != nil && s.animationTarget == s.maxOffset()
 	s.viewportHeight = viewportHeight
 	s.contentHeight = contentHeight
 	if pinned {
 		s.SetOffset(s.maxOffset())
+	} else if glidingToEnd && s.animationTarget != s.maxOffset() {
+		s.animateOffset(s.maxOffset())
 	}
 }
 

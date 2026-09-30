@@ -881,7 +881,7 @@ func (t Table[T]) moveCursorTo(viewRow, col int) {
 	if t.selectionMode() != TableSelectionRow {
 		t.State.CursorColumn.Set(col)
 	}
-	t.scrollCursorIntoView()
+	t.jumpCursorIntoView()
 }
 
 // extendSelectionTo moves the cursor to a cell, selecting the rows, columns
@@ -1574,7 +1574,7 @@ func (t Table[T]) handleShiftMoveRow(delta int) {
 	newCursor := view[newViewIdx]
 	t.State.CursorIndex.Set(newCursor)
 	t.setSelectionRangeFromView(view, t.State.GetAnchor(), newCursor)
-	t.scrollCursorIntoView()
+	t.jumpCursorIntoView()
 }
 
 // handleShiftMoveRowTo extends row selection to a specific index.
@@ -1597,7 +1597,7 @@ func (t Table[T]) handleShiftMoveRowTo(targetIdx int) {
 	newCursor := view[targetViewIdx]
 	t.State.CursorIndex.Set(newCursor)
 	t.setSelectionRangeFromView(view, t.State.GetAnchor(), newCursor)
-	t.scrollCursorIntoView()
+	t.jumpCursorIntoView()
 }
 
 // handleShiftMoveColumn extends column selection by moving cursor column by delta.
@@ -1668,7 +1668,7 @@ func (t Table[T]) handleShiftMoveCell(deltaRow, deltaCol, columnCount int) {
 		anchorCol = newCol
 	}
 	t.setSelectionBox(view, anchorViewRow, anchorCol, newViewRow, newCol, columnCount)
-	t.scrollCursorIntoView()
+	t.jumpCursorIntoView()
 }
 
 // handleShiftMoveCellTo extends cell selection to a specific cell.
@@ -1702,7 +1702,7 @@ func (t Table[T]) handleShiftMoveCellTo(targetRow, targetCol, columnCount int) {
 		anchorCol = newCol
 	}
 	t.setSelectionBox(view, anchorViewRow, anchorCol, newViewRow, newCol, columnCount)
-	t.scrollCursorIntoView()
+	t.jumpCursorIntoView()
 }
 
 // scrollBy scrolls the viewport by lines, gliding there if animate.
@@ -1714,6 +1714,14 @@ func (t Table[T]) scrollBy(lines int, animate bool) bool {
 		return t.ScrollState.scrollUp(-lines, animate)
 	}
 	return t.ScrollState.scrollDown(lines, animate)
+}
+
+// jumpCursorIntoView interrupts a glide for range selection and pointer moves.
+func (t Table[T]) jumpCursorIntoView() {
+	if t.ScrollState != nil {
+		t.ScrollState.stopAnimation()
+	}
+	t.scrollCursorIntoView()
 }
 
 // scrollCursorIntoView uses the ScrollState to ensure

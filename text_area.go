@@ -1570,6 +1570,9 @@ func (t TextArea) OnMouseDown(event MouseEvent) {
 		}
 		return
 	}
+	if t.ScrollState != nil {
+		t.ScrollState.stopAnimation()
+	}
 
 	contentWidth := reservedContentWidth(t.State.lastWidth)
 
@@ -1618,6 +1621,9 @@ func (t TextArea) OnMouseDown(event MouseEvent) {
 func (t TextArea) OnMouseMove(event MouseEvent) {
 	if t.State == nil || t.State.lastWidth <= 0 {
 		return
+	}
+	if t.ScrollState != nil {
+		t.ScrollState.stopAnimation()
 	}
 
 	// Adjust local coordinates for border and padding

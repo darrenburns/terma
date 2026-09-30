@@ -875,6 +875,7 @@ func (t Tree[T]) OnMouseMove(event MouseEvent) {
 	}
 	path := t.viewPaths()[viewIdx]
 	if pathsEqual(path, t.State.CursorPath.Peek()) {
+		t.jumpCursorIntoView()
 		return
 	}
 	t.setCursorFromMousePath(path, t.MultiSelect)
@@ -946,7 +947,7 @@ func (t Tree[T]) setCursorFromMousePath(path []int, shift bool) {
 		t.State.CursorPath.Set(next)
 	}
 
-	t.scrollCursorIntoView()
+	t.jumpCursorIntoView()
 	if !pathsEqual(previous, next) {
 		t.notifyCursorChange()
 	}
@@ -1682,7 +1683,7 @@ func (t Tree[T]) handleShiftMove(delta int) {
 	newCursor := view[newIdx]
 	t.State.CursorPath.Set(clonePath(newCursor))
 	t.selectViewRange(t.State.getAnchor(), newCursor)
-	t.scrollCursorIntoView()
+	t.jumpCursorIntoView()
 }
 
 func (t Tree[T]) handleShiftMoveTo(targetIdx int) {
@@ -1701,7 +1702,7 @@ func (t Tree[T]) handleShiftMoveTo(targetIdx int) {
 	newCursor := view[targetIdx]
 	t.State.CursorPath.Set(clonePath(newCursor))
 	t.selectViewRange(t.State.getAnchor(), newCursor)
-	t.scrollCursorIntoView()
+	t.jumpCursorIntoView()
 }
 
 func (t Tree[T]) selectViewRange(anchor, cursor []int) {
@@ -1731,6 +1732,14 @@ func (t Tree[T]) selectViewRange(anchor, cursor []int) {
 		}
 	}
 	t.State.Selection.Set(sel)
+}
+
+// jumpCursorIntoView interrupts a glide for range selection and pointer moves.
+func (t Tree[T]) jumpCursorIntoView() {
+	if t.ScrollState != nil {
+		t.ScrollState.stopAnimation()
+	}
+	t.scrollCursorIntoView()
 }
 
 func (t Tree[T]) scrollCursorIntoView() {
