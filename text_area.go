@@ -959,7 +959,7 @@ func (t TextArea) cursorPageUp() {
 	if t.State != nil {
 		t.State.ClearSelection()
 		t.State.CursorUpBy(t.pageLines())
-		t.pageCursorIntoView()
+		t.glideCursorIntoView()
 	}
 }
 
@@ -967,7 +967,7 @@ func (t TextArea) cursorPageDown() {
 	if t.State != nil {
 		t.State.ClearSelection()
 		t.State.CursorDownBy(t.pageLines())
-		t.pageCursorIntoView()
+		t.glideCursorIntoView()
 	}
 }
 
@@ -1093,7 +1093,7 @@ func (t TextArea) selectPageUp() {
 	if t.State != nil {
 		t.ensureAnchor()
 		t.State.CursorUpBy(t.pageLines())
-		t.pageCursorIntoView()
+		t.glideCursorIntoView()
 	}
 }
 
@@ -1101,7 +1101,7 @@ func (t TextArea) selectPageDown() {
 	if t.State != nil {
 		t.ensureAnchor()
 		t.State.CursorDownBy(t.pageLines())
-		t.pageCursorIntoView()
+		t.glideCursorIntoView()
 	}
 }
 
@@ -1523,9 +1523,9 @@ func (t TextArea) scrollCursorIntoView() {
 	t.revealCursor(false)
 }
 
-// pageCursorIntoView is scrollCursorIntoView after a page move: the viewport
+// glideCursorIntoView is scrollCursorIntoView after a page move: the viewport
 // glides to the cursor so the eye can follow the text.
-func (t TextArea) pageCursorIntoView() {
+func (t TextArea) glideCursorIntoView() {
 	t.revealCursor(true)
 }
 
@@ -1538,7 +1538,7 @@ func (t TextArea) revealCursor(animate bool) {
 	layout := t.State.layoutFor(graphemes, revision, t.State.WrapMode.Peek(), contentWidth, t.State.CursorIndex.Peek())
 	t.State.revealed.record(t.State.CursorIndex.Peek(), layout.cursorLine, 1, t.ScrollState)
 	if animate {
-		t.ScrollState.pageToView(layout.cursorLine, 1)
+		t.ScrollState.glideToView(layout.cursorLine, 1)
 	} else {
 		t.ScrollState.ScrollToView(layout.cursorLine, 1)
 	}

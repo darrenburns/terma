@@ -1371,7 +1371,7 @@ func (t Table[T]) keyCursorToFirst() {
 	mode := t.selectionMode()
 	if mode == TableSelectionColumn {
 		if t.ScrollState != nil {
-			t.ScrollState.SetOffset(0)
+			t.ScrollState.animateOffset(0)
 		}
 		return
 	}
@@ -1380,7 +1380,7 @@ func (t Table[T]) keyCursorToFirst() {
 		t.State.ClearAnchor()
 	}
 	t.setCursorToViewIndex(0)
-	t.scrollCursorIntoView()
+	t.glideCursorIntoView()
 	t.notifyCursorChange()
 }
 
@@ -1388,7 +1388,7 @@ func (t Table[T]) keyCursorToLast() {
 	mode := t.selectionMode()
 	if mode == TableSelectionColumn {
 		if t.ScrollState != nil {
-			t.ScrollState.SetOffset(maxTableInt())
+			t.ScrollState.animateOffset(maxTableInt())
 		}
 		return
 	}
@@ -1401,7 +1401,7 @@ func (t Table[T]) keyCursorToLast() {
 		t.State.ClearAnchor()
 	}
 	t.setCursorToViewIndex(len(view) - 1)
-	t.scrollCursorIntoView()
+	t.glideCursorIntoView()
 	t.notifyCursorChange()
 }
 
@@ -1420,7 +1420,7 @@ func (t Table[T]) pageUp() {
 		t.State.ClearAnchor()
 	}
 	t.setCursorToViewIndex(cursorViewIdx - 10)
-	t.pageCursorIntoView()
+	t.glideCursorIntoView()
 	t.notifyCursorChange()
 }
 
@@ -1439,7 +1439,7 @@ func (t Table[T]) pageDown() {
 		t.State.ClearAnchor()
 	}
 	t.setCursorToViewIndex(cursorViewIdx + 10)
-	t.pageCursorIntoView()
+	t.glideCursorIntoView()
 	t.notifyCursorChange()
 }
 
@@ -1722,9 +1722,10 @@ func (t Table[T]) scrollCursorIntoView() {
 	t.revealCursor(false)
 }
 
-// pageCursorIntoView is scrollCursorIntoView after a page move: the viewport
-// glides to the cursor so the eye can follow the content.
-func (t Table[T]) pageCursorIntoView() {
+// glideCursorIntoView is scrollCursorIntoView after a long move (a page, or to
+// the start or end): the viewport glides to the cursor so the eye can follow
+// the content.
+func (t Table[T]) glideCursorIntoView() {
 	t.revealCursor(true)
 }
 
@@ -1739,7 +1740,7 @@ func (t Table[T]) revealCursor(animate bool) {
 	}
 	t.State.revealed.record(cursorIdx, rowY, rowHeight, t.ScrollState)
 	if animate {
-		t.ScrollState.pageToView(rowY, rowHeight)
+		t.ScrollState.glideToView(rowY, rowHeight)
 	} else {
 		t.ScrollState.ScrollToView(rowY, rowHeight)
 	}

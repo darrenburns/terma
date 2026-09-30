@@ -285,9 +285,10 @@ func (s *ScrollState) ScrollToView(y, height int) {
 	s.scrollToView(y, height, s.animation != nil)
 }
 
-// pageToView is ScrollToView for a cursor moved by a page: the viewport glides
-// to the region so the eye can follow the content.
-func (s *ScrollState) pageToView(y, height int) {
+// glideToView is ScrollToView for a cursor moved a long way (a page, or to the
+// start or end): the viewport glides to the region so the eye can follow the
+// content.
+func (s *ScrollState) glideToView(y, height int) {
 	s.scrollToView(y, height, true)
 }
 
@@ -455,6 +456,25 @@ func (s *ScrollState) IsPinned() bool {
 // ScrollToBottom scrolls to the bottom and re-engages the pin if PinToBottom is enabled.
 func (s *ScrollState) ScrollToBottom() {
 	s.SetOffset(s.maxOffset())
+	if s.PinToBottom {
+		s.isPinned = true
+	}
+}
+
+// glideToTop glides to the top, as the home key does, breaking the pin.
+func (s *ScrollState) glideToTop() {
+	s.userScrolls++
+	if s.PinToBottom {
+		s.isPinned = false
+	}
+	s.animateOffset(0)
+}
+
+// glideToBottom glides to the bottom, as the end key does, re-engaging the
+// pin if PinToBottom is enabled.
+func (s *ScrollState) glideToBottom() {
+	s.userScrolls++
+	s.animateOffset(s.maxOffset())
 	if s.PinToBottom {
 		s.isPinned = true
 	}
@@ -763,14 +783,6 @@ func (s Scrollable) getScrollOffsetX() int {
 	return s.State.OffsetX.Peek()
 }
 
-// setScrollOffset sets the scroll offset.
-func (s Scrollable) setScrollOffset(offset int) {
-	if s.State != nil {
-		s.State.userScrolls++
-		s.State.SetOffset(offset)
-	}
-}
-
 // canScrollY returns true if vertical scrolling is possible.
 func (s Scrollable) canScrollY() bool {
 	if s.DisableScroll || s.State == nil {
@@ -1049,23 +1061,15 @@ func (s Scrollable) OnKey(event KeyEvent) bool {
 		if !s.canScrollY() {
 			return false
 		}
-		// Break pin when going to top
-		if s.State.PinToBottom && s.State.isPinned {
-			s.State.isPinned = false
-		}
-		s.setScrollOffset(0)
-		Log("Scrollable[%s].OnKey: home, offset %d -> %d", s.ID, oldOffsetY, s.getScrollOffset())
+		s.State.glideToTop()
+		Log("Scrollable[%s].OnKey: home, offset %d -> %d", s.ID, oldOffsetY, s.State.scrollTarget())
 		return true
 	case event.MatchString("end", "G"):
 		if !s.canScrollY() {
 			return false
 		}
-		maxOff := s.maxScrollOffset()
-		Log("Scrollable[%s].OnKey: end BEFORE - stateViewport=%d, stateContent=%d, maxOffset=%d",
-			s.ID, s.State.viewportHeight, s.State.contentHeight, maxOff)
-		// Use ScrollToBottom to re-engage pin
-		s.State.ScrollToBottom()
-		Log("Scrollable[%s].OnKey: end AFTER - offset %d -> %d", s.ID, oldOffsetY, s.getScrollOffset())
+		s.State.glideToBottom()
+		Log("Scrollable[%s].OnKey: end, offset %d -> %d", s.ID, oldOffsetY, s.State.scrollTarget())
 		return true
 	case event.MatchString("left", "h"):
 		if !s.canScrollX() {

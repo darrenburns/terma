@@ -208,10 +208,117 @@ func TestFocusedScrollablePageKeysGlide(t *testing.T) {
 	require.True(t, scrollable.OnKey(makeKeyEvent(uv.KeyPgUp, 0)))
 	requireGlide(t, glide(t, s, advance), 20, 10)
 
-	// Home and End still jump: a glide across a long document is a blur.
 	require.True(t, scrollable.OnKey(makeKeyEvent(uv.KeyEnd, 0)))
-	require.Equal(t, 90, s.GetOffset())
-	require.Nil(t, s.animation)
+	requireGlide(t, glide(t, s, advance), 10, 90)
+	require.True(t, scrollable.OnKey(makeCharEvent('g')))
+	requireGlide(t, glide(t, s, advance), 90, 0)
+	require.True(t, scrollable.OnKey(makeCharEvent('G')))
+	requireGlide(t, glide(t, s, advance), 0, 90)
+	require.True(t, scrollable.OnKey(makeKeyEvent(uv.KeyHome, 0)))
+	requireGlide(t, glide(t, s, advance), 90, 0)
+}
+
+func TestFocusedScrollableHomeAndEndMoveThePin(t *testing.T) {
+	advance := installScrollAnimationClock(t)
+	s := newMeasuredScrollState(10, 100)
+	s.PinToBottom = true
+	scrollable := Scrollable{State: s, Focusable: true}
+
+	scrollable.OnKey(makeKeyEvent(uv.KeyEnd, 0))
+	require.True(t, s.IsPinned())
+	glide(t, s, advance)
+	require.True(t, s.pinnedToEnd())
+
+	scrollable.OnKey(makeKeyEvent(uv.KeyHome, 0))
+	require.False(t, s.IsPinned())
+	glide(t, s, advance)
+	require.Equal(t, 0, s.GetOffset())
+}
+
+// Moving the cursor to the first or last row glides the viewport there in
+// List, Table and Tree, as paging does.
+func TestCollectionStartAndEndGlide(t *testing.T) {
+	items := make([]string, 60)
+	for i := range items {
+		items[i] = fmt.Sprintf("item %d", i)
+	}
+	nodes := make([]TreeNode[string], len(items))
+	for i, item := range items {
+		nodes[i] = TreeNode[string]{Data: item}
+	}
+	type collection struct {
+		widget        Widget
+		first, last   func()
+		cursorAtFirst func() bool
+		cursorAtLast  func() bool
+	}
+	cases := map[string]func(scroll *ScrollState) collection{
+		"List": func(scroll *ScrollState) collection {
+			state := NewListState(items)
+			list := List[string]{ID: "c", State: state, ScrollState: scroll}
+			return collection{list, list.keyCursorToFirst, list.keyCursorToLast,
+				func() bool { return state.CursorIndex.Peek() == 0 },
+				func() bool { return state.CursorIndex.Peek() == len(items)-1 }}
+		},
+		"Table": func(scroll *ScrollState) collection {
+			rows := make([][]string, len(items))
+			for i, item := range items {
+				rows[i] = []string{item}
+			}
+			state := NewTableState(rows)
+			table := Table[[]string]{ID: "c", State: state, ScrollState: scroll, Columns: []TableColumn{{}}}
+			return collection{table, table.keyCursorToFirst, table.keyCursorToLast,
+				func() bool { return state.CursorIndex.Peek() == 0 },
+				func() bool { return state.CursorIndex.Peek() == len(items)-1 }}
+		},
+		"Table columns": func(scroll *ScrollState) collection {
+			rows := make([][]string, len(items))
+			for i, item := range items {
+				rows[i] = []string{item}
+			}
+			table := Table[[]string]{ID: "c", State: NewTableState(rows), ScrollState: scroll, Columns: []TableColumn{{}}, SelectionMode: TableSelectionColumn}
+			always := func() bool { return true }
+			return collection{table, table.keyCursorToFirst, table.keyCursorToLast, always, always}
+		},
+		"Tree": func(scroll *ScrollState) collection {
+			state := NewTreeState(nodes)
+			tree := Tree[string]{ID: "c", State: state, ScrollState: scroll}
+			return collection{tree, tree.keyCursorToFirst, tree.keyCursorToLast,
+				func() bool { p := state.CursorPath.Peek(); return len(p) == 1 && p[0] == 0 },
+				func() bool { p := state.CursorPath.Peek(); return len(p) == 1 && p[0] == len(items)-1 }}
+		},
+	}
+	for name, build := range cases {
+		t.Run(name, func(t *testing.T) {
+			advance := installScrollAnimationClock(t)
+			scroll := NewScrollState()
+			c := build(scroll)
+			scene := newWheelScene(t, Scrollable{ID: "scroll", State: scroll, Height: Cells(5), Child: c.widget}, 24, 5)
+			frames := func() []int {
+				var offsets []int
+				for i := 0; scroll.animation != nil; i++ {
+					require.Less(t, i, 100)
+					advance(testFrame)
+					scene.draw()
+					offsets = append(offsets, scroll.GetOffset())
+				}
+				return offsets
+			}
+			maxOffset := scroll.maxOffset()
+			require.Positive(t, maxOffset)
+
+			c.last()
+			require.True(t, c.cursorAtLast(), "the cursor moves at once")
+			scene.draw()
+			require.Equal(t, 0, scroll.GetOffset(), "the viewport hasn't moved yet")
+			requireGlide(t, frames(), 0, maxOffset)
+
+			c.first()
+			require.True(t, c.cursorAtFirst())
+			scene.draw()
+			requireGlide(t, frames(), maxOffset, 0)
+		})
+	}
 }
 
 type pageGlideListScene struct {

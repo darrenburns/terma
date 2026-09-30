@@ -1265,7 +1265,7 @@ func (l List[T]) keyCursorToFirst() {
 		l.State.ClearAnchor()
 	}
 	l.setCursorToViewIndex(0)
-	l.scrollCursorIntoView()
+	l.glideCursorIntoView()
 	l.notifyCursorChange()
 }
 
@@ -1279,7 +1279,7 @@ func (l List[T]) keyCursorToLast() {
 		l.State.ClearAnchor()
 	}
 	l.setCursorToViewIndex(len(view) - 1)
-	l.scrollCursorIntoView()
+	l.glideCursorIntoView()
 	l.notifyCursorChange()
 }
 
@@ -1293,7 +1293,7 @@ func (l List[T]) pageUp() {
 		l.State.ClearAnchor()
 	}
 	l.setCursorToViewIndex(cursorViewIdx - 10)
-	l.pageCursorIntoView()
+	l.glideCursorIntoView()
 	l.notifyCursorChange()
 }
 
@@ -1307,7 +1307,7 @@ func (l List[T]) pageDown() {
 		l.State.ClearAnchor()
 	}
 	l.setCursorToViewIndex(cursorViewIdx + 10)
-	l.pageCursorIntoView()
+	l.glideCursorIntoView()
 	l.notifyCursorChange()
 }
 
@@ -1467,9 +1467,10 @@ func (l List[T]) scrollCursorIntoView() {
 	l.revealCursor(false)
 }
 
-// pageCursorIntoView is scrollCursorIntoView after a page move: the viewport
-// glides to the cursor so the eye can follow the content.
-func (l List[T]) pageCursorIntoView() {
+// glideCursorIntoView is scrollCursorIntoView after a long move (a page, or to
+// the start or end): the viewport glides to the cursor so the eye can follow
+// the content.
+func (l List[T]) glideCursorIntoView() {
 	l.revealCursor(true)
 }
 
@@ -1484,7 +1485,7 @@ func (l List[T]) revealCursor(animate bool) {
 	}
 	l.State.revealed.record(cursorIdx, itemY, itemHeight, l.ScrollState)
 	if animate {
-		l.ScrollState.pageToView(itemY, itemHeight)
+		l.ScrollState.glideToView(itemY, itemHeight)
 	} else {
 		l.ScrollState.ScrollToView(itemY, itemHeight)
 	}
