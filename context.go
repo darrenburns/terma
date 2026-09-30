@@ -20,6 +20,7 @@ func RequestFocus(id string) {
 // It is passed to Widget.Build() to allow widgets to access focus state,
 // hover state, and other framework features in a declarative way.
 type BuildContext struct {
+	renderer     *Renderer
 	focusManager *FocusManager
 	// Signal that holds the currently focused widget (nil if none)
 	focusedSignal AnySignal[Focusable]
@@ -76,6 +77,7 @@ func (ctx BuildContext) PushChild(index int) BuildContext {
 	newPath[len(ctx.path)] = index
 	return BuildContext{
 		focusManager:   ctx.focusManager,
+		renderer:       ctx.renderer,
 		focusedSignal:  ctx.focusedSignal,
 		hoveredSignal:  ctx.hoveredSignal,
 		hoverTarget:    ctx.hoverTarget,
@@ -97,6 +99,7 @@ func (ctx BuildContext) IsDisabled() bool {
 func (ctx BuildContext) WithDisabled() BuildContext {
 	return BuildContext{
 		focusManager:   ctx.focusManager,
+		renderer:       ctx.renderer,
 		focusedSignal:  ctx.focusedSignal,
 		hoveredSignal:  ctx.hoveredSignal,
 		hoverTarget:    ctx.hoverTarget,

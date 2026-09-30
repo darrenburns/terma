@@ -286,6 +286,7 @@ func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []Focus
 
 	buildCtx := NewBuildContext(r.focusManager, r.focusedSignal, r.hoveredSignal, r.floatCollector)
 	buildCtx.hoverTarget = r.hoverTarget
+	buildCtx.renderer = r
 	r.rootNode = r.buildRetainedNode(r.rootNode, root, buildCtx, r.focusCollector, rebuildAll)
 	r.floatCollector.raiseTopmost()
 
@@ -865,6 +866,9 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 
 	if renderable, ok := node.widget.(Renderable); ok {
 		contentCtx := ctx.SubContext(absContentX, absContentY, box.ContentWidth(), box.ContentHeight())
+		contentCtx.imageOwner = node
+		node.imageSlot = 0
+		contentCtx.imageSlot = &node.imageSlot
 		if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
 			bg := style.BackgroundColor
 			w, h := box.Width, box.Height

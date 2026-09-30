@@ -8,9 +8,14 @@ func (r *Renderer) renderHeadlessFrames(root Widget, incremental bool) (focusabl
 	queue, release := beginHeadlessDispatch()
 	if queue == nil {
 		if incremental {
-			return r.updateInternal(root)
+			focusables, layoutWidth, layoutHeight = r.updateInternal(root)
+		} else {
+			focusables, layoutWidth, layoutHeight = r.renderFull(root)
 		}
-		return r.renderFull(root)
+		if r.finishImages(root) {
+			focusables, layoutWidth, layoutHeight = r.lastFocusables, r.lastLayoutWidth, r.lastLayoutHeight
+		}
+		return focusables, layoutWidth, layoutHeight
 	}
 	defer release()
 
@@ -26,6 +31,11 @@ func (r *Renderer) renderHeadlessFrames(root Widget, incremental bool) (focusabl
 			// Dispatch also supports plain Go fields, so a callback may have
 			// changed Build inputs without recording reactive invalidation.
 			focusables, layoutWidth, layoutHeight = r.renderFull(root)
+		}
+		// The first-image switch performs another full paint. Keep its layout
+		// callbacks inside this frame boundary and return its final geometry.
+		if r.finishImages(root) {
+			focusables, layoutWidth, layoutHeight = r.lastFocusables, r.lastLayoutWidth, r.lastLayoutHeight
 		}
 		pending := queue.takePending()
 		if len(pending) == 0 {

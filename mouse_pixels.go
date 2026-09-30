@@ -39,6 +39,12 @@ type pixelPointer struct {
 	supported bool // The terminal recognises mode 1016.
 	enabled   bool // Mode 1016 has been switched on.
 
+	// Images need the cell size too, pixel reporting or not: they keep it
+	// tracked through resizes even with the mode switched off.
+	imageGeometry bool
+	// TERMA_IMAGE_CELL_SIZE, which overrides any size reported or worked out.
+	explicitWidth, explicitHeight int
+
 	// The window: in cells, and in pixels where the terminal says (0 if not).
 	window windowGeometry
 	// readWindow reads the window's current size, if it can. The size in
@@ -54,6 +60,7 @@ type pixelPointer struct {
 	haveSlack      bool
 
 	answered bool           // The terminal has answered a cell size query.
+	resumed  bool           // Taken back after a suspend, and not yet answered since.
 	awaiting bool           // A cell size query is unanswered.
 	askedFor windowGeometry // The window when the unanswered query was sent.
 }
@@ -67,12 +74,16 @@ type windowGeometry struct {
 // requestCellSize asks the terminal for the size of a cell in pixels.
 var requestCellSize = ansi.WindowOp(ansi.RequestCellSizeWinOp)
 
+// maxCellPixels bounds a believable cell size report.
+const maxCellPixels = 4096
+
 // cellSizeReplyTimeout bounds the wait for a cell size reply before the
 // terminal is handed over (see replyDue).
 const cellSizeReplyTimeout = 200 * time.Millisecond
 
 func newPixelPointer() *pixelPointer {
-	return &pixelPointer{disabled: boolEnv("TERMA_DISABLE_PIXEL_MOUSE")}
+	w, h := explicitImageCellSize()
+	return &pixelPointer{disabled: boolEnv("TERMA_DISABLE_PIXEL_MOUSE"), explicitWidth: w, explicitHeight: h}
 }
 
 // query returns the sequences asking whether the terminal supports mode 1016
@@ -121,7 +132,7 @@ func (p *pixelPointer) handle(event uv.Event) string {
 // cells may have changed size.
 func (p *pixelPointer) resized(window windowGeometry) string {
 	p.setWindow(window)
-	if p.disabled || !p.answered || p.awaiting {
+	if p.disabled && !p.imageGeometry || p.explicitWidth > 0 || !p.answered || p.awaiting {
 		// Nothing to ask, or the answer on its way is checked against the
 		// window as it is by then.
 		return ""
@@ -165,10 +176,11 @@ func (p *pixelPointer) ask() string {
 // given is kept then.
 func (p *pixelPointer) recordCellSize(ev uv.CellSizeEvent) bool {
 	p.awaiting = false
-	if ev.Width <= 0 || ev.Height <= 0 {
+	if ev.Width <= 0 || ev.Height <= 0 || ev.Width > maxCellPixels || ev.Height > maxCellPixels {
 		return false
 	}
 	p.answered = true
+	p.resumed = false
 	p.cellWidth, p.cellHeight = ev.Width, ev.Height
 	p.noteSlack()
 	return true
@@ -212,12 +224,11 @@ func absInt(n int) int {
 func (p *pixelPointer) resume() string {
 	p.enabled = false
 	p.setWindow(p.window)
-	if p.disabled || !p.answered {
+	if p.disabled && !p.imageGeometry || p.explicitWidth > 0 || !p.answered {
 		return p.enable()
 	}
-	p.cellWidth, p.cellHeight = 0, 0
-	p.haveSlack = false
-	return p.ask() + p.enable()
+	p.resumed = true
+	return p.ask()
 }
 
 // replyDue reports whether a cell size reply is on its way from a terminal
@@ -230,7 +241,7 @@ func (p *pixelPointer) replyDue() bool {
 // enable returns the sequence that switches pixel reporting on, once the
 // terminal supports it and a cell size is known.
 func (p *pixelPointer) enable() string {
-	if p.enabled || p.disabled || !p.supported {
+	if p.enabled || p.disabled || !p.supported || p.resumed {
 		return ""
 	}
 	if _, _, ok := p.cellSize(); !ok {
@@ -243,6 +254,9 @@ func (p *pixelPointer) enable() string {
 // cellSize returns the size of a cell in pixels: the terminal's report while
 // the window fits it, or else the window's size in pixels over its cells.
 func (p *pixelPointer) cellSize() (width, height float64, ok bool) {
+	if p.explicitWidth > 0 && p.explicitHeight > 0 {
+		return float64(p.explicitWidth), float64(p.explicitHeight), true
+	}
 	reported := p.cellWidth > 0 && p.cellHeight > 0
 	if reported && p.reportFits() {
 		return float64(p.cellWidth), float64(p.cellHeight), true
@@ -255,6 +269,23 @@ func (p *pixelPointer) cellSize() (width, height float64, ok bool) {
 	}
 	if reported {
 		return float64(p.cellWidth), float64(p.cellHeight), true
+	}
+	return 0, 0, false
+}
+
+// imageCellSize returns the size of a cell in whole pixels, for images. Unlike
+// the pointer, an image keeps a report the window has outgrown until the
+// terminal answers again: drawing it at a stand-in size first would upload it
+// twice.
+func (p *pixelPointer) imageCellSize() (width, height int, ok bool) {
+	if p.explicitWidth > 0 && p.explicitHeight > 0 {
+		return p.explicitWidth, p.explicitHeight, true
+	}
+	if p.cellWidth > 0 && p.cellHeight > 0 {
+		return p.cellWidth, p.cellHeight, true
+	}
+	if w, h, ok := p.windowCellSize(false); ok {
+		return int(w), int(h), true
 	}
 	return 0, 0, false
 }
