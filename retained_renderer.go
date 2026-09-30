@@ -1313,7 +1313,9 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 		if entry.Config.hoverScope != "" {
 			floatCtx.hoverScope = entry.Config.hoverScope
 		}
+		previousFloatCount := r.floatCollector.Len()
 		floatRoot := r.buildRetainedNode(oldRoot, child, floatCtx, r.focusCollector, !measure || entry.fresh || geometryChanged)
+		r.floatCollector.nestAfter(i, previousFloatCount)
 		if measure && oldRoot != nil && floatRoot != oldRoot {
 			// Nothing else records where the replaced overlay was drawn.
 			r.reflowDamage = append(r.reflowDamage, oldRoot.subtreeBounds)

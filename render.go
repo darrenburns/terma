@@ -1432,7 +1432,7 @@ func (r *Renderer) ScrollablesAt(x, y int) []*Scrollable {
 }
 
 // renderFloats renders all floating widgets collected during the build phase.
-// Floats are rendered in order (first registered = bottom, last = top).
+// Sibling floats render in registration order, each followed by its descendants.
 // Modal floats render a backdrop before their content.
 func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 	if r.floatCollector.Len() == 0 {
@@ -1470,7 +1470,9 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 		if entry.Config.hoverScope != "" {
 			floatCtx.hoverScope = entry.Config.hoverScope
 		}
+		previousFloatCount := r.floatCollector.Len()
 		floatTree := BuildRenderTree(child, floatCtx, constraints, r.focusCollector)
+		r.floatCollector.nestAfter(i, previousFloatCount)
 
 		floatWidth := floatTree.Layout.Box.MarginBoxWidth()
 		floatHeight := floatTree.Layout.Box.MarginBoxHeight()

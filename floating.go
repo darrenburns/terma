@@ -133,6 +133,7 @@ func (c FloatConfig) shouldDismissOnClickOutside() bool {
 
 // Floating is a widget that renders its child as an overlay on top of other widgets.
 // The child is rendered after the main widget tree, ensuring it appears on top.
+// Nested floats stay above their parent and below later sibling floats.
 //
 // For modal floats (Modal: true), the backdrop blocks clicks to underlying widgets,
 // Escape dismisses the modal, and focus is trapped within the modal's subtree via
@@ -338,6 +339,18 @@ func (c *FloatCollector) deferTopmost(i int) bool {
 		}
 	}
 	return false
+}
+
+// nestAfter keeps entries discovered while building a float directly after
+// that parent, before its remaining siblings. Appending them to the queue would
+// incorrectly put a nested dialog above an unrelated later modal or palette.
+func (c *FloatCollector) nestAfter(parent, previousLen int) {
+	if previousLen == len(c.entries) || previousLen == parent+1 {
+		return
+	}
+	nested := slices.Clone(c.entries[previousLen:])
+	copy(c.entries[parent+1+len(nested):], c.entries[parent+1:previousLen])
+	copy(c.entries[parent+1:], nested)
 }
 
 // Reset clears all entries for a new render pass.
