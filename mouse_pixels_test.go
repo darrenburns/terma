@@ -81,6 +81,10 @@ func TestPixelPointer_FontSizeChangeAsksOnce(t *testing.T) {
 	// ...but the answer that arrives may be for the size before, so once it
 	// does the terminal is asked again.
 	assert.Equal(t, requestCellSize, p.handle(uv.CellSizeEvent{Width: 12, Height: 25}))
+	// The stale answer must not confirm the current window's geometry while
+	// the next answer is out. Keep using its size over its cells instead.
+	event, _, _ = p.locateEvent(uv.MouseClickEvent{X: 799, Y: 465})
+	assert.Equal(t, uv.MouseClickEvent{X: 56, Y: 15}, event)
 	assert.Empty(t, p.handle(uv.CellSizeEvent{Width: 14, Height: 29}))
 	assert.False(t, p.awaiting)
 
@@ -88,7 +92,8 @@ func TestPixelPointer_FontSizeChangeAsksOnce(t *testing.T) {
 	assert.Equal(t, uv.MouseMotionEvent{X: 57, Y: 16}, event)
 
 	p.disabled = true
-	assert.Empty(t, p.handle(uv.WindowSizeEvent{Width: 82, Height: 25}))
+	assert.Equal(t, ansi.ResetModeMouseExtSgrPixel, p.handle(uv.WindowSizeEvent{Width: 82, Height: 25}))
+	assert.False(t, p.replyDue())
 }
 
 func TestPixelPointer_KeepsCellSizeOnEmptyReply(t *testing.T) {
@@ -124,6 +129,46 @@ func TestPixelPointer_FallsBackToEvenWindowSize(t *testing.T) {
 
 	// Taking the terminal back switches it straight back on.
 	assert.Equal(t, ansi.SetModeMouseExtSgrPixel, p.resume())
+}
+
+func TestPixelPointer_UnevenResizeDisablesWindowFallback(t *testing.T) {
+	p := &pixelPointer{}
+	p.query()
+	p.handle(uv.WindowSizeEvent{Width: 80, Height: 24})
+	p.handle(uv.WindowPixelSizeEvent{Width: 800, Height: 480})
+	require.Equal(t, ansi.SetModeMouseExtSgrPixel, p.handle(pixelModeReport(ansi.ModeReset)))
+
+	// One extra pixel prevents inferring the cell size. Stop asking for pixel
+	// coordinates before they can be passed through as cell coordinates.
+	p.readWindow = func() (windowGeometry, bool) { return windowGeometry{80, 24, 801, 480}, true }
+	assert.Equal(t, ansi.ResetModeMouseExtSgrPixel, p.handle(uv.WindowPixelSizeEvent{Width: 801, Height: 480}))
+	assert.False(t, p.enabled)
+	assert.False(t, p.replyDue(), "a terminal that never answered is not queried again")
+	event, _, _ := p.locateEvent(uv.MouseClickEvent{X: 40, Y: 10})
+	assert.Equal(t, uv.MouseClickEvent{X: 40, Y: 10}, event)
+	assert.Empty(t, p.resume(), "resume also waits for usable geometry")
+
+	// Once the window divides evenly again, pixel reporting can return.
+	p.readWindow = func() (windowGeometry, bool) { return windowGeometry{80, 24, 800, 480}, true }
+	assert.Equal(t, ansi.SetModeMouseExtSgrPixel, p.handle(uv.WindowPixelSizeEvent{Width: 800, Height: 480}))
+	event, _, _ = p.locateEvent(uv.MouseClickEvent{X: 405, Y: 205})
+	assert.Equal(t, uv.MouseClickEvent{X: 40, Y: 10}, event)
+}
+
+func TestPixelPointer_ResumeWaitsForCurrentWindowReply(t *testing.T) {
+	p := paddedPointer(t)
+	require.Equal(t, requestCellSize, p.resume())
+	p.handle(uv.WindowSizeEvent{Width: 68, Height: 20})
+	assert.Equal(t, requestCellSize, p.handle(uv.CellSizeEvent{Width: 10, Height: 20}))
+	assert.False(t, p.enabled, "a stale reply must not restore pixel reporting")
+	assert.True(t, p.replyDue())
+	event, _, _ := p.locateEvent(uv.MouseClickEvent{X: 40, Y: 10})
+	assert.Equal(t, uv.MouseClickEvent{X: 40, Y: 10}, event)
+
+	assert.Equal(t, ansi.SetModeMouseExtSgrPixel, p.handle(uv.CellSizeEvent{Width: 12, Height: 25}))
+	assert.False(t, p.replyDue())
+	event, _, _ = p.locateEvent(uv.MouseClickEvent{X: 485, Y: 255})
+	assert.Equal(t, uv.MouseClickEvent{X: 40, Y: 10}, event)
 }
 
 func TestPixelPointer_AsksOnEveryResizeWithoutWindowPixels(t *testing.T) {

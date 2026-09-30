@@ -112,10 +112,13 @@ func (p *pixelPointer) handle(event uv.Event) string {
 		window.pixelWidth, window.pixelHeight = ev.Width, ev.Height
 		seq = p.resized(window)
 	case uv.CellSizeEvent:
-		if p.recordCellSize(ev) && p.askedFor.cols > 0 && p.askedFor != p.window {
+		if p.awaiting && p.askedFor.cols > 0 && p.askedFor != p.window {
 			// The window changed while the question was out; the answer may
-			// be for the font size it had then.
+			// be for the font size it had then. Keep the last confirmed size
+			// and slack until an answer arrives for the current window.
 			seq = p.ask()
+		} else {
+			p.recordCellSize(ev)
 		}
 	case uv.ModeReportEvent:
 		if ev.Mode != ansi.ModeMouseExtSgrPixel {
@@ -125,7 +128,7 @@ func (p *pixelPointer) handle(event uv.Event) string {
 	default:
 		return ""
 	}
-	return seq + p.enable()
+	return seq + p.updateMode()
 }
 
 // resized records the window's new size, returning a cell size query if the
@@ -225,7 +228,7 @@ func (p *pixelPointer) resume() string {
 	p.enabled = false
 	p.setWindow(p.window)
 	if p.disabled && !p.imageGeometry || p.explicitWidth > 0 || !p.answered {
-		return p.enable()
+		return p.updateMode()
 	}
 	p.resumed = true
 	return p.ask()
@@ -238,16 +241,19 @@ func (p *pixelPointer) replyDue() bool {
 	return p.answered && p.awaiting
 }
 
-// enable returns the sequence that switches pixel reporting on, once the
-// terminal supports it and a cell size is known.
-func (p *pixelPointer) enable() string {
-	if p.enabled || p.disabled || !p.supported || p.resumed {
+// updateMode keeps pixel reporting on only while the terminal supports it
+// and a cell size is known. A window-derived size can become unavailable
+// after a resize, in which case the terminal must return to cell reporting.
+func (p *pixelPointer) updateMode() string {
+	_, _, sized := p.cellSize()
+	enable := !p.disabled && p.supported && !p.resumed && sized
+	if enable == p.enabled {
 		return ""
 	}
-	if _, _, ok := p.cellSize(); !ok {
-		return ""
+	p.enabled = enable
+	if !enable {
+		return ansi.ResetModeMouseExtSgrPixel
 	}
-	p.enabled = true
 	return ansi.SetModeMouseExtSgrPixel
 }
 
