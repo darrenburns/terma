@@ -439,7 +439,6 @@
   <rect x="58.4" y="86.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="66.8" y="86.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="75.2" y="86.4" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="83.6" y="86.4" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="92.0" y="86.4" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="100.4" y="86.4" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="108.8" y="86.4" width="8.4" height="19.6" fill="#1F1D2E"/>
@@ -531,7 +530,9 @@
   <rect x="831.2" y="86.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="86.4" width="8.4" height="19.6" fill="#191724"/>
   <text x="16.4" y="96.2" fill="#E0DEF4">Filter:</text>
-  <text x="83.6" y="96.2" fill="#908CAA">Try</text>
+  <rect x="83.6" y="86.4" width="8.4" height="19.6" fill="#E0DEF4"/>
+  <text x="83.6" y="96.2" fill="#1F1D2E">T</text>
+  <text x="92.0" y="96.2" fill="#908CAA">ry</text>
   <text x="117.2" y="96.2" fill="#908CAA">Ada</text>
   <text x="150.8" y="96.2" fill="#908CAA">or</text>
   <text x="176.0" y="96.2" fill="#908CAA">no-match</text>
@@ -755,22 +756,22 @@
   <text x="293.6" y="135.4" fill="#E0DEF4">↕</text>
   <text x="411.2" y="135.4" fill="#E0DEF4">Notes</text>
   <rect x="8.0" y="145.2" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="16.4" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="24.8" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="33.2" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="41.6" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="50.0" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="58.4" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="66.8" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="75.2" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="83.6" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="92.0" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="100.4" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="108.8" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="117.2" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="125.6" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="134.0" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="142.4" y="145.2" width="8.4" height="19.6" fill="#F6C177"/>
+  <rect x="16.4" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="24.8" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="33.2" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="41.6" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="50.0" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="58.4" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="66.8" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="75.2" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="83.6" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="92.0" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="100.4" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="108.8" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="117.2" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="125.6" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="134.0" y="145.2" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="142.4" y="145.2" width="8.4" height="19.6" fill="#504239"/>
   <rect x="150.8" y="145.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="159.2" y="145.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="167.6" y="145.2" width="8.4" height="19.6" fill="#191724"/>
@@ -854,7 +855,7 @@
   <rect x="822.8" y="145.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="831.2" y="145.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="145.2" width="8.4" height="19.6" fill="#191724"/>
-  <text x="16.4" y="155.0" fill="#191724">Zoe</text>
+  <text x="16.4" y="155.0" fill="#E0DEF4">Zoe</text>
   <text x="159.2" y="155.0" fill="#E0DEF4">30</text>
   <text x="251.6" y="155.0" fill="#E0DEF4">Platform</text>
   <text x="411.2" y="155.0" fill="#E0DEF4">Stable</text>
@@ -866,22 +867,22 @@
   <text x="755.6" y="155.0" fill="#E0DEF4">beyond</text>
   <text x="814.4" y="155.0" fill="#E0DEF4">nar</text>
   <rect x="8.0" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="16.4" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="24.8" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="33.2" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="41.6" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="50.0" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="58.4" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="66.8" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="75.2" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="83.6" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="92.0" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="100.4" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="108.8" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="117.2" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="125.6" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="134.0" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="142.4" y="164.8" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="16.4" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="24.8" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="33.2" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="41.6" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="50.0" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="58.4" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="66.8" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="75.2" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="83.6" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="92.0" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="100.4" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="108.8" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="117.2" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="125.6" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="134.0" y="164.8" width="8.4" height="19.6" fill="#504239"/>
+  <rect x="142.4" y="164.8" width="8.4" height="19.6" fill="#504239"/>
   <rect x="150.8" y="164.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="159.2" y="164.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="167.6" y="164.8" width="8.4" height="19.6" fill="#191724"/>
@@ -2620,12 +2621,12 @@
   <rect x="831.2" y="458.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="458.8" width="8.4" height="19.6" fill="#191724"/>
   <text x="16.4" y="468.6" fill="#E0DEF4">Cursor:</text>
-  <text x="83.6" y="468.6" fill="#E0DEF4">Zoe</text>
-  <text x="117.2" y="468.6" fill="#E0DEF4">(p00)</text>
+  <text x="83.6" y="468.6" fill="#E0DEF4">Ada</text>
+  <text x="117.2" y="468.6" fill="#E0DEF4">(p01)</text>
   <text x="167.6" y="468.6" fill="#E0DEF4">·</text>
   <text x="184.4" y="468.6" fill="#E0DEF4">selected</text>
   <text x="260.0" y="468.6" fill="#E0DEF4">cells:</text>
-  <text x="318.8" y="468.6" fill="#E0DEF4">0</text>
+  <text x="318.8" y="468.6" fill="#E0DEF4">2</text>
   <text x="335.6" y="468.6" fill="#E0DEF4">·</text>
   <text x="352.4" y="468.6" fill="#E0DEF4">view:</text>
   <text x="402.8" y="468.6" fill="#E0DEF4">data</text>
@@ -3260,21 +3261,13 @@
   <rect x="822.8" y="576.4" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="831.2" y="576.4" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="839.6" y="576.4" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <text x="16.4" y="586.2" fill="#F6C177">ctrl+s</text>
-  <text x="75.2" y="586.2" fill="#908CAA">Sort</text>
-  <text x="117.2" y="586.2" fill="#F6C177">ctrl+t</text>
-  <text x="176.0" y="586.2" fill="#908CAA">Theme</text>
-  <text x="226.4" y="586.2" fill="#F6C177">m</text>
-  <text x="243.2" y="586.2" fill="#908CAA">Modal</text>
-  <text x="293.6" y="586.2" fill="#F6C177">b</text>
-  <text x="310.4" y="586.2" fill="#908CAA">Bottom</text>
-  <text x="369.2" y="586.2" fill="#F6C177">t</text>
-  <text x="386.0" y="586.2" fill="#908CAA">Top</text>
-  <text x="419.6" y="586.2" fill="#F6C177">/</text>
-  <text x="436.4" y="586.2" fill="#908CAA">Filter</text>
-  <text x="495.2" y="586.2" fill="#F6C177">escape</text>
-  <text x="554.0" y="586.2" fill="#908CAA">Table</text>
-  <text x="604.4" y="586.2" fill="#F6C177">space</text>
-  <text x="654.8" y="586.2" fill="#908CAA">Select</text>
-  <text x="713.6" y="586.2" fill="#908CAA">cell</text>
+  <text x="16.4" y="586.2" fill="#F6C177">ctrl+t</text>
+  <text x="75.2" y="586.2" fill="#908CAA">Theme</text>
+  <text x="125.6" y="586.2" fill="#F6C177">escape</text>
+  <text x="184.4" y="586.2" fill="#908CAA">Table</text>
+  <text x="234.8" y="586.2" fill="#F6C177">space</text>
+  <text x="285.2" y="586.2" fill="#908CAA">Select</text>
+  <text x="344.0" y="586.2" fill="#908CAA">cell</text>
+  <text x="386.0" y="586.2" fill="#F6C177">ctrl+g</text>
+  <text x="444.8" y="586.2" fill="#908CAA">Demos</text>
 </svg>

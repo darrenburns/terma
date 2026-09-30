@@ -46,11 +46,15 @@ func (a *app) Keybinds() []t.Keybind {
 		{Key: "/", Name: "Filter", Action: func() { t.RequestFocus("filter") }},
 		{Key: "escape", Name: "Table", Action: func() { t.RequestFocus("people") }},
 		{Key: "space", Name: "Select cell", Action: func() { a.rows.ToggleSelection(a.rows.CursorIndex.Peek()*4 + a.rows.CursorColumn.Peek()) }},
-		{Key: "r", Name: "Reverse source", Action: func() {
+		{Key: "r", Name: "Reverse data", Action: func() {
 			rows := slices.Clone(a.rows.GetRows())
 			slices.Reverse(rows)
 			a.rows.SetRows(rows)
-			a.message.Set("Source reversed: cursor and selected records retained by ID")
+			message := "Data order reversed; cursor and selections follow row IDs"
+			if a.rows.Sort.Peek().Direction != t.TableSortNone {
+				message = "Data reversed; column sort still applies. Ties follow data order; selections keep their row IDs."
+			}
+			a.message.Set(message)
 		}},
 		{Key: "x", Name: "Empty/reset", Action: func() {
 			if a.rows.RowCount() == 0 {
@@ -69,7 +73,7 @@ func (a *app) Build(ctx t.BuildContext) t.Widget {
 	}
 	body := t.Column{Spacing: 1, Style: t.Style{Width: t.Flex(1), Height: t.Flex(1), Padding: t.EdgeInsetsAll(1)}, Children: []t.Widget{
 		t.Text{Content: "TABLE LAB · sorting, stable identity, resizing & frozen panes", Style: t.Style{Bold: true, ForegroundColor: theme.Primary}},
-		t.Row{Spacing: 1, Children: []t.Widget{t.Text{Content: "Filter:"}, t.TextInput{ID: "filter", State: a.input, Placeholder: "Try Ada or no-match", OnChange: func(s string) { a.filter.Query.Set(s) }, Style: t.Style{Width: t.Cells(28)}}, t.Text{Content: "/ filter · Esc table · r reverse · x empty"}}},
+		t.Row{Spacing: 1, Children: []t.Widget{t.Text{Content: "Filter:"}, t.TextInput{ID: "filter", State: a.input, Placeholder: "Try Ada or no-match", OnChange: func(s string) { a.filter.Query.Set(s) }, Style: t.Style{Width: t.Cells(28)}}, t.Text{Content: "/ filter · Esc table · r reverse data · x empty"}}},
 		t.Table[person]{ID: "people", State: a.rows, ScrollState: a.scroll, Filter: a.filter, FrozenHeader: true, FrozenColumns: 1, MultiSelect: true, SelectionMode: t.TableSelectionCursor, ColumnSpacing: 1, Style: t.Style{Width: t.Flex(1), Height: tableHeight},
 			Columns:     []t.TableColumn{{ID: "name", Header: t.Text{Content: "Name"}, Width: t.Cells(16), Resizable: true, MinWidth: 6, MaxWidth: 30}, {ID: "score", Header: t.Text{Content: "Score"}, Width: t.Cells(10), Resizable: true, MinWidth: 6}, {ID: "team", Header: t.Text{Content: "Team"}, Width: t.Cells(18), Resizable: true, MinWidth: 8}, {ID: "notes", Header: t.Text{Content: "Notes"}, Width: t.Cells(65), Resizable: true, MinWidth: 12}},
 			Comparators: map[string]func(person, person) int{"name": func(a, b person) int { return strings.Compare(a.Name, b.Name) }, "score": func(a, b person) int { return cmp.Compare(a.Score, b.Score) }, "team": func(a, b person) int { return strings.Compare(a.Team, b.Team) }},
@@ -97,14 +101,15 @@ func (a *app) Build(ctx t.BuildContext) t.Widget {
 				if col == 3 {
 					value = p.Notes
 				}
-				style := t.Style{}
-				if active {
-					style.BackgroundColor = theme.Primary
-					style.ForegroundColor = theme.Background
-				}
+				// Custom cell renderers own their colours. Match Table's default
+				// styling: a focused cursor wins over the persistent selection.
+				style := t.Style{ForegroundColor: theme.Text}
 				if selected {
-					style.Bold = true
-					style.BackgroundColor = theme.Surface
+					style.BackgroundColor = theme.Selection
+				}
+				if active && ctx.IsFocused(t.Table[person]{ID: "people"}) {
+					style.BackgroundColor = theme.ActiveCursor
+					style.ForegroundColor = theme.SelectionText
 				}
 				return t.Text{Content: value, Style: style}
 			},
@@ -116,9 +121,15 @@ func (a *app) Build(ctx t.BuildContext) t.Widget {
 			a.rows.Selection.Get()
 			sort := a.rows.Sort.Get()
 			p, _ := a.rows.SelectedRow()
-			return fmt.Sprintf("Cursor: %s (%s) · selected cells: %d · sort: %s/%d · scroll %d,%d", p.Name, p.ID, len(a.rows.Selection.Peek()), sort.ColumnID, sort.Direction, a.scroll.OffsetX.Get(), a.scroll.Offset.Get())
+			order := "data order"
+			if sort.Direction == t.TableSortAscending {
+				order = sort.ColumnID + " ascending"
+			} else if sort.Direction == t.TableSortDescending {
+				order = sort.ColumnID + " descending"
+			}
+			return fmt.Sprintf("Cursor: %s (%s) · selected cells: %d · view: %s · scroll %d,%d", p.Name, p.ID, len(a.rows.Selection.Peek()), order, a.scroll.OffsetX.Get(), a.scroll.Offset.Get())
 		}),
-		t.SignalText(a.message, func(s string) string { return s }),
+		t.ComputedText(strings.Repeat(" ", 120), func() string { return a.message.Get() }),
 		t.Text{Content: "Arrows navigate · Shift+arrows select · Ctrl+S sort column · Ctrl+←/→ resize · Ctrl+R reset · Alt+←/→ pan"},
 	}}
 	if a.modal.Get() {
