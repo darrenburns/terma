@@ -3,8 +3,13 @@ package terma
 import "github.com/darrenburns/terma/layout"
 
 type tableNode struct {
-	Columns int
-	Rows    int
+	Viewport                  bool
+	Header                    bool
+	FrozenRows, FrozenColumns int
+	OffsetX, OffsetY          int
+	ViewportMetrics           *tableViewportMetrics
+	Columns                   int
+	Rows                      int
 
 	ColumnWidths  []Dimension
 	ColumnSpacing int
@@ -31,6 +36,9 @@ func (t *tableNode) ComputeLayout(constraints layout.Constraints) layout.Compute
 	effective := t.effectiveConstraints(constraints)
 
 	if t.Columns <= 0 || t.Rows <= 0 || len(t.Children) == 0 {
+		if t.ViewportMetrics != nil {
+			*t.ViewportMetrics = tableViewportMetrics{}
+		}
 		return t.emptyLayout(effective)
 	}
 
@@ -61,6 +69,9 @@ func (t *tableNode) ComputeLayout(constraints layout.Constraints) layout.Compute
 	containerHeight := t.resolveContainerSize(contentConstraints.MinHeight, contentConstraints.MaxHeight, contentHeight, t.ExpandHeight)
 
 	positioned := t.positionCells(rows, cols, columnWidths, rowHeights, cellLayouts)
+	if t.Viewport {
+		positioned = t.clipViewportCells(positioned, columnWidths, rowHeights, containerWidth, containerHeight)
+	}
 
 	return t.buildResult(effective, containerWidth, containerHeight, positioned)
 }
@@ -233,6 +244,11 @@ func (t *tableNode) layoutCells(rows, cols int, columnWidths []int, contentConst
 	rowHeights := make([]int, rows)
 
 	maxHeight := contentConstraints.MaxHeight
+	if t.Viewport {
+		// Measure scrollable rows at their natural height; the pane clips later.
+		// Capping here would discard lines that scrolling should reveal.
+		maxHeight = maxTableInt()
+	}
 	if maxHeight < 0 {
 		maxHeight = 0
 	}

@@ -14,10 +14,20 @@ import (
 // It is the source of truth for rows and cursor position, and must be provided to Table.
 // Rows is a reactive Signal - changes trigger automatic re-renders.
 type TableState[T any] struct {
-	Rows         AnySignal[[]T]              // Reactive table rows
-	CursorIndex  Signal[int]                 // Cursor position (row index)
-	CursorColumn Signal[int]                 // Cursor position (column index)
-	Selection    AnySignal[map[int]struct{}] // Selected indices (row/column/cell based on selection mode)
+	Rows         AnySignal[[]T] // Reactive source rows; use SetRows for identity reconciliation
+	CursorIndex  Signal[int]    // Source row index
+	CursorColumn Signal[int]
+	Selection    AnySignal[map[int]struct{}] // Row/column/cell keys according to selection mode
+	Sort         Signal[TableSort]           // View ordering; source rows remain unchanged
+	ColumnWidths AnySignal[map[string]int]   // User width overrides by unique column ID
+
+	rowID                          func(T) string
+	viewport                       *ScrollState
+	viewportMetrics                tableViewportMetrics
+	headerHeight                   int
+	resizeColumn                   int
+	resizing                       bool
+	resizeStartX, resizeStartWidth int
 
 	anchorIndex *int                      // Anchor point for shift-selection (nil = no anchor)
 	dragging    bool                      // A press on a cell is held, so pointer motion moves the cursor
@@ -40,6 +50,9 @@ func NewTableState[T any](initialRows []T) *TableState[T] {
 		initialRows = []T{}
 	}
 	return &TableState[T]{
+		Sort:         NewSignal(TableSort{}),
+		ColumnWidths: NewAnySignal(map[string]int{}),
+		viewport:     NewScrollState(),
 		Rows:         NewAnySignal(initialRows),
 		CursorIndex:  NewSignal(0),
 		CursorColumn: NewSignal(0),
@@ -48,11 +61,15 @@ func NewTableState[T any](initialRows []T) *TableState[T] {
 	}
 }
 
-// SetRows replaces all rows and clamps cursor to valid range.
-// Selections on rows past the end of the new rows are dropped.
+// SetRows replaces rows. Identity-aware states preserve unique records by ID;
+// positional states clamp the cursor and drop selections past the new end.
 func (s *TableState[T]) SetRows(rows []T) {
 	if rows == nil {
 		rows = []T{}
+	}
+	if s.rowID != nil {
+		s.replaceIdentifiedRows(rows)
+		return
 	}
 	s.Rows.Set(rows)
 	s.clampCursor()
@@ -479,8 +496,12 @@ func (s *TableState[T]) SelectRange(from, to int) {
 
 // TableColumn defines layout properties for a table column.
 type TableColumn struct {
-	Width  Dimension // Optional width (Cells, Percent, Flex, Auto)
-	Header Widget    // Optional header widget for this column
+	ID        string // Unique nonempty ID enables sorting and resizing
+	Resizable bool
+	MinWidth  int       // At least one cell for user resizing
+	MaxWidth  int       // Zero means unlimited
+	Width     Dimension // Optional width (Cells, Percent, Flex, Auto)
+	Header    Widget    // Optional header widget for this column
 }
 
 // TableSelectionMode controls how cursor and selection highlights are applied.
@@ -498,6 +519,9 @@ const (
 // Table is a generic focusable widget that displays a navigable table of rows.
 // Use with Scrollable and a shared ScrollState to enable scroll-into-view.
 type Table[T any] struct {
+	Comparators         map[string]func(T, T) int                                                                     // Typed comparisons by unique column ID
+	FrozenHeader        bool                                                                                          // Own a bounded viewport and keep headers visible
+	FrozenColumns       int                                                                                           // Keep the first N columns visible during horizontal scrolling
 	ID                  string                                                                                        // Optional unique identifier
 	DisableFocus        bool                                                                                          // If true, prevent keyboard focus
 	CursorStyle                                                                                                       // Embedded - CursorPrefix/SelectedPrefix fields for customizable indicators
@@ -556,12 +580,27 @@ type defaultTableCellWidget[T any] struct {
 	prefixWidth  int
 }
 
+// The public Table owns focus; its layout container must not register the same
+// focus identity a second time and prevent Tab from advancing.
+func (c tableContainer[T]) IsFocusable() bool { return false }
+
 func (c tableContainer[T]) Build(ctx BuildContext) Widget {
 	return c
 }
 
 func (c tableContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
-	if c.State == nil || c.columnCount == 0 || c.rowCount == 0 {
+	if c.ownsViewport() && c.State != nil {
+		c.layoutViewport()
+		// Layout observers run after final parent constraints are known. Apply
+		// cursor reveal to the shared computed child slice before it is assigned
+		// to child render trees, so the first frame uses the revealed viewport.
+		if reclip := c.State.viewportMetrics.reclip; reclip != nil {
+			scroll := c.viewportState()
+			copy(metrics.layout.Children, reclip(scroll.GetOffsetX(), scroll.GetOffset()))
+		}
+		return
+	}
+	if c.State == nil || c.columnCount == 0 {
 		if c.State != nil {
 			c.State.rowLayouts = nil
 			c.State.columnLayouts = nil
@@ -576,6 +615,13 @@ func (c tableContainer[T]) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 		return
 	}
 
+	if c.headerRows > 0 {
+		if b, ok := metrics.ChildBounds(0); ok {
+			c.State.headerHeight = b.Height
+		}
+	} else {
+		c.State.headerHeight = 0
+	}
 	rowLayouts := make([]tableRowLayout, c.rowCount)
 	seen := make([]bool, c.rowCount)
 	columnLayouts := make([]tableColumnLayout, c.columnCount)
@@ -827,6 +873,9 @@ func (t Table[T]) handleMouseDown(event MouseEvent) {
 		return
 	}
 	t.State.dragging = false
+	if t.headerMouseDown(event) {
+		return
+	}
 	viewRow, col, ok := t.cellFromMouse(event, false)
 	if !ok {
 		return
@@ -857,6 +906,10 @@ func (t Table[T]) handleMouseDown(event MouseEvent) {
 // multi-select mode. Dragging past the top or bottom scrolls.
 // Implements the MouseMoveHandler interface.
 func (t Table[T]) OnMouseMove(event MouseEvent) {
+	if t.State != nil && t.State.resizing {
+		t.resizeColumn(t.State.resizeColumn, t.State.resizeStartWidth+event.X-t.State.resizeStartX)
+		return
+	}
 	if t.State == nil || !t.State.dragging {
 		return
 	}
@@ -908,11 +961,23 @@ func (t Table[T]) cellFromMouse(event MouseEvent, clamp bool) (viewRow, col int,
 	}
 	inset := t.Style.Border.Width()
 	y := event.LocalY - inset - t.Style.Padding.Top
+	x := event.LocalX - inset - t.Style.Padding.Left
+	if t.ownsViewport() {
+		m := t.State.viewportMetrics
+		if !clamp && (x < 0 || y < 0 || x >= m.width || y >= m.height || y < m.frozenHeight) {
+			return 0, 0, false
+		}
+		if y >= m.frozenHeight {
+			y += t.viewportState().GetOffset()
+		}
+		if x >= m.frozenWidth {
+			x += t.viewportState().GetOffsetX()
+		}
+	}
 	viewRow, ok = spanAt(rowCount, func(i int) (int, int) { return rows[i].y, rows[i].height }, y, clamp)
 	if !ok {
 		return 0, 0, false
 	}
-	x := event.LocalX - inset - t.Style.Padding.Left
 	// Clamped, so a click in the gap between columns picks the column before it.
 	col, ok = spanAt(len(columns), func(i int) (int, int) { return columns[i].x, columns[i].width }, x, true)
 	return viewRow, col, ok
@@ -923,6 +988,7 @@ func (t Table[T]) cellFromMouse(event MouseEvent, clamp bool) (viewRow, col int,
 func (t Table[T]) OnMouseUp(event MouseEvent) {
 	if t.State != nil {
 		t.State.dragging = false
+		t.State.resizing = false
 	}
 	if t.MouseUp != nil {
 		t.MouseUp(event)
@@ -949,6 +1015,9 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 		return Column{}
 	}
 
+	// Width overrides change clipping and hit regions for every row. Rebuild
+	// the table cells so retained paint caches cannot retain old clip extents.
+	_ = t.State.ColumnWidths.Get()
 	renderCell := t.RenderCell
 	renderCellWithMatch := t.RenderCellWithMatch
 	useDefaultRenderer := renderCellWithMatch == nil && renderCell == nil
@@ -958,6 +1027,7 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 	mode := t.selectionMode()
 	query, options := filterStateValues(t.Filter)
 	viewRows, viewIndices, viewMatches := t.filteredRows(rows, columnCount, query, options)
+	viewRows, viewIndices, viewMatches = t.sortedRows(viewRows, viewIndices, viewMatches, t.State.Sort.Get())
 	t.State.setViewIndices(viewIndices)
 
 	hasHeader := t.hasHeader()
@@ -977,11 +1047,24 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 			if header == nil {
 				header = Text{}
 			}
+			if t.sortableColumn(colIdx) {
+				indicator := "↕"
+				order := t.State.Sort.Get()
+				if order.ColumnID == t.Columns[colIdx].ID {
+					if order.Direction == TableSortAscending {
+						indicator = "↑"
+					}
+					if order.Direction == TableSortDescending {
+						indicator = "↓"
+					}
+				}
+				header = Row{Children: []Widget{header, Text{Content: " " + indicator}}}
+			}
 			headerCells[colIdx] = header
 		}
 	}
 
-	if len(viewRows) == 0 && headerRows == 0 {
+	if len(viewRows) == 0 && headerRows == 0 && !t.ownsViewport() {
 		t.State.rowLayouts = nil
 		return Column{}
 	}
@@ -1016,6 +1099,7 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 			}
 		}
 
+		children = t.viewportCells(children)
 		return tableContainer[T]{
 			Table:       t,
 			children:    children,
@@ -1067,6 +1151,7 @@ func (t Table[T]) Build(ctx BuildContext) Widget {
 		}
 	}
 
+	children = t.viewportCells(children)
 	return tableContainer[T]{
 		Table:       t,
 		children:    children,
@@ -1264,6 +1349,23 @@ func (t Table[T]) Keybinds() []Keybind {
 		{Key: "ctrl+d", Action: t.pageDown, Hidden: true},
 	}
 
+	for col := range t.Columns {
+		if t.sortableColumn(col) {
+			binds = append(binds, Keybind{Key: "ctrl+s", Name: "Sort", Action: func() { t.cycleSort(t.State.CursorColumn.Peek()) }})
+			break
+		}
+	}
+	binds = append(binds,
+		Keybind{Key: "ctrl+left", Action: func() { t.resizeCurrent(-1) }, Hidden: true},
+		Keybind{Key: "ctrl+right", Action: func() { t.resizeCurrent(1) }, Hidden: true},
+		Keybind{Key: "ctrl+r", Action: t.resetCurrentWidth, Hidden: true},
+	)
+	if t.ownsViewport() {
+		binds = append(binds,
+			Keybind{Key: "alt+left", Action: func() { t.viewportState().ScrollLeft(3) }, Hidden: true},
+			Keybind{Key: "alt+right", Action: func() { t.viewportState().ScrollRight(3) }, Hidden: true},
+		)
+	}
 	// Left/right move between cells or columns (rows have no horizontal cursor)
 	if mode == TableSelectionCursor || mode == TableSelectionColumn {
 		binds = append(binds,
@@ -1315,7 +1417,9 @@ func (t Table[T]) Keybinds() []Keybind {
 }
 
 func (t Table[T]) selectRow() {
-	t.normalizeRowCursorForInteraction()
+	if _, _, ok := t.normalizeRowCursorForInteraction(); !ok {
+		return
+	}
 	if t.OnSelect != nil {
 		if row, ok := t.State.SelectedRow(); ok {
 			t.OnSelect(row)
@@ -1370,7 +1474,9 @@ func (t Table[T]) keyCursorDown() {
 func (t Table[T]) keyCursorToFirst() {
 	mode := t.selectionMode()
 	if mode == TableSelectionColumn {
-		if t.ScrollState != nil {
+		if t.ownsViewport() {
+			t.viewportState().SetOffset(0)
+		} else if t.ScrollState != nil {
 			t.ScrollState.SetOffset(0)
 		}
 		return
@@ -1387,7 +1493,9 @@ func (t Table[T]) keyCursorToFirst() {
 func (t Table[T]) keyCursorToLast() {
 	mode := t.selectionMode()
 	if mode == TableSelectionColumn {
-		if t.ScrollState != nil {
+		if t.ownsViewport() {
+			t.viewportState().SetOffset(maxTableInt())
+		} else if t.ScrollState != nil {
 			t.ScrollState.SetOffset(maxTableInt())
 		}
 		return
@@ -1457,6 +1565,9 @@ func (t Table[T]) keyCursorLeft() {
 		t.State.ClearAnchor()
 	}
 	t.State.CursorColumn.Set(cursorCol - 1)
+	if t.ownsViewport() {
+		t.scrollCursorIntoView()
+	}
 }
 
 func (t Table[T]) keyCursorRight() {
@@ -1473,6 +1584,9 @@ func (t Table[T]) keyCursorRight() {
 		t.State.ClearAnchor()
 	}
 	t.State.CursorColumn.Set(cursorCol + 1)
+	if t.ownsViewport() {
+		t.scrollCursorIntoView()
+	}
 }
 
 func (t Table[T]) shiftRowUp() {
@@ -1613,6 +1727,9 @@ func (t Table[T]) handleShiftMoveColumn(delta int, columnCount int) {
 	target := clampInt(cursorCol+delta, 0, columnCount-1)
 	t.State.CursorColumn.Set(target)
 	t.setSelectionRange(t.State.GetAnchor(), target, columnCount)
+	if t.ownsViewport() {
+		t.scrollCursorIntoView()
+	}
 }
 
 // handleShiftMoveColumnTo extends column selection to a specific index.
@@ -1628,6 +1745,9 @@ func (t Table[T]) handleShiftMoveColumnTo(targetIdx int, columnCount int) {
 	target := clampInt(targetIdx, 0, columnCount-1)
 	t.State.CursorColumn.Set(target)
 	t.setSelectionRange(t.State.GetAnchor(), target, columnCount)
+	if t.ownsViewport() {
+		t.scrollCursorIntoView()
+	}
 }
 
 // handleShiftMoveCell extends cell selection by moving cursor by row/col deltas.
@@ -1706,6 +1826,12 @@ func (t Table[T]) handleShiftMoveCellTo(targetRow, targetCol, columnCount int) {
 }
 
 func (t Table[T]) scrollBy(lines int) bool {
+	if t.ownsViewport() {
+		if lines < 0 {
+			return t.viewportState().ScrollUp(-lines)
+		}
+		return t.viewportState().ScrollDown(lines)
+	}
 	if t.ScrollState == nil {
 		return false
 	}
@@ -1718,6 +1844,10 @@ func (t Table[T]) scrollBy(lines int) bool {
 // scrollCursorIntoView uses the ScrollState to ensure
 // the cursor row is visible in the viewport.
 func (t Table[T]) scrollCursorIntoView() {
+	if t.ownsViewport() {
+		t.revealViewportCursor(true)
+		return
+	}
 	if t.ScrollState == nil || t.State == nil {
 		return
 	}
@@ -1734,6 +1864,10 @@ func (t Table[T]) scrollCursorIntoView() {
 // already revealed at its current position. Mouse wheel scrolling moves only
 // the viewport, so it must not be undone by the next layout.
 func (t Table[T]) revealMovedCursor() {
+	if t.ownsViewport() {
+		t.revealViewportCursor(false)
+		return
+	}
 	if t.ScrollState == nil || t.State == nil {
 		return
 	}
@@ -1924,8 +2058,12 @@ func (c tableContainer[T]) BuildContainerLayoutNode(ctx BuildContext, children [
 	preserveHeight := dims.Height.IsAuto() && !dims.Height.IsUnset()
 
 	columnWidths := make([]Dimension, len(c.Columns))
+	overrides := c.State.ColumnWidths.Get()
 	for i, col := range c.Columns {
 		columnWidths[i] = col.Width
+		if width, ok := overrides[col.ID]; ok && c.validColumnID(i) {
+			columnWidths[i] = Cells(c.clampColumnWidth(i, width))
+		}
 	}
 
 	node := layout.LayoutNode(&tableNode{
@@ -1946,6 +2084,28 @@ func (c tableContainer[T]) BuildContainerLayoutNode(ctx BuildContext, children [
 		ExpandHeight:   dims.Height.IsFlex(),
 		PreserveWidth:  preserveWidth,
 		PreserveHeight: preserveHeight,
+		Viewport:       c.ownsViewport(),
+		Header:         c.headerRows > 0,
+		FrozenRows: func() int {
+			if c.FrozenHeader {
+				return c.headerRows
+			}
+			return 0
+		}(),
+		FrozenColumns: c.FrozenColumns,
+		OffsetX: func() int {
+			if c.ownsViewport() {
+				return c.viewportState().OffsetX.Get()
+			}
+			return 0
+		}(),
+		OffsetY: func() int {
+			if c.ownsViewport() {
+				return c.viewportState().Offset.Get()
+			}
+			return 0
+		}(),
+		ViewportMetrics: &c.State.viewportMetrics,
 	})
 
 	if hasPercentMinMax(dims) {

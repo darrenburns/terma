@@ -10,6 +10,7 @@ require (
 	github.com/creack/pty v1.1.24
 	github.com/gorilla/websocket v1.5.3
 	github.com/stretchr/testify v1.11.1
+	github.com/yuin/goldmark v1.8.6
 	golang.org/x/sys v0.39.0
 )
 
