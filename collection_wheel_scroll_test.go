@@ -2,6 +2,7 @@ package terma
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	uv "github.com/charmbracelet/ultraviolet"
@@ -162,4 +163,33 @@ func TestCollectionWheelScroll_InitialCursorRevealedOnNextLayout(t *testing.T) {
 	scene.wheel(uv.MouseWheelDown, 2)
 	scene.renderer.Render(scene.root)
 	assert.Equal(t, 2, scroll.GetOffset(), "the user's scroll wins over the pending reveal")
+}
+
+func TestCollectionWheelScroll_TextArea(t *testing.T) {
+	scroll := NewScrollState()
+	lines := make([]string, 20)
+	for i := range lines {
+		lines[i] = fmt.Sprintf("Line %02d", i)
+	}
+	state := NewTextAreaState(strings.Join(lines, "\n"))
+	state.CursorIndex.Set(0)
+	area := TextArea{ID: "area", State: state, ScrollState: scroll}
+	scene := newWheelScene(t, Scrollable{ID: "scroll", State: scroll, Height: Cells(5), Child: area}, 24, 5)
+
+	// A click leaves an anchor at the cursor, ready for a drag.
+	area.OnMouseDown(MouseEvent{ClickCount: 1})
+	scene.draw()
+
+	scene.wheel(uv.MouseWheelDown, 6)
+	assert.Equal(t, 0, state.CursorIndex.Peek(), "wheel must not move the cursor")
+	assert.Equal(t, "", state.GetSelectedText(), "wheel must not select text")
+	assert.Equal(t, 6, scroll.GetOffset(), "wheel scrolls the viewport")
+
+	scene.wheel(uv.MouseWheelUp, 2)
+	assert.Equal(t, 0, state.CursorIndex.Peek())
+	assert.Equal(t, 4, scroll.GetOffset())
+
+	area.cursorDown()
+	scene.draw()
+	assert.Equal(t, 1, scroll.GetOffset(), "moving the cursor with the keyboard brings it back into view")
 }

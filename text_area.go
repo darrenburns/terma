@@ -29,6 +29,7 @@ type TextAreaState struct {
 
 	preferredColumn int
 	geometry        textAreaGeometry
+	revealed        cursorReveal[int] // Where the cursor was last scrolled into view
 }
 
 // NewTextAreaState creates a new TextAreaState with optional initial text.
@@ -1189,7 +1190,6 @@ func (t TextArea) HandlePaste(text string) bool {
 
 // Build returns self since TextArea is a leaf widget with custom rendering.
 func (t TextArea) Build(ctx BuildContext) Widget {
-	t.registerScrollCallbacks()
 	return t
 }
 
@@ -1388,7 +1388,7 @@ func (t TextArea) Render(ctx *RenderContext) {
 
 	layout := t.State.layoutFor(graphemes, revision, wrapMode, contentWidth, cursorIdx)
 	t.updateScrollOffsets(layout, contentWidth, ctx.Height)
-	t.scrollCursorIntoViewWithLayout(layout)
+	t.revealMovedCursor(layout)
 
 	// Build highlight maps
 	var highlightMap map[int]SpanStyle
@@ -1522,29 +1522,18 @@ func (t TextArea) scrollCursorIntoViewWithLayout(layout textAreaLayout) {
 	if t.ScrollState == nil {
 		return
 	}
+	t.State.revealed.record(t.State.CursorIndex.Peek(), layout.cursorLine, 1, t.ScrollState)
 	t.ScrollState.ScrollToView(layout.cursorLine, 1)
 }
 
-func (t TextArea) registerScrollCallbacks() {
-	if t.ScrollState == nil {
+// revealMovedCursor scrolls the cursor into view while rendering, unless it
+// was already revealed on its current line. Mouse wheel scrolling moves only
+// the viewport, so it stays where the user left it until the cursor moves.
+func (t TextArea) revealMovedCursor(layout textAreaLayout) {
+	if t.ScrollState == nil || !t.State.revealed.needed(t.State.CursorIndex.Peek(), layout.cursorLine, 1, t.ScrollState) {
 		return
 	}
-	t.ScrollState.OnScrollUp = func(lines int) bool {
-		if t.State == nil {
-			return false
-		}
-		t.State.CursorUpBy(lines)
-		t.scrollCursorIntoView()
-		return true
-	}
-	t.ScrollState.OnScrollDown = func(lines int) bool {
-		if t.State == nil {
-			return false
-		}
-		t.State.CursorDownBy(lines)
-		t.scrollCursorIntoView()
-		return true
-	}
+	t.ScrollState.ScrollToView(layout.cursorLine, 1)
 }
 
 // OnClick is called when the widget is clicked.
