@@ -261,9 +261,9 @@ go run ./cmd/table-example
 - Selection state persists in `TableState` across rebuilds
 
 
-## Sorting, identity, resizing, and frozen panes: specification
+## Sorting, row identity and column controls
 
-The table owns view ordering and widths; callers supply typed comparators and stable identities. Source rows are never sorted to implement view sorting. State changes happen in setup or handlers, never Build.
+Supply column comparators to sort the displayed rows without changing the source data. Use stable row IDs to keep the cursor and selections when replacing or reordering rows. Create and update state outside `Build`.
 
 ```go
 state := NewTableStateWithRowID(people, func(p Person) string { return p.ID })
@@ -288,26 +288,11 @@ Table[Person]{
 - `NewTableStateWithRowID` makes `SetRows` preserve cursor, row/cell selection and anchor for unique nonempty IDs present in both versions. Deleted, empty or duplicate IDs drop selection/anchor; their cursor falls back to the nearest valid source index. `NewTableState` keeps positional behavior. Direct writes to `Rows` bypass reconciliation: use `SetRows`. Public indices and rendering callbacks remain source indices.
 - Filtering hides selections without clearing them. A hidden cursor is retained until navigation or activation normalizes it into the view. Zero matches disables activation. Clearing the filter restores the cursor if navigation has not occurred. Shift-selection follows displayed order.
 - `FrozenHeader` or positive `FrozenColumns` enables an internal bounded viewport; set width/height and do not wrap it in `Scrollable`. Pass `ScrollState` to observe/control it, or use the state's default. Nonfrozen tables keep external scrolling. Wheel scrolls vertically; Alt+Left/Right scroll horizontally. Navigation reveals the current cell. Frozen column counts clamp to column count. If frozen panes consume all available space, other panes clip to zero. Empty data retains headers.
-- Cells clip to their pane for both painting and hit testing. Cursor/selection for default cells remains paint-only; sorting/filtering/rows rebuild structure; offset changes relayout. Width overrides rebuild the cells because their clipping and hit regions change; this keeps retained rendering equivalent to a full render.
+- Cells and their clickable areas are clipped to their pane.
 
-### Edge cases and expected verification
-
-| Condition | Expected result | Planned evidence |
-|---|---|---|
-| Sort ties / direction / clear | Stable source-order ties, source unchanged | Unit tests and SVGs |
-| Replacement/reorder | Same unique cursor, selected rows/cells, anchor | State tests |
-| Duplicate/empty row IDs | Drop ambiguous identity, deterministic cursor fallback | State tests |
-| Duplicate/empty column IDs | Controls disabled safely | Unit tests |
-| Empty/filter misses | Header stays, Enter selects nothing | SVG + unit |
-| Hidden cursor | Build writes no signals; clearing filter restores identity | Unit tests |
-| Resize beyond limits | Clamp; resize never sorts or selects rows | Mouse test + browser |
-| Vertical/horizontal scroll | Frozen panes stable; correct mouse mapping | SVG sequence + browser |
-| Tiny viewport | Clip safely with no negative dimensions | SVGs |
-| Sorted Shift-selection | Range follows view order | Unit test |
-| Reactive updates | Incremental frame equals forced full render | Sequence tests |
-
-### Independent probe follow-up
+### Scrolling and focus
 
 Rows in a frozen viewport are measured at their natural height before pane clipping. Even when one multiline row exceeds the viewport height, vertical scrolling can reach every line. When a row or column is too large to fit its scrolling pane, automatic cursor reveal shows its leading edge; manual scrolling still reaches the remaining content. Table exposes one focus stop, so Tab reaches sibling inputs and other table instances, including inside Dialog.
 
-Run `go run ./cmd/terma-browser -- go run ./cmd/table-features-demo -probe` for a tall-row regression demo. Navigate to Notes with Right, use `b`/`t` for bottom/top, and `m` to test the same viewport inside a Dialog.
+Run `go run ./cmd/table-features-demo` to try sorting, column resizing and frozen
+panes.

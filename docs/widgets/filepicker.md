@@ -1,8 +1,8 @@
 # FilePicker
 
-## Specification
-
 `FilePicker` is an embeddable path-selection widget. It reads directory entries and file metadata; it never creates, writes, overwrites, or deletes a selected file. Compose it with `Dialog` for an outer modal. A stable, unique `ID` namespaces its input/list/button/overwrite-dialog IDs.
+
+## Quick start
 
 ```go
 state := NewFilePickerState(startDirectory)
@@ -18,16 +18,16 @@ FilePicker{
 }
 ```
 
-Use `Navigate` rather than assigning `Directory` directly, so entries and selection move together. State exposes `Directory`, `Error`, `ShowHidden`, `FilterIndex`, `PathInput`, and `FilenameInput`. Use `Navigate(path)` and `Refresh()` to perform filesystem reads and update state outside `Build`. `NewFilePickerStateWithFileSystem` accepts a `FilePickerFileSystem` (`ReadDir`, `Stat`, `Lstat`) for deterministic virtual-filesystem and permission-error tests. The OS adapter is the default.
+Use `Navigate` rather than assigning `Directory` directly, so entries and selection move together. State exposes `Directory`, `Error`, `ShowHidden`, `FilterIndex`, `PathInput`, and `FilenameInput`. Use `Navigate(path)` and `Refresh()` to perform filesystem reads and update state outside `Build`. `NewFilePickerStateWithFileSystem` accepts a `FilePickerFileSystem` (`ReadDir`, `Stat`, `Lstat`) for custom filesystem access. By default, the picker uses the operating system filesystem.
 
-`FilePicker.Submit()` and `Cancel()` cross the same seam as UI buttons; callbacks occur at most once per selection/cancellation attempt. Completing or cancelling latches the state until `State.Reset()` or successful navigation reopens it. Build is pure with respect to signals and filesystem access.
+`FilePicker.Submit()` and `Cancel()` perform the same actions as the picker buttons; callbacks occur at most once per selection/cancellation attempt. Completing or cancelling latches the state until `State.Reset()` or successful navigation reopens it. Create state and call navigation methods outside `Build`.
 
 ### Navigation, paths, and errors
 
 - Empty starting path means the working directory. Relative paths resolve against the current directory, or process working directory during initialization. Absolute lexical paths are returned; `~` and environment variables are not expanded. Spaces and Unicode are preserved exactly. Whitespace is a legal filename and is never trimmed.
 - A starting/path-field file navigates to its parent and seeds the filename and row cursor. Missing or unreadable starting paths leave a visible error and empty list. Failed later navigation preserves the previous directory/list/selection and exposes the error. Parent of filesystem root is root. Refresh clears selections to avoid stale index transfer.
 - Listing is one directory deep, directories first then case-sensitive lexical filename order. There is no recursive preload or cycle traversal. Symlink targets are inspected; valid directory symlinks can be navigated explicitly, regular file symlinks selected, and broken links/special files are unavailable. Paths remain lexical (symlink aliases are not deduplicated). Final metadata is revalidated on submit; callers must still handle races and permissions when opening/writing.
-- Reads occur synchronously in setup/handlers, never Build. Work is bounded to one directory listing plus metadata for symlinks. Very large or slow remote directories can block the event loop; asynchronous loading is outside this first implementation.
+- Reads occur synchronously in setup/handlers, never Build. Work is bounded to one directory listing plus metadata for symlinks. Very large or slow remote directories can block the event loop; asynchronous loading is not supported.
 
 ### Visibility and selection
 
@@ -47,27 +47,9 @@ Use `Navigate` rather than assigning `Directory` directly, so entries and select
 
 Tab traverses controls; arrows/Home/End/Page keys navigate the list. In Open multi-select mode, Shift+movement, Shift+click or dragging selects a range; Space toggles the cursor file within that selection. Plain movement or clicking clears the previous selection, matching List behavior. To select two adjacent files, position on the first and press Shift+Down, then activate Open. Enter or double-click activates a row. Buttons provide mouse access to parent, refresh, hidden toggle, filter cycling, choose/open/save and cancel. Ctrl+L focuses path, Alt+Up goes to parent, Ctrl+F cycles filters, Ctrl+Enter submits, Escape cancels. Text inputs retain their normal editing shortcuts.
 
-The list uses a bounded vertical Scrollable; outer layout clips safely on narrow/short terminals. Supply a useful bounded height (recommended at least 14 rows). Long paths scroll within TextInput; errors wrap. At extremely small sizes some controls may be clipped, but keyboard shortcuts and resizing remain available. Nested modal focus is delegated to existing Dialog machinery.
+The list uses a bounded vertical Scrollable; outer layout clips safely on narrow/short terminals. Supply a useful bounded height (recommended at least 14 rows). Long paths scroll within TextInput; errors wrap. At extremely small sizes some controls may be clipped, but keyboard shortcuts and resizing remain available.
 
-## Expected edge behavior and test plan
+## Demo
 
-| Condition | Expected | Planned proof |
-|---|---|---|
-| Nonexistent/unreadable start | Error with no selected result | State/unit + error SVG |
-| Failed later navigation | Existing contents/selection retained | State regression |
-| Relative/space/Unicode paths | Correct absolute paths and exact names | OS fixture tests |
-| Broken/directory symlinks | Broken rejected; directory explicit navigation only | OS + fake FS tests |
-| Empty directory | Empty message; Directory mode still chooses it | SVG + callback test |
-| Hidden/filter change | No invisible file can be submitted | Unit + browser |
-| Invalid filter patterns | Clear error, no callback | Unit + SVG |
-| Multi-select across directories | Clear at navigation; visible regular files only, sorted order | Unit + browser |
-| Save new/existing/directory | Immediate/new, explicit confirm/existing, error/directory | Unit + browser + SVG |
-| Filename/filter/target changes during confirm | Revalidate; no stale overwrite decision | Unit tests |
-| Repeated confirm/cancel | At most one final callback until reset | Cardinality tests |
-| Build/repaint | No filesystem reads or signal writes | Build-count test + retained-render sequence |
-| Tiny layout / modal nesting | Safe clipping and focus containment | SVGs + browser |
-
-The demo accepts `-probe` to start Save mode inside a parent Dialog. In that
-disposable-fixture mode only, F7 simulates another writer replacing `alpha.go`
-with identical size, permissions and modification time. Confirming the stale
-prompt reports that the target changed; resubmit to review the replacement.
+Run `go run ./cmd/filepicker-demo` to try Open, Save and Directory modes using
+temporary example files.

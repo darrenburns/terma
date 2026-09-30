@@ -16,20 +16,20 @@ view := terma.Scrollable{
 }
 ```
 
-## Interface and expected behavior
+## State and interaction
 
 - `NewMarkdownState(source)`, `Source()`, `SetSource(source)`, and `Append(fragment)` own the source and parsed document. `Source` subscribes when read in a tracked phase. Set and append reparse the complete document; parsing never happens during painting. Identical replacements are no-ops. Changes clear link and document selection.
 - `PlainText()` returns the displayed text with list/quote markers, code whitespace, and logical paragraph breaks, without wrapping or formatting syntax. It subscribes like `Source`.
 - `Markdown{ID, State, Style, OnLink, OnCopy, CodeTheme, ScrollState, DisableFocus}` is embeddable. `Style` controls dimensions and outer decoration. Nil state displays nothing. `CodeTheme` optionally names a Chroma style; unknown names use the default code colors. Unknown fence languages remain plain code.
-- Left/Right choose the previous/next active link, wrapping at either end. Enter activates the selected link. Mouse clicks activate only link text, including wrapped continuation text. Tab leaves the viewer; scrolling keys bubble to its `Scrollable`. Supplying that container's `ScrollState` also reveals links selected by keyboard, including when Markdown follows siblings or sits inside padded containers. Reveal uses retained layout positions, so the document can start completely outside the viewport.
+- Left/Right choose the previous/next active link, wrapping at either end. Enter activates the selected link. Mouse clicks activate only link text, including wrapped continuation text. Tab leaves the viewer; scrolling keys bubble to its `Scrollable`. Supplying that container's `ScrollState` also reveals links selected by keyboard, including when Markdown follows siblings or sits inside padded containers. Links can be revealed even when the document starts outside the viewport.
 - Link callbacks are the only link side effect; the widget never launches a browser or shell. HTTP(S), mailto, fragment and relative destinations are active when `OnLink` is set. Unsupported schemes, protocol-relative URLs and control-containing destinations display their labels without activation.
 - Ctrl+A selects the complete displayed document; Y copies that selection through `OnCopy`, or the terminal clipboard when no callback is set. Escape clears selection. Partial pointer/keyboard text selection is not implemented. Alt+C is also accepted when the terminal sends Alt as Meta; some browsers intercept it. Ctrl+C remains the application-wide quit shortcut.
 
-## Specification and edge cases
+## Supported Markdown
 
-The parser is Goldmark's CommonMark parser; the terminal renderer deliberately implements a focused subset. These expectations were set before implementation.
+`Markdown` uses Goldmark to parse CommonMark and supports the following terminal rendering behaviour.
 
-| Condition | Expected behavior |
+| Content or condition | Rendering |
 | --- | --- |
 | Empty source or nil state | Empty content, no crash or link activation. |
 | Headings, emphasis, inline code | Visible text with theme-aware emphasis; Markdown delimiters disappear. |
@@ -48,12 +48,11 @@ The parser is Goldmark's CommonMark parser; the terminal renderer deliberately i
 | Source changes while selected | Clear selection, recompute layout and link targets from new content. |
 | Disabled subtree | No keyboard/mouse/copy actions; normal Terma disabled handling applies. |
 | Source contains terminal controls | Render replacement characters for controls except newline/tab; never emit escape sequences. |
-| Repeated rebuilds and resizes | Source is immutable; layout regenerates width-specific lines without updating signals. |
 
 ## Limits
 
 This is a document viewer, not an editor or HTML browser. GFM tables, task-list checkboxes, footnotes, embedded media and partial text selection are not implemented. Copy uses logical document text, not the currently wrapped viewport. Source updates reparse the complete source and layout considers the complete document; this is not a virtualized or incremental streaming parser. Construct and mutate state on the UI event loop, as for other composite widget state.
 
-## Nested-layout verification
+## Demo
 
-Run `go run ./cmd/terma-browser -- go run ./cmd/markdown-demo -probe` to exercise off-screen link reveal, padded containers, independent viewers, document replacement and a modal dialog. The `r` action resets the first viewer below the viewport; Right reveals its first link. `m` toggles the same composition inside a Dialog.
+Run `go run ./cmd/markdown-demo` to try document rendering, links and copying.

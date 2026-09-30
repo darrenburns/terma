@@ -1,10 +1,9 @@
 # SelectBox
 
 `SelectBox[T comparable]` chooses a committed value from a fixed set of labelled
-options. The name avoids collision with Terma's existing `Select` signal projection
-function. Use stable scalar IDs for records containing slices or maps.
+options. Use stable scalar IDs for records containing slices or maps.
 
-## Interface
+## Quick start
 
 ```go
 state := terma.NewSelectState[string]() // allocate once, outside Build
@@ -31,7 +30,7 @@ interaction and focus, like wrapping the widget in `DisabledWhen`. A nil State
 renders an inert placeholder. IDs are optional but stable explicit IDs are
 recommended. `MaxVisible <= 0` defaults to eight option rows.
 
-## Behaviour specification
+## Interaction and selection
 
 * Enter, Space, Up or Down opens the popup without changing the value. It initially
   highlights the first enabled option matching the committed value, otherwise the
@@ -41,8 +40,9 @@ recommended. `MaxVisible <= 0` defaults to eight option rows.
   The callback runs once, after state is updated and the popup has closed, only
   if the committed value changed (including unset to the zero value).
 * Escape, Tab, Shift+Tab, blur, and outside click cancel. Tab retains normal focus
-  traversal. Focus remains on the control while searching and choosing, so Escape
-  needs no special focus restoration. Clicking the control toggles its popup.
+  traversal. Focus remains on the control while searching and choosing. Clicking
+  the control toggles its popup. An outside click dismisses the popup without
+  activating the content underneath, including when used inside a dialog.
 * Searchable controls accept printable text, including spaces, directly; typing
   opens the popup. Search is Unicode case-insensitive substring matching on labels.
   Backspace removes one Unicode code point and Ctrl+U clears the search. Search is
@@ -67,22 +67,10 @@ recommended. `MaxVisible <= 0` defaults to eight option rows.
   possible; long lines are clipped without wrapping. Floating placement follows
   Terma's standard screen clamping, which can overlap an anchor near the bottom.
   Very small terminals prioritize option rows over search/status decorations.
-* Build and deferred popup construction only derive views; neither mutates signals.
-  Input handlers own state transitions. Changes to displayed options take effect
-  on the next rebuild, as with other declarative widget properties.
+* Change state in event handlers or setup code, outside `Build`. Changes to
+  `Options` take effect on the next rebuild, as with other widget properties.
 
-## Validation plan
+## Demo
 
-Unit tests cover state reactivity and the complete input transition matrix,
-callback ordering/cardinality, zero/unset, duplicates/removal/reordering/disable,
-search Unicode/no matches, mouse buttons, wheel movement, and Build purity.
-SVG snapshots cover closed/open/disabled, empty/all-disabled/search/no matches,
-long scrolling lists, Unicode/narrow viewports and bottom anchoring. The standalone
-`go run ./cmd/select-demo` exposes callback counts, focus and committed values for
-browser verification through `terma-browser`.
-
-For nested interaction checks, `go run ./cmd/select-demo -probe` places two
-controls inside a modal Dialog, with a live KeybindBar and an underlying-click
-counter. Opening and closing changes the key hints immediately. Clicking dialog
-content outside a popup cancels that popup and consumes the press, leaving the
-dialog open without activating the content underneath.
+Run `go run ./cmd/select-demo` to try searching, disabled options and selection
+callbacks.

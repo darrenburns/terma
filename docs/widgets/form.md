@@ -5,7 +5,7 @@
 Input state stays in its existing widget; field state owns presentation timing and
 an accepted baseline for dirty/reset behaviour.
 
-## Interface
+## Quick start
 
 ```go
 name := terma.NewTextInputState("")
@@ -50,7 +50,7 @@ Form state exposes `SetFields`, `Fields`, `Valid`, `Dirty`, `Validate`, `Reset`
 and `Accept`. `Form.Submit()` validates, focuses the first invalid field, and
 invokes `OnSubmit` only when valid; it returns whether submission succeeded.
 
-## Behaviour specification and edge cases
+## Behaviour
 
 ### Validation and visibility
 
@@ -105,7 +105,7 @@ invokes `OnSubmit` only when valid; it returns whether submission succeeded.
 * Hidden or unmounted registered fields continue to validate. The caller must
   remove or disable them when they should not participate. An invalid unmounted
   field blocks submission; requesting its absent focus ID is harmless and does
-  not silently validate it. No global tree registration or Build mutation occurs.
+  not silently validate it.
 * A Field with nil state renders its label/help/child unchanged and has no
   validation behaviour. A nil Child is safe. A Form with nil state cannot submit
   and exposes no submit bindings. Field and Form styling use ordinary Style.
@@ -135,18 +135,7 @@ invokes `OnSubmit` only when valid; it returns whether submission succeeded.
   modify values. Failed submission preserves values and dirty state. Successful
   submission does not automatically Accept; callers choose when saving succeeds.
 
-## Validation plan
+## Demo
 
-Unit and retained-render tests cover generic/text bindings, Required Unicode
-whitespace, all validator results/order, untouched/change/blur/submit timing,
-source changes and cross-field dependencies, dirty/revert/Reset/Accept, disabled
-and dynamic registration, nil/duplicate/missing IDs, first-invalid focus and
-callback ordering/reentrancy. Real key and mouse routing tests cover Enter,
-Ctrl+S, multiline newline, hooks and first-invalid focus. Namespaced SVG snapshots
-cover pristine/touched/submit errors/corrected/disabled/cross-field/multiline and
-narrow layouts. The browser demo shows live status and submission counts with
-real keyboard and mouse inputs at default and fixed terminal sizes.
-
-For modal composition checks, run `go run ./cmd/form-demo -dialog`. The same
-form is mounted inside an ordinary `Dialog`; input editing and submission stay
-within the modal focus scope.
+Run `go run ./cmd/form-demo` to try validation, reset and submission. Add
+`-dialog` to use the same form inside a modal dialog.
