@@ -36,24 +36,129 @@ func TestPixelPointer_EnablesOnceSupportedAndSized(t *testing.T) {
 	}
 }
 
-func TestPixelPointer_ResizeRequeriesCellSize(t *testing.T) {
+// paddedPointer returns a pointer switched on for 82x25 cells of 10x20 pixels
+// in an 827x504 pixel window, as Ghostty reports it: 4 pixels of padding
+// across and down count in the window's size, besides what's left over from
+// fitting whole cells.
+func paddedPointer(t *testing.T) *pixelPointer {
+	t.Helper()
 	p := &pixelPointer{}
-	// Before the terminal says it supports pixel reporting, a resize asks nothing.
-	assert.Empty(t, p.handle(uv.WindowSizeEvent{Width: 80, Height: 24}))
-
+	p.query()
+	p.handle(uv.WindowSizeEvent{Width: 82, Height: 25})
+	p.handle(uv.WindowPixelSizeEvent{Width: 827, Height: 504})
 	p.handle(pixelModeReport(ansi.ModeReset))
-	p.handle(uv.CellSizeEvent{Width: 10, Height: 20})
-	require.True(t, p.enabled)
+	require.Equal(t, ansi.SetModeMouseExtSgrPixel, p.handle(uv.CellSizeEvent{Width: 10, Height: 20}))
+	return p
+}
 
-	// A font size change arrives as a resize; the cells' new size is asked for.
-	assert.Equal(t, requestCellSize, p.handle(uv.WindowSizeEvent{Width: 64, Height: 19}))
-	assert.Equal(t, requestCellSize, p.handle(uv.WindowPixelSizeEvent{Width: 780, Height: 490}))
-	p.handle(uv.CellSizeEvent{Width: 12, Height: 25})
-	event, _, _ := p.locateEvent(uv.MouseMotionEvent{X: 125, Y: 51})
-	assert.Equal(t, uv.MouseMotionEvent{X: 10, Y: 2}, event)
+func TestPixelPointer_WindowResizeAsksNothing(t *testing.T) {
+	p := paddedPointer(t)
+	// Dragging the window's edge: 99x30 cells of the same size in 1003x604.
+	// Reading the window afresh sees its new size in pixels as its size in
+	// cells arrives, before the event with the size in pixels.
+	p.readWindow = func() (windowGeometry, bool) { return windowGeometry{99, 30, 1003, 604}, true }
+	assert.Empty(t, p.handle(uv.WindowSizeEvent{Width: 99, Height: 30}))
+	assert.Empty(t, p.handle(uv.WindowPixelSizeEvent{Width: 1003, Height: 604}))
+	assert.False(t, p.awaiting)
+
+	event, _, _ := p.locateEvent(uv.MouseMotionEvent{X: 985, Y: 585})
+	assert.Equal(t, uv.MouseMotionEvent{X: 98, Y: 29}, event)
+}
+
+func TestPixelPointer_FontSizeChangeAsksOnce(t *testing.T) {
+	p := paddedPointer(t)
+	// The cells grow to 12x25 in the same window, 68x20 of them now. Only the
+	// size in cells changes, which the old cells can't explain.
+	assert.Equal(t, requestCellSize, p.handle(uv.WindowSizeEvent{Width: 68, Height: 20}))
+
+	// Until the answer arrives, the window's size over its cells stands in.
+	event, _, _ := p.locateEvent(uv.MouseMotionEvent{X: 246, Y: 137})
+	assert.Equal(t, uv.MouseMotionEvent{X: 20, Y: 5}, event, "the old cells would put this at 24,6")
+
+	// One question at a time: another change (to 14x29 cells) asks nothing
+	// while it's out...
+	assert.Empty(t, p.handle(uv.WindowSizeEvent{Width: 58, Height: 17}))
+	// ...but the answer that arrives may be for the size before, so once it
+	// does the terminal is asked again.
+	assert.Equal(t, requestCellSize, p.handle(uv.CellSizeEvent{Width: 12, Height: 25}))
+	assert.Empty(t, p.handle(uv.CellSizeEvent{Width: 14, Height: 29}))
+	assert.False(t, p.awaiting)
+
+	event, _, _ = p.locateEvent(uv.MouseMotionEvent{X: 14*57 + 1, Y: 29*16 + 1})
+	assert.Equal(t, uv.MouseMotionEvent{X: 57, Y: 16}, event)
 
 	p.disabled = true
-	assert.Empty(t, p.handle(uv.WindowSizeEvent{Width: 80, Height: 24}))
+	assert.Empty(t, p.handle(uv.WindowSizeEvent{Width: 82, Height: 25}))
+}
+
+func TestPixelPointer_KeepsCellSizeOnEmptyReply(t *testing.T) {
+	p := paddedPointer(t)
+	// A minimised window, say, is reported to have cells of no size.
+	assert.Empty(t, p.handle(decodeAll(t, "\x1b[6;0;0t")[0]))
+	assert.True(t, p.enabled)
+
+	event, _, _ := p.locateEvent(uv.MouseClickEvent{X: 400, Y: 300})
+	assert.Equal(t, uv.MouseClickEvent{X: 40, Y: 15}, event)
+}
+
+func TestPixelPointer_FallsBackToEvenWindowSize(t *testing.T) {
+	// A terminal that supports mode 1016 but doesn't answer CSI 16 t. Its
+	// window's size in pixels divides evenly into its cells, so the cells'
+	// size comes from that.
+	p := &pixelPointer{}
+	p.query()
+	p.handle(uv.WindowSizeEvent{Width: 80, Height: 24})
+	p.handle(uv.WindowPixelSizeEvent{Width: 800, Height: 480})
+	require.Equal(t, ansi.SetModeMouseExtSgrPixel, p.handle(pixelModeReport(ansi.ModeReset)))
+
+	event, subX, _ := p.locateEvent(uv.MouseMotionEvent{X: 125, Y: 47})
+	assert.Equal(t, uv.MouseMotionEvent{X: 12, Y: 2}, event)
+	assert.InDelta(t, 0.5, subX, 1e-9)
+
+	// It isn't asked again after a resize (here to 8x15 cells), and the
+	// window gives the new size.
+	assert.Empty(t, p.handle(uv.WindowSizeEvent{Width: 100, Height: 32}))
+	event, _, _ = p.locateEvent(uv.MouseMotionEvent{X: 125, Y: 47})
+	assert.Equal(t, uv.MouseMotionEvent{X: 15, Y: 3}, event)
+	assert.False(t, p.replyDue(), "nothing to wait for before handing the terminal over")
+
+	// Taking the terminal back switches it straight back on.
+	assert.Equal(t, ansi.SetModeMouseExtSgrPixel, p.resume())
+}
+
+func TestPixelPointer_AsksOnEveryResizeWithoutWindowPixels(t *testing.T) {
+	// A terminal that answers CSI 16 t but doesn't give the window's size in
+	// pixels: a font size change can't be told from any other resize.
+	p := &pixelPointer{}
+	p.query()
+	p.handle(pixelModeReport(ansi.ModeReset))
+	p.handle(uv.WindowSizeEvent{Width: 80, Height: 24})
+	require.Equal(t, ansi.SetModeMouseExtSgrPixel, p.handle(uv.CellSizeEvent{Width: 10, Height: 20}))
+
+	assert.Equal(t, requestCellSize, p.handle(uv.WindowSizeEvent{Width: 90, Height: 24}))
+	assert.True(t, p.replyDue())
+	assert.Empty(t, p.handle(uv.WindowSizeEvent{Width: 100, Height: 24}), "one question at a time")
+	assert.Equal(t, requestCellSize, p.handle(uv.CellSizeEvent{Width: 10, Height: 20}), "asked for another window")
+	assert.Empty(t, p.handle(uv.CellSizeEvent{Width: 10, Height: 20}))
+	assert.False(t, p.replyDue())
+}
+
+func TestPixelPointer_ResumeAsksBeforeSwitchingOn(t *testing.T) {
+	p := paddedPointer(t)
+	// The font size changed to 12x25 cells while the terminal was handed over.
+	p.readWindow = func() (windowGeometry, bool) { return windowGeometry{68, 20, 827, 504}, true }
+	assert.Equal(t, requestCellSize, p.resume(), "not switched on with the cells' old size")
+	assert.False(t, p.enabled)
+	assert.True(t, p.replyDue())
+
+	// Mode 1016 is off, so positions are in cells meanwhile.
+	assert.Empty(t, p.handle(uv.WindowSizeEvent{Width: 68, Height: 20}))
+	m, _, _ := p.locate(uv.Mouse{X: 5, Y: 3})
+	assert.Equal(t, uv.Mouse{X: 5, Y: 3}, m)
+
+	assert.Equal(t, ansi.SetModeMouseExtSgrPixel, p.handle(uv.CellSizeEvent{Width: 12, Height: 25}))
+	event, _, _ := p.locateEvent(uv.MouseMotionEvent{X: 246, Y: 137})
+	assert.Equal(t, uv.MouseMotionEvent{X: 20, Y: 5}, event)
 }
 
 func TestPixelPointer_IgnoresWindowPixelSize(t *testing.T) {
@@ -84,9 +189,9 @@ func TestPixelPointer_StaysOffWhenUnsupported(t *testing.T) {
 		"not recognized":    func(p *pixelPointer) { sized(p); p.handle(pixelModeReport(ansi.ModeNotRecognized)) },
 		"permanently reset": func(p *pixelPointer) { sized(p); p.handle(pixelModeReport(ansi.ModePermanentlyReset)) },
 		"no report":         sized,
-		"no cell size": func(p *pixelPointer) {
+		"window pixels divide unevenly": func(p *pixelPointer) {
 			p.handle(uv.WindowSizeEvent{Width: 80, Height: 24})
-			p.handle(uv.WindowPixelSizeEvent{Width: 800, Height: 480})
+			p.handle(uv.WindowPixelSizeEvent{Width: 820, Height: 500})
 			p.handle(pixelModeReport(ansi.ModeSet))
 		},
 		"zero cell size": func(p *pixelPointer) {

@@ -233,13 +233,44 @@ func Run(root Widget) (runErr error) {
 	enableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard)
 	// Ask whether the mouse can be reported in pixels; see pixelPointer.
 	pointer := newPixelPointer()
+	windowSize := uv.NewSizeNotifier(os.Stdout)
+	pointer.readWindow = func() (windowGeometry, bool) {
+		cells, pixels, err := windowSize.GetWindowSize()
+		return windowGeometry{cells.Width, cells.Height, pixels.Width, pixels.Height}, err == nil
+	}
 	_, _ = t.WriteString(pointer.query())
 	// Reassembles mouse reports the decoder splits; see sgrMouseRepair.
 	var sgrRepair sgrMouseRepair
 
+	// awaitCellSizeReply waits a little for the reply to a cell size query
+	// that is still out, so it isn't left for the shell (or the program run
+	// next) to read as typing. Other input read meanwhile is dropped: it was
+	// sent as the app was being left.
+	awaitCellSizeReply := func() {
+		if !pointer.replyDue() {
+			return
+		}
+		timeout := time.NewTimer(cellSizeReplyTimeout)
+		defer timeout.Stop()
+		for pointer.replyDue() {
+			select {
+			case ev, ok := <-t.Events():
+				if !ok {
+					return
+				}
+				if reply, isReply := ev.(uv.CellSizeEvent); isReply {
+					pointer.recordCellSize(reply)
+				}
+			case <-timeout.C:
+				return
+			}
+		}
+	}
+
 	// shutdownTerminal restores the terminal to its normal state.
 	// Safe to call multiple times (Shutdown is idempotent).
 	shutdownTerminal := func() {
+		awaitCellSizeReply()
 		// First, disable modes while the terminal session is still active.
 		// Some emulators/shell multiplexer stacks can scope keyboard protocol
 		// state to screen buffers, so doing this before shutdown is more
@@ -564,6 +595,7 @@ func Run(root Widget) (runErr error) {
 	// suspend hands the terminal back to the shell, runs fn, then takes the
 	// terminal back and redraws everything. Used for ctrl+z and RunExternal.
 	suspend := func(fn func() error) error {
+		awaitCellSizeReply()
 		// Disable input reporting modes so the shell (or the program run)
 		// gets plain keyboard input.
 		disableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard, false)
@@ -576,9 +608,7 @@ func Run(root Widget) (runErr error) {
 		_ = t.Resume()
 		t.EnterAltScreen()
 		enableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard)
-		if pointer.enabled {
-			_, _ = t.WriteString(ansi.SetModeMouseExtSgrPixel)
-		}
+		_, _ = t.WriteString(pointer.resume())
 		// The screen was used by something else meanwhile; repaint it all.
 		// Schedule the frame rather than drawing it here: fn may have been
 		// run from a Dispatch callback, inside a frame.
