@@ -24,7 +24,7 @@ func BenchmarkImagePresentation(b *testing.B) {
 				}
 			}
 			copyImageCells(out, buffer, 100, 30)
-			sixel.output(buffer, out, 8, 16, 0)
+			sixel.output(sixel.draws(buffer, out, 8, 16, 0))
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
@@ -33,7 +33,7 @@ func BenchmarkImagePresentation(b *testing.B) {
 				case "kitty":
 					kitty.paint(out, buffer, 8, 16)
 				case "sixel":
-					sixel.output(buffer, out, 8, 16, 0)
+					sixel.output(sixel.draws(buffer, out, 8, 16, 0))
 				}
 			}
 			b.StopTimer()

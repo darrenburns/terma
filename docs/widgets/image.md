@@ -58,27 +58,38 @@ The logical screen always contains a half-block preview. Snapshots, accessible
 terminal text and screen exports retain it. Every later cell write covers image
 cells, including identical writes; translucent backdrops produce tinted blocks.
 Kitty retains source alpha, while Sixel and blocks flatten alpha over the effective
-background (black when unspecified). Composition is cell based, not pixel based.
+background. With no background set, fully transparent pixels show the terminal's
+own background and partly transparent ones are blended over black. Composition is
+cell based, not pixel based.
 
-Kitty uploads chunked PNGs in bounded batches, retaining blocks until upload and
-virtual placement acknowledgements succeed. Movement and scrolling reuse uploads.
+Kitty uploads chunked PNGs in batches of up to 256 KiB per frame, retaining blocks
+until upload and virtual placement acknowledgements succeed; encoding runs off the
+event loop, and the encoded data is released once the terminal has the image.
+Movement, scrolling and window resizes reuse uploads.
 Missing uploads retry once; repeated errors or a missing acknowledgement fall back
 to blocks. Cropping, stretching or pixel-size changes can create a transformed
 variant. Tiles use explicit row/column diacritics. Image IDs are limited to 1–255,
 and each cached upload supports 255 virtual placements. IDs referenced by the
 current or previous presentation cannot be recycled; excess images stay as blocks.
-Only session-owned image IDs are deleted, including during shutdown and resume.
+IDs are handed out in turn, so a late reply about a deleted image is never taken
+for its successor. At most 16 images are kept uploaded while off screen, and images
+whose source has been garbage collected are deleted. Only session-owned image IDs
+are deleted, including during shutdown and resume; an upload interrupted by either
+is ended before the deletes.
 
 Sixel caches flattened, scaled palettes (255 opaque colours plus transparency),
-and reuses prepared pixels for zero-origin crops. Visible runs are emitted
-separately so covered cells and neighbouring images are preserved. A frame following
-Sixel output conservatively erases and redraws the terminal to remove stale pixels.
-Synchronized output wraps this when supported; other terminals may flicker.
+prepared off the event loop, and reuses prepared pixels for zero-origin crops.
+Visible runs are emitted separately so covered cells and neighbouring images are
+preserved. Images already on screen are left alone; only when one is removed or
+changed does a frame conservatively erase and redraw the terminal to remove stale
+pixels. Synchronized output wraps this when supported; other terminals may flicker
+then. The terminal's last row always shows blocks, since many terminals scroll
+after a Sixel image that reaches it.
 Hardware scrolling optimization remains disabled. Cursor state is restored and
 synchronization is ended even when output fails.
 
 Native preparation is limited to 4 megapixels per variant. Kitty encoded data and
-Sixel caches each have a 64 MiB budget; Sixel retains at most 32 prepared variants
+Sixel caches each have a 64 MiB budget; Sixel retains at most 16 prepared variants
 and 64 crop payloads per variant. Larger/excess variants use blocks. Large or
 frequently resized images and gradients with many cell backgrounds cost more to
 prepare. There is no animation, direct Kitty placement, multiplexer passthrough,

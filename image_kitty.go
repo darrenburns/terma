@@ -8,6 +8,7 @@ import (
 	"image/png"
 	"sort"
 	"time"
+	"weak"
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
@@ -15,27 +16,53 @@ import (
 
 const maxNativeImagePixels = 4 * 1024 * 1024
 const maxImageCacheBytes = 64 * 1024 * 1024
-const kittyResponseTimeout = time.Second
 
+// kittyResponseTimeout is how long the terminal has to acknowledge an upload
+// or placement, from the last byte written. Generous: over a slow link the
+// terminal may still be reading a large upload.
+const kittyResponseTimeout = 5 * time.Second
+
+// kittyBatchBytes bounds the graphics bytes written in one frame, so the
+// event loop gets back to input between them. Chunks are at most 4096 bytes,
+// as the protocol recommends.
+const kittyBatchBytes = 256 * 1024
+const kittyChunkBytes = 4096
+
+// maxHiddenKittyImages bounds the images kept uploaded while none is on
+// screen, ready to be shown again without another upload.
+const maxHiddenKittyImages = 16
+
+// imageVariant is an image as drawn at one size. It refers to its source
+// weakly, so caches keyed by it don't keep a dropped image in memory.
 type imageVariant struct {
-	source        *ImageResource
+	source        weak.Pointer[ImageResource]
 	crop          image.Rectangle
 	width, height int
 }
 
+func newImageVariant(source *ImageResource, crop image.Rectangle, width, height int) imageVariant {
+	return imageVariant{weak.Make(source), crop, width, height}
+}
+
 func variantFor(rec *imageRecord, cw, ch int) imageVariant {
-	return imageVariant{rec.source, rec.mapping.crop, rec.mapping.dest.Width * cw, rec.mapping.dest.Height * ch}
+	return newImageVariant(rec.source, rec.mapping.crop, rec.mapping.dest.Width*cw, rec.mapping.dest.Height*ch)
 }
 func (v imageVariant) valid() bool {
 	return v.width > 0 && v.height > 0 && v.width <= maxNativeImagePixels/v.height
 }
+
+// pixels scales the variant's source, or returns nil if it has been dropped.
 func (v imageVariant) pixels() *image.NRGBA {
+	source := v.source.Value()
+	if source == nil {
+		return nil
+	}
 	out := image.NewNRGBA(image.Rect(0, 0, v.width, v.height))
 	for y := 0; y < v.height; y++ {
 		sy := v.crop.Min.Y + min(v.crop.Dy()-1, (2*y+1)*v.crop.Dy()/(2*v.height))
 		for x := 0; x < v.width; x++ {
 			sx := v.crop.Min.X + min(v.crop.Dx()-1, (2*x+1)*v.crop.Dx()/(2*v.width))
-			out.SetNRGBA(x, y, v.source.pixels.NRGBAAt(sx, sy))
+			out.SetNRGBA(x, y, source.pixels.NRGBAAt(sx, sy))
 		}
 	}
 	return out
@@ -49,14 +76,18 @@ type kittyPlacement struct {
 	deadline               time.Time
 }
 type kittyUpload struct {
-	id                     int
-	key                    imageVariant
+	id  int
+	key imageVariant
+	// data is the encoded image while it is being sent; it is let go once the
+	// terminal has the image, and encoded again if it has to be resent.
 	data                   string
+	encoding               bool
 	offset, attempts       int
 	ready, pending, failed bool
 	deadline               time.Time
 	placements             map[kittyPlacementKey]*kittyPlacement
 	lastVisible, visible   bool
+	lastSeen               uint64 // The frame it was last on screen.
 }
 type kittyImages struct {
 	uploads     map[imageVariant]*kittyUpload
@@ -65,6 +96,12 @@ type kittyImages struct {
 	garbage     []string
 	uploadsSent int
 	bytes       int
+	frame       uint64
+	worker      imageWorker
+	// lastID is the id most recently given out. IDs are given out in turn, so
+	// one is reused only long after it was deleted: a late reply about the
+	// image it named can't be taken for one about its successor.
+	lastID int
 }
 
 func newKittyImages() *kittyImages { return &kittyImages{uploads: make(map[imageVariant]*kittyUpload)} }
@@ -74,9 +111,27 @@ func kittyCommand(options, payload string) string {
 	}
 	return "\x1b_G" + options + "\x1b\\"
 }
+
+// freeID returns the next unused image id after the last one given out, or 0.
+func (k *kittyImages) freeID() int {
+	for n := 1; n < 256; n++ {
+		id := (k.lastID+n-1)%255 + 1
+		if k.ids[id] == nil {
+			return id
+		}
+	}
+	return 0
+}
 func (k *kittyImages) begin(needed map[imageVariant]bool) {
+	k.frame++
 	for v, u := range k.uploads {
 		u.visible = needed[v]
+		if u.visible {
+			u.lastSeen = k.frame
+		} else if v.source.Value() == nil && !u.pending && u != k.active {
+			// Its source is gone, so it can never be shown again.
+			k.evict(u)
+		}
 	}
 }
 func (k *kittyImages) evict(u *kittyUpload) {
@@ -85,25 +140,25 @@ func (k *kittyImages) evict(u *kittyUpload) {
 	k.ids[u.id] = nil
 	k.bytes -= len(u.data)
 }
+
+// evictable reports whether an upload can be deleted without disturbing the
+// screen or a transfer.
+func (k *kittyImages) evictable(u *kittyUpload) bool {
+	return !u.visible && !u.lastVisible && !u.pending && u != k.active
+}
 func (k *kittyImages) upload(v imageVariant) *kittyUpload {
 	if u := k.uploads[v]; u != nil {
 		u.visible = true
 		return u
 	}
-	if !v.valid() {
+	if !v.valid() || v.source.Value() == nil {
 		return nil
 	}
-	id := 0
-	for i := 1; i < 256; i++ {
-		if k.ids[i] == nil {
-			id = i
-			break
-		}
-	}
+	id := k.freeID()
 	if id == 0 || k.bytes+v.width*v.height*6 > maxImageCacheBytes {
 		for i := 1; i < 256; i++ {
 			u := k.ids[i]
-			if u != nil && !u.visible && !u.lastVisible && !u.pending && u != k.active {
+			if u != nil && k.evictable(u) {
 				k.evict(u)
 				if id == 0 {
 					id = i
@@ -117,15 +172,46 @@ func (k *kittyImages) upload(v imageVariant) *kittyUpload {
 	if id == 0 || k.bytes+v.width*v.height*6 > maxImageCacheBytes {
 		return nil
 	}
-	var data bytes.Buffer
-	if png.Encode(&data, v.pixels()) != nil {
-		return nil
-	}
-	u := &kittyUpload{id: id, key: v, data: base64.StdEncoding.EncodeToString(data.Bytes()), placements: make(map[kittyPlacementKey]*kittyPlacement), visible: true}
+	u := &kittyUpload{id: id, key: v, placements: make(map[kittyPlacementKey]*kittyPlacement), visible: true, lastSeen: k.frame}
+	k.lastID = id
 	k.uploads[v] = u
 	k.ids[id] = u
-	k.bytes += len(u.data)
+	k.encode(u)
 	return u
+}
+
+// encode encodes the upload's image as PNG, off the event loop in an app.
+func (k *kittyImages) encode(u *kittyUpload) {
+	u.encoding = true
+	v := u.key
+	runImageWork(k.worker, func() string {
+		pixels := v.pixels()
+		if pixels == nil {
+			return ""
+		}
+		var data bytes.Buffer
+		if png.Encode(&data, pixels) != nil {
+			return ""
+		}
+		return base64.StdEncoding.EncodeToString(data.Bytes())
+	}, func(data string) {
+		u.encoding = false
+		if k.ids[u.id] != u {
+			return // Deleted meanwhile.
+		}
+		if data == "" {
+			u.failed = true
+			return
+		}
+		u.data = data
+		k.bytes += len(data)
+	})
+}
+
+// release lets go of an upload's encoded data once the terminal has it.
+func (k *kittyImages) release(u *kittyUpload) {
+	k.bytes -= len(u.data)
+	u.data = ""
 }
 func (u *kittyUpload) placement(key kittyPlacementKey) *kittyPlacement {
 	if p := u.placements[key]; p != nil {
@@ -162,6 +248,12 @@ func (k *kittyImages) fail(u *kittyUpload) {
 	}
 	if u.attempts >= 2 {
 		u.failed = true
+		k.release(u)
+		return
+	}
+	if u.data == "" && !u.encoding {
+		// Let go of once sent; the terminal has lost it since.
+		k.encode(u)
 	}
 }
 func (k *kittyImages) handle(e uv.KittyGraphicsEvent) {
@@ -192,6 +284,7 @@ func (k *kittyImages) handle(e uv.KittyGraphicsEvent) {
 		if string(e.Payload) == "OK" {
 			u.pending = false
 			u.ready = true
+			k.release(u)
 		} else {
 			k.fail(u)
 		}
@@ -203,20 +296,20 @@ func (k *kittyImages) handle(e uv.KittyGraphicsEvent) {
 func (k *kittyImages) batch(now time.Time) string {
 	k.expire(now)
 	var out bytes.Buffer
-	budget := 4
+	budget := kittyBatchBytes
 	for budget > 0 {
 		if k.active == nil {
 			for len(k.garbage) > 0 && budget > 0 {
 				out.WriteString(k.garbage[0])
+				budget -= len(k.garbage[0])
 				k.garbage = k.garbage[1:]
-				budget--
 			}
-			if budget == 0 {
+			if budget <= 0 {
 				break
 			}
 			for id := 1; id < 256; id++ {
 				u := k.ids[id]
-				if u != nil && u.visible && !u.ready && !u.pending && !u.failed {
+				if u != nil && u.visible && !u.ready && !u.pending && !u.failed && u.data != "" {
 					k.active = u
 					u.attempts++
 					k.uploadsSent++
@@ -228,7 +321,7 @@ func (k *kittyImages) batch(now time.Time) string {
 			break
 		}
 		u := k.active
-		end := min(len(u.data), u.offset+4096)
+		end := min(len(u.data), u.offset+kittyChunkBytes)
 		more := 0
 		if end < len(u.data) {
 			more = 1
@@ -238,8 +331,8 @@ func (k *kittyImages) batch(now time.Time) string {
 			options = fmt.Sprintf("a=t,t=d,f=100,i=%d,q=0,m=%d", u.id, more)
 		}
 		out.WriteString(kittyCommand(options, u.data[u.offset:end]))
+		budget -= end - u.offset
 		u.offset = end
-		budget--
 		if more == 0 {
 			u.pending = true
 			u.deadline = now.Add(kittyResponseTimeout)
@@ -261,17 +354,18 @@ func (k *kittyImages) batch(now time.Time) string {
 		}
 		sort.Slice(list, func(i, j int) bool { return list[i].id < list[j].id })
 		for _, p := range list {
-			if budget == 0 {
+			if budget <= 0 {
 				break
 			}
 			if p.ready || p.pending || p.failed {
 				continue
 			}
 			v := p.key
-			out.WriteString(kittyCommand(fmt.Sprintf("a=p,U=1,i=%d,p=%d,x=%d,y=%d,w=%d,h=%d,c=%d,r=%d,q=0", u.id, p.id, v.x*v.cw, v.y*v.ch, v.cols*v.cw, v.rows*v.ch, v.cols, v.rows), ""))
+			cmd := kittyCommand(fmt.Sprintf("a=p,U=1,i=%d,p=%d,x=%d,y=%d,w=%d,h=%d,c=%d,r=%d,q=0", u.id, p.id, v.x*v.cw, v.y*v.ch, v.cols*v.cw, v.rows*v.ch, v.cols, v.rows), "")
+			out.WriteString(cmd)
+			budget -= len(cmd)
 			p.pending = true
 			p.deadline = now.Add(kittyResponseTimeout)
-			budget--
 		}
 	}
 	return out.String()
@@ -295,19 +389,57 @@ func (k *kittyImages) pending() bool {
 	}
 	return false
 }
+
+// finish ends a frame, deleting the images longest off screen beyond the
+// number kept for showing again.
 func (k *kittyImages) finish() {
+	var hidden []*kittyUpload
 	for _, u := range k.uploads {
 		u.lastVisible = u.visible
+		if k.evictable(u) {
+			hidden = append(hidden, u)
+		}
+	}
+	if len(hidden) <= maxHiddenKittyImages {
+		return
+	}
+	sort.Slice(hidden, func(i, j int) bool {
+		if hidden[i].lastSeen != hidden[j].lastSeen {
+			return hidden[i].lastSeen < hidden[j].lastSeen
+		}
+		return hidden[i].id < hidden[j].id
+	})
+	for _, u := range hidden[:len(hidden)-maxHiddenKittyImages] {
+		k.evict(u)
 	}
 }
+
+// cleanup returns the commands deleting every image from the terminal. An
+// upload part-way through its chunks is ended first: the terminal takes no
+// other graphics command until it is, and would read the deletes as more of
+// its data. Its (now broken) image is deleted with the rest.
 func (k *kittyImages) cleanup() string {
 	var out bytes.Buffer
+	if k.active != nil {
+		out.WriteString(kittyCommand("m=0,q=2", ""))
+	}
+	for _, cmd := range k.garbage {
+		out.WriteString(cmd)
+	}
 	for id := 1; id < 256; id++ {
 		if k.ids[id] != nil {
 			out.WriteString(kittyCommand(fmt.Sprintf("a=d,d=I,i=%d,q=2", id), ""))
 		}
 	}
 	return out.String()
+}
+
+// reset returns cleanup's commands and forgets every image, keeping the turn
+// of image ids.
+func (k *kittyImages) reset() string {
+	out := k.cleanup()
+	*k = kittyImages{uploads: make(map[imageVariant]*kittyUpload), lastID: k.lastID, worker: k.worker, frame: k.frame}
+	return out
 }
 func (k *kittyImages) paint(dst CellBuffer, b *imageBuffer, cw, ch int) {
 	needed := make(map[imageVariant]bool)
@@ -345,8 +477,13 @@ func (k *kittyImages) paint(dst CellBuffer, b *imageBuffer, cw, ch int) {
 						if !b.owns(x, y, rec) {
 							continue
 						}
-						bg := b.cells[b.index(x, y)].background
-						dst.SetCell(x, y, &uv.Cell{Content: string([]rune{0x10eeee, imageDiacritics[y-tile.Y], imageDiacritics[x-tile.X]}), Width: 1, Style: uv.Style{Fg: ansi.IndexedColor(u.id), UnderlineColor: ansi.IndexedColor(p.id), Bg: bg}})
+						style := uv.Style{Fg: ansi.IndexedColor(u.id), UnderlineColor: ansi.IndexedColor(p.id)}
+						if bg := b.cells[b.index(x, y)].background; bg.A != 0 {
+							// Otherwise the terminal's background shows
+							// through the image's transparent pixels.
+							style.Bg = bg
+						}
+						dst.SetCell(x, y, &uv.Cell{Content: string([]rune{0x10eeee, imageDiacritics[y-tile.Y], imageDiacritics[x-tile.X]}), Width: 1, Style: style})
 					}
 				}
 			}

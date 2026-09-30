@@ -47,8 +47,8 @@ const (
 type Image struct {
 	ID     string
 	Source *ImageResource
-	Style  Style
 	Fit    ImageFit
+	Style  Style
 }
 
 func (i Image) Build(BuildContext) Widget                    { return i }
@@ -148,14 +148,28 @@ func mapImage(source *ImageResource, dest Rect, fit ImageFit, cw, ch int) imageM
 	}
 	return imageMapping{dest, crop}
 }
+
+// flattenImageColor blends c over bg. Over no background of the app's own
+// (bg.A is 0), the terminal's shows through where the image is fully
+// transparent, so those pixels stay transparent; the terminal's colour isn't
+// known, so partly transparent ones are blended over black.
 func flattenImageColor(c color.NRGBA, bg color.NRGBA) color.NRGBA {
+	if bg.A == 0 {
+		if c.A == 0 {
+			return color.NRGBA{}
+		}
+		bg = color.NRGBA{A: 255}
+	}
 	a := uint32(c.A)
 	inv := 255 - a
 	return color.NRGBA{uint8((uint32(c.R)*a + uint32(bg.R)*inv + 127) / 255), uint8((uint32(c.G)*a + uint32(bg.G)*inv + 127) / 255), uint8((uint32(c.B)*a + uint32(bg.B)*inv + 127) / 255), 255}
 }
+
+// imageBackground returns the background an image is drawn over, or no colour
+// (transparent) when the app sets none and the terminal's own is behind it.
 func imageBackground(c Color) color.NRGBA {
 	if !c.IsSet() {
-		return color.NRGBA{A: 255}
+		return color.NRGBA{}
 	}
 	if !c.IsOpaque() {
 		c = c.BlendOver(Black)
@@ -194,7 +208,7 @@ func (ctx *RenderContext) DrawImage(x, y, width, height int, source *ImageResour
 	}
 	for ay := painted.Y; ay < painted.Y+painted.Height; ay++ {
 		for ax := painted.X; ax < painted.X+painted.Width; ax++ {
-			bg := color.NRGBA{A: 255}
+			var bg color.NRGBA
 			if ctx.inheritedBgAt != nil {
 				bg = imageBackground(ctx.inheritedBgAt(ax, ay))
 			} else if old := ctx.terminal.CellAt(ax, ay); old != nil && old.Style.Bg != nil {
@@ -203,13 +217,27 @@ func (ctx *RenderContext) DrawImage(x, y, width, height int, source *ImageResour
 			sx := m.crop.Min.X + min(m.crop.Dx()-1, (2*(ax-m.dest.X)+1)*m.crop.Dx()/(2*m.dest.Width))
 			top := m.crop.Min.Y + min(m.crop.Dy()-1, (4*(ay-m.dest.Y)+1)*m.crop.Dy()/(4*m.dest.Height))
 			bottom := m.crop.Min.Y + min(m.crop.Dy()-1, (4*(ay-m.dest.Y)+3)*m.crop.Dy()/(4*m.dest.Height))
-			cell := uv.Cell{Content: "▀", Width: 1, Style: uv.Style{Fg: flattenImageColor(source.pixels.NRGBAAt(sx, top), bg), Bg: flattenImageColor(source.pixels.NRGBAAt(sx, bottom), bg)}}
+			cell := halfBlockCell(flattenImageColor(source.pixels.NRGBAAt(sx, top), bg), flattenImageColor(source.pixels.NRGBAAt(sx, bottom), bg))
 			ctx.terminal.SetCell(ax, ay, &cell)
 			if record != nil {
 				ctx.terminal.(*imageBuffer).claim(ax, ay, record, cell, bg)
 			}
 		}
 	}
+}
+
+// halfBlockCell shows two pixels, one above the other, in a cell. A transparent
+// one is left to the terminal's background.
+func halfBlockCell(top, bottom color.NRGBA) uv.Cell {
+	switch {
+	case top.A == 0 && bottom.A == 0:
+		return uv.Cell{Content: " ", Width: 1}
+	case bottom.A == 0:
+		return uv.Cell{Content: "▀", Width: 1, Style: uv.Style{Fg: top}}
+	case top.A == 0:
+		return uv.Cell{Content: "▄", Width: 1, Style: uv.Style{Fg: bottom}}
+	}
+	return uv.Cell{Content: "▀", Width: 1, Style: uv.Style{Fg: top, Bg: bottom}}
 }
 
 // Subcontexts share a draw sequence so their records cannot alias. Retained

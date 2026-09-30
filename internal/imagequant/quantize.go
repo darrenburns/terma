@@ -364,7 +364,8 @@ func newSixelPalette(image image.Image, maxColors int) sixelPalette {
 	return p
 }
 
-// Prepare quantizes once, reserving palette entry zero for masked pixels.
+// Prepare quantizes once, reserving palette entry zero (transparent) for
+// masked pixels and fully transparent ones.
 func Prepare(img image.Image) *image.Paletted {
 	p := newSixelPalette(img, 255)
 	colors := color.Palette{color.NRGBA{}}
@@ -374,7 +375,11 @@ func Prepare(img image.Image) *image.Paletted {
 	out := image.NewPaletted(image.Rect(0, 0, img.Bounds().Dx(), img.Bounds().Dy()), colors)
 	for y := 0; y < out.Rect.Dy(); y++ {
 		for x := 0; x < out.Rect.Dx(); x++ {
-			out.SetColorIndex(x, y, uint8(1+p.ColorIndex(sixelConvertColor(img.At(x+img.Bounds().Min.X, y+img.Bounds().Min.Y)))))
+			c := img.At(x+img.Bounds().Min.X, y+img.Bounds().Min.Y)
+			if _, _, _, a := c.RGBA(); a == 0 {
+				continue
+			}
+			out.SetColorIndex(x, y, uint8(1+p.ColorIndex(sixelConvertColor(c))))
 		}
 	}
 	return out

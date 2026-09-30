@@ -714,7 +714,7 @@ func Run(root Widget) (runErr error) {
 				case uv.WindowSizeEvent:
 					_ = t.Resize(ev.Width, ev.Height)
 					renderer.Resize(ev.Width, ev.Height)
-					images.reset(t)
+					images.erased()
 					width = ev.Width
 					height = ev.Height
 					t.Erase()

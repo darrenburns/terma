@@ -54,7 +54,7 @@ func TestImageProbeFailedKittyUploadSettles(t *testing.T) {
 	now := time.Now()
 	k := newKittyImages()
 	src := testImage(t, 2, 2)
-	u := k.upload(imageVariant{src, image.Rect(0, 0, 2, 2), 2, 2})
+	u := k.upload(newImageVariant(src, image.Rect(0, 0, 2, 2), 2, 2))
 	u.placement(kittyPlacementKey{cols: 1, rows: 1, cw: 2, ch: 2})
 	for i := 0; i < 2; i++ {
 		require.NotEmpty(t, k.batch(now))
@@ -92,7 +92,7 @@ func TestImageProbeLateReplies(t *testing.T) {
 func TestImageProbeKittyAlphaPreserved(t *testing.T) {
 	k := newKittyImages()
 	src := testImage(t, 3, 3)
-	u := k.upload(imageVariant{src, src.pixels.Bounds(), 6, 6})
+	u := k.upload(newImageVariant(src, src.pixels.Bounds(), 6, 6))
 	require.NotNil(t, u)
 	require.NotEmpty(t, u.data)
 	decodedBytes, err := base64.StdEncoding.DecodeString(u.data)
@@ -219,7 +219,8 @@ func TestImageProbeMovingOverlappingRetained(t *testing.T) {
 		native := func(b *imageBuffer) []nativeRegion {
 			out := uv.NewBuffer(22, 8)
 			copyImageCells(out, b, 22, 8)
-			payload := newSixelImages().output(b, out, 2, 3, 0)
+			sx := newSixelImages()
+			payload, _ := sx.output(sx.draws(b, out, 2, 3, 0))
 			var regions []nativeRegion
 			for _, part := range strings.Split(payload, "\x1b\\") {
 				if part == "" {

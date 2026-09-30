@@ -5,6 +5,7 @@ import (
 	"errors"
 	"image"
 	"image/color"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -87,17 +88,21 @@ func TestImageGeometryPrecedence(t *testing.T) {
 func TestImageKittyTransfersAndRetry(t *testing.T) {
 	now := time.Now()
 	k := newKittyImages()
-	u := k.upload(imageVariant{testImage(t, 128, 128), image.Rect(0, 0, 128, 128), 128, 128})
+	// Held for the test: caches refer to images weakly.
+	src := testImage(t, 128, 128)
+	defer runtime.KeepAlive(src)
+	u := k.upload(newImageVariant(src, image.Rect(0, 0, 128, 128), 128, 128))
 	require.NotNil(t, u)
 	// A deliberately long encoded payload exposes multipart batching without
 	// depending on PNG compressibility.
-	u.data = strings.Repeat("AAAA", 6000)
+	// Longer than one frame's budget, so it takes two.
+	u.data = strings.Repeat("A", kittyBatchBytes+3*kittyChunkBytes)
 	p := u.placement(kittyPlacementKey{cols: 16, rows: 8, cw: 8, ch: 16})
 	first := k.batch(now)
-	require.Equal(t, 4, strings.Count(first, "\x1b_G"))
+	require.Equal(t, kittyBatchBytes/kittyChunkBytes, strings.Count(first, "\x1b_G"))
 	require.NotContains(t, first, "a=p")
 	require.NotNil(t, k.active)
-	u2 := k.upload(imageVariant{testImage(t, 2, 2), image.Rect(0, 0, 2, 2), 2, 2})
+	u2 := k.upload(newImageVariant(testImage(t, 2, 2), image.Rect(0, 0, 2, 2), 2, 2))
 	u2.placement(kittyPlacementKey{cols: 1, rows: 1, cw: 2, ch: 2})
 	second := k.batch(now)
 	require.Contains(t, second, "m=0")
@@ -121,16 +126,16 @@ func TestImageKittyLimitsAndMovement(t *testing.T) {
 	src := testImage(t, 2, 2)
 	k := newKittyImages()
 	for i := 1; i <= 255; i++ {
-		u := k.upload(imageVariant{src, image.Rect(0, 0, 2, 2), i, 1})
+		u := k.upload(newImageVariant(src, image.Rect(0, 0, 2, 2), i, 1))
 		require.NotNil(t, u)
 		require.Equal(t, i, u.id)
 	}
-	require.Nil(t, k.upload(imageVariant{src, image.Rect(0, 0, 2, 2), 256, 1}))
+	require.Nil(t, k.upload(newImageVariant(src, image.Rect(0, 0, 2, 2), 256, 1)))
 	k.finish()
 	k.begin(map[imageVariant]bool{})
-	require.Nil(t, k.upload(imageVariant{src, image.Rect(0, 0, 2, 2), 256, 1}), "previous presentation still references IDs")
+	require.Nil(t, k.upload(newImageVariant(src, image.Rect(0, 0, 2, 2), 256, 1)), "previous presentation still references IDs")
 	k.finish()
-	u := k.upload(imageVariant{src, image.Rect(0, 0, 2, 2), 256, 1})
+	u := k.upload(newImageVariant(src, image.Rect(0, 0, 2, 2), 256, 1))
 	require.NotNil(t, u)
 	require.Equal(t, 1, u.id)
 	require.Contains(t, k.batch(time.Now()), "a=d,d=I,i=1")
@@ -167,7 +172,7 @@ func TestImageKittyLimitsAndMovement(t *testing.T) {
 func TestImageSixelPaletteCropAndBands(t *testing.T) {
 	s := newSixelImages()
 	src := testImage(t, 64, 64)
-	key := sixelKey{imageVariant{src, image.Rect(0, 0, 64, 64), 31, 19}, color.NRGBA{20, 30, 40, 255}}
+	key := sixelKey{newImageVariant(src, image.Rect(0, 0, 64, 64), 31, 19), color.NRGBA{20, 30, 40, 255}}
 	p := s.prepare(key)
 	require.LessOrEqual(t, len(p.pixels.Palette), 256)
 	_, _, _, alpha := p.pixels.Palette[0].RGBA()
@@ -191,7 +196,7 @@ func TestImageSixelPaletteCropAndBands(t *testing.T) {
 	require.Equal(t, 1, s.preparations)
 	require.Len(t, p.crops, 1)
 	for i := 0; i < 60; i++ {
-		s.prepare(sixelKey{imageVariant{src, image.Rect(0, 0, 64, 64), i + 1, 3}, color.NRGBA{A: 255}})
+		s.prepare(sixelKey{newImageVariant(src, image.Rect(0, 0, 64, 64), i+1, 3), color.NRGBA{A: 255}})
 	}
 	require.LessOrEqual(t, len(s.prepared), 32)
 	require.LessOrEqual(t, s.bytes, maxImageCacheBytes)
@@ -209,7 +214,7 @@ func TestImageSixelOcclusion(t *testing.T) {
 		require.GreaterOrEqual(t, r.rect.Y, 1)
 	}
 	s := newSixelImages()
-	payload := s.output(b, out, 2, 3, 1)
+	payload, _ := s.output(s.draws(b, out, 2, 3, 1))
 	require.NotEmpty(t, payload)
 	require.NotContains(t, payload, "-\x1b\\")
 	require.Equal(t, 1, s.preparations)
@@ -255,7 +260,7 @@ func TestImagePresentationCleanup(t *testing.T) {
 				r.Render(Text{Content: "removed"})
 				require.NoError(t, s.present(terminal, r, func() {}, 0))
 				require.Contains(t, terminal.calls, "ERASE")
-				require.False(t, s.hadSixel)
+				require.Empty(t, s.sixelShown)
 			}
 		})
 	}
@@ -317,7 +322,7 @@ func TestImageResizeResetAndDebugOverlay(t *testing.T) {
 	require.NoError(t, session.present(terminal, r, debug, 1))
 	require.Equal(t, "D", terminal.CellAt(0, 0).Content)
 	require.NotContains(t, terminal.output.String(), "\x1b[1;1H\x1bP", "Sixel must not paint over debug rows")
-	session.kitty.upload(imageVariant{root.Source, image.Rect(0, 0, 4, 4), 4, 4})
+	session.kitty.upload(newImageVariant(root.Source, image.Rect(0, 0, 4, 4), 4, 4))
 	session.reset(terminal)
 	require.Empty(t, session.kitty.uploads)
 	require.Contains(t, terminal.output.String(), "a=d,d=I,i=1")
