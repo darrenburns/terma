@@ -944,19 +944,30 @@ func (t TextArea) cursorDown() {
 	}
 }
 
+// pageLines is how far a page key moves the cursor: a screen less one line,
+// so the line at the edge stays in view. Inside a Scrollable the text area is
+// as tall as its text, so the screen is the scroll viewport.
+func (t TextArea) pageLines() int {
+	height := t.State.lastHeight
+	if t.ScrollState != nil && t.ScrollState.viewportHeight > 0 {
+		height = min(height, t.ScrollState.viewportHeight)
+	}
+	return max(1, height-1)
+}
+
 func (t TextArea) cursorPageUp() {
 	if t.State != nil {
 		t.State.ClearSelection()
-		t.State.CursorUpBy(max(1, t.State.lastHeight-1))
-		t.scrollCursorIntoView()
+		t.State.CursorUpBy(t.pageLines())
+		t.pageCursorIntoView()
 	}
 }
 
 func (t TextArea) cursorPageDown() {
 	if t.State != nil {
 		t.State.ClearSelection()
-		t.State.CursorDownBy(max(1, t.State.lastHeight-1))
-		t.scrollCursorIntoView()
+		t.State.CursorDownBy(t.pageLines())
+		t.pageCursorIntoView()
 	}
 }
 
@@ -1081,16 +1092,16 @@ func (t TextArea) selectDown() {
 func (t TextArea) selectPageUp() {
 	if t.State != nil {
 		t.ensureAnchor()
-		t.State.CursorUpBy(max(1, t.State.lastHeight-1))
-		t.scrollCursorIntoView()
+		t.State.CursorUpBy(t.pageLines())
+		t.pageCursorIntoView()
 	}
 }
 
 func (t TextArea) selectPageDown() {
 	if t.State != nil {
 		t.ensureAnchor()
-		t.State.CursorDownBy(max(1, t.State.lastHeight-1))
-		t.scrollCursorIntoView()
+		t.State.CursorDownBy(t.pageLines())
+		t.pageCursorIntoView()
 	}
 }
 
@@ -1509,21 +1520,28 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 }
 
 func (t TextArea) scrollCursorIntoView() {
+	t.revealCursor(false)
+}
+
+// pageCursorIntoView is scrollCursorIntoView after a page move: the viewport
+// glides to the cursor so the eye can follow the text.
+func (t TextArea) pageCursorIntoView() {
+	t.revealCursor(true)
+}
+
+func (t TextArea) revealCursor(animate bool) {
 	if t.ScrollState == nil || t.State == nil || t.State.lastWidth <= 0 {
 		return
 	}
 	contentWidth := reservedContentWidth(t.State.lastWidth)
 	graphemes, revision := t.State.Content.peekWithRevision()
 	layout := t.State.layoutFor(graphemes, revision, t.State.WrapMode.Peek(), contentWidth, t.State.CursorIndex.Peek())
-	t.scrollCursorIntoViewWithLayout(layout)
-}
-
-func (t TextArea) scrollCursorIntoViewWithLayout(layout textAreaLayout) {
-	if t.ScrollState == nil {
-		return
-	}
 	t.State.revealed.record(t.State.CursorIndex.Peek(), layout.cursorLine, 1, t.ScrollState)
-	t.ScrollState.ScrollToView(layout.cursorLine, 1)
+	if animate {
+		t.ScrollState.pageToView(layout.cursorLine, 1)
+	} else {
+		t.ScrollState.ScrollToView(layout.cursorLine, 1)
+	}
 }
 
 // revealMovedCursor scrolls the cursor into view while rendering, unless it

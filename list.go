@@ -1293,7 +1293,7 @@ func (l List[T]) pageUp() {
 		l.State.ClearAnchor()
 	}
 	l.setCursorToViewIndex(cursorViewIdx - 10)
-	l.scrollCursorIntoView()
+	l.pageCursorIntoView()
 	l.notifyCursorChange()
 }
 
@@ -1307,7 +1307,7 @@ func (l List[T]) pageDown() {
 		l.State.ClearAnchor()
 	}
 	l.setCursorToViewIndex(cursorViewIdx + 10)
-	l.scrollCursorIntoView()
+	l.pageCursorIntoView()
 	l.notifyCursorChange()
 }
 
@@ -1394,7 +1394,9 @@ func (l List[T]) setCursorToViewIndex(viewIdx int) {
 		return
 	}
 	viewIdx = clampInt(viewIdx, 0, len(view)-1)
-	l.State.SelectIndex(view[viewIdx])
+	// Not SelectIndex: callers reveal the cursor themselves, and a page move
+	// glides to it rather than jumping.
+	l.State.CursorIndex.Set(view[viewIdx])
 }
 
 // normalizeCursorForInteraction clamps source cursor to items bounds and ensures
@@ -1462,6 +1464,16 @@ func (l List[T]) selectViewRange(anchorSource, cursorSource int) {
 // scrollCursorIntoView uses the ScrollState to ensure
 // the cursor item is visible in the viewport.
 func (l List[T]) scrollCursorIntoView() {
+	l.revealCursor(false)
+}
+
+// pageCursorIntoView is scrollCursorIntoView after a page move: the viewport
+// glides to the cursor so the eye can follow the content.
+func (l List[T]) pageCursorIntoView() {
+	l.revealCursor(true)
+}
+
+func (l List[T]) revealCursor(animate bool) {
 	if l.ScrollState == nil || l.State == nil {
 		return
 	}
@@ -1471,7 +1483,11 @@ func (l List[T]) scrollCursorIntoView() {
 		return
 	}
 	l.State.revealed.record(cursorIdx, itemY, itemHeight, l.ScrollState)
-	l.ScrollState.ScrollToView(itemY, itemHeight)
+	if animate {
+		l.ScrollState.pageToView(itemY, itemHeight)
+	} else {
+		l.ScrollState.ScrollToView(itemY, itemHeight)
+	}
 }
 
 // revealMovedCursor scrolls the cursor into view after layout, unless it was

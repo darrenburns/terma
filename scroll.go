@@ -2,6 +2,7 @@ package terma
 
 import (
 	"math"
+	"time"
 
 	"github.com/darrenburns/terma/layout"
 )
@@ -13,6 +14,11 @@ var verticalScrollbarChars = []string{"▁", "▂", "▃", "▄", "▅", "▆", 
 
 // scrollbarSubCellCount is how many steps a scrollbar cell is divided into.
 const scrollbarSubCellCount = 8
+
+// pageScrollDuration is how long a page scroll takes to glide to its target.
+// It is short enough not to slow down paging, but long enough for the eye to
+// follow the content and keep its place.
+const pageScrollDuration = 150 * time.Millisecond
 
 // ScrollState holds scroll state for a Scrollable widget.
 // It is the source of truth for scroll position, and must be provided to Scrollable.
@@ -47,6 +53,13 @@ type ScrollState struct {
 	scrollbarDragging   bool
 	scrollbarDragOffset float64
 	layoutCache         scrollableLayoutCache
+
+	// animation glides the offset to animationTarget after a page scroll.
+	// animationOffset is the offset it last drew, so a change made directly
+	// to the Offset signal can be noticed and left in place.
+	animation       *Animation[float64]
+	animationTarget int
+	animationOffset int
 
 	// PinToBottom enables auto-scroll when content grows while at bottom.
 	// Scrolling up breaks the pin; scrolling to bottom re-engages it.
@@ -114,7 +127,9 @@ func (s *ScrollState) SetOffsetX(offset int) {
 }
 
 // SetOffset sets the scroll offset directly, clamping to valid bounds.
+// It stops any scroll animation in progress.
 func (s *ScrollState) SetOffset(offset int) {
+	s.stopAnimation()
 	max := s.maxOffset()
 	if offset < 0 {
 		offset = 0
@@ -129,9 +144,87 @@ func (s *ScrollState) SetOffset(offset int) {
 // Content is drawn at the nearest whole line; the scrollbar thumb follows the
 // exact position.
 func (s *ScrollState) setPosition(position float64) {
+	s.stopAnimation()
+	s.drawPosition(position)
+}
+
+// drawPosition moves the viewport to position, clamped to valid bounds,
+// leaving any animation running.
+func (s *ScrollState) drawPosition(position float64) {
 	position = clampFloat(position, 0, float64(s.maxOffset()))
 	s.Offset.Set(int(math.Round(position)))
 	s.position.Set(position)
+}
+
+// exactPosition returns the exact scroll position without subscribing.
+func (s *ScrollState) exactPosition() float64 {
+	offset := s.Offset.Peek()
+	position := s.position.Peek()
+	if math.Abs(position-float64(offset)) > 0.5 {
+		return float64(offset)
+	}
+	return position
+}
+
+// scrollTarget returns the offset the viewport is heading for: the end of a
+// running scroll animation, or else the current offset.
+func (s *ScrollState) scrollTarget() int {
+	if s.animation != nil {
+		return s.animationTarget
+	}
+	return s.Offset.Peek()
+}
+
+// animateOffset glides the viewport to offset, clamped to valid bounds.
+// Calling it while an animation runs retargets that animation from where it
+// has got to, so repeated page scrolls add up without the viewport jumping.
+// Outside a running app (tests, headless rendering) it jumps straight there.
+func (s *ScrollState) animateOffset(offset int) {
+	offset = min(max(offset, 0), s.maxOffset())
+	from := s.exactPosition()
+	if currentController == nil || from == float64(offset) {
+		s.SetOffset(offset)
+		return
+	}
+	s.stopAnimation()
+	var animation *Animation[float64]
+	animation = NewAnimation(AnimationConfig[float64]{
+		From:     from,
+		To:       float64(offset),
+		Duration: pageScrollDuration,
+		Easing:   EaseOutCubic,
+		OnUpdate: func(position float64) {
+			if s.animation != animation {
+				return
+			}
+			// Something wrote the Offset signal directly; leave it there.
+			if s.Offset.Peek() != s.animationOffset {
+				s.stopAnimation()
+				return
+			}
+			s.drawPosition(position)
+			s.animationOffset = s.Offset.Peek()
+		},
+		OnComplete: func() {
+			if s.animation == animation {
+				s.animation = nil
+			}
+		},
+	})
+	s.animation = animation
+	s.animationTarget = offset
+	s.animationOffset = s.Offset.Peek()
+	animation.Start()
+}
+
+// stopAnimation leaves the viewport wherever a running scroll animation has
+// got to.
+func (s *ScrollState) stopAnimation() {
+	if s.animation != nil {
+		animation := s.animation
+		s.animation = nil
+		animation.Stop()
+	}
 }
 
 // thumbPosition returns the position the scrollbar thumb shows while content
@@ -184,27 +277,41 @@ func (r *cursorReveal[K]) record(cursor K, y, height int, scroll *ScrollState) {
 // If the region is above the viewport, scrolls up to show it at the top.
 // If the region is below the viewport, scrolls down to show it at the bottom.
 // If the region is already visible, does nothing.
+//
+// While a page scroll animation runs, the region is measured against where
+// the viewport is heading, and the animation is retargeted rather than cut
+// short, so moving the cursor during a glide doesn't make the viewport jump.
 func (s *ScrollState) ScrollToView(y, height int) {
+	s.scrollToView(y, height, s.animation != nil)
+}
+
+// pageToView is ScrollToView for a cursor moved by a page: the viewport glides
+// to the region so the eye can follow the content.
+func (s *ScrollState) pageToView(y, height int) {
+	s.scrollToView(y, height, true)
+}
+
+func (s *ScrollState) scrollToView(y, height int, animate bool) {
 	if s.viewportHeight <= 0 {
 		return
 	}
 
-	currentOffset := s.Offset.Peek()
-	regionTop := y
-	regionBottom := y + height
-
-	// Check if region is above viewport
-	if regionTop < currentOffset {
-		s.SetOffset(regionTop)
+	offset := s.scrollTarget()
+	target := offset
+	if y < offset {
+		// The region is above the viewport: show it at the top.
+		target = y
+	} else if y+height > offset+s.viewportHeight {
+		// The region is below: align its bottom with the viewport's bottom.
+		target = y + height - s.viewportHeight
+	}
+	if target == offset {
 		return
 	}
-
-	// Check if region is below viewport
-	viewportBottom := currentOffset + s.viewportHeight
-	if regionBottom > viewportBottom {
-		// Scroll so the region's bottom aligns with viewport bottom
-		newOffset := regionBottom - s.viewportHeight
-		s.SetOffset(newOffset)
+	if animate {
+		s.animateOffset(target)
+	} else {
+		s.SetOffset(target)
 	}
 }
 
@@ -214,17 +321,7 @@ func (s *ScrollState) ScrollToView(y, height int) {
 // If OnScrollUp is set and returns true, viewport scrolling is suppressed.
 // If PinToBottom is enabled, scrolling up breaks the pin.
 func (s *ScrollState) ScrollUp(lines int) bool {
-	s.userScrolls++
-	if s.OnScrollUp != nil && s.OnScrollUp(lines) {
-		return true // Callback handled scrolling
-	}
-	// Break pin when user scrolls up
-	if s.PinToBottom && s.isPinned {
-		s.isPinned = false
-	}
-	oldOffset := s.Offset.Peek()
-	s.SetOffset(oldOffset - lines)
-	return s.Offset.Peek() != oldOffset
+	return s.scrollUp(lines, false)
 }
 
 // ScrollDown scrolls down by the given number of lines.
@@ -233,17 +330,60 @@ func (s *ScrollState) ScrollUp(lines int) bool {
 // If OnScrollDown is set and returns true, viewport scrolling is suppressed.
 // If PinToBottom is enabled, reaching the bottom re-engages the pin.
 func (s *ScrollState) ScrollDown(lines int) bool {
+	return s.scrollDown(lines, false)
+}
+
+// PageUp scrolls up by the viewport height, gliding there so the eye can
+// follow the content. Pages requested during the glide add up.
+// It calls OnScrollUp and reports the result as ScrollUp does.
+func (s *ScrollState) PageUp() bool {
+	return s.scrollUp(s.viewportHeight, true)
+}
+
+// PageDown scrolls down by the viewport height, gliding there so the eye can
+// follow the content. Pages requested during the glide add up.
+// It calls OnScrollDown and reports the result as ScrollDown does.
+func (s *ScrollState) PageDown() bool {
+	return s.scrollDown(s.viewportHeight, true)
+}
+
+func (s *ScrollState) scrollUp(lines int, animate bool) bool {
+	s.userScrolls++
+	if s.OnScrollUp != nil && s.OnScrollUp(lines) {
+		return true // Callback handled scrolling
+	}
+	// Break pin when user scrolls up
+	if s.PinToBottom && s.isPinned {
+		s.isPinned = false
+	}
+	return s.scrollBy(-lines, animate)
+}
+
+func (s *ScrollState) scrollDown(lines int, animate bool) bool {
 	s.userScrolls++
 	if s.OnScrollDown != nil && s.OnScrollDown(lines) {
 		return true // Callback handled scrolling
 	}
-	oldOffset := s.Offset.Peek()
-	s.SetOffset(oldOffset + lines)
+	moved := s.scrollBy(lines, animate)
 	// Re-engage pin when reaching bottom
-	if s.PinToBottom && s.IsAtBottom() {
+	if s.PinToBottom && s.scrollTarget() >= s.maxOffset() {
 		s.isPinned = true
 	}
-	return s.Offset.Peek() != oldOffset
+	return moved
+}
+
+// scrollBy moves the viewport by lines, gliding there if animate, and reports
+// whether it moves. An animated scroll starts from where a running animation
+// is heading.
+func (s *ScrollState) scrollBy(lines int, animate bool) bool {
+	if !animate {
+		oldOffset := s.Offset.Peek()
+		s.SetOffset(oldOffset + lines)
+		return s.Offset.Peek() != oldOffset
+	}
+	oldTarget := s.scrollTarget()
+	s.animateOffset(oldTarget + lines)
+	return s.scrollTarget() != oldTarget
 }
 
 // ScrollLeft scrolls left by the given number of columns.
@@ -875,7 +1015,6 @@ func (s Scrollable) OnKey(event KeyEvent) bool {
 
 	oldOffsetY := s.getScrollOffset()
 	oldOffsetX := s.getScrollOffsetX()
-	viewportHeight := s.State.viewportHeight
 
 	switch {
 	case event.MatchString("up", "k"):
@@ -896,14 +1035,14 @@ func (s Scrollable) OnKey(event KeyEvent) bool {
 		if !s.canScrollY() {
 			return false
 		}
-		s.ScrollUp(viewportHeight)
+		s.State.PageUp()
 		Log("Scrollable[%s].OnKey: page up, offset %d -> %d", s.ID, oldOffsetY, s.getScrollOffset())
 		return true
 	case event.MatchString("pgdown", "pagedown", "ctrl+d"):
 		if !s.canScrollY() {
 			return false
 		}
-		s.ScrollDown(viewportHeight)
+		s.State.PageDown()
 		Log("Scrollable[%s].OnKey: page down, offset %d -> %d", s.ID, oldOffsetY, s.getScrollOffset())
 		return true
 	case event.MatchString("home", "g"):
