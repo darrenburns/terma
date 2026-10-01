@@ -109,6 +109,9 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 
 	// Recursively build children
 	children := buildChildTrees(built, ctx, computed, fc)
+	if scrollable, ok := built.(Scrollable); ok {
+		computed.Box = scrollable.resolvedScrollBox(computed.Box)
+	}
 
 	return RenderTree{
 		Widget:      built,

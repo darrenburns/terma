@@ -699,6 +699,17 @@ func (r *Renderer) assignComputedLayout(node *widgetNode, computed *layout.Compu
 		node.children[i].layout = layout.ComputedLayout{}
 		node.children[i].updateIntrinsicCache()
 	}
+	if scrollable, ok := node.widget.(Scrollable); ok {
+		box := scrollable.resolvedScrollBox(computed.Box)
+		if box != computed.Box {
+			computed.Box = box
+			node.layout.Box = box
+			// Cached measurements captured the offset before child observers ran.
+			for ancestor := node; ancestor != nil; ancestor = ancestor.parent {
+				ancestor.layoutCache = ancestor.layoutCache[:0]
+			}
+		}
+	}
 }
 
 func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, screenX, screenY int, damage Rect, partial bool, recordRegistry bool) Rect {

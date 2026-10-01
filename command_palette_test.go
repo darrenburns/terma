@@ -370,7 +370,8 @@ func TestSnapshot_CommandPalette_ScrollOverflow(t *testing.T) {
 	level := state.CurrentLevel()
 	level.InputState.SetText("")
 	level.FilterState.Query.Set("")
-	// Force a large offset so the layout clamps to the bottom of the list.
+	// Keep the cursor at the bottom while testing an offset past the list.
+	level.ListState.SelectIndex(len(items) - 1)
 	level.ScrollState.Offset.Set(999)
 
 	widget := CommandPalette{

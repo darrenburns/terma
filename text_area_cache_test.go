@@ -141,3 +141,35 @@ func TestTextAreaGeometryDoesNotCacheReactiveHighlighter(t *testing.T) {
 	require.Equal(t, 2, calls)
 	require.NotEqual(t, before.Style, buffer.CellAt(0, 0).Style)
 }
+
+func TestTextAreaGeometryReusesMeasuredWidths(t *testing.T) {
+	state := NewTextAreaState(strings.Repeat("long wrapped line with words 界🙂\n", 100))
+	graphemes, revision := state.Content.peekWithRevision()
+	widths := []int{80, 79, 2147483646}
+	layouts := make([]textAreaLayout, len(widths))
+	for i, width := range widths {
+		layouts[i] = state.layoutFor(graphemes, revision, WrapSoft, width, 0)
+	}
+	for range 3 {
+		for i, width := range widths {
+			got := state.layoutFor(graphemes, revision, WrapSoft, width, 5)
+			require.Same(t, &layouts[i].lines[0], &got.lines[0], "repeated layout probes must reuse measured wrapping")
+		}
+	}
+	state.Content.Update(func(content []string) []string { content[0] = "\n"; return content })
+	graphemes, revision = state.Content.peekWithRevision()
+	for _, width := range widths {
+		require.Equal(t, buildTextAreaLayout(graphemes, WrapSoft, width, 5), state.layoutFor(graphemes, revision, WrapSoft, width, 5))
+	}
+	state.Content = NewAnySignal(splitGraphemes("new signal\nreplacement"))
+	graphemes, revision = state.Content.peekWithRevision()
+	for _, width := range widths {
+		require.Equal(t, buildTextAreaLayout(graphemes, WrapSoft, width, 5), state.layoutFor(graphemes, revision, WrapSoft, width, 5))
+	}
+	state.Content = NewAnySignal(splitGraphemes("same revision, different content"))
+	graphemes, nextRevision := state.Content.peekWithRevision()
+	require.Equal(t, revision, nextRevision)
+	for _, width := range widths {
+		require.Equal(t, buildTextAreaLayout(graphemes, WrapSoft, width, 5), state.layoutFor(graphemes, nextRevision, WrapSoft, width, 5))
+	}
+}
