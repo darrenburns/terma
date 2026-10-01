@@ -1519,3 +1519,64 @@ func TestReactivityWidgetReturnedFromBuildIsBuilt(t *testing.T) {
 	require.Contains(t, sequence.actual.renderer.ScreenText(), "direct dialog", "the Dialog registers its overlay")
 	sequence.frame("Close dialog", func(s *reactivityDirectScene) { s.open.Set(false) })
 }
+
+type reactivityTextAreaSearchScene struct {
+	state  *TextAreaState
+	scroll *ScrollState
+}
+
+func (s *reactivityTextAreaSearchScene) Build(BuildContext) Widget {
+	return Column{Children: []Widget{
+		reactivityBuilder{ID: "position", build: func(BuildContext) Widget {
+			current, total := s.state.SearchPosition()
+			return Text{Content: fmt.Sprintf("%d/%d", current, total)}
+		}},
+		Scrollable{ID: "scroll", State: s.scroll, Height: Cells(4), Child: TextArea{ID: "editor", State: s.state, ScrollState: s.scroll}},
+	}}
+}
+
+// Search highlights, the current match and the "n/total" readout all follow
+// the search inputs and the selection, and jumps scroll the editor's
+// ScrollState to the match.
+func TestReactivityTextAreaSearch(t *testing.T) {
+	var lines []string
+	for i := 0; i < 20; i++ {
+		lines = append(lines, fmt.Sprintf("row %02d", i))
+	}
+	lines[2], lines[12], lines[17] = "row 02 Fox", "row 12 fox", "row 17 fox"
+	sequence := newReactivitySequence(t, 20, 5, func() *reactivityTextAreaSearchScene {
+		state := NewTextAreaState(strings.Join(lines, "\n"))
+		state.CursorIndex.Set(0)
+		return &reactivityTextAreaSearchScene{state: state, scroll: NewScrollState()}
+	})
+	screen := func() string { return sequence.actual.renderer.ScreenText() }
+
+	sequence.frame("Initial", nil)
+	sequence.frame("Query set directly highlights in place", func(s *reactivityTextAreaSearchScene) { s.state.SearchQuery.Set("fox") })
+	require.Contains(t, screen(), "0/3")
+	sequence.frame("SetSearch selects the first match", func(s *reactivityTextAreaSearchScene) { s.state.SetSearch("fox") })
+	require.Contains(t, screen(), "1/3")
+	sequence.frame("Next scrolls down to row 12", func(s *reactivityTextAreaSearchScene) { s.state.NextMatch() })
+	require.Contains(t, screen(), "row 12 fox")
+	sequence.focus("editor")
+	sequence.frame("Focus editor", nil)
+	sequence.frame("Next to row 17", func(s *reactivityTextAreaSearchScene) { s.state.NextMatch() })
+	require.Contains(t, screen(), "3/3")
+	sequence.frame("Next wraps back up to row 2", func(s *reactivityTextAreaSearchScene) { s.state.NextMatch() })
+	require.Contains(t, screen(), "row 02 Fox")
+	sequence.frame("Previous wraps down to row 17", func(s *reactivityTextAreaSearchScene) { s.state.PreviousMatch() })
+	require.Contains(t, screen(), "row 17 fox")
+	sequence.frame("Case-sensitive drops the Fox match", func(s *reactivityTextAreaSearchScene) { s.state.SearchCaseSensitive.Set(true) })
+	require.Contains(t, screen(), "2/2")
+	sequence.frame("Collapsing the selection leaves the match", func(s *reactivityTextAreaSearchScene) { s.state.ClearSelection() })
+	require.Contains(t, screen(), "0/2")
+	sequence.frame("Selecting the match by hand moves only the anchor", func(s *reactivityTextAreaSearchScene) {
+		s.state.SetSelectionAnchor(s.state.CursorIndex.Peek() - 3)
+	})
+	require.Contains(t, screen(), "2/2")
+	sequence.frame("Typing ends the match", func(s *reactivityTextAreaSearchScene) { s.state.Insert("!") })
+	require.Contains(t, screen(), "0/2")
+	require.Contains(t, screen(), "row 17 fox!")
+	sequence.frame("Clear search", func(s *reactivityTextAreaSearchScene) { s.state.ClearSearch() })
+	require.Contains(t, screen(), "0/0")
+}

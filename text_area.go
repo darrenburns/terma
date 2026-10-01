@@ -21,6 +21,12 @@ type TextAreaState struct {
 	SelectionAnchor Signal[int]         // -1 = no selection, else anchor grapheme index
 	ReadOnly        Signal[bool]        // When true, content cannot be edited but cursor can move
 
+	// SearchQuery highlights every match of the query; "" means no search.
+	// Setting it directly only changes the highlights. SetSearch also selects
+	// the nearest match.
+	SearchQuery         Signal[string]
+	SearchCaseSensitive Signal[bool]
+
 	scrollOffsetX int
 	scrollOffsetY int
 	lastWidth     int
@@ -30,19 +36,23 @@ type TextAreaState struct {
 	preferredColumn int
 	geometry        textAreaGeometry
 	revealed        cursorReveal[int] // Where the cursor was last scrolled into view
+	revealCursor    func()            // Scrolls the cursor into view; set by the TextArea that shows this state
+	search          textAreaSearchCache
 }
 
 // NewTextAreaState creates a new TextAreaState with optional initial text.
 func NewTextAreaState(initial string) *TextAreaState {
 	graphemes := splitGraphemes(initial)
 	return &TextAreaState{
-		Content:         NewAnySignal(graphemes),
-		CursorIndex:     NewSignal(len(graphemes)),
-		InsertMode:      NewSignal(true),
-		WrapMode:        NewSignal(WrapSoft),
-		SelectionAnchor: NewSignal(-1),
-		ReadOnly:        NewSignal(false),
-		preferredColumn: -1,
+		Content:             NewAnySignal(graphemes),
+		CursorIndex:         NewSignal(len(graphemes)),
+		InsertMode:          NewSignal(true),
+		WrapMode:            NewSignal(WrapSoft),
+		SelectionAnchor:     NewSignal(-1),
+		ReadOnly:            NewSignal(false),
+		SearchQuery:         NewSignal(""),
+		SearchCaseSensitive: NewSignal(false),
+		preferredColumn:     -1,
 	}
 }
 
@@ -278,14 +288,15 @@ func (s *TextAreaState) HasSelection() bool {
 // GetSelectionBounds returns the normalized selection bounds (start, end).
 // Returns (-1, -1) if there is no selection.
 func (s *TextAreaState) GetSelectionBounds() (start, end int) {
-	anchor := s.SelectionAnchor.Peek()
-	cursor := s.CursorIndex.Peek()
+	return selectionBounds(s.SelectionAnchor.Peek(), s.CursorIndex.Peek(), len(s.Content.Peek()))
+}
+
+func selectionBounds(anchor, cursor, n int) (start, end int) {
 	if anchor < 0 || anchor == cursor {
 		return -1, -1
 	}
 
 	// Clamp to content length to handle external content modifications
-	n := len(s.Content.Peek())
 	if anchor > n {
 		anchor = n
 	}
@@ -760,15 +771,23 @@ func reservedContentWidth(viewportWidth int) int {
 
 // TextArea is a multi-line focusable text entry widget.
 type TextArea struct {
-	ID                string            // Optional unique identifier
-	DisableFocus      bool              // If true, prevent keyboard focus
-	State             *TextAreaState    // Required - holds text and cursor position
-	Placeholder       string            // Text shown when empty
-	Highlighter       Highlighter       // Optional: dynamic text highlighting
-	LineHighlights    []LineHighlight   // Optional: line-based background highlights
-	Width             Dimension         // Deprecated: use Style.Width
-	Height            Dimension         // Deprecated: use Style.Height
-	Style             Style             // Optional styling
+	ID             string          // Optional unique identifier
+	DisableFocus   bool            // If true, prevent keyboard focus
+	State          *TextAreaState  // Required - holds text and cursor position
+	Placeholder    string          // Text shown when empty
+	Highlighter    Highlighter     // Optional: dynamic text highlighting
+	LineHighlights []LineHighlight // Optional: line-based background highlights
+	Width          Dimension       // Deprecated: use Style.Width
+	Height         Dimension       // Deprecated: use Style.Height
+	Style          Style           // Optional styling
+
+	// SearchMatchStyle styles matches of State.SearchQuery. Zero uses a
+	// theme-derived default.
+	SearchMatchStyle SpanStyle
+	// SearchCurrentMatchStyle styles the match the selection covers, over the
+	// selection. Zero uses a theme-derived default.
+	SearchCurrentMatchStyle SpanStyle
+
 	RequireInsertMode bool              // If true, require entering insert mode to edit
 	ScrollState       *ScrollState      // Optional state for scroll-into-view
 	OnChange          func(text string) // Callback when text changes
@@ -1201,6 +1220,11 @@ func (t TextArea) HandlePaste(text string) bool {
 
 // Build returns self since TextArea is a leaf widget with custom rendering.
 func (t TextArea) Build(ctx BuildContext) Widget {
+	if t.State != nil {
+		// Let search jumps made through the state (for example from a
+		// button) scroll the cursor into view in this text area.
+		t.State.revealCursor = t.scrollCursorIntoView
+	}
 	return t
 }
 
@@ -1410,8 +1434,29 @@ func (t TextArea) Render(ctx *RenderContext) {
 	}
 	lineHighlightMap := buildLineHighlightMap(t.LineHighlights, len(layout.lines))
 
-	selStart, selEnd := t.State.GetSelectionBounds()
-	t.renderContent(ctx, graphemes, layout, cursorIdx, cursorShown, baseStyle, contentWidth, selStart, selEnd, theme, highlightMap, lineHighlightMap)
+	selStart, selEnd := selectionBounds(t.State.SelectionAnchor.Get(), cursorIdx, len(graphemes))
+	search := textAreaSearchPaint{
+		matches:      t.State.matchesFor(graphemes, revision, t.State.SearchQuery.Get(), t.State.SearchCaseSensitive.Get()),
+		matchStyle:   t.SearchMatchStyle,
+		currentStyle: t.SearchCurrentMatchStyle,
+	}
+	search.current, _ = currentMatch(search.matches, selStart, selEnd)
+	if search.matchStyle == (SpanStyle{}) {
+		// Selection is an Accent tint, so plain matches take another hue, and
+		// an underline for themes whose Primary sits close to their Accent.
+		search.matchStyle = SpanStyle{Background: theme.Primary.WithAlpha(0.3), Underline: UnderlineSingle, UnderlineColor: theme.Primary}
+	}
+	if search.currentStyle == (SpanStyle{}) {
+		search.currentStyle = SpanStyle{Background: theme.Accent, Foreground: theme.TextOnAccent}
+	}
+	t.renderContent(ctx, graphemes, layout, cursorIdx, cursorShown, baseStyle, contentWidth, selStart, selEnd, theme, highlightMap, lineHighlightMap, search)
+}
+
+type textAreaSearchPaint struct {
+	matches      []TextRange
+	current      int // index into matches, -1 when the selection isn't a match
+	matchStyle   SpanStyle
+	currentStyle SpanStyle
 }
 
 func (t TextArea) updateScrollOffsets(layout textAreaLayout, contentWidth, viewportHeight int) {
@@ -1441,10 +1486,18 @@ func (t TextArea) updateScrollOffsets(layout textAreaLayout, contentWidth, viewp
 	}
 }
 
-func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout textAreaLayout, cursorIdx int, cursorShown bool, baseStyle Style, contentWidth int, selStart, selEnd int, theme ThemeData, highlightMap map[int]SpanStyle, lineHighlightMap map[int]Style) {
+func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout textAreaLayout, cursorIdx int, cursorShown bool, baseStyle Style, contentWidth int, selStart, selEnd int, theme ThemeData, highlightMap map[int]SpanStyle, lineHighlightMap map[int]Style, search textAreaSearchPaint) {
 	scrollY := t.State.scrollOffsetY
 	scrollX := t.State.scrollOffsetX
 	hasSelection := selStart >= 0
+
+	// Graphemes are visited in increasing order, so the match containing the
+	// next one is found by walking forward from the first visible match.
+	match := 0
+	if scrollY < len(layout.lines) {
+		firstVisible := layout.lines[scrollY].start
+		match = sort.Search(len(search.matches), func(i int) bool { return search.matches[i].End > firstVisible })
+	}
 
 	for lineIdx := scrollY; lineIdx < len(layout.lines) && lineIdx < scrollY+ctx.Height; lineIdx++ {
 		line := layout.lines[lineIdx]
@@ -1486,11 +1539,22 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 			// Build style with highlight precedence:
 			// 1. Base style (with line highlight background if applicable)
 			// 2. Text highlights (from Highlighter)
-			// 3. Selection (theme.Selection background)
-			// 4. Cursor (reverse video)
+			// 3. Search matches
+			// 4. Selection (theme.Selection background)
+			// 5. Current search match (it is the selection)
+			// 6. Cursor (reverse video)
 			style := lineBaseStyle
 			if hs, ok := highlightMap[i]; ok {
 				style = applySpanStyle(style, hs)
+			}
+
+			for match < len(search.matches) && search.matches[match].End <= i {
+				match++
+			}
+			inMatch := match < len(search.matches) && search.matches[match].Start <= i
+			isCurrentMatch := inMatch && match == search.current
+			if inMatch && !isCurrentMatch {
+				style = applySpanStyle(style, search.matchStyle)
 			}
 
 			isSelected := hasSelection && i >= selStart && i < selEnd
@@ -1499,9 +1563,14 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 			// Cursor style (reverse) takes precedence over selection
 			if isCursor {
 				style.Reverse = true
-			} else if isSelected {
-				// Match List/Table selection styling - just background, no foreground change
-				style.BackgroundColor = theme.Selection
+			} else {
+				if isSelected {
+					// Match List/Table selection styling - just background, no foreground change
+					style.BackgroundColor = theme.Selection
+				}
+				if isCurrentMatch {
+					style = applySpanStyle(style, search.currentStyle)
+				}
 			}
 
 			ctx.DrawStyledText(visibleX, row, grapheme, style)
