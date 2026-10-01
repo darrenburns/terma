@@ -1281,6 +1281,10 @@ func (t Tree[T]) collapseOrMoveToParent() {
 		return
 	}
 	if len(cursor) > 1 {
+		if t.MultiSelect {
+			t.State.ClearSelection()
+			t.State.clearAnchor()
+		}
 		t.State.CursorPath.Set(clonePath(cursor[:len(cursor)-1]))
 		t.scrollCursorIntoView()
 		t.notifyCursorChange()
@@ -1302,6 +1306,10 @@ func (t Tree[T]) expandOrMoveToChild() {
 		return
 	}
 	if child, ok := t.firstChildPath(cursor, view); ok {
+		if t.MultiSelect {
+			t.State.ClearSelection()
+			t.State.clearAnchor()
+		}
 		t.State.CursorPath.Set(clonePath(child))
 		t.scrollCursorIntoView()
 		t.notifyCursorChange()
