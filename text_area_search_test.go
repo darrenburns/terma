@@ -109,11 +109,32 @@ func TestTextAreaSearch_SetSearch(t *testing.T) {
 		require.Zero(t, total)
 	})
 
-	t.Run("empty query clears without moving", func(t *testing.T) {
+	t.Run("a query that stops matching collapses the match it had selected", func(t *testing.T) {
+		state := NewTextAreaState("five dozen jugs")
+		state.SetSearch("ze")
+		require.Equal(t, TextRange{7, 9}, selectedRange(state))
+		state.SetSearch("zeb")
+		require.False(t, state.HasSelection(), "no stray selection from the half-typed query")
+		require.Equal(t, 7, state.CursorIndex.Peek(), "the cursor stays at the old match so backspacing finds it again")
+		state.SetSearch("ze")
+		require.Equal(t, TextRange{7, 9}, selectedRange(state))
+	})
+
+	t.Run("empty query clears the search and collapses its match", func(t *testing.T) {
 		state := NewTextAreaState("fox fox")
 		state.CursorIndex.Set(0)
 		state.SetSearch("fox")
 		state.SetSearch("")
+		require.Empty(t, state.SearchMatches())
+		require.False(t, state.HasSelection())
+		require.Equal(t, 0, state.CursorIndex.Peek())
+	})
+
+	t.Run("ClearSearch keeps the current match selected", func(t *testing.T) {
+		state := NewTextAreaState("fox fox")
+		state.CursorIndex.Set(0)
+		state.SetSearch("fox")
+		state.ClearSearch()
 		require.Empty(t, state.SearchMatches())
 		require.Equal(t, TextRange{0, 3}, selectedRange(state))
 		current, total := state.SearchPosition()

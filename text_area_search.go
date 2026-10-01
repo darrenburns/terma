@@ -102,18 +102,28 @@ func (s *TextAreaState) selectMatch(match TextRange) {
 
 // SetSearch highlights matches of query and selects the first match at or
 // after the selection (or the cursor), wrapping to the first match. Extending
-// the query therefore keeps the current match while it still matches. An
-// empty query clears the search. With no match, the cursor stays put.
+// the query therefore keeps the current match while it still matches. When
+// nothing matches (including an empty query), a selection that was the
+// previous match collapses to its start, so a half-typed query leaves no stray
+// selection; any other selection stays.
 func (s *TextAreaState) SetSearch(query string) {
+	start, end := s.GetSelectionBounds()
+	_, onMatch := currentMatch(s.peekMatches(), start, end)
 	s.SearchQuery.Set(query)
 	matches := s.peekMatches()
 	if len(matches) == 0 {
+		if onMatch {
+			s.ClearSelection()
+			s.CursorIndex.Set(start)
+			s.resetPreferredColumn()
+		}
 		return
 	}
 	s.selectMatch(matches[firstMatchFrom(matches, s.searchOrigin())])
 }
 
-// ClearSearch removes the search and its highlights.
+// ClearSearch removes the search and its highlights. Unlike SetSearch(""),
+// it leaves the current match selected, for closing a search bar on the result.
 func (s *TextAreaState) ClearSearch() {
 	s.SearchQuery.Set("")
 }
