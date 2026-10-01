@@ -205,6 +205,39 @@ func TestTreeOnMouseDownShiftExtendsSelection(t *testing.T) {
 	}
 }
 
+func pressTreeKey(t *testing.T, tree Tree[string], key string) {
+	t.Helper()
+	for _, keybind := range tree.Keybinds() {
+		if keybind.Key == key {
+			keybind.Action()
+			return
+		}
+	}
+	t.Fatalf("no tree keybind for %q", key)
+}
+
+func TestTreeClearAnchorRestartsShiftSelectionAtCursor(t *testing.T) {
+	roots := make([]TreeNode[string], 6)
+	view := make([][]int, len(roots))
+	for i := range roots {
+		roots[i] = TreeNode[string]{Data: string(rune('A' + i)), Children: []TreeNode[string]{}}
+		view[i] = []int{i}
+	}
+	state := NewTreeState(roots)
+	state.setViewPaths(view)
+	tree := Tree[string]{State: state, MultiSelect: true}
+
+	pressTreeKey(t, tree, "shift+down")
+	pressTreeKey(t, tree, "shift+down")
+	require.Equal(t, [][]int{{0}, {1}, {2}}, state.SelectedPaths())
+
+	state.ClearSelection()
+	state.ClearAnchor()
+	pressTreeKey(t, tree, "shift+down")
+
+	require.Equal(t, [][]int{{2}, {3}}, state.SelectedPaths())
+}
+
 func TestTreeOnMouseDownEmptyAreaDoesNotMoveCursor(t *testing.T) {
 	state := NewTreeState(sampleTreeNodes())
 	state.setViewPaths([][]int{

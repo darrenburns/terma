@@ -46,7 +46,7 @@ Common methods:
 - Navigation: `CursorUp`, `CursorDown`, `CursorToParent`, `CursorToFirstChild`
 - Expand/collapse: `Toggle`, `Expand`, `Collapse`, `ExpandAll`, `CollapseAll`, `IsCollapsed`
 - Lazy load: `SetChildren`
-- Selection: `ToggleSelection`, `Select`, `Deselect`, `ClearSelection`, `IsSelected`, `SelectedPaths`
+- Selection: `ToggleSelection`, `Select`, `Deselect`, `ClearSelection`, `ClearAnchor`, `IsSelected`, `SelectedPaths`
 - Queries: `NodeAtPath`, `CursorNode`
 
 ## Tree Widget
