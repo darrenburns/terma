@@ -7,8 +7,9 @@ import (
 )
 
 // KeybindBar displays available keybinds based on the currently focused widget.
-// It automatically updates when focus changes, showing keybinds from the focused
-// widget and its ancestors in the widget tree.
+// It shows keybinds from the focused widget and its ancestors in the widget
+// tree, and updates when they change: on a focus change, or when state a
+// Keybinds() method reads changes, such as a selection.
 //
 // Keybinds are deduplicated by key, with the focused widget taking precedence
 // over ancestors. Keybinds with Hidden=true are not displayed.
