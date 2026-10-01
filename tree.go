@@ -456,7 +456,11 @@ func (s *TreeState[T]) setAnchor(path []int) {
 	s.anchorPath = clonePath(path)
 }
 
-func (s *TreeState[T]) clearAnchor() {
+// ClearAnchor removes the anchor point.
+func (s *TreeState[T]) ClearAnchor() {
+	if s == nil {
+		return
+	}
 	s.anchorPath = nil
 }
 
@@ -942,7 +946,7 @@ func (t Tree[T]) setCursorFromMousePath(path []int, shift bool) {
 	} else {
 		if t.MultiSelect {
 			t.State.ClearSelection()
-			t.State.clearAnchor()
+			t.State.ClearAnchor()
 		}
 		t.State.CursorPath.Set(next)
 	}
@@ -1216,7 +1220,7 @@ func (t Tree[T]) keyCursorUp() {
 	}
 	if t.MultiSelect {
 		t.State.ClearSelection()
-		t.State.clearAnchor()
+		t.State.ClearAnchor()
 	}
 	t.setCursorToViewIndex(cursorViewIdx - 1)
 	t.scrollCursorIntoView()
@@ -1235,7 +1239,7 @@ func (t Tree[T]) keyCursorDown() {
 	}
 	if t.MultiSelect {
 		t.State.ClearSelection()
-		t.State.clearAnchor()
+		t.State.ClearAnchor()
 	}
 	t.setCursorToViewIndex(cursorViewIdx + 1)
 	t.scrollCursorIntoView()
@@ -1245,7 +1249,7 @@ func (t Tree[T]) keyCursorDown() {
 func (t Tree[T]) keyCursorToFirst() {
 	if t.MultiSelect {
 		t.State.ClearSelection()
-		t.State.clearAnchor()
+		t.State.ClearAnchor()
 	}
 	t.setCursorToViewIndex(0)
 	t.glideCursorIntoView()
@@ -1259,7 +1263,7 @@ func (t Tree[T]) keyCursorToLast() {
 	}
 	if t.MultiSelect {
 		t.State.ClearSelection()
-		t.State.clearAnchor()
+		t.State.ClearAnchor()
 	}
 	t.setCursorToViewIndex(len(view) - 1)
 	t.glideCursorIntoView()
@@ -1283,7 +1287,7 @@ func (t Tree[T]) collapseOrMoveToParent() {
 	if len(cursor) > 1 {
 		if t.MultiSelect {
 			t.State.ClearSelection()
-			t.State.clearAnchor()
+			t.State.ClearAnchor()
 		}
 		t.State.CursorPath.Set(clonePath(cursor[:len(cursor)-1]))
 		t.scrollCursorIntoView()
@@ -1308,7 +1312,7 @@ func (t Tree[T]) expandOrMoveToChild() {
 	if child, ok := t.firstChildPath(cursor, view); ok {
 		if t.MultiSelect {
 			t.State.ClearSelection()
-			t.State.clearAnchor()
+			t.State.ClearAnchor()
 		}
 		t.State.CursorPath.Set(clonePath(child))
 		t.scrollCursorIntoView()
