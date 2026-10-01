@@ -673,6 +673,9 @@ func (s Scrollable) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 	}
 
 	box := metrics.Box()
+	usable := box.UsableContentBox()
+	s.State.updateHorizontalLayout(usable.Width, box.VirtualWidth)
+	s.State.updateLayout(usable.Height, box.VirtualHeight)
 	cache := scrollableLayoutCache{
 		valid:          true,
 		contentWidth:   box.ContentWidth(),
@@ -686,6 +689,15 @@ func (s Scrollable) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 	if !cache.scrollableY {
 		s.State.scrollbarDragging = false
 	}
+}
+
+// resolvedScrollBox applies reveals made by child layout observers before paint.
+func (s Scrollable) resolvedScrollBox(box layout.BoxModel) layout.BoxModel {
+	if s.State != nil {
+		box.ScrollOffsetX = clampInt(s.State.OffsetX.Peek(), 0, s.State.maxOffsetX())
+		box.ScrollOffsetY = clampInt(s.State.Offset.Peek(), 0, s.State.maxOffset())
+	}
+	return box
 }
 
 // OnHover is called on hover enter/leave transitions.

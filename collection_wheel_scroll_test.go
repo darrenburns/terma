@@ -143,10 +143,7 @@ func TestCollectionWheelScroll_Tree(t *testing.T) {
 	scene.snapshot("TestCollectionWheelScroll_Tree_key_after_wheel", "Pressing down after wheel scrolling moves the cursor to Item 01 and scrolls it back into view")
 }
 
-// The first layout runs before the viewport is measured, so a cursor placed
-// before the first frame is revealed on the next layout, unless the user has
-// scrolled by then.
-func TestCollectionWheelScroll_InitialCursorRevealedOnNextLayout(t *testing.T) {
+func TestCollectionWheelScroll_InitialCursorRevealedOnFirstLayout(t *testing.T) {
 	newScene := func() (*wheelScene, *ScrollState) {
 		scroll := NewScrollState()
 		state := NewListState(wheelSceneItems())
@@ -156,13 +153,15 @@ func TestCollectionWheelScroll_InitialCursorRevealedOnNextLayout(t *testing.T) {
 	}
 
 	scene, scroll := newScene()
+	assert.Equal(t, 11, scroll.GetOffset())
+	assert.Contains(t, scene.renderer.ScreenText(), "Item 15")
 	scene.renderer.Render(scene.root)
 	assert.Equal(t, 11, scroll.GetOffset())
 
 	scene, scroll = newScene()
 	scene.wheel(uv.MouseWheelDown, 2)
 	scene.renderer.Render(scene.root)
-	assert.Equal(t, 2, scroll.GetOffset(), "the user's scroll wins over the pending reveal")
+	assert.Equal(t, 13, scroll.GetOffset(), "the user's scroll stays relative to the initially revealed cursor")
 }
 
 func TestCollectionWheelScroll_TextArea(t *testing.T) {

@@ -21,11 +21,12 @@ type TextAreaState struct {
 	SelectionAnchor Signal[int]         // -1 = no selection, else anchor grapheme index
 	ReadOnly        Signal[bool]        // When true, content cannot be edited but cursor can move
 
-	scrollOffsetX int
-	scrollOffsetY int
-	lastWidth     int
-	lastHeight    int
-	lastFocused   bool
+	scrollOffsetX        int
+	scrollOffsetY        int
+	lastWidth            int
+	lastHeight           int
+	lastFocused          bool
+	revealViewportHeight int
 
 	preferredColumn int
 	geometry        textAreaGeometry
@@ -491,18 +492,28 @@ type textAreaLayout struct {
 // selection. Content's mutation revision also detects in-place slice edits
 // published through the public Content.Set and Content.Update methods.
 type textAreaGeometry struct {
-	core     *anySignalCore[[]string]
-	revision uint64
-	width    int
-	wrap     WrapMode
-	columns  []int // cumulative grapheme widths; newlines contribute zero
-	layout   textAreaLayout
+	core         *anySignalCore[[]string]
+	revision     uint64
+	width        int
+	wrap         WrapMode
+	columns      []int // cumulative grapheme widths; newlines contribute zero
+	layout       textAreaLayout
+	measured     [3]textAreaMeasuredLayout
+	nextMeasured int
+}
+
+type textAreaMeasuredLayout struct {
+	width  int
+	wrap   WrapMode
+	layout textAreaLayout
 }
 
 func (s *TextAreaState) layoutFor(graphemes []string, revision uint64, wrap WrapMode, width, cursor int) textAreaLayout {
 	cache := &s.geometry
 	contentChanged := cache.core != s.Content.core || cache.revision != revision || cache.columns == nil
 	if contentChanged {
+		cache.measured = [3]textAreaMeasuredLayout{}
+		cache.nextMeasured = 0
 		cache.core = s.Content.core
 		cache.revision = revision
 		if cap(cache.columns) < len(graphemes)+1 {
@@ -521,7 +532,19 @@ func (s *TextAreaState) layoutFor(graphemes []string, revision uint64, wrap Wrap
 	if contentChanged || cache.width != width || cache.wrap != wrap {
 		cache.width = width
 		cache.wrap = wrap
-		cache.layout = buildTextAreaLayoutWithColumns(graphemes, cache.columns, wrap, width, -1)
+		cache.layout = textAreaLayout{}
+		for _, measured := range cache.measured {
+			if measured.width == width && measured.wrap == wrap && measured.layout.lines != nil {
+				cache.layout = measured.layout
+				break
+			}
+		}
+		if cache.layout.lines == nil {
+			cache.layout = buildTextAreaLayoutWithColumns(graphemes, cache.columns, wrap, width, -1)
+			// Scrollable probes full, scrollbar-reserved and intrinsic widths.
+			cache.measured[cache.nextMeasured] = textAreaMeasuredLayout{width, wrap, cache.layout}
+			cache.nextMeasured = (cache.nextMeasured + 1) % len(cache.measured)
+		}
 	}
 	layout := cache.layout
 	if cursor >= 0 && cursor <= len(graphemes) {
@@ -1335,6 +1358,34 @@ func (t TextArea) Layout(ctx BuildContext, constraints Constraints) Size {
 	return Size{Width: width, Height: height}
 }
 
+// OnLayout reveals the cursor using the width that will be painted this frame.
+func (t TextArea) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
+	if t.State == nil || t.ScrollState == nil {
+		return
+	}
+	graphemes, revision := t.State.Content.getWithRevision()
+	cursor := t.State.CursorIndex.Peek()
+	wrap := t.State.WrapMode.Get()
+	contentWidth := reservedContentWidth(metrics.Box().ContentWidth())
+	layout := t.State.layoutFor(graphemes, revision, wrap, contentWidth, cursor)
+	previousHeight := t.State.revealViewportHeight
+	viewportHeight := t.ScrollState.viewportHeight
+	offset := t.ScrollState.Offset.Peek()
+	if viewportHeight < previousHeight && layout.cursorLine >= offset && layout.cursorLine < offset+previousHeight {
+		t.State.revealed.valid = false
+	}
+	t.State.revealViewportHeight = viewportHeight
+	t.revealMovedCursor(layout)
+	offset = t.ScrollState.Offset.Get()
+	Select(t.State.CursorIndex, func(index int) int {
+		line := sort.Search(len(layout.lines), func(i int) bool { return layout.lines[i].start > index }) - 1
+		if line < offset || line >= offset+viewportHeight {
+			return index
+		}
+		return -1
+	})
+}
+
 // Render draws the text area with cursor.
 func (t TextArea) Render(ctx *RenderContext) {
 	if t.State == nil {
@@ -1544,8 +1595,7 @@ func (t TextArea) revealCursor(animate bool) {
 	}
 }
 
-// revealMovedCursor scrolls the cursor into view while rendering, unless it
-// was already revealed on its current line. Mouse wheel scrolling moves only
+// revealMovedCursor reveals each cursor position once. Mouse wheel scrolling moves only
 // the viewport, so it stays where the user left it until the cursor moves.
 func (t TextArea) revealMovedCursor(layout textAreaLayout) {
 	if t.ScrollState == nil || !t.State.revealed.needed(t.State.CursorIndex.Peek(), layout.cursorLine, 1, t.ScrollState) {
