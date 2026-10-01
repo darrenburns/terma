@@ -1,6 +1,10 @@
 package terma
 
-import uv "github.com/charmbracelet/ultraviolet"
+import (
+	"slices"
+
+	uv "github.com/charmbracelet/ultraviolet"
+)
 
 // KeyEvent wraps a key press event from ultraviolet.
 type KeyEvent struct {
@@ -204,11 +208,41 @@ type FocusManager struct {
 	// rootWidget is the root widget of the application, used to include
 	// root-level keybinds in ActiveKeybinds() when nothing is focused
 	rootWidget Widget
+
+	// keybindLabels is what ActiveKeybinds returned at the last syncKeybinds.
+	// keybindsVersion changes with it, so widgets showing keybinds rebuild.
+	keybindLabels   []keybindLabel
+	keybindsVersion Signal[int]
+}
+
+// keybindLabel is the part of a Keybind that a footer or help screen shows.
+type keybindLabel struct {
+	key, name string
+	hidden    bool
 }
 
 // NewFocusManager creates a new focus manager.
 func NewFocusManager() *FocusManager {
-	return &FocusManager{}
+	return &FocusManager{keybindsVersion: NewSignal(0)}
+}
+
+// syncKeybinds reports whether the active keybinds' labels changed since the
+// last call, and notifies widgets that read ActiveKeybinds if so. Keybinds()
+// often depends on state no build subscribed to, such as a selection or a
+// cursor, so the app checks around every frame.
+func (fm *FocusManager) syncKeybinds() bool {
+	binds := fm.ActiveKeybinds()
+	if slices.EqualFunc(binds, fm.keybindLabels, func(kb Keybind, label keybindLabel) bool {
+		return label == keybindLabel{kb.Key, kb.Name, kb.Hidden}
+	}) {
+		return false
+	}
+	fm.keybindLabels = make([]keybindLabel, len(binds))
+	for i, kb := range binds {
+		fm.keybindLabels[i] = keybindLabel{kb.Key, kb.Name, kb.Hidden}
+	}
+	fm.keybindsVersion.Update(func(v int) int { return v + 1 })
+	return true
 }
 
 // SetRootWidget sets the root widget for including root-level keybinds.
