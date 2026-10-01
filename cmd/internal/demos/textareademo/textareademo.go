@@ -21,7 +21,8 @@ var Info = demokit.Info{
 // needs insert mode before it accepts text. The sidebar reads the focused
 // editor's TextAreaState live.
 //
-//	tab / shift+tab - Switch between the two editors
+//	tab / shift+tab - Move between the search bar and the two editors
+//	ctrl+f          - Search the main editor (enter jumps to the next match)
 //	↑↓←→ pgup pgdn  - Move the cursor (ctrl+←→ or alt+b/f by word)
 //	shift+arrows    - Extend the selection (ctrl+a selects all)
 //	ctrl+u ctrl+k   - Delete to start / end of the line
@@ -35,10 +36,12 @@ type TextAreaDemo struct {
 	editorState *t.TextAreaState
 	modalState  *t.TextAreaState
 	scrollState *t.ScrollState
+	searchState *t.TextInputState
 }
 
 const (
 	editorID     = "editor"
+	searchID     = "search"
 	modalID      = "modal"
 	sidebarWidth = 32
 )
@@ -83,6 +86,7 @@ func New() demokit.Demo {
 		editorState: editor,
 		modalState:  modal,
 		scrollState: t.NewScrollState(),
+		searchState: t.NewTextInputState(""),
 	}
 }
 
@@ -120,6 +124,7 @@ func (d *TextAreaDemo) Keybinds() []t.Keybind {
 	return []t.Keybind{
 		{Key: "alt+z", Name: "Wrap", Action: d.toggleWrap},
 		{Key: "ctrl+r", Name: "Read-only", Action: d.toggleReadOnly},
+		{Key: "ctrl+f", Name: "Find", Action: func() { t.RequestFocus(searchID) }},
 		{Key: "ctrl+x", Name: "Reset", Action: d.reset, Hidden: true},
 	}
 }
@@ -224,6 +229,7 @@ func (p editorPanel) Build(ctx t.BuildContext) t.Widget {
 		Height: t.Flex(1),
 		Style:  demokit.PanelStyle(theme, title, ctx.IsFocused(editor)),
 		Children: []t.Widget{
+			searchBar{demo: d},
 			t.Scrollable{
 				ID:    "editor-scroll",
 				State: d.scrollState,
@@ -235,6 +241,57 @@ func (p editorPanel) Build(ctx t.BuildContext) t.Widget {
 			},
 		},
 	}
+}
+
+// searchBar drives the editor's search: typing searches as you go, enter and
+// the arrow buttons step through the matches.
+type searchBar struct {
+	demo *TextAreaDemo
+}
+
+func (b searchBar) Build(ctx t.BuildContext) t.Widget {
+	theme := ctx.Theme()
+	editor := b.demo.editorState
+	return t.Row{
+		Width:   t.Flex(1),
+		Spacing: 1,
+		Style:   t.Style{Padding: t.EdgeInsets{Bottom: 1}},
+		Children: []t.Widget{
+			t.TextInput{
+				ID:          searchID,
+				State:       b.demo.searchState,
+				Placeholder: "Find (ctrl+f)",
+				Width:       t.Flex(1),
+				Style:       t.Style{BackgroundColor: theme.Surface},
+				OnChange:    editor.SetSearch,
+				OnSubmit:    func(string) { editor.NextMatch() },
+			},
+			searchStatus{demo: b.demo},
+			t.Button{ID: "search-prev", Label: "◀", OnPress: editor.PreviousMatch},
+			t.Button{ID: "search-next", Label: "▶", OnPress: editor.NextMatch},
+		},
+	}
+}
+
+// searchStatus shows which match is selected. It reads the search itself, so
+// stepping through matches only rebuilds this label.
+type searchStatus struct {
+	demo *TextAreaDemo
+}
+
+func (s searchStatus) Build(ctx t.BuildContext) t.Widget {
+	current, total := s.demo.editorState.SearchPosition()
+	label := ""
+	switch {
+	case s.demo.editorState.SearchQuery.Get() == "":
+	case total == 0:
+		label = "[$Error]No matches[/]"
+	case current == 0:
+		label = fmt.Sprintf("[$TextMuted]%d matches[/]", total)
+	default:
+		label = fmt.Sprintf("[b $Accent]%d/%d[/]", current, total)
+	}
+	return t.ParseMarkupToText(label, ctx.Theme())
 }
 
 // modalPanel is a TextArea with RequireInsertMode: keys move the cursor until
@@ -358,6 +415,7 @@ func (keysPanel) Build(ctx t.BuildContext) t.Widget {
 		Style: demokit.PanelStyle(theme, "Keys", false),
 		Children: []t.Widget{
 			key("tab", "$Info", "switch editor"),
+			key("ctrl+f", "$Accent", "find in editor"),
 			key("arrows", "$Info", "move (pgup/pgdn)"),
 			key("⇧ ^a", "$Secondary", "select / select all"),
 			key("^w ^u^k", "$Error", "delete word / line"),
