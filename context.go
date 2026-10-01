@@ -176,12 +176,14 @@ func (ctx BuildContext) FocusedSignal() AnySignal[Focusable] {
 // based on the focused widget and its ancestors.
 // Useful for displaying available keybindings in a footer or help screen.
 // This is a reactive value - reading it during Build() will cause
-// the widget to rebuild when focus changes.
+// the widget to rebuild when a keybind's key, name or visibility changes,
+// whether from a focus change or from state the focused widget's Keybinds()
+// reads, such as its selection.
 func (ctx BuildContext) ActiveKeybinds() []Keybind {
-	ctx.subscribeToFocus()
 	if ctx.focusManager == nil {
 		return nil
 	}
+	ctx.focusManager.keybindsVersion.Get()
 	return ctx.focusManager.ActiveKeybinds()
 }
 

@@ -380,9 +380,10 @@ func Run(root Widget) (runErr error) {
 	appRenderer = renderer
 
 	updateFocusedSignal := func() bool {
+		keybindsChanged := focusManager.syncKeybinds()
 		focusedID := focusManager.FocusedID()
 		if focusedID == lastFocusedID {
-			return false
+			return keybindsChanged
 		}
 		lastFocusedID = focusedID
 		focusedSignal.Set(focusManager.Focused())

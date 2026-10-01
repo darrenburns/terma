@@ -94,8 +94,9 @@ func (s *reactivitySurface[T]) draw(full bool) {
 	if full {
 		render = s.renderer.Render
 	}
-	// Settle focus changes just as the app does, but bound the loop so a
+	// Settle focus and keybind changes just as the app does, but bound the loop so a
 	// self-invalidating fixture cannot hang the suite.
+	s.focus.syncKeybinds()
 	for pass := 0; pass < 4; pass++ {
 		pendingFocusID = ""
 		before := s.focus.FocusedID()
@@ -105,8 +106,12 @@ func (s *reactivitySurface[T]) draw(full bool) {
 			s.focus.FocusByID(pendingFocusID)
 			pendingFocusID = ""
 		}
+		keybindsChanged := s.focus.syncKeybinds()
 		if s.focus.FocusedID() == before {
-			return
+			if !keybindsChanged {
+				return
+			}
+			continue
 		}
 		s.focused.Set(s.focus.Focused())
 	}
