@@ -432,6 +432,7 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 	// A moved overlay may retain its widget identity but need a new scope.
 	rebuild = rebuild || node.buildContext.hoverScope != ctx.hoverScope
 
+	ctx.scrollToView = node.scrollContentToView
 	node.source = widget
 	node.eventWidget = widget
 	node.buildContext = ctx
@@ -1296,15 +1297,6 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 		return
 	}
 
-	// Only the topmost modal pulls focus into itself. If every open modal did,
-	// two of them would take focus from each other on every frame.
-	topModal := -1
-	for i, entry := range r.floatCollector.entries {
-		if entry.Config.Modal {
-			topModal = i
-		}
-	}
-
 	for i := 0; i < len(r.floatCollector.entries); i++ {
 		if r.floatCollector.deferTopmost(i) {
 			i--
@@ -1336,7 +1328,9 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 		if entry.Config.hoverScope != "" {
 			floatCtx.hoverScope = entry.Config.hoverScope
 		}
+		previousFloatCount := r.floatCollector.Len()
 		floatRoot := r.buildRetainedNode(oldRoot, child, floatCtx, r.focusCollector, !measure || entry.fresh || geometryChanged)
+		r.floatCollector.nestAfter(i, previousFloatCount)
 		if measure && oldRoot != nil && floatRoot != oldRoot {
 			// Nothing else records where the replaced overlay was drawn.
 			r.reflowDamage = append(r.reflowDamage, oldRoot.subtreeBounds)
@@ -1370,6 +1364,15 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 			// A pending request for a widget inside the modal also counts:
 			// it was made while opening the modal, or after removing the
 			// focused widget, and should win over the first focusable.
+			// Building a modal can register another modal, so determine the
+			// topmost one after building its child. A parent must not pull
+			// focus back from a confirmation discovered during that build.
+			topModal := i
+			for j := i + 1; j < len(r.floatCollector.entries); j++ {
+				if r.floatCollector.entries[j].Config.Modal {
+					topModal = j
+				}
+			}
 			focusedID := r.focusManager.FocusedID()
 			alreadyInside := i != topModal
 			for _, fe := range r.focusCollector.Focusables()[focusableCountBefore:] {
@@ -1553,4 +1556,41 @@ func (r *Renderer) maxDirtyLevel() dirtyLevel {
 
 func (r *Renderer) hasPaintDirty() bool {
 	return r.maxDirtyLevel() == DirtyPaint
+}
+
+// scrollContentToView translates a content-local region through retained
+// ancestor layouts without requiring paint. A nil state reveals through every
+// enclosing Scrollable; a specific state stops at that matching container.
+func (node *widgetNode) scrollContentToView(scroll *ScrollState, y, height int) bool {
+	revealed := false
+	for child := node; child != nil && child.parent != nil; child = child.parent {
+		parent := child.parent
+		y += child.layout.Box.Padding.Top + child.layout.Box.Border.Top
+		found := false
+		for i, candidate := range parent.children {
+			if candidate == child && i < len(parent.layout.Children) {
+				y += parent.layout.Children[i].Y
+				found = true
+				break
+			}
+		}
+		if !found {
+			return revealed
+		}
+		offset := parent.layout.Box.ScrollOffsetY
+		if container, ok := parent.widget.(Scrollable); ok && container.State != nil && (scroll == nil || container.State == scroll) {
+			// Clipped viewports may never have painted; use their resolved geometry.
+			box := parent.layout.Box
+			container.State.updateLayout(box.UsableContentBox().Height, box.VirtualHeight)
+			container.State.ScrollToView(y, height)
+			revealed = true
+			if scroll != nil {
+				return true
+			}
+			offset = container.State.GetOffset()
+		}
+		// Translate through the viewport's current offset, including a reveal above.
+		y -= offset
+	}
+	return revealed
 }

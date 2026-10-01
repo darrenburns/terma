@@ -117,6 +117,7 @@ Table[T]{SelectionMode: TableSelectionColumn, ...}
 | `PageDown` / `Ctrl+D` | Page down |
 | `Enter` | Trigger OnSelect |
 | `Space` | Toggle selection (MultiSelect) |
+| `Tab` / `Shift+Tab` | Leave the table for the next/previous widget |
 | `Shift+↑/↓` | Extend selection (MultiSelect) |
 
 ## Mouse
@@ -258,3 +259,40 @@ go run ./cmd/table-example
 - For struct rows, provide `RenderCell` to extract column values
 - Use `ScrollState` with `Scrollable` to enable automatic scroll-into-view
 - Selection state persists in `TableState` across rebuilds
+
+
+## Sorting, row identity and column controls
+
+Supply column comparators to sort the displayed rows without changing the source data. Use stable row IDs to keep the cursor and selections when replacing or reordering rows. Create and update state outside `Build`.
+
+```go
+state := NewTableStateWithRowID(people, func(p Person) string { return p.ID })
+Table[Person]{
+    State: state,
+    Columns: []TableColumn{
+        {ID: "name", Header: Text{Content: "Name"}, Width: Cells(20), Resizable: true, MinWidth: 6, MaxWidth: 40},
+        {ID: "age", Header: Text{Content: "Age"}, Width: Cells(8)},
+    },
+    Comparators: map[string]func(Person, Person) int{
+        "name": func(a, b Person) int { return strings.Compare(a.Name, b.Name) },
+        "age": func(a, b Person) int { return cmp.Compare(a.Age, b.Age) },
+    },
+    FrozenHeader: true,
+    FrozenColumns: 1,
+    Style: Style{Width: Flex(1), Height: Flex(1)},
+}
+```
+
+- `state.Sort` holds `TableSort{ColumnID, Direction}`; directions are `TableSortNone`, `TableSortAscending`, `TableSortDescending`. Header click or Ctrl+S cycles ascending → descending → unsorted. Indicators are ↑ / ↓ / ↕. Comparators must be pure and deterministic and return negative/zero/positive; callers define nil, case, locale, NaN policy. Explicit sort overrides fuzzy ranking; ties use source order.
+- Unique nonempty column IDs enable sorting/resizing. Missing/duplicate IDs disable these controls without hiding data or panicking. User widths persist by ID. Minimum width is at least one; maximum zero means unlimited, and a maximum below minimum becomes minimum. Drag the last cell of a resizable header, or Ctrl+Left/Right. Ctrl+R resets the width. Resizing preserves selection and clamps scrolling to current content.
+- `NewTableStateWithRowID` makes `SetRows` preserve cursor, row/cell selection and anchor for unique nonempty IDs present in both versions. Deleted, empty or duplicate IDs drop selection/anchor; their cursor falls back to the nearest valid source index. `NewTableState` keeps positional behavior. Direct writes to `Rows` bypass reconciliation: use `SetRows`. Public indices and rendering callbacks remain source indices.
+- Filtering hides selections without clearing them. A hidden cursor is retained until navigation or activation normalizes it into the view. Zero matches disables activation. Clearing the filter restores the cursor if navigation has not occurred. Shift-selection follows displayed order.
+- `FrozenHeader` or positive `FrozenColumns` enables an internal bounded viewport; set width/height and do not wrap it in `Scrollable`. Pass `ScrollState` to observe/control it, or use the state's default. Nonfrozen tables keep external scrolling. Wheel scrolls vertically; Alt+Left/Right scroll horizontally. Navigation reveals the current cell. Frozen column counts clamp to column count. If frozen panes consume all available space, other panes clip to zero. Empty data retains headers.
+- Cells and their clickable areas are clipped to their pane.
+
+### Scrolling and focus
+
+Rows in a frozen viewport are measured at their natural height before pane clipping. Even when one multiline row exceeds the viewport height, vertical scrolling can reach every line. When a row or column is too large to fit its scrolling pane, automatic cursor reveal shows its leading edge; manual scrolling still reaches the remaining content. Table exposes one focus stop, so Tab reaches sibling inputs and other table instances, including inside Dialog.
+
+Run `go run ./cmd/table-features-demo` to try sorting, column resizing and frozen
+panes.
