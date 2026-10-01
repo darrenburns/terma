@@ -19,6 +19,39 @@ func (r keybindBarRoot) Keybinds() []Keybind {
 	}
 }
 
+// keybindBarSelectionScene offers Copy only while the focused input has a
+// selection, as an editor's footer does.
+type keybindBarSelectionScene struct{ input *TextInputState }
+
+func (s *keybindBarSelectionScene) Build(BuildContext) Widget {
+	return Column{Children: []Widget{
+		keybindBarCopyKeys{input: s.input},
+		KeybindBar{},
+	}}
+}
+
+type keybindBarCopyKeys struct{ input *TextInputState }
+
+func (k keybindBarCopyKeys) Build(BuildContext) Widget {
+	return TextInput{ID: "input", State: k.input}
+}
+
+func (k keybindBarCopyKeys) Keybinds() []Keybind {
+	if !k.input.HasSelection() {
+		return nil
+	}
+	return []Keybind{{Key: "ctrl+c", Name: "Copy", Action: func() {}}}
+}
+
+func TestReactivityKeybindBarFollowsSelection(t *testing.T) {
+	sequence := newReactivitySequence(t, 30, 2, func() *keybindBarSelectionScene {
+		return &keybindBarSelectionScene{input: NewTextInputState("hello")}
+	})
+	sequence.frame("Initial", nil)
+	sequence.frame("Selecting text shows Copy", func(s *keybindBarSelectionScene) { s.input.SelectAll() })
+	sequence.frame("Clearing the selection hides Copy", func(s *keybindBarSelectionScene) { s.input.ClearSelection() })
+}
+
 func TestKeybindBar_DefaultsToFlexWidth(t *testing.T) {
 	width, height := KeybindBar{}.GetContentDimensions()
 	assert.Equal(t, Flex(1), width)

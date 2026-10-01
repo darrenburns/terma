@@ -299,3 +299,44 @@ func TestTreeInAutoWidthScrollableShowsNodes(t *testing.T) {
 	require.Contains(t, screen.String(), "Fruits")
 	require.Contains(t, screen.String(), "Apple")
 }
+
+func TestTreeLeftRightClearSelectionWhenMovingCursor(t *testing.T) {
+	press := func(tree Tree[string], key string) {
+		t.Helper()
+		for _, kb := range tree.Keybinds() {
+			if kb.Key == key {
+				kb.Action()
+				return
+			}
+		}
+		t.Fatalf("no %q keybind", key)
+	}
+	// Cursor on the leaf A1a, with A1 and A1a selected by shift+down.
+	setup := func() (Tree[string], *TreeState[string]) {
+		state := NewTreeState(sampleTreeNodes())
+		state.Expand([]int{0})
+		state.Expand([]int{0, 0})
+		state.CursorPath.Set([]int{0, 0})
+		tree := Tree[string]{State: state, MultiSelect: true}
+		press(tree, "shift+down")
+		require.Len(t, state.SelectedPaths(), 2)
+		return tree, state
+	}
+
+	tree, state := setup()
+	press(tree, "left")
+	require.Equal(t, []int{0, 0}, state.CursorPath.Peek(), "left on a leaf moves to its parent")
+	require.Empty(t, state.SelectedPaths(), "left moved the cursor, so the selection is cleared")
+
+	tree, state = setup()
+	state.CursorPath.Set([]int{0, 0})
+	press(tree, "right")
+	require.Equal(t, []int{0, 0, 0}, state.CursorPath.Peek(), "right on an expanded node moves to its first child")
+	require.Empty(t, state.SelectedPaths(), "right moved the cursor, so the selection is cleared")
+
+	tree, state = setup()
+	state.CursorPath.Set([]int{0, 0})
+	press(tree, "left")
+	require.True(t, state.IsCollapsed([]int{0, 0}), "left on an expanded node collapses it")
+	require.Len(t, state.SelectedPaths(), 2, "collapsing in place keeps the selection")
+}
