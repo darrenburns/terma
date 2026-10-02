@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
@@ -1584,4 +1585,38 @@ func TestReactivityTextAreaSearch(t *testing.T) {
 	require.Contains(t, screen(), "row 17 fox!")
 	sequence.frame("Clear search", func(s *reactivityTextAreaSearchScene) { s.state.ClearSearch() })
 	require.Contains(t, screen(), "0/0")
+}
+
+type reactivityShimmerScene struct {
+	shimmer *ShimmerState
+}
+
+func (s *reactivityShimmerScene) Build(ctx BuildContext) Widget {
+	theme := ctx.Theme()
+	return Column{
+		Style: Style{
+			Border:          RoundedBorder(Shimmer{State: s.shimmer, Base: theme.Border, Highlight: theme.Accent, Path: ShimmerPerimeter}),
+			BackgroundColor: Shimmer{State: s.shimmer, Base: theme.Surface, Highlight: theme.SurfaceHover},
+			Width:           Cells(20),
+			Height:          Cells(4),
+		},
+		Children: []Widget{Text{
+			Content: "Thinking...",
+			Style:   Style{ForegroundColor: Shimmer{State: s.shimmer, Base: theme.TextMuted, Highlight: theme.Text}},
+		}},
+	}
+}
+
+func TestReactivityShimmerRepaintsWithoutRebuilding(t *testing.T) {
+	sequence := newReactivitySequence(t, 24, 6, func() *reactivityShimmerScene {
+		return &reactivityShimmerScene{shimmer: NewShimmerState(time.Second)}
+	})
+	sequence.frame("Initial", nil)
+	for _, phase := range []float64{0, 0.3, 0.7, 0.99} {
+		work := sequence.frame(fmt.Sprintf("Phase %.2f", phase), func(s *reactivityShimmerScene) { s.shimmer.phase.Set(phase) })
+		require.Equal(t, "partial", work.FrameMode)
+		require.Equal(t, 0, work.BuildCount)
+		require.Equal(t, 0, work.LayoutCount)
+	}
+	sequence.frame("Stopped", func(s *reactivityShimmerScene) { s.shimmer.Stop() })
 }

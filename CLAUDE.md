@@ -142,6 +142,7 @@ Golden files are stored in `testdata/<TestName>.svg`. The test framework generat
 | `tab.go` | `TabBar` and `TabView` for tab navigation |
 | `progressbar.go` | Progress indicator widget |
 | `spinner.go` | Animated loading indicator |
+| `shimmer.go` | `Shimmer` color: an animated highlight for text, borders or backgrounds |
 | `menu.go` | Dropdown/context menu widget |
 | `dialog.go` | Modal `Dialog` widget (wraps `Floating`) |
 | `filter.go` | Text filtering/matching utilities |
@@ -427,6 +428,9 @@ Stack{
   and their `OnPaste func(string) bool` hook can consume it first.
 - **External programs**: `RunExternal(cmd)` suspends the UI, runs `$EDITOR`/`$PAGER` attached to the terminal and
   redraws when it exits. Call it from an event handler or `Dispatch` callback (it blocks the event loop).
+- **Shimmer**: `Shimmer{State: NewShimmerState(period), Base: ..., Highlight: ...}` is a `ColorProvider` whose
+  highlight band moves while the state runs (`Start`/`Stop`). Use it for any text, border or background color.
+  `Path: ShimmerSweep` (default) crosses left to right; `ShimmerPerimeter` circles a border. Ticks repaint only.
 - **Cursor blink**: text cursors don't blink unless `SetCursorBlink(true)`.
 
 ### Rich Text with Markup

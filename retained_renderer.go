@@ -849,59 +849,64 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		style = styled.GetStyle()
 	}
 
-	if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
-		sampleColor := style.BackgroundColor.ColorAt(box.Width, box.Height, 0, 0)
-		useBackdrop := !sampleColor.IsOpaque()
+	// Colors may read signals as they are sampled (an animated ColorProvider),
+	// so the decoration repaints when they change.
+	withSignalRead(node, readPhasePaint, func() struct{} {
+		if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
+			sampleColor := style.BackgroundColor.ColorAt(box.Width, box.Height, 0, 0)
+			useBackdrop := !sampleColor.IsOpaque()
 
-		if useBackdrop {
-			backdropCtx := ctx.SubContext(absBorderX, absBorderY, box.Width, box.Height)
-			backdropCtx.DrawBackdrop(0, 0, box.Width, box.Height, style.BackgroundColor)
-		} else {
-			for row := 0; row < box.Height; row++ {
-				absY := trueAbsBorderY + row
-				if absY < ctx.clip.Y || absY >= ctx.clip.Y+ctx.clip.Height {
-					continue
-				}
-				for col := 0; col < box.Width; col++ {
-					absX := trueAbsBorderX + col
-					if absX < ctx.clip.X || absX >= ctx.clip.X+ctx.clip.Width {
+			if useBackdrop {
+				backdropCtx := ctx.SubContext(absBorderX, absBorderY, box.Width, box.Height)
+				backdropCtx.DrawBackdrop(0, 0, box.Width, box.Height, style.BackgroundColor)
+			} else {
+				for row := 0; row < box.Height; row++ {
+					absY := trueAbsBorderY + row
+					if absY < ctx.clip.Y || absY >= ctx.clip.Y+ctx.clip.Height {
 						continue
 					}
-					cellColor := style.BackgroundColor.ColorAt(box.Width, box.Height, col, row)
-					ctx.terminal.SetCell(absX, absY, &uv.Cell{
-						Content: " ",
-						Width:   1,
-						Style:   uv.Style{Bg: cellColor.toANSI()},
-					})
-				}
-			}
-		}
-	}
-
-	if !style.Border.IsZero() {
-		borderCtx := ctx.SubContext(absBorderX, absBorderY, box.Width, box.Height)
-		if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
-			bg := style.BackgroundColor
-			w, h := box.Width, box.Height
-			originX, originY := trueAbsBorderX, trueAbsBorderY
-			parentCallback := ctx.inheritedBgAt
-
-			borderCtx.inheritedBgAt = func(absX, absY int) Color {
-				relX := absX - originX
-				relY := absY - originY
-				cellColor := bg.ColorAt(w, h, relX, relY)
-				if !cellColor.IsOpaque() && parentCallback != nil {
-					inherited := parentCallback(absX, absY)
-					if !inherited.IsSet() {
-						inherited = Black
+					for col := 0; col < box.Width; col++ {
+						absX := trueAbsBorderX + col
+						if absX < ctx.clip.X || absX >= ctx.clip.X+ctx.clip.Width {
+							continue
+						}
+						cellColor := style.BackgroundColor.ColorAt(box.Width, box.Height, col, row)
+						ctx.terminal.SetCell(absX, absY, &uv.Cell{
+							Content: " ",
+							Width:   1,
+							Style:   uv.Style{Bg: cellColor.toANSI()},
+						})
 					}
-					cellColor = cellColor.BlendOver(inherited)
 				}
-				return cellColor
 			}
 		}
-		borderCtx.DrawBorder(0, 0, box.Width, box.Height, style.Border)
-	}
+
+		if !style.Border.IsZero() {
+			borderCtx := ctx.SubContext(absBorderX, absBorderY, box.Width, box.Height)
+			if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
+				bg := style.BackgroundColor
+				w, h := box.Width, box.Height
+				originX, originY := trueAbsBorderX, trueAbsBorderY
+				parentCallback := ctx.inheritedBgAt
+
+				borderCtx.inheritedBgAt = func(absX, absY int) Color {
+					relX := absX - originX
+					relY := absY - originY
+					cellColor := bg.ColorAt(w, h, relX, relY)
+					if !cellColor.IsOpaque() && parentCallback != nil {
+						inherited := parentCallback(absX, absY)
+						if !inherited.IsSet() {
+							inherited = Black
+						}
+						cellColor = cellColor.BlendOver(inherited)
+					}
+					return cellColor
+				}
+			}
+			borderCtx.DrawBorder(0, 0, box.Width, box.Height, style.Border)
+		}
+		return struct{}{}
+	})
 
 	if renderable, ok := node.widget.(Renderable); ok {
 		contentCtx := ctx.SubContext(absContentX, absContentY, box.ContentWidth(), box.ContentHeight())
