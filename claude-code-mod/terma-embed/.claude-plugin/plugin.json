@@ -1,0 +1,6 @@
+{
+  "name": "terma-embed",
+  "version": "0.1.0",
+  "description": "Runs a terma app (terma-demos by default) as a child process and draws it, live and interactive, in a pane",
+  "types": "./types/index.d.ts"
+}

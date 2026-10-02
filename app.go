@@ -212,6 +212,9 @@ func CurrentRenderStats() RenderStats {
 // The root widget can implement KeyHandler to receive key events that bubble up
 // from focused descendants.
 func Run(root Widget) (runErr error) {
+	if socket := os.Getenv(embedSocketEnv); socket != "" {
+		return runEmbedded(root, socket)
+	}
 	t := uv.DefaultTerminal()
 	origStdinState := snapshotTTYState(os.Stdin)
 	origStdoutState := snapshotTTYState(os.Stdout)
