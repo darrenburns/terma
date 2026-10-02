@@ -7,8 +7,22 @@ claude --plugin-dir claude-code-mod/terma-embed   # from the repo root
 ```
 
 Then type `/terma` in Claude Code. It builds `./cmd/terma-demos`, starts it, and docks it beside the
-transcript. `/terma ./cmd/list-demo` runs another package, and `/terma stop` ends it. Click the pane
-to give it the keyboard. Escape never reaches a pane, so ctrl+] sends Escape.
+transcript. `/terma stop` ends it. Click the pane to give it the keyboard. Escape never reaches a
+pane, so ctrl+] sends Escape.
+
+`/terma` takes what to run, then any arguments for the app:
+
+| Argument | Runs |
+|----------|------|
+| (none) | `./cmd/terma-demos` in the session's directory |
+| `./cmd/list-demo` | another package in the session's directory |
+| `~/code/posting/cmd/posting` | a main package anywhere on disk, built and run in that directory |
+| `/path/to/binary` | a binary you built yourself with a terma that has embedded mode |
+
+An app outside this repo usually depends on a terma without embedded mode. When it does, the mod
+builds it with `GOWORK=/tmp/terma-embed.go.work`, a workspace that uses the app's module and
+replaces terma with the session directory's terma. The app's own `go.mod` and `go.work` stay
+untouched, so start Claude Code in a terma checkout that has `embed.go`.
 
 ## How it works
 
