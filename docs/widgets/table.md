@@ -1,298 +1,72 @@
 # Table
 
-Display tabular data with keyboard navigation, selection, and optional filtering. Use `Table` for data grids, file browsers, or any multi-column navigable list.
+`Table` displays navigable rows and columns.
+
+![A table with Name and Role columns and three people.](../assets/widgets/table.svg)
+
+## [Example](index.md#run-an-example)
 
 ```go
-Table[[]string]{
-    State: tableState,
-    Columns: []TableColumn{
-        {Width: Cells(12), Header: Text{Content: "Name"}},
-        {Width: Cells(10), Header: Text{Content: "Status"}},
-    },
-    OnSelect: func(row []string) { /* handle selection */ },
-}
+--8<-- "docs/widget-examples/collections/examples.go:table"
 ```
 
-## Fields
+## Rows and rendering
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `ID` | `string` | `""` | Optional unique identifier |
-| `DisableFocus` | `bool` | `false` | Prevent keyboard focus |
-| `State` | `*TableState[T]` | — | **Required** - holds rows and cursor position |
-| `Columns` | `[]TableColumn` | — | **Required** - defines column count and widths |
-| `RenderCell` | `func(row T, rowIdx, colIdx int, active, selected bool) Widget` | — | Custom cell renderer |
-| `RenderCellWithMatch` | `func(..., match MatchResult) Widget` | — | Cell renderer with filter match data |
-| `Filter` | `*FilterState` | `nil` | Optional filter state for matching rows |
-| `MatchCell` | `func(row T, rowIdx, colIdx int, query string, opts FilterOptions) MatchResult` | — | Custom matcher per cell |
-| `RenderHeader` | `func(colIndex int) Widget` | — | Header renderer (overrides column headers) |
-| `OnSelect` | `func(row T)` | — | Callback when Enter is pressed or a row is double-clicked |
-| `OnCursorChange` | `func(row T)` | — | Callback when cursor moves |
-| `ScrollState` | `*ScrollState` | `nil` | For scroll-into-view behavior |
-| `RowHeight` | `int` | `0` | Uniform row height override |
-| `ColumnSpacing` | `int` | `0` | Space between columns |
-| `RowSpacing` | `int` | `0` | Space between rows |
-| `SelectionMode` | `TableSelectionMode` | `TableSelectionCursor` | Highlight mode |
-| `MultiSelect` | `bool` | `false` | Enable multi-select |
-| `Width` | `Dimension` | `Auto` | Container width |
-| `Height` | `Dimension` | `Auto` | Container height |
-| `Style` | `Style` | — | Padding, margin, border |
+- `NewTableState` holds the rows, cursor, and selection.
+- `Columns` defines each column width and optional header widget.
+- `RenderHeader` supplies each header, with the column's `Header` as the fallback when the callback returns nil.
+- The default renderer reads cells from slice or array rows.
+- `RenderCell` receives the row, source row index, column index, and active and selected flags. A custom renderer controls the cell's appearance, including selection highlighting.
+- `Filter` and `MatchCell` keep rows with a matching cell.
+- `RenderCellWithMatch` receives the matching data for each cell and takes precedence over `RenderCell`.
+- `CursorIndex` and row indices passed to renderers and matchers refer to `State.Rows`, even after filtering or sorting.
+- `SetRows`, `Append`, `Prepend`, `InsertAt`, `RemoveAt`, `RemoveWhere`, and `Clear` update the data in `TableState`.
 
-## TableColumn
+## Navigation and selection
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `Width` | `Dimension` | Column width (`Cells`, `Flex`, `Auto`) |
-| `Header` | `Widget` | Header widget for this column |
+- Up and Down, or `k` and `j`, move between visible rows. Home and End move to the first and last visible rows.
+- `TableSelectionCursor` highlights a cell by default. `TableSelectionRow` highlights a row, and `TableSelectionColumn` highlights a column.
+- Left and Right move between columns in cursor and column modes.
+- With `MultiSelect`, Shift navigation and pointer selection extend the selection according to the selection mode.
+- Enter and a double-click call `OnSelect(row T)`, or `ActivateOnClick` enables single-click activation.
+- Selection keys depend on the mode: row indices, column indices, or `rowIndex * len(Columns) + colIndex` for cells.
+- `SelectedRow()` returns the cursor row and a boolean indicating whether it exists. `SelectedRows()` is intended for row-selection mode.
 
-## TableState Methods
+## Row identity
 
-### Row Operations
+- `NewTableState` tracks rows by position. `NewTableStateWithRowID(rows, rowID)` preserves the cursor and row or cell selections across `SetRows` when the same unique IDs remain.
+- The ID function must return stable, nonempty, unique strings without side effects. Empty, duplicate, or removed IDs lose their selections, and a cursor that cannot be preserved is clamped.
+- `SetRows` performs identity reconciliation. Calling `State.Rows.Set(...)` directly bypasses it.
 
-| Method | Description |
-|--------|-------------|
-| `NewTableState(rows []T)` | Create state with initial rows |
-| `SetRows(rows []T)` | Replace all rows |
-| `GetRows() []T` | Get current rows |
-| `RowCount() int` | Number of rows |
-| `Append(row T)` | Add row at end |
-| `Prepend(row T)` | Add row at beginning |
-| `InsertAt(index int, row T)` | Insert row at index |
-| `RemoveAt(index int) bool` | Remove row at index |
-| `RemoveWhere(predicate func(T) bool) int` | Remove matching rows |
-| `Clear()` | Remove all rows |
+## Sorting and column widths
 
-### Cursor Control
+This example uses names as unique row IDs and enables sorting, resizing, and a frozen header.
 
-| Method | Description |
-|--------|-------------|
-| `SelectNext()` | Move cursor down |
-| `SelectPrevious()` | Move cursor up |
-| `SelectFirst()` | Move to first row |
-| `SelectLast()` | Move to last row |
-| `SelectIndex(index int)` | Move to specific row |
-| `SelectColumn(index int)` | Move to specific column |
-| `SelectedRow() (T, bool)` | Get row at cursor |
+![A table with a sortable Name header and Mina, Leon, and Ada rows.](../assets/widgets/table-controls.svg)
 
-### Multi-Select
-
-| Method | Description |
-|--------|-------------|
-| `ToggleSelection(index int)` | Toggle row selection |
-| `Select(index int)` | Add row to selection |
-| `Deselect(index int)` | Remove row from selection |
-| `IsSelected(index int) bool` | Check if row selected |
-| `ClearSelection()` | Clear all selections |
-| `SelectAll()` | Select all rows |
-| `SelectedRows() []T` | Get selected rows |
-| `SelectedIndices() []int` | Get selected indices |
-| `SelectRange(from, to int)` | Select range of rows |
-
-## Selection Modes
-
-Control how the cursor and selection are highlighted:
+Run this example with `go run ./docs/widget-examples -widget table-controls`.
 
 ```go
-// Highlight only the cursor cell (default)
-Table[T]{SelectionMode: TableSelectionCursor, ...}
-
-// Highlight the entire row
-Table[T]{SelectionMode: TableSelectionRow, ...}
-
-// Highlight the entire column
-Table[T]{SelectionMode: TableSelectionColumn, ...}
+--8<-- "docs/widget-examples/collections/examples.go:table-controls"
 ```
 
-## Keyboard Navigation
+- Each sortable or resizable column needs a unique, nonempty `TableColumn.ID`.
+- `Comparators` maps column IDs to functions that return a negative value, zero, or a positive value for two rows.
+- Clicking a sortable header or pressing Ctrl+S cycles the current column through ascending, descending, and unsorted order.
+- `State.Sort.Set(TableSort{ColumnID: "name", Direction: TableSortAscending})` sets the sort programmatically.
+- Sorting changes the visible order without changing `State.Rows`. Filtering runs first, and equal comparator results retain source order.
+- `TableSortNone` restores the filtered order, including fuzzy-match ranking when enabled.
+- `Resizable` enables dragging the rightmost cell of a column header and Ctrl+Left or Ctrl+Right on the current column. Ctrl+R restores its configured width.
+- `MinWidth` and `MaxWidth` constrain resized widths in cells. The minimum is at least one cell, and a zero maximum means unlimited.
+- `State.ColumnWidths` stores width overrides by column ID.
 
-| Keys | Action |
-|------|--------|
-| `↑` / `k` | Move up |
-| `↓` / `j` | Move down |
-| `←` / `h` | Move left (column) |
-| `→` / `l` | Move right (column) |
-| `Home` / `g` | First row |
-| `End` / `G` | Last row |
-| `PageUp` / `Ctrl+U` | Page up |
-| `PageDown` / `Ctrl+D` | Page down |
-| `Enter` | Trigger OnSelect |
-| `Space` | Toggle selection (MultiSelect) |
-| `Tab` / `Shift+Tab` | Leave the table for the next/previous widget |
-| `Shift+↑/↓` | Extend selection (MultiSelect) |
+## Scrolling
 
-## Mouse
+- A shared `ScrollState` connects a regular table to a surrounding `Scrollable` for cursor visibility.
+- `FrozenHeader` keeps headers visible, and `FrozenColumns` keeps the first N columns visible during horizontal scrolling.
+- Either frozen option gives the table its own viewport. A bounded `Style.Width` and `Style.Height` define its visible area without a surrounding `Scrollable`.
+- The built-in viewport uses the supplied `ScrollState`, or an internal one when none is supplied. Alt+Left and Alt+Right pan horizontally by three cells.
 
-| Action | Effect |
-|--------|--------|
-| Click | Focus the table and move the cursor to the cell (row, in row mode) |
-| Double-click | Trigger OnSelect |
-| Shift+click | Extend selection to the cell, row or column (MultiSelect) |
-| Drag | Move the cursor with the pointer; with MultiSelect, select from the pressed cell to the pointer: a box of cells, a run of rows or a run of columns, by selection mode. Dragging past the top or bottom scrolls |
+## Related
 
-## Basic Usage
-
-### Simple Table
-
-```go
-tableState := NewTableState([][]string{
-    {"Alice", "Engineer"},
-    {"Bob", "Designer"},
-})
-
-Table[[]string]{
-    State: tableState,
-    Columns: []TableColumn{
-        {Width: Cells(15)},
-        {Width: Cells(15)},
-    },
-}
-```
-
-### With Headers
-
-```go
-Table[[]string]{
-    State: tableState,
-    Columns: []TableColumn{
-        {Width: Cells(15), Header: Text{Content: "Name", Style: Style{Bold: true}}},
-        {Width: Cells(15), Header: Text{Content: "Role", Style: Style{Bold: true}}},
-    },
-}
-```
-
-### Flexible Column Widths
-
-```go
-Columns: []TableColumn{
-    {Width: Flex(1)},  // Takes 1/3 of available space
-    {Width: Flex(2)},  // Takes 2/3 of available space
-}
-```
-
-## Custom Cell Rendering
-
-For struct-based rows or custom styling, provide a `RenderCell` function:
-
-```go
-type Person struct {
-    Name   string
-    Role   string
-    Active bool
-}
-
-Table[Person]{
-    State: personTableState,
-    Columns: []TableColumn{
-        {Width: Cells(15)},
-        {Width: Cells(15)},
-        {Width: Cells(8)},
-    },
-    RenderCell: func(p Person, rowIdx, colIdx int, active, selected bool) Widget {
-        var content string
-        switch colIdx {
-        case 0:
-            content = p.Name
-        case 1:
-            content = p.Role
-        case 2:
-            if p.Active {
-                content = "Active"
-            } else {
-                content = "Away"
-            }
-        }
-        return Text{Content: content}
-    },
-}
-```
-
-## Multi-Select
-
-Enable row selection with Space and Shift+arrow keys:
-
-```go
-Table[T]{
-    State:       tableState,
-    MultiSelect: true,
-    OnSelect: func(row T) {
-        // Access all selected rows
-        selected := tableState.SelectedRows()
-        fmt.Printf("Selected %d rows\n", len(selected))
-    },
-}
-```
-
-## With Scrolling
-
-Combine with `Scrollable` for long tables:
-
-```go
-scrollState := NewScrollState()
-
-Scrollable{
-    State:  scrollState,
-    Height: Flex(1),
-    Child: Table[T]{
-        State:       tableState,
-        ScrollState: scrollState,  // Enables scroll-into-view
-        Columns:     columns,
-    },
-}
-```
-
-## Complete Example
-
-Run this example with:
-
-```bash
-go run ./cmd/table-example
-```
-
-```go
---8<-- "cmd/table-example/main.go"
-```
-
-## Notes
-
-- `State` and `Columns` are required fields
-- Default rendering works with slice/array row types (e.g., `[]string`)
-- For struct rows, provide `RenderCell` to extract column values
-- Use `ScrollState` with `Scrollable` to enable automatic scroll-into-view
-- Selection state persists in `TableState` across rebuilds
-
-
-## Sorting, row identity and column controls
-
-Supply column comparators to sort the displayed rows without changing the source data. Use stable row IDs to keep the cursor and selections when replacing or reordering rows. Create and update state outside `Build`.
-
-```go
-state := NewTableStateWithRowID(people, func(p Person) string { return p.ID })
-Table[Person]{
-    State: state,
-    Columns: []TableColumn{
-        {ID: "name", Header: Text{Content: "Name"}, Width: Cells(20), Resizable: true, MinWidth: 6, MaxWidth: 40},
-        {ID: "age", Header: Text{Content: "Age"}, Width: Cells(8)},
-    },
-    Comparators: map[string]func(Person, Person) int{
-        "name": func(a, b Person) int { return strings.Compare(a.Name, b.Name) },
-        "age": func(a, b Person) int { return cmp.Compare(a.Age, b.Age) },
-    },
-    FrozenHeader: true,
-    FrozenColumns: 1,
-    Style: Style{Width: Flex(1), Height: Flex(1)},
-}
-```
-
-- `state.Sort` holds `TableSort{ColumnID, Direction}`; directions are `TableSortNone`, `TableSortAscending`, `TableSortDescending`. Header click or Ctrl+S cycles ascending → descending → unsorted. Indicators are ↑ / ↓ / ↕. Comparators must be pure and deterministic and return negative/zero/positive; callers define nil, case, locale, NaN policy. Explicit sort overrides fuzzy ranking; ties use source order.
-- Unique nonempty column IDs enable sorting/resizing. Missing/duplicate IDs disable these controls without hiding data or panicking. User widths persist by ID. Minimum width is at least one; maximum zero means unlimited, and a maximum below minimum becomes minimum. Drag the last cell of a resizable header, or Ctrl+Left/Right. Ctrl+R resets the width. Resizing preserves selection and clamps scrolling to current content.
-- `NewTableStateWithRowID` makes `SetRows` preserve cursor, row/cell selection and anchor for unique nonempty IDs present in both versions. Deleted, empty or duplicate IDs drop selection/anchor; their cursor falls back to the nearest valid source index. `NewTableState` keeps positional behavior. Direct writes to `Rows` bypass reconciliation: use `SetRows`. Public indices and rendering callbacks remain source indices.
-- Filtering hides selections without clearing them. A hidden cursor is retained until navigation or activation normalizes it into the view. Zero matches disables activation. Clearing the filter restores the cursor if navigation has not occurred. Shift-selection follows displayed order.
-- `FrozenHeader` or positive `FrozenColumns` enables an internal bounded viewport; set width/height and do not wrap it in `Scrollable`. Pass `ScrollState` to observe/control it, or use the state's default. Nonfrozen tables keep external scrolling. Wheel scrolls vertically; Alt+Left/Right scroll horizontally. Navigation reveals the current cell. Frozen column counts clamp to column count. If frozen panes consume all available space, other panes clip to zero. Empty data retains headers.
-- Cells and their clickable areas are clipped to their pane.
-
-### Scrolling and focus
-
-Rows in a frozen viewport are measured at their natural height before pane clipping. Even when one multiline row exceeds the viewport height, vertical scrolling can reach every line. When a row or column is too large to fit its scrolling pane, automatic cursor reveal shows its leading edge; manual scrolling still reaches the remaining content. Table exposes one focus stop, so Tab reaches sibling inputs and other table instances, including inside Dialog.
-
-Run `go run ./cmd/table-features-demo` to try sorting, column resizing and frozen
-panes.
+- [List](list.md) displays one item per row without column definitions.

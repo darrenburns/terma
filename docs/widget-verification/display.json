@@ -1,0 +1,666 @@
+[
+  {
+    "page": "docs/widgets/text.md",
+    "text": "`Text` displays plain text or a sequence of styled spans.",
+    "source": "text.go",
+    "symbol": "Text.Render",
+    "evidence": "Render selects renderSpans for nonempty Spans, otherwise renderPlain.",
+    "source_sha256": "542c6687fd9f42f6ed42c5fdf91ef9fea9bab5f2d637f8fb0412e4b6993c3ef6"
+  },
+  {
+    "page": "docs/widgets/text.md",
+    "text": "Bold deployment status above wrapped text.",
+    "source": "docs/widget-examples/display/examples.go",
+    "symbol": "Text",
+    "evidence": "The registered factory renders this content; generated SVG is checked against the factory.",
+    "source_sha256": "42bcd4cd0b664b5a9de719dce4050dfa3ff5f017c1bb19fc8bd58dd2f51b0760"
+  },
+  {
+    "page": "docs/widgets/text.md",
+    "text": "`Content` supplies plain text, and nonempty `Spans` take precedence.",
+    "source": "text.go",
+    "symbol": "Text.textContent",
+    "evidence": "Concatenates spans when len(Spans)>0 and otherwise returns Content.",
+    "source_sha256": "542c6687fd9f42f6ed42c5fdf91ef9fea9bab5f2d637f8fb0412e4b6993c3ef6"
+  },
+  {
+    "page": "docs/widgets/text.md",
+    "text": "`WrapNone` is the default and clips lines at the available width.",
+    "source": "text.go",
+    "symbol": "Text.renderPlain",
+    "evidence": "WrapNone is the zero enum; renderPlain truncates with ansi.Truncate.",
+    "source_sha256": "542c6687fd9f42f6ed42c5fdf91ef9fea9bab5f2d637f8fb0412e4b6993c3ef6"
+  },
+  {
+    "page": "docs/widgets/text.md",
+    "text": "`WrapSoft` wraps at word boundaries and breaks words that exceed the available width.",
+    "source": "text.go",
+    "symbol": "wrapText",
+    "evidence": "WrapSoft calls Wordwrap then HardWrap for overlong words.",
+    "source_sha256": "542c6687fd9f42f6ed42c5fdf91ef9fea9bab5f2d637f8fb0412e4b6993c3ef6"
+  },
+  {
+    "page": "docs/widgets/text.md",
+    "text": "`WrapHard` breaks lines at the available width.",
+    "source": "text.go",
+    "symbol": "wrapText",
+    "evidence": "WrapHard calls textutil.HardWrap.",
+    "source_sha256": "542c6687fd9f42f6ed42c5fdf91ef9fea9bab5f2d637f8fb0412e4b6993c3ef6"
+  },
+  {
+    "page": "docs/widgets/text.md",
+    "text": "`TextAlignLeft`, `TextAlignCenter`, and `TextAlignRight` position each line within the available width.",
+    "source": "text.go",
+    "symbol": "alignLine",
+    "evidence": "Computes 0, half remaining width, or remaining width.",
+    "source_sha256": "542c6687fd9f42f6ed42c5fdf91ef9fea9bab5f2d637f8fb0412e4b6993c3ef6"
+  },
+  {
+    "page": "docs/widgets/text.md",
+    "text": "`Style` sets dimensions, colors, padding, borders, and text decoration.",
+    "source": "style.go",
+    "symbol": "Style",
+    "evidence": "Style declares dimension, color, box, and decoration fields consumed by Text.",
+    "source_sha256": "589e24c7728cfcb014ed75e1e4b869314a36c1d722bcdb8199cdad312f933395"
+  },
+  {
+    "page": "docs/widgets/text.md",
+    "text": "Span styles can override the base text style.",
+    "source": "render.go",
+    "symbol": "DrawSpan",
+    "evidence": "DrawSpan merges span style over the base style.",
+    "source_sha256": "c0f360ae9480e92b7a570432257466a329d8715bea8dd4d157aafcc18552d9d5"
+  },
+  {
+    "page": "docs/widgets/text.md",
+    "text": "For changing values, [PresentedText](presentedtext.md) provides reactive text helpers.",
+    "source": "presented_text.go",
+    "symbol": "SignalText",
+    "evidence": "SignalText reads the signal in Paint.",
+    "source_sha256": "bca8c95970d4c4971d70494959bfb8ce5bc7967291b9cf0c599a43821fa5cefd"
+  },
+  {
+    "page": "docs/widgets/presentedtext.md",
+    "text": "`PresentedText` separates the text used for layout from the text drawn during painting.",
+    "source": "presented_text.go",
+    "symbol": "PresentedText",
+    "evidence": "LayoutText and Paint are consumed separately by BuildLayoutNode and Render.",
+    "source_sha256": "bca8c95970d4c4971d70494959bfb8ce5bc7967291b9cf0c599a43821fa5cefd"
+  },
+  {
+    "page": "docs/widgets/presentedtext.md",
+    "text": "A reactive counter and an Add one button.",
+    "source": "docs/widget-examples/display/examples.go",
+    "symbol": "PresentedText",
+    "evidence": "The registered factory renders this content; generated SVG is checked against the factory.",
+    "source_sha256": "42bcd4cd0b664b5a9de719dce4050dfa3ff5f017c1bb19fc8bd58dd2f51b0760"
+  },
+  {
+    "page": "docs/widgets/presentedtext.md",
+    "text": "`SignalText` formats a `Signal` value during painting.",
+    "source": "presented_text.go",
+    "symbol": "SignalText",
+    "evidence": "Paint calls format(signal.Get()).",
+    "source_sha256": "bca8c95970d4c4971d70494959bfb8ce5bc7967291b9cf0c599a43821fa5cefd"
+  },
+  {
+    "page": "docs/widgets/presentedtext.md",
+    "text": "`SignalText` uses the current formatted value as its layout text.",
+    "source": "presented_text.go",
+    "symbol": "SignalText",
+    "evidence": "CurrentLayoutText calls valueText(signal.Peek()).",
+    "source_sha256": "bca8c95970d4c4971d70494959bfb8ce5bc7967291b9cf0c599a43821fa5cefd"
+  },
+  {
+    "page": "docs/widgets/presentedtext.md",
+    "text": "`SignalMarkup` parses a formatted signal value as markup.",
+    "source": "presented_text.go",
+    "symbol": "SignalMarkup",
+    "evidence": "Paint calls ParseMarkup with formatted signal.Get().",
+    "source_sha256": "bca8c95970d4c4971d70494959bfb8ce5bc7967291b9cf0c599a43821fa5cefd"
+  },
+  {
+    "page": "docs/widgets/presentedtext.md",
+    "text": "`AnySignalText` and `AnySignalMarkup` provide the same behavior for `AnySignal` values.",
+    "source": "presented_text.go",
+    "symbol": "AnySignalText",
+    "evidence": "Both AnySignal functions mirror their Signal variants.",
+    "source_sha256": "bca8c95970d4c4971d70494959bfb8ce5bc7967291b9cf0c599a43821fa5cefd"
+  },
+  {
+    "page": "docs/widgets/presentedtext.md",
+    "text": "`ComputedText` and `ComputedSpans` use a callback for visible content and keep their layout based on the supplied `layoutText`.",
+    "source": "presented_text.go",
+    "symbol": "ComputedText",
+    "evidence": "Both factories delegate to PresentText with stable layoutText and a Paint callback.",
+    "source_sha256": "bca8c95970d4c4971d70494959bfb8ce5bc7967291b9cf0c599a43821fa5cefd"
+  },
+  {
+    "page": "docs/widgets/presentedtext.md",
+    "text": "Signal reads in the paint callback subscribe to paint updates.",
+    "source": "signal.go",
+    "symbol": "withSignalRead",
+    "evidence": "Signal.Get registers currentSignalRead.phase; Render runs in readPhasePaint.",
+    "source_sha256": "ceddbd9b6ac8984b48225b2fb69d696c7eab29b450f86d401deb4bbc64df5be8"
+  },
+  {
+    "page": "docs/widgets/presentedtext.md",
+    "text": "With `LayoutStyle.Width` or `LayoutStyle.Height` explicitly set to `Auto`, a signal helper can request layout when its formatted content changes size.",
+    "source": "widget.go",
+    "symbol": "widgetNode.updateIntrinsicCache; widgetNode.intrinsicSizeChanged",
+    "evidence": "Only explicit Auto dimensions enable intrinsic size comparisons; SignalText and SignalMarkup provide current formatted layout text through CurrentLayoutText.",
+    "source_sha256": "32b05f4f7381d427517715accd471d9f4afc77f14f3db70df364fd80ba76b760"
+  },
+  {
+    "page": "docs/widgets/presentedtext.md",
+    "text": "`PresentText` accepts a custom callback that returns content, spans, and style.",
+    "source": "presented_text.go",
+    "symbol": "PresentText",
+    "evidence": "The callback returns PresentedTextPaint containing Content, Spans, and Style.",
+    "source_sha256": "bca8c95970d4c4971d70494959bfb8ce5bc7967291b9cf0c599a43821fa5cefd"
+  },
+  {
+    "page": "docs/widgets/presentedtext.md",
+    "text": "For static content, [Text](text.md) accepts plain text and spans directly.",
+    "source": "text.go",
+    "symbol": "Text",
+    "evidence": "Content and Spans are struct fields.",
+    "source_sha256": "542c6687fd9f42f6ed42c5fdf91ef9fea9bab5f2d637f8fb0412e4b6993c3ef6"
+  },
+  {
+    "page": "docs/widgets/progressbar.md",
+    "text": "`ProgressBar` displays a horizontal bar with a progress value between zero and one.",
+    "source": "progressbar.go",
+    "symbol": "ProgressBar.Render",
+    "evidence": "Progress is clamped and converted to eighth-cell fill widths.",
+    "source_sha256": "bfe9938ade2d8853abd33e23cfd4cf9946b56e54e057b9775b184d45e4d30ea2"
+  },
+  {
+    "page": "docs/widgets/progressbar.md",
+    "text": "An upload label above a bar filled to 65%.",
+    "source": "docs/widget-examples/display/examples.go",
+    "symbol": "ProgressBar",
+    "evidence": "The registered factory renders this content; generated SVG is checked against the factory.",
+    "source_sha256": "42bcd4cd0b664b5a9de719dce4050dfa3ff5f017c1bb19fc8bd58dd2f51b0760"
+  },
+  {
+    "page": "docs/widgets/progressbar.md",
+    "text": "`Progress: 0` draws an empty bar, and `Progress: 1` fills the bar.",
+    "source": "progressbar.go",
+    "symbol": "ProgressBar.Render",
+    "evidence": "filledEighths is int(progress * width * 8).",
+    "source_sha256": "bfe9938ade2d8853abd33e23cfd4cf9946b56e54e057b9775b184d45e4d30ea2"
+  },
+  {
+    "page": "docs/widgets/progressbar.md",
+    "text": "Values below zero or above one are clamped during rendering.",
+    "source": "progressbar.go",
+    "symbol": "ProgressBar.Render",
+    "evidence": "Explicit clamps before calculating fill.",
+    "source_sha256": "bfe9938ade2d8853abd33e23cfd4cf9946b56e54e057b9775b184d45e4d30ea2"
+  },
+  {
+    "page": "docs/widgets/progressbar.md",
+    "text": "The default width is `Flex(1)`, and the default height is `Cells(1)`.",
+    "source": "progressbar.go",
+    "symbol": "ProgressBar.GetContentDimensions",
+    "evidence": "Unset dimensions resolve to Flex(1) and Cells(1).",
+    "source_sha256": "bfe9938ade2d8853abd33e23cfd4cf9946b56e54e057b9775b184d45e4d30ea2"
+  },
+  {
+    "page": "docs/widgets/progressbar.md",
+    "text": "`Style.Width` and `Style.Height` override those defaults.",
+    "source": "progressbar.go",
+    "symbol": "ProgressBar.GetContentDimensions",
+    "evidence": "Style dimensions are checked before defaults.",
+    "source_sha256": "bfe9938ade2d8853abd33e23cfd4cf9946b56e54e057b9775b184d45e4d30ea2"
+  },
+  {
+    "page": "docs/widgets/progressbar.md",
+    "text": "`FilledColor` defaults to the theme primary color, and `UnfilledColor` defaults to the theme surface color.",
+    "source": "progressbar.go",
+    "symbol": "ProgressBar.Render",
+    "evidence": "Unset colors resolve from Theme.Primary and Theme.Surface.",
+    "source_sha256": "bfe9938ade2d8853abd33e23cfd4cf9946b56e54e057b9775b184d45e4d30ea2"
+  },
+  {
+    "page": "docs/widgets/progressbar.md",
+    "text": "Partial blocks represent eighths of a terminal cell.",
+    "source": "progressbar.go",
+    "symbol": "progressBarChars",
+    "evidence": "Characters include one-eighth through seven-eighths and full block.",
+    "source_sha256": "bfe9938ade2d8853abd33e23cfd4cf9946b56e54e057b9775b184d45e4d30ea2"
+  },
+  {
+    "page": "docs/widgets/progressbar.md",
+    "text": "The bar does not add a percentage label.",
+    "source": "progressbar.go",
+    "symbol": "ProgressBar.Render",
+    "evidence": "Render draws only fill blocks and empty spaces.",
+    "source_sha256": "bfe9938ade2d8853abd33e23cfd4cf9946b56e54e057b9775b184d45e4d30ea2"
+  },
+  {
+    "page": "docs/widgets/progressbar.md",
+    "text": "The [animation guide](../animation.md) covers animated values for transitions between progress values.",
+    "source": "docs/animation.md",
+    "symbol": "AnimatedValue",
+    "evidence": "The guide includes AnimatedValue progress examples.",
+    "source_sha256": "439d407e8187617ae2fd376fdb4ca31f8798b52cc4f2eb9a1cc40c62ca27511d"
+  },
+  {
+    "page": "docs/widgets/sparkline.md",
+    "text": "`Sparkline` displays numeric values as a compact chart of Unicode bars.",
+    "source": "sparkline.go",
+    "symbol": "Sparkline.Render",
+    "evidence": "Render normalizes each value and selects a bar glyph.",
+    "source_sha256": "25079f30a0b48eb790543aa6aaca60717e82181a957d03e610cd4d2959791117"
+  },
+  {
+    "page": "docs/widgets/sparkline.md",
+    "text": "A requests label above a colored sparkline.",
+    "source": "docs/widget-examples/display/examples.go",
+    "symbol": "Sparkline",
+    "evidence": "The registered factory renders this content; generated SVG is checked against the factory.",
+    "source_sha256": "42bcd4cd0b664b5a9de719dce4050dfa3ff5f017c1bb19fc8bd58dd2f51b0760"
+  },
+  {
+    "page": "docs/widgets/sparkline.md",
+    "text": "`Values` contains the data points in display order.",
+    "source": "sparkline.go",
+    "symbol": "Sparkline.Render",
+    "evidence": "Render loops through resampled values in order.",
+    "source_sha256": "25079f30a0b48eb790543aa6aaca60717e82181a957d03e610cd4d2959791117"
+  },
+  {
+    "page": "docs/widgets/sparkline.md",
+    "text": "The default width matches the number of values, and the default height is one cell.",
+    "source": "sparkline.go",
+    "symbol": "Sparkline.GetContentDimensions",
+    "evidence": "Defaults return Cells(len(Values)) and Cells(1).",
+    "source_sha256": "25079f30a0b48eb790543aa6aaca60717e82181a957d03e610cd4d2959791117"
+  },
+  {
+    "page": "docs/widgets/sparkline.md",
+    "text": "A different width resamples the values to fit the available cells.",
+    "source": "sparkline.go",
+    "symbol": "sparklineResample",
+    "evidence": "Calls downsample or upsample depending on width.",
+    "source_sha256": "25079f30a0b48eb790543aa6aaca60717e82181a957d03e610cd4d2959791117"
+  },
+  {
+    "page": "docs/widgets/sparkline.md",
+    "text": "When the width exceeds one cell, downsampling averages groups of values, and upsampling interpolates between values.",
+    "source": "sparkline.go",
+    "symbol": "sparklineDownsample",
+    "evidence": "Downsample computes sum/count; Upsample computes linear interpolation.",
+    "source_sha256": "25079f30a0b48eb790543aa6aaca60717e82181a957d03e610cd4d2959791117"
+  },
+  {
+    "page": "docs/widgets/sparkline.md",
+    "text": "`MinValue` and `MaxValue` override the bounds calculated from the resampled values.",
+    "source": "sparkline.go",
+    "symbol": "Sparkline.Render",
+    "evidence": "MinMax computed after resampling then overridden by nonnil fields.",
+    "source_sha256": "25079f30a0b48eb790543aa6aaca60717e82181a957d03e610cd4d2959791117"
+  },
+  {
+    "page": "docs/widgets/sparkline.md",
+    "text": "`ColorByValue` enables a gradient from the theme muted text color to the primary color.",
+    "source": "sparkline.go",
+    "symbol": "Sparkline.Render",
+    "evidence": "When enabled without explicit scale, NewGradient(TextMuted,Primary) is used.",
+    "source_sha256": "25079f30a0b48eb790543aa6aaca60717e82181a957d03e610cd4d2959791117"
+  },
+  {
+    "page": "docs/widgets/sparkline.md",
+    "text": "`ValueColorScale` supplies a custom gradient and enables coloring by value.",
+    "source": "sparkline.go",
+    "symbol": "Sparkline.Render",
+    "evidence": "useValueColor is ColorByValue || ValueColorScale.IsSet().",
+    "source_sha256": "25079f30a0b48eb790543aa6aaca60717e82181a957d03e610cd4d2959791117"
+  },
+  {
+    "page": "docs/widgets/sparkline.md",
+    "text": "`Bars` replaces the default glyphs when it contains at least two entries.",
+    "source": "sparkline.go",
+    "symbol": "Sparkline.Render",
+    "evidence": "Uses defaults when len(Bars)<2.",
+    "source_sha256": "25079f30a0b48eb790543aa6aaca60717e82181a957d03e610cd4d2959791117"
+  },
+  {
+    "page": "docs/widgets/sparkline.md",
+    "text": "For a single completion value, [ProgressBar](progressbar.md) displays a filled horizontal bar.",
+    "source": "progressbar.go",
+    "symbol": "ProgressBar.Render",
+    "evidence": "Draws one horizontal completion bar.",
+    "source_sha256": "bfe9938ade2d8853abd33e23cfd4cf9946b56e54e057b9775b184d45e4d30ea2"
+  },
+  {
+    "page": "docs/widgets/spinner.md",
+    "text": "`Spinner` displays frames from a `SpinnerState`.",
+    "source": "spinner.go",
+    "symbol": "Spinner.Render",
+    "evidence": "Uses currentFrame from State.animation.",
+    "source_sha256": "0e971a3bdf2a9158ce5ecd9bb0559ea994931cd36482306020c6c7ab7b74f931"
+  },
+  {
+    "page": "docs/widgets/spinner.md",
+    "text": "A spinner frame beside Fetching updates.",
+    "source": "docs/widget-examples/display/examples.go",
+    "symbol": "Spinner",
+    "evidence": "The registered factory renders this content; generated SVG is checked against the factory.",
+    "source_sha256": "42bcd4cd0b664b5a9de719dce4050dfa3ff5f017c1bb19fc8bd58dd2f51b0760"
+  },
+  {
+    "page": "docs/widgets/spinner.md",
+    "text": "`NewSpinnerState` creates the animation from a `SpinnerStyle`.",
+    "source": "spinner.go",
+    "symbol": "NewSpinnerState",
+    "evidence": "Creates looping FrameAnimation with style Frames and FrameTime.",
+    "source_sha256": "0e971a3bdf2a9158ce5ecd9bb0559ea994931cd36482306020c6c7ab7b74f931"
+  },
+  {
+    "page": "docs/widgets/spinner.md",
+    "text": "`Start()` begins the animation, and `Stop()` stops it.",
+    "source": "spinner.go",
+    "symbol": "SpinnerState.Start",
+    "evidence": "Start and Stop forward to frame animation.",
+    "source_sha256": "0e971a3bdf2a9158ce5ecd9bb0559ea994931cd36482306020c6c7ab7b74f931"
+  },
+  {
+    "page": "docs/widgets/spinner.md",
+    "text": "Calling `Start()` before `Run()` schedules animation when the controller becomes available.",
+    "source": "frame_animation.go",
+    "symbol": "FrameAnimation.Start",
+    "evidence": "pendingStart is set when currentController is nil, Value registers later.",
+    "source_sha256": "78cb274cc0640e4253514be6a5609d02fbb30f24cff72b3e4d3ecad1be84a68d"
+  },
+  {
+    "page": "docs/widgets/spinner.md",
+    "text": "The image shows one frame of the running example.",
+    "source": "docs/widget-examples/display/examples.go",
+    "symbol": "Spinner",
+    "evidence": "The factory calls state.Start and snapshot captures the initial frame.",
+    "source_sha256": "42bcd4cd0b664b5a9de719dce4050dfa3ff5f017c1bb19fc8bd58dd2f51b0760"
+  },
+  {
+    "page": "docs/widgets/spinner.md",
+    "text": "Built-in styles include `SpinnerDots`, `SpinnerLine`, `SpinnerCircle`, and `SpinnerArrow`.",
+    "source": "spinner.go",
+    "symbol": "SpinnerDots",
+    "evidence": "All named styles declared in the var block.",
+    "source_sha256": "0e971a3bdf2a9158ce5ecd9bb0559ea994931cd36482306020c6c7ab7b74f931"
+  },
+  {
+    "page": "docs/widgets/spinner.md",
+    "text": "A custom `SpinnerStyle` defines `Frames` and `FrameTime`.",
+    "source": "spinner.go",
+    "symbol": "SpinnerStyle",
+    "evidence": "Struct has these fields.",
+    "source_sha256": "0e971a3bdf2a9158ce5ecd9bb0559ea994931cd36482306020c6c7ab7b74f931"
+  },
+  {
+    "page": "docs/widgets/spinner.md",
+    "text": "The frame list must contain at least one entry.",
+    "source": "frame_animation.go",
+    "symbol": "NewFrameAnimation",
+    "evidence": "Empty Frames panics.",
+    "source_sha256": "78cb274cc0640e4253514be6a5609d02fbb30f24cff72b3e4d3ecad1be84a68d"
+  },
+  {
+    "page": "docs/widgets/spinner.md",
+    "text": "Automatic width accommodates the widest frame.",
+    "source": "spinner.go",
+    "symbol": "Spinner.BuildLayoutNode",
+    "evidence": "BuildLayoutNode creates Text using widestFrame.",
+    "source_sha256": "0e971a3bdf2a9158ce5ecd9bb0559ea994931cd36482306020c6c7ab7b74f931"
+  },
+  {
+    "page": "docs/widgets/spinner.md",
+    "text": "A label is a separate widget beside the spinner.",
+    "source": "docs/widget-examples/display/examples.go",
+    "symbol": "Spinner",
+    "evidence": "Example composes Row with Spinner and Text.",
+    "source_sha256": "42bcd4cd0b664b5a9de719dce4050dfa3ff5f017c1bb19fc8bd58dd2f51b0760"
+  },
+  {
+    "page": "docs/widgets/spinner.md",
+    "text": "The [animation guide](../animation.md) describes frame animations and other animation types.",
+    "source": "docs/animation.md",
+    "symbol": "FrameAnimation",
+    "evidence": "Existing guide has a FrameAnimation section.",
+    "source_sha256": "439d407e8187617ae2fd376fdb4ca31f8798b52cc4f2eb9a1cc40c62ca27511d"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "`Image` displays a decoded image through an `ImageResource`.",
+    "source": "image.go",
+    "symbol": "Image",
+    "evidence": "Source is *ImageResource and Render calls DrawImage.",
+    "source_sha256": "4cada73e77b41919f620ed9c6f3531da07b938ffe4e3e73a788e3f9618383dba"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "A generated color gradient rendered with half-block characters.",
+    "source": "docs/widget-examples/display/examples.go",
+    "symbol": "Image",
+    "evidence": "The registered factory renders this content; generated SVG is checked against the factory.",
+    "source_sha256": "42bcd4cd0b664b5a9de719dce4050dfa3ff5f017c1bb19fc8bd58dd2f51b0760"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "`NewImageResource` copies source pixels into immutable NRGBA storage.",
+    "source": "image.go",
+    "symbol": "NewImageResource",
+    "evidence": "Copies via draw.Draw into private zero-origin pixels.",
+    "source_sha256": "4cada73e77b41919f620ed9c6f3531da07b938ffe4e3e73a788e3f9618383dba"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "Nil images and images with empty bounds return an error.",
+    "source": "image.go",
+    "symbol": "NewImageResource",
+    "evidence": "Checks nil and empty bounds before allocation.",
+    "source_sha256": "4cada73e77b41919f620ed9c6f3531da07b938ffe4e3e73a788e3f9618383dba"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "The resource can be shared between widgets.",
+    "source": "image.go",
+    "symbol": "ImageResource",
+    "evidence": "Private immutable pixels used as shared pointer.",
+    "source_sha256": "4cada73e77b41919f620ed9c6f3531da07b938ffe4e3e73a788e3f9618383dba"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "A nil `Source` draws nothing.",
+    "source": "image.go",
+    "symbol": "RenderContext.DrawImage",
+    "evidence": "Returns early when source is nil.",
+    "source_sha256": "4cada73e77b41919f620ed9c6f3531da07b938ffe4e3e73a788e3f9618383dba"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "`ImageContain` is the default and centers the complete image while preserving its aspect ratio.",
+    "source": "image.go",
+    "symbol": "mapImage",
+    "evidence": "Zero fit chooses proportional minimum scale with centered dest.",
+    "source_sha256": "4cada73e77b41919f620ed9c6f3531da07b938ffe4e3e73a788e3f9618383dba"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "`ImageCover` fills the box with a centered crop.",
+    "source": "image.go",
+    "symbol": "mapImage",
+    "evidence": "Crop is centered based on aspect ratios.",
+    "source_sha256": "4cada73e77b41919f620ed9c6f3531da07b938ffe4e3e73a788e3f9618383dba"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "`ImageStretch` fills the box without preserving the aspect ratio.",
+    "source": "image.go",
+    "symbol": "mapImage",
+    "evidence": "Full crop and unchanged destination rectangle.",
+    "source_sha256": "4cada73e77b41919f620ed9c6f3531da07b938ffe4e3e73a788e3f9618383dba"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "`Style.Width` and `Style.Height` set the content box in terminal cells.",
+    "source": "image.go",
+    "symbol": "Image.GetContentDimensions",
+    "evidence": "Returns Style dimensions, used by layout.",
+    "source_sha256": "4cada73e77b41919f620ed9c6f3531da07b938ffe4e3e73a788e3f9618383dba"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "`TERMA_IMAGE_PROTOCOL` accepts `auto`, `kitty`, `sixel`, or `blocks`.",
+    "source": "image_detection.go",
+    "symbol": "newImageDetector",
+    "evidence": "Reads environment, normalizes accepted options.",
+    "source_sha256": "287fdbdce89205d3f9979f2a6b4b229338ab6c02040dc9ebe2b97228a3be30af"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "Automatic detection chooses native output when the terminal capabilities permit it.",
+    "source": "image_detection.go",
+    "symbol": "imageDetector.protocol",
+    "evidence": "Protocol selection checks terminal capability and geometry.",
+    "source_sha256": "287fdbdce89205d3f9979f2a6b4b229338ab6c02040dc9ebe2b97228a3be30af"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "Snapshots always contain the colored half-block representation.",
+    "source": "image.go",
+    "symbol": "RenderContext.DrawImage",
+    "evidence": "Logical buffer cells are drawn with halfBlockCell before native presentation.",
+    "source_sha256": "4cada73e77b41919f620ed9c6f3531da07b938ffe4e3e73a788e3f9618383dba"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "Native Kitty output also checks the linked Ultraviolet implementation for indexed-color support.",
+    "source": "image_detection.go",
+    "symbol": "imageDetector.protocol",
+    "evidence": "Protocol selection gates Kitty on kittyColorEncodingSafe.",
+    "source_sha256": "287fdbdce89205d3f9979f2a6b4b229338ab6c02040dc9ebe2b97228a3be30af"
+  },
+  {
+    "page": "docs/widgets/image.md",
+    "text": "The image demo exercises image fitting and overlays.",
+    "source": "cmd/image-demo/main.go",
+    "symbol": "Build",
+    "evidence": "Demo contains fit switching and floating overlay.",
+    "source_sha256": "13ef664a888286ad1ae16d63bb4caf267a7eae20ecf426fc24a0887586bed21b"
+  },
+  {
+    "page": "docs/widgets/custom-widgets.md",
+    "text": "A custom widget implements `Build(ctx BuildContext) Widget`.",
+    "source": "widget.go",
+    "symbol": "Widget",
+    "evidence": "Interface contains Build(BuildContext) Widget.",
+    "source_sha256": "32b05f4f7381d427517715accd471d9f4afc77f14f3db70df364fd80ba76b760"
+  },
+  {
+    "page": "docs/widgets/custom-widgets.md",
+    "text": "A custom Greeting widget displaying Hello, Terma!",
+    "source": "docs/widget-examples/display/examples.go",
+    "symbol": "CustomWidget",
+    "evidence": "The registered factory renders this content; generated SVG is checked against the factory.",
+    "source_sha256": "42bcd4cd0b664b5a9de719dce4050dfa3ff5f017c1bb19fc8bd58dd2f51b0760"
+  },
+  {
+    "page": "docs/widgets/custom-widgets.md",
+    "text": "A composite widget returns other widgets from `Build()`.",
+    "source": "docs/widget-examples/display/examples.go",
+    "symbol": "Greeting.Build",
+    "evidence": "Build returns t.Text.",
+    "source_sha256": "42bcd4cd0b664b5a9de719dce4050dfa3ff5f017c1bb19fc8bd58dd2f51b0760"
+  },
+  {
+    "page": "docs/widgets/custom-widgets.md",
+    "text": "The example stores its input in the `Name` field and returns a `Text` widget.",
+    "source": "docs/widget-examples/display/examples.go",
+    "symbol": "Greeting",
+    "evidence": "Name is string field, Build concatenates it into Text.",
+    "source_sha256": "42bcd4cd0b664b5a9de719dce4050dfa3ff5f017c1bb19fc8bd58dd2f51b0760"
+  },
+  {
+    "page": "docs/widgets/custom-widgets.md",
+    "text": "`BuildContext.Theme()` supplies the active theme.",
+    "source": "context.go",
+    "symbol": "BuildContext.Theme",
+    "evidence": "Theme returns current theme with tracking.",
+    "source_sha256": "fcd6c06d715389bf732739b85aa55cefccbfc80ab2a11e99cf52485242468718"
+  },
+  {
+    "page": "docs/widgets/custom-widgets.md",
+    "text": "Signal reads in `Build()` subscribe that widget to rebuilds when the value changes.",
+    "source": "signal.go",
+    "symbol": "Signal.Get",
+    "evidence": "Get records phase subscription and Set notifies subscribed nodes.",
+    "source_sha256": "ceddbd9b6ac8984b48225b2fb69d696c7eab29b450f86d401deb4bbc64df5be8"
+  },
+  {
+    "page": "docs/widgets/custom-widgets.md",
+    "text": "Update signals in handlers or setup code rather than during `Build()`.",
+    "source": "AGENTS.md",
+    "symbol": "Build",
+    "evidence": "Repository instruction forbids signal mutations in Build to avoid refresh loops.",
+    "source_sha256": "8df65c6034b1ea21ad90ee37af29feed47dcf55bb55cdb563aaf0033847cef70"
+  },
+  {
+    "page": "docs/widgets/custom-widgets.md",
+    "text": "`SignalText` and the other [reactive text helpers](presentedtext.md) read changing text during painting.",
+    "source": "presented_text.go",
+    "symbol": "SignalText",
+    "evidence": "Paint closure calls signal.Get.",
+    "source_sha256": "bca8c95970d4c4971d70494959bfb8ce5bc7967291b9cf0c599a43821fa5cefd"
+  },
+  {
+    "page": "docs/widgets/custom-widgets.md",
+    "text": "A leaf widget that draws its own content also implements `Renderable`.",
+    "source": "widget.go",
+    "symbol": "Renderable",
+    "evidence": "Renderable declares Render(*RenderContext).",
+    "source_sha256": "32b05f4f7381d427517715accd471d9f4afc77f14f3db70df364fd80ba76b760"
+  },
+  {
+    "page": "docs/widgets/custom-widgets.md",
+    "text": "`ContainerLayoutBuilder` receives child layout nodes and returns the container layout node.",
+    "source": "widget.go",
+    "symbol": "ContainerLayoutBuilder",
+    "evidence": "BuildContainerLayoutNode signature and preferred container API.",
+    "source_sha256": "32b05f4f7381d427517715accd471d9f4afc77f14f3db70df364fd80ba76b760"
+  },
+  {
+    "page": "docs/widgets/custom-widgets.md",
+    "text": "The [layout overview](../layout/index.md) lists containers for arranging child widgets.",
+    "source": "docs/layout/index.md",
+    "symbol": "Layout",
+    "evidence": "Navigation page links each layout container.",
+    "source_sha256": "b2d246e477067242e1b610f1e4a395bf2f2b15c26d91d95a702b1ddb03106934"
+  },
+  {
+    "page": "docs/widgets/sparkline.md",
+    "text": "At a width of one cell, the sparkline uses the final value.",
+    "source": "sparkline.go",
+    "symbol": "sparklineResample",
+    "evidence": "width==1 returns values[len(values)-1] before other resampling branches.",
+    "source_sha256": "25079f30a0b48eb790543aa6aaca60717e82181a957d03e610cd4d2959791117"
+  },
+  {
+    "page": "docs/widgets/presentedtext.md",
+    "text": "Create the signal once and retain it across `Build()` calls, as the example factory does.",
+    "source": "docs/widget-examples/main.go",
+    "symbol": "run",
+    "evidence": "run calls the selected example factory once before t.Run; PresentedText factory captures its single signal in both SignalText and the button handler.",
+    "source_sha256": "5de4ff7a0929c5d516adb0333835fdb461fbaabd31bfe12fd16c71ec47eb6760"
+  },
+  {
+    "page": "docs/widgets/spinner.md",
+    "text": "Create and start the state once outside `Build()`, and retain it while the spinner is in use.",
+    "source": "frame_animation.go",
+    "symbol": "FrameAnimation.Start",
+    "evidence": "Start sets the frame signal; invoking it during Build would mutate reactive state. The example factory starts one state before Run.",
+    "source_sha256": "78cb274cc0640e4253514be6a5609d02fbb30f24cff72b3e4d3ecad1be84a68d"
+  }
+]

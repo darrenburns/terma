@@ -1,0 +1,474 @@
+[
+  {
+    "page": "docs/widgets/index.md",
+    "text": "A Terma widget implements `Build(BuildContext) Widget`.",
+    "source": "widget.go",
+    "symbol": "Widget",
+    "evidence": "The Widget interface declares this method.",
+    "source_sha256": "32b05f4f7381d427517715accd471d9f4afc77f14f3db70df364fd80ba76b760"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "The examples included below use `t` as the import alias for `github.com/darrenburns/terma`.",
+    "source": "docs/widget-examples/display/examples.go",
+    "symbol": "import",
+    "evidence": "Example source imports the module as t.",
+    "source_sha256": "42bcd4cd0b664b5a9de719dce4050dfa3ff5f017c1bb19fc8bd58dd2f51b0760"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "Each example function returns a widget that can be passed to `t.Run`.",
+    "source": "app.go",
+    "symbol": "Run",
+    "evidence": "Run accepts root Widget.",
+    "source_sha256": "39dcf182ca7390e4c520f392dc0a909c2473aed160ba1bcbf4774ee1192d278a"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "This complete program displays a text widget.",
+    "source": "docs/minimal-examples/widget-start/main.go",
+    "symbol": "main",
+    "evidence": "The program calls t.Run with a Text widget.",
+    "source_sha256": "45eb12dab3318f7b52ca2c5d42d186088625785754f25d85b57811d30b773f3e"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "From the repository root, run a documented example with `-widget`.",
+    "source": "docs/widget-examples/main.go",
+    "symbol": "run",
+    "evidence": "Runner flag selects example by Name.",
+    "source_sha256": "5de4ff7a0929c5d516adb0333835fdb461fbaabd31bfe12fd16c71ec47eb6760"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "`-list` prints all available example names.",
+    "source": "docs/widget-examples/main.go",
+    "symbol": "run",
+    "evidence": "The list branch iterates every registered example.",
+    "source_sha256": "5de4ff7a0929c5d516adb0333835fdb461fbaabd31bfe12fd16c71ec47eb6760"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "The [getting started guide](../getting-started.md) walks through a complete application.",
+    "source": "docs/getting-started.md",
+    "symbol": "Your First Terma App",
+    "evidence": "The guide introduces a runnable Hello World app and builds larger examples.",
+    "source_sha256": "ff4b26e772c3f3c8ff8a43d573fc8992083bf7955c83d5c304e3e1c7acbee26e"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Text](text.md)",
+    "source": "text.go",
+    "symbol": "Text",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "542c6687fd9f42f6ed42c5fdf91ef9fea9bab5f2d637f8fb0412e4b6993c3ef6"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[PresentedText](presentedtext.md)",
+    "source": "presented_text.go",
+    "symbol": "PresentedText",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "bca8c95970d4c4971d70494959bfb8ce5bc7967291b9cf0c599a43821fa5cefd"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Image](image.md)",
+    "source": "image.go",
+    "symbol": "Image",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "4cada73e77b41919f620ed9c6f3531da07b938ffe4e3e73a788e3f9618383dba"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[ProgressBar](progressbar.md)",
+    "source": "progressbar.go",
+    "symbol": "ProgressBar",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "bfe9938ade2d8853abd33e23cfd4cf9946b56e54e057b9775b184d45e4d30ea2"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Sparkline](sparkline.md)",
+    "source": "sparkline.go",
+    "symbol": "Sparkline",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "25079f30a0b48eb790543aa6aaca60717e82181a957d03e610cd4d2959791117"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Spinner](spinner.md)",
+    "source": "spinner.go",
+    "symbol": "Spinner",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "0e971a3bdf2a9158ce5ecd9bb0559ea994931cd36482306020c6c7ab7b74f931"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Button](button.md)",
+    "source": "button.go",
+    "symbol": "Button",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "e0908aca7963fe2a93deed91cab6dfd0fef881b75abfcc724196259409ef52af"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Checkbox](checkbox.md)",
+    "source": "checkbox.go",
+    "symbol": "Checkbox",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "49137000126fc5b8810944b4e3c4d816b4554749100f56da9779dc033af1fce2"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[TextInput](textinput.md)",
+    "source": "text_input.go",
+    "symbol": "TextInput",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[TextArea](textarea.md)",
+    "source": "text_area.go",
+    "symbol": "TextArea",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Autocomplete](autocomplete.md)",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[CommandPalette](commandpalette.md)",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Menu](menu.md)",
+    "source": "menu.go",
+    "symbol": "Menu",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Dialog](dialog.md)",
+    "source": "dialog.go",
+    "symbol": "Dialog",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "d3ea53bfca94d3a3e1990c530062a38c6fb62084de9b8969f133318add19ed0c"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[List](list.md)",
+    "source": "list.go",
+    "symbol": "List",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Table](table.md)",
+    "source": "table.go",
+    "symbol": "Table",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Tree](tree.md)",
+    "source": "tree.go",
+    "symbol": "Tree",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[DirectoryTree](directorytree.md)",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[TabBar and TabView](tabs.md)",
+    "source": "tab.go",
+    "symbol": "TabBar",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Breadcrumbs](breadcrumbs.md)",
+    "source": "breadcrumbs.go",
+    "symbol": "Breadcrumbs",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "a7a397e7b2da58f0f833127c49bdd403be46b323a22de1fd7cf79991faf9a36d"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[KeybindBar](keybindbar.md)",
+    "source": "keybindbar.go",
+    "symbol": "KeybindBar",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "0c4bb426e0cedb7033fc9d016875c49e369ced585f619acd79247dcca8585efa"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Jumper](jumper.md)",
+    "source": "jump.go",
+    "symbol": "Jumper",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Switcher](switcher.md)",
+    "source": "switcher.go",
+    "symbol": "Switcher",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "4c0c6f104ed9a27944f202894d2b770d601ef057991457969bbe65f262b7a40f"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[FocusTrap](focustrap.md)",
+    "source": "focus_trap.go",
+    "symbol": "FocusTrap",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "99fc5f6ed65f1af8cdd5eb1294dac39e3e49435c15e4b7e2f08f63d516b62404"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Tooltip](tooltip.md)",
+    "source": "tooltip.go",
+    "symbol": "Tooltip",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "650263c7ed0c4679a0c517c5a690408682c1c5e1fd1fd648313e971a495be9d3"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[EmptyWidget](empty.md)",
+    "source": "conditional.go",
+    "symbol": "EmptyWidget",
+    "evidence": "The linked page documents the exported widget declared in this source.",
+    "source_sha256": "a4e927da2b86e1560d43c4a549114091037889ab7df34e96e7011289488930b2"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Row and Column](../layout/row-column.md), [Dock](../layout/dock.md), [Scrollable](../layout/scrollable.md), [SplitPane](../layout/splitpane.md), and [Stack](../layout/stack.md) arrange child widgets.",
+    "source": "layout.go",
+    "symbol": "Row",
+    "evidence": "These container types are implemented in layout.go, dock.go, scroll.go, spacer.go, split_pane.go, and stack.go.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Floating](../floating.md) places content above the main layout.",
+    "source": "floating.go",
+    "symbol": "Floating.Build",
+    "evidence": "Build registers float content with FloatCollector.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Custom widgets](custom-widgets.md) compose existing widgets or implement their own rendering.",
+    "source": "widget.go",
+    "symbol": "Widget",
+    "evidence": "Widget and Renderable define composition and rendering interfaces.",
+    "source_sha256": "32b05f4f7381d427517715accd471d9f4afc77f14f3db70df364fd80ba76b760"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Spacer](../layout/spacer.md) reserves empty layout space.",
+    "source": "spacer.go",
+    "symbol": "Spacer.BuildLayoutNode",
+    "evidence": "Spacer creates empty layout space without children.",
+    "source_sha256": "18de75940252ea7d0039c17e3424609d1fc6d6407bef835aa095b98a357abe47"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "Create state once, outside `Build()`, so rebuilds preserve edits, selection, and scroll position.",
+    "source": "docs/widget-examples/inputs/examples.go",
+    "symbol": "TextInput",
+    "evidence": "The example allocates TextInputState once before returning the widget, retaining state across rebuilds.",
+    "source_sha256": "e1532654763a50fffdea246c8179024388c85bee900b31092cc3b5a880d16685"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Markdown](markdown.md)",
+    "source": "markdown.go",
+    "symbol": "Markdown",
+    "evidence": "The linked guide documents Markdown, declared in this source.",
+    "source_sha256": "5d9ba84bd4b04557d435e6970be864938d4dce8a5eea305f322ef1f4a3d8f194"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[SelectBox](select.md)",
+    "source": "select_box.go",
+    "symbol": "SelectBox",
+    "evidence": "The linked guide documents SelectBox, declared in this source.",
+    "source_sha256": "b237415060cd4988f6db5fc9f9f57e73b92270afa72f1570f9f96086d362af09"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[Form and Field](form.md)",
+    "source": "form.go",
+    "symbol": "Form",
+    "evidence": "The linked guide documents Form and Field composition.",
+    "source_sha256": "e0f64abb87b2b74185752bffb84805d9450c37079b7cbf1082e3f4a68a76dbb6"
+  },
+  {
+    "page": "docs/widgets/index.md",
+    "text": "[FilePicker](filepicker.md)",
+    "source": "filepicker.go",
+    "symbol": "FilePicker",
+    "evidence": "The linked guide documents FilePicker, declared in this source.",
+    "source_sha256": "6acc9c4381c01ec6f0bb0065d5a8a6b3ec13fc1cdc1719f3c787b94efa4f0200"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "Layout widgets control arrangement and spacing.",
+    "source": "layout.go",
+    "symbol": "Row.BuildContainerLayoutNode",
+    "evidence": "Containers build layout nodes that position child layouts.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "[Row and Column](row-column.md)",
+    "source": "layout.go",
+    "symbol": "Row",
+    "evidence": "The linked page documents the exported type in this source.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "[Dock](dock.md)",
+    "source": "dock.go",
+    "symbol": "Dock",
+    "evidence": "The linked page documents the exported type in this source.",
+    "source_sha256": "79ba3abda02e55f574c829a12a008e1d16e5c4852f039aa829fd55f73a991701"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "[Scrollable](scrollable.md)",
+    "source": "scroll.go",
+    "symbol": "Scrollable",
+    "evidence": "The linked page documents the exported type in this source.",
+    "source_sha256": "3cc4f0ae7f9f204d029e9e7e8234d9bead0f8d5b426b5ee84b3f2c671955d614"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "[Spacer](spacer.md)",
+    "source": "spacer.go",
+    "symbol": "Spacer",
+    "evidence": "The linked page documents the exported type in this source.",
+    "source_sha256": "18de75940252ea7d0039c17e3424609d1fc6d6407bef835aa095b98a357abe47"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "[SplitPane](splitpane.md)",
+    "source": "split_pane.go",
+    "symbol": "SplitPane",
+    "evidence": "The linked page documents the exported type in this source.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "[Stack and Positioned](stack.md)",
+    "source": "stack.go",
+    "symbol": "Stack",
+    "evidence": "The linked page documents the exported type in this source.",
+    "source_sha256": "501c3bcf1f46943d292ce03a7f9e1235c698399ce667d881a9bb3cd7b4116862"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "[Floating](../floating.md)",
+    "source": "floating.go",
+    "symbol": "Floating",
+    "evidence": "The Floating widget supplies positioned overlay content.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "`Style.Width` and `Style.Height` accept `Auto`, `Cells(n)`, `Flex(n)`, or `Percent(n)`.",
+    "source": "dimension.go",
+    "symbol": "Dimension",
+    "evidence": "Dimension declares these constructors; Style dimensions are Dimension fields.",
+    "source_sha256": "84ecc296f1737eec5dc3f26082d9c8488b28045324adb69a72bff96dc4146d8a"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "`Auto` sizes from content, and `Cells(n)` requests a fixed number of cells.",
+    "source": "dimension.go",
+    "symbol": "Auto",
+    "evidence": "Dimension definitions document and implement these sizing modes.",
+    "source_sha256": "84ecc296f1737eec5dc3f26082d9c8488b28045324adb69a72bff96dc4146d8a"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "`Flex(n)` assigns a share of the remaining space along a container axis.",
+    "source": "layout/linear_node.go",
+    "symbol": "LinearNode",
+    "evidence": "LinearNode allocates remaining space proportionally to flex factors.",
+    "source_sha256": "74c626be6d08fb2d551640169bf347a9722daa07f10b61f24d4673587a1bdcf0"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "`Percent(n)` requests a percentage of the parent's available space, before fixed-size siblings consume their share.",
+    "source": "dimension.go",
+    "symbol": "Percent",
+    "evidence": "Percent documents that its percentage uses total available space rather than remaining space after fixed children.",
+    "source_sha256": "84ecc296f1737eec5dc3f26082d9c8488b28045324adb69a72bff96dc4146d8a"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "`Style.MinWidth`, `Style.MaxWidth`, `Style.MinHeight`, and `Style.MaxHeight` constrain dimensions.",
+    "source": "style.go",
+    "symbol": "Style",
+    "evidence": "These Dimension fields populate DimensionSet constraints.",
+    "source_sha256": "589e24c7728cfcb014ed75e1e4b869314a36c1d722bcdb8199cdad312f933395"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "`Row.Spacing` and `Column.Spacing` set gaps between children.",
+    "source": "layout.go",
+    "symbol": "Row.BuildContainerLayoutNode",
+    "evidence": "Spacing passed into LinearNode.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "`Style.Padding` reserves space inside the border.",
+    "source": "layout/box_model.go",
+    "symbol": "BoxModel",
+    "evidence": "Padding shrinks inner content bounds.",
+    "source_sha256": "510b8085b1c5220e1dc035116777b4b0604ea08f989f429d05249ab2442dd60b"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "`Style.Margin` reserves space outside the border.",
+    "source": "layout/linear_node.go",
+    "symbol": "LinearNode",
+    "evidence": "Child margins are added around child sizes in layout.",
+    "source_sha256": "74c626be6d08fb2d551640169bf347a9722daa07f10b61f24d4673587a1bdcf0"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "The [widget examples](../widgets/index.md#run-an-example) include runnable layouts.",
+    "source": "docs/widget-examples/main.go",
+    "symbol": "examples",
+    "evidence": "Runner includes layout.Examples registrations.",
+    "source_sha256": "5de4ff7a0929c5d516adb0333835fdb461fbaabd31bfe12fd16c71ec47eb6760"
+  }
+]

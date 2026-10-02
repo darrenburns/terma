@@ -1,0 +1,1202 @@
+[
+  {
+    "page": "docs/widgets/switcher.md",
+    "text": "`Switcher` displays the child whose map key matches `Active`.",
+    "source": "switcher.go",
+    "symbol": "Switcher.BuildLayoutNode",
+    "evidence": "The method looks up Children[Active].",
+    "source_sha256": "4c0c6f104ed9a27944f202894d2b770d601ef057991457969bbe65f262b7a40f"
+  },
+  {
+    "page": "docs/widgets/switcher.md",
+    "text": "Files and Activity buttons above the active file list.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "Switcher",
+    "evidence": "The example constructs the named visible content and widget arrangement; the shared renderer renders this exact example to the linked SVG.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/widgets/switcher.md",
+    "text": "`Children` is a `map[string]Widget`.",
+    "source": "switcher.go",
+    "symbol": "Switcher",
+    "evidence": "The Children field has this exact type.",
+    "source_sha256": "4c0c6f104ed9a27944f202894d2b770d601ef057991457969bbe65f262b7a40f"
+  },
+  {
+    "page": "docs/widgets/switcher.md",
+    "text": "Inactive children are not built or rendered.",
+    "source": "render_tree.go",
+    "symbol": "extractChildren",
+    "evidence": "The Switcher branch returns only the active child.",
+    "source_sha256": "c53390175ca3f507b3d44a31c4954f7248704b33809b1044d55d5044a2e69b70"
+  },
+  {
+    "page": "docs/widgets/switcher.md",
+    "text": "An unknown `Active` key produces empty content.",
+    "source": "switcher.go",
+    "symbol": "Switcher.BuildLayoutNode",
+    "evidence": "The missing-key branch builds EmptyWidget.",
+    "source_sha256": "4c0c6f104ed9a27944f202894d2b770d601ef057991457969bbe65f262b7a40f"
+  },
+  {
+    "page": "docs/widgets/switcher.md",
+    "text": "The example changes `Active` through button callbacks and a `Signal[string]`.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "switcherExample.Build",
+    "evidence": "Button callbacks set the active signal and Switcher reads it.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/widgets/switcher.md",
+    "text": "State stored outside the switched child can be reused when that child becomes active again.",
+    "source": "switcher.go",
+    "symbol": "Switcher",
+    "evidence": "The documented state model keeps signals and state objects outside widgets; switching does not destroy those objects.",
+    "source_sha256": "4c0c6f104ed9a27944f202894d2b770d601ef057991457969bbe65f262b7a40f"
+  },
+  {
+    "page": "docs/widgets/switcher.md",
+    "text": "`Style` supplies the container dimensions, padding, border, margin, and colors.",
+    "source": "switcher.go",
+    "symbol": "Switcher.GetStyle; Switcher.BuildContainerLayoutNode",
+    "evidence": "Style is exposed for paint and contributes dimensions and insets to its ColumnNode.",
+    "source_sha256": "4c0c6f104ed9a27944f202894d2b770d601ef057991457969bbe65f262b7a40f"
+  },
+  {
+    "page": "docs/widgets/switcher.md",
+    "text": "[Tabs](tabs.md)",
+    "source": "tab.go",
+    "symbol": "TabBar",
+    "evidence": "TabBar provides tab selection.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/switcher.md",
+    "text": "[EmptyWidget](empty.md)",
+    "source": "conditional.go",
+    "symbol": "EmptyWidget",
+    "evidence": "EmptyWidget is the missing-key fallback.",
+    "source_sha256": "a4e927da2b86e1560d43c4a549114091037889ab7df34e96e7011289488930b2"
+  },
+  {
+    "page": "docs/layout/row-column.md",
+    "text": "`Row` arranges children horizontally, and `Column` arranges children vertically.",
+    "source": "layout.go",
+    "symbol": "Row; Column",
+    "evidence": "BuildContainerLayoutNode returns RowNode or ColumnNode respectively.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/layout/row-column.md",
+    "text": "A column with a heading, a row of three filenames, and a file count.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "RowColumn",
+    "evidence": "The example constructs the named visible content and widget arrangement; the shared renderer renders this exact example to the linked SVG.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/layout/row-column.md",
+    "text": "`Children` contains the widgets in display order.",
+    "source": "layout.go",
+    "symbol": "Row.BuildContainerLayoutNode; Column.BuildContainerLayoutNode",
+    "evidence": "Both methods iterate their child slices in order and create matching layout nodes.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/layout/row-column.md",
+    "text": "`Spacing` adds a gap in cells between children.",
+    "source": "layout/linear_node.go",
+    "symbol": "LinearNode",
+    "evidence": "Spacing contributes to total main-axis space and child positions.",
+    "source_sha256": "74c626be6d08fb2d551640169bf347a9722daa07f10b61f24d4673587a1bdcf0"
+  },
+  {
+    "page": "docs/layout/row-column.md",
+    "text": "`MainAlign` accepts `MainAxisStart`, `MainAxisCenter`, or `MainAxisEnd` to position the group along its main axis.",
+    "source": "layout.go",
+    "symbol": "MainAxisAlign",
+    "evidence": "The enum declares start, center, and end, and both container builders pass the converted value to layout.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/layout/row-column.md",
+    "text": "The main axis is horizontal for `Row` and vertical for `Column`.",
+    "source": "layout.go",
+    "symbol": "Row; Column",
+    "evidence": "The MainAlign fields specify their respective axes.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/layout/row-column.md",
+    "text": "`CrossAlign` positions children on the other axis with `CrossAxisStart`, `CrossAxisCenter`, `CrossAxisEnd`, or `CrossAxisStretch`.",
+    "source": "layout/linear_node.go",
+    "symbol": "LinearNode.positionChildren",
+    "evidence": "The cross-axis switch implements each positioning mode.",
+    "source_sha256": "74c626be6d08fb2d551640169bf347a9722daa07f10b61f24d4673587a1bdcf0"
+  },
+  {
+    "page": "docs/layout/row-column.md",
+    "text": "Both alignments default to their start values.",
+    "source": "layout.go",
+    "symbol": "MainAxisStart; CrossAxisStart",
+    "evidence": "Both start constants have iota value zero; layout_helpers.go preserves that value when converting.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/layout/row-column.md",
+    "text": "`Style.Width` and `Style.Height` set the container dimensions.",
+    "source": "layout.go",
+    "symbol": "Row.GetContentDimensions; Column.GetContentDimensions",
+    "evidence": "Both methods prefer Style.GetDimensions over deprecated direct fields.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/layout/row-column.md",
+    "text": "A bare `Spacer{}` expands along the main axis without stretching the other axis.",
+    "source": "spacer.go",
+    "symbol": "mainAxisSpacerNode",
+    "evidence": "The function replaces a bare Spacer with one explicit flex dimension for the containing axis.",
+    "source_sha256": "18de75940252ea7d0039c17e3424609d1fc6d6407bef835aa095b98a357abe47"
+  },
+  {
+    "page": "docs/layout/row-column.md",
+    "text": "[Spacer](spacer.md)",
+    "source": "spacer.go",
+    "symbol": "Spacer",
+    "evidence": "Spacer is the layout gap widget.",
+    "source_sha256": "18de75940252ea7d0039c17e3424609d1fc6d6407bef835aa095b98a357abe47"
+  },
+  {
+    "page": "docs/layout/row-column.md",
+    "text": "[Dock](dock.md)",
+    "source": "dock.go",
+    "symbol": "Dock",
+    "evidence": "Dock is the edge layout widget.",
+    "source_sha256": "79ba3abda02e55f574c829a12a008e1d16e5c4852f039aa829fd55f73a991701"
+  },
+  {
+    "page": "docs/layout/dock.md",
+    "text": "`Dock` places children at the edges and gives `Body` the remaining space.",
+    "source": "layout/dock_node.go",
+    "symbol": "DockNode.ComputeLayout",
+    "evidence": "Edge children reduce remainingRect before body layout.",
+    "source_sha256": "70b5431fd25d4c4878c1ffec1c59a0d3f2bc95df78326f01cce8e2e77b603255"
+  },
+  {
+    "page": "docs/layout/dock.md",
+    "text": "A file browser with a header, a left sidebar, a preview, and a footer.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "Dock",
+    "evidence": "The example constructs the named visible content and widget arrangement; the shared renderer renders this exact example to the linked SVG.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/layout/dock.md",
+    "text": "`Top`, `Bottom`, `Left`, and `Right` each accept a slice of widgets.",
+    "source": "dock.go",
+    "symbol": "Dock",
+    "evidence": "All four edge fields have type []Widget.",
+    "source_sha256": "79ba3abda02e55f574c829a12a008e1d16e5c4852f039aa829fd55f73a991701"
+  },
+  {
+    "page": "docs/layout/dock.md",
+    "text": "The default `DockOrder` is `Top`, `Bottom`, `Left`, then `Right`.",
+    "source": "dock.go",
+    "symbol": "Dock.dockOrder",
+    "evidence": "Empty DockOrder returns these four values in that order.",
+    "source_sha256": "79ba3abda02e55f574c829a12a008e1d16e5c4852f039aa829fd55f73a991701"
+  },
+  {
+    "page": "docs/layout/dock.md",
+    "text": "Each edge consumes space before the next edge is laid out.",
+    "source": "layout/dock_node.go",
+    "symbol": "DockNode.ComputeLayout",
+    "evidence": "The method updates the remaining rectangle for each processed child.",
+    "source_sha256": "70b5431fd25d4c4878c1ffec1c59a0d3f2bc95df78326f01cce8e2e77b603255"
+  },
+  {
+    "page": "docs/layout/dock.md",
+    "text": "When left and right edges come first, their children receive the full available height.",
+    "source": "layout/dock_node_test.go",
+    "symbol": "TestDockNode_CustomOrder",
+    "evidence": "LeftRightFirst checks the side children have height 100 and top/bottom have reduced width.",
+    "source_sha256": "d504ba4ff571d1f9bb64211a341da998639afd159d789deb3ac0836d392e9c3a"
+  },
+  {
+    "page": "docs/layout/dock.md",
+    "text": "Multiple top or bottom children stack vertically, while multiple left or right children stack horizontally.",
+    "source": "layout/dock_node_test.go",
+    "symbol": "TestDockNode_MultipleChildrenPerEdge",
+    "evidence": "The test verifies that successive edge children consume space along the corresponding axis.",
+    "source_sha256": "d504ba4ff571d1f9bb64211a341da998639afd159d789deb3ac0836d392e9c3a"
+  },
+  {
+    "page": "docs/layout/dock.md",
+    "text": "An unset width or height defaults to `Flex(1)`.",
+    "source": "dock.go",
+    "symbol": "Dock.GetContentDimensions",
+    "evidence": "After Style and legacy field fallback, each unset dimension becomes Flex(1).",
+    "source_sha256": "79ba3abda02e55f574c829a12a008e1d16e5c4852f039aa829fd55f73a991701"
+  },
+  {
+    "page": "docs/layout/dock.md",
+    "text": "`Style` supplies dimensions, padding, border, margin, and colors.",
+    "source": "dock.go",
+    "symbol": "Dock.GetStyle; Dock.BuildContainerLayoutNode",
+    "evidence": "Style is exposed to rendering and its dimensions and insets are passed into DockNode.",
+    "source_sha256": "79ba3abda02e55f574c829a12a008e1d16e5c4852f039aa829fd55f73a991701"
+  },
+  {
+    "page": "docs/layout/dock.md",
+    "text": "[Row and Column](row-column.md)",
+    "source": "layout.go",
+    "symbol": "Row; Column",
+    "evidence": "Row and Column arrange sequences of widgets.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "`Scrollable` displays a child through a viewport with vertical and horizontal scroll offsets.",
+    "source": "scroll.go",
+    "symbol": "Scrollable.BuildContainerLayoutNode",
+    "evidence": "The layout node receives ScrollOffset and ScrollOffsetX from state.",
+    "source_sha256": "3cc4f0ae7f9f204d029e9e7e8234d9bead0f8d5b426b5ee84b3f2c671955d614"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "The first four log lines inside a bordered scrollable viewport.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "Scrollable",
+    "evidence": "The example constructs the named visible content and widget arrangement; the shared renderer renders this exact example to the linked SVG.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "`State` holds the scroll position and is created with `NewScrollState()`.",
+    "source": "scroll.go",
+    "symbol": "Scrollable; NewScrollState",
+    "evidence": "State is a *ScrollState and the constructor initializes both offset signals to zero.",
+    "source_sha256": "3cc4f0ae7f9f204d029e9e7e8234d9bead0f8d5b426b5ee84b3f2c671955d614"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "The example keeps seven log lines inside a four-line content area.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "Scrollable",
+    "evidence": "The example sets height to Cells(4) and supplies seven newline-separated lines.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "`Focusable: true` enables keyboard focus unless `DisableFocus` or `DisableScroll` is set.",
+    "source": "scroll.go",
+    "symbol": "Scrollable.IsFocusable",
+    "evidence": "The return expression requires Focusable and both disabling flags to be false.",
+    "source_sha256": "3cc4f0ae7f9f204d029e9e7e8234d9bead0f8d5b426b5ee84b3f2c671955d614"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "Arrow keys scroll one cell, and `h`, `j`, `k`, and `l` provide the corresponding left, down, up, and right controls.",
+    "source": "scroll.go",
+    "symbol": "Scrollable.OnKey",
+    "evidence": "Each arrow/letter pair calls the matching Scroll method with 1.",
+    "source_sha256": "3cc4f0ae7f9f204d029e9e7e8234d9bead0f8d5b426b5ee84b3f2c671955d614"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "Page Up and Page Down scroll by the viewport height.",
+    "source": "scroll.go",
+    "symbol": "ScrollState.PageUp; ScrollState.PageDown",
+    "evidence": "Both methods pass viewportHeight to their animated scroll helpers.",
+    "source_sha256": "3cc4f0ae7f9f204d029e9e7e8234d9bead0f8d5b426b5ee84b3f2c671955d614"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "Home and End move to the top and bottom.",
+    "source": "scroll.go",
+    "symbol": "Scrollable.OnKey",
+    "evidence": "The home and end cases call glideToTop and glideToBottom.",
+    "source_sha256": "3cc4f0ae7f9f204d029e9e7e8234d9bead0f8d5b426b5ee84b3f2c671955d614"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "The vertical scrollbar supports dragging its thumb.",
+    "source": "scroll_test.go",
+    "symbol": "TestScrollable_DragScrollbarThumb",
+    "evidence": "The test sends a drag and checks the changed offset.",
+    "source_sha256": "0a6e2e43f12e8bafdcd2f1888198b348353a6ea0baeb66d1b7ea05412ebff79f"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "`DisableScroll` disables scrolling and hides the scrollbar.",
+    "source": "scroll.go",
+    "symbol": "Scrollable",
+    "evidence": "The DisableScroll field contract promises both effects; canScrollY/canScrollX reject the flag and render.go guards renderScrollbar with !DisableScroll.",
+    "source_sha256": "3cc4f0ae7f9f204d029e9e7e8234d9bead0f8d5b426b5ee84b3f2c671955d614"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "With `State.PinToBottom` enabled, content growth follows the bottom while the state remains pinned.",
+    "source": "scroll_test.go",
+    "symbol": "TestScrollState_UpdateLayout_AutoScrollsWhenPinned",
+    "evidence": "The test enables pinning, grows content, and checks the new bottom offset.",
+    "source_sha256": "0a6e2e43f12e8bafdcd2f1888198b348353a6ea0baeb66d1b7ea05412ebff79f"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "Scrolling up breaks that pin, and scrolling back to the bottom restores it.",
+    "source": "scroll_test.go",
+    "symbol": "TestScrollState_ScrollUp_BreaksPin; TestScrollState_ScrollDown_ReengagesPin",
+    "evidence": "These tests check pin state before and after scrolling.",
+    "source_sha256": "0a6e2e43f12e8bafdcd2f1888198b348353a6ea0baeb66d1b7ea05412ebff79f"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "`ScrollToView(y, height)` adjusts the offset to reveal a vertical region of the child.",
+    "source": "scroll.go",
+    "symbol": "ScrollState.scrollToView",
+    "evidence": "It compares the region against the viewport and moves the offset to reveal it.",
+    "source_sha256": "3cc4f0ae7f9f204d029e9e7e8234d9bead0f8d5b426b5ee84b3f2c671955d614"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "[Column](row-column.md)",
+    "source": "layout.go",
+    "symbol": "Column",
+    "evidence": "Column arranges vertical content.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "[List](../widgets/list.md)",
+    "source": "list.go",
+    "symbol": "List",
+    "evidence": "List is a collection widget.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/layout/spacer.md",
+    "text": "`Spacer` occupies layout space without drawing content.",
+    "source": "spacer.go",
+    "symbol": "Spacer.BuildLayoutNode; Spacer.Render",
+    "evidence": "The layout method returns a BoxNode and Render is empty.",
+    "source_sha256": "18de75940252ea7d0039c17e3424609d1fc6d6407bef835aa095b98a357abe47"
+  },
+  {
+    "page": "docs/layout/spacer.md",
+    "text": "A flexible empty gap separates the project label from the file count.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "Spacer",
+    "evidence": "The example constructs the named visible content and widget arrangement; the shared renderer renders this exact example to the linked SVG.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/layout/spacer.md",
+    "text": "A bare `Spacer{}` expands horizontally in a `Row` and vertically in a `Column`.",
+    "source": "spacer.go",
+    "symbol": "mainAxisSpacerNode",
+    "evidence": "The helper chooses Flex(1) on the container main axis.",
+    "source_sha256": "18de75940252ea7d0039c17e3424609d1fc6d6407bef835aa095b98a357abe47"
+  },
+  {
+    "page": "docs/layout/spacer.md",
+    "text": "Outside those containers, both unset dimensions resolve to `Flex(1)`.",
+    "source": "spacer.go",
+    "symbol": "Spacer.GetContentDimensions",
+    "evidence": "When both dimensions are unset the method returns Flex(1), Flex(1).",
+    "source_sha256": "18de75940252ea7d0039c17e3424609d1fc6d6407bef835aa095b98a357abe47"
+  },
+  {
+    "page": "docs/layout/spacer.md",
+    "text": "`Width: Cells(n)` or `Height: Cells(n)` creates a fixed gap on that axis.",
+    "source": "spacer.go",
+    "symbol": "Spacer.BuildLayoutNode",
+    "evidence": "The dimensions become min/max bounds of the BoxNode.",
+    "source_sha256": "18de75940252ea7d0039c17e3424609d1fc6d6407bef835aa095b98a357abe47"
+  },
+  {
+    "page": "docs/layout/spacer.md",
+    "text": "When one dimension is set, the other defaults to `Auto`.",
+    "source": "spacer.go",
+    "symbol": "Spacer.GetContentDimensions",
+    "evidence": "After the both-unset case, each remaining unset value is replaced with Auto.",
+    "source_sha256": "18de75940252ea7d0039c17e3424609d1fc6d6407bef835aa095b98a357abe47"
+  },
+  {
+    "page": "docs/layout/spacer.md",
+    "text": "An `Auto` dimension measures zero because the spacer has no content.",
+    "source": "spacer.go",
+    "symbol": "Spacer.BuildLayoutNode",
+    "evidence": "The empty BoxNode has no measurement callback or content.",
+    "source_sha256": "18de75940252ea7d0039c17e3424609d1fc6d6407bef835aa095b98a357abe47"
+  },
+  {
+    "page": "docs/layout/spacer.md",
+    "text": "`MinWidth`, `MaxWidth`, `MinHeight`, and `MaxHeight` constrain the gap.",
+    "source": "spacer.go",
+    "symbol": "Spacer.BuildLayoutNode",
+    "evidence": "All four fields are forwarded into dimensionSetToMinMax.",
+    "source_sha256": "18de75940252ea7d0039c17e3424609d1fc6d6407bef835aa095b98a357abe47"
+  },
+  {
+    "page": "docs/layout/spacer.md",
+    "text": "[Row and Column](row-column.md)",
+    "source": "layout.go",
+    "symbol": "Row; Column",
+    "evidence": "These containers apply main-axis Spacer behavior.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "`SplitPane` divides space between two children with a draggable divider.",
+    "source": "split_pane.go",
+    "symbol": "SplitPane.OnMouseDown; SplitPane.OnMouseMove",
+    "evidence": "Mouse down starts divider dragging and mouse movement updates position.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "A file list and a preview separated by a vertical divider.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "SplitPane",
+    "evidence": "The example constructs the named visible content and widget arrangement; the shared renderer renders this exact example to the linked SVG.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "`First` and `Second` supply the panes, and `State` stores the divider position.",
+    "source": "split_pane.go",
+    "symbol": "SplitPane; SplitPaneState",
+    "evidence": "The widget has two Widget fields and a state holding DividerPosition.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "`NewSplitPaneState(0.35)` gives the first pane 35% of the space available after the divider, subject to minimum pane sizes.",
+    "source": "split_pane.go",
+    "symbol": "computeSplitPaneMetrics",
+    "evidence": "computeSplitPaneMetrics multiplies available space (total minus divider size) by the clamped divider fraction and enforces minimum pane sizes.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "Initial positions outside the open interval from 0 to 1 fall back to 0.5.",
+    "source": "split_pane.go",
+    "symbol": "NewSplitPaneState",
+    "evidence": "The constructor replaces <=0 or >=1 with 0.5.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "`SplitHorizontal` places the panes side by side and is the default.",
+    "source": "split_pane.go",
+    "symbol": "SplitPaneOrientation",
+    "evidence": "SplitHorizontal is the zero-valued enum for left/right division.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "`SplitVertical` places the first pane above the second.",
+    "source": "split_pane_test.go",
+    "symbol": "TestSplitPane_Vertical",
+    "evidence": "The vertical snapshot builds Top pane first and Bottom pane second.",
+    "source_sha256": "1a72a48e91de449e1a77a047da8879661f60484871bc2ecd58c7959ad660743b"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "With `SplitHorizontal`, Left and Right, or `h` and `l`, change the divider position in steps of 0.05.",
+    "source": "split_pane.go",
+    "symbol": "SplitPane.Keybinds; SplitPane.shiftDivider",
+    "evidence": "Horizontal keybinds call shifts of plus/minus splitPaneKeyStep, defined as 0.05.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "With `SplitVertical`, Up and Down change the position by the same amount.",
+    "source": "split_pane.go",
+    "symbol": "SplitPane.Keybinds; SplitPane.moveDividerUp; SplitPane.moveDividerDown",
+    "evidence": "Vertical keybinds call the same step-based shifts.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "`DividerSize` and `MinPaneSize` both default to one cell.",
+    "source": "split_pane.go",
+    "symbol": "SplitPane.dividerSize; SplitPane.minPaneSize",
+    "evidence": "Each helper returns 1 when its field is nonpositive.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "`DisableFocus` removes the divider from keyboard focus and disables its resize keybindings.",
+    "source": "split_pane.go",
+    "symbol": "SplitPane.IsFocusable; SplitPane.Keybinds",
+    "evidence": "Both methods reject DisableFocus.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "When focus is enabled and `OnExitFocus` is set, Escape calls it.",
+    "source": "split_pane.go",
+    "symbol": "SplitPane.Keybinds",
+    "evidence": "Keybinds returns nil when DisableFocus is true and only adds Escape when OnExitFocus is non-nil.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "`DividerChar` and the divider color fields customize its appearance.",
+    "source": "split_pane.go",
+    "symbol": "SplitPane.dividerChar; SplitPane.dividerProviders",
+    "evidence": "These helpers resolve the configured glyph and foreground/background providers.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "[Row and Column](row-column.md)",
+    "source": "layout.go",
+    "symbol": "Row; Column",
+    "evidence": "The linear containers provide non-draggable alternatives.",
+    "source_sha256": "394b8dc145ee5d2332d4b6cc95ecd1b3993b8b90d88c09e9ac71f7f54533fff4"
+  },
+  {
+    "page": "docs/layout/stack.md",
+    "text": "`Stack` overlays children in order, with the last child on top.",
+    "source": "stack.go",
+    "symbol": "Stack",
+    "evidence": "Children are declared in bottom-to-top order and rendered in that order.",
+    "source_sha256": "501c3bcf1f46943d292ce03a7f9e1235c698399ce667d881a9bb3cd7b4116862"
+  },
+  {
+    "page": "docs/layout/stack.md",
+    "text": "A Draft label overlays the top-right area of a preview panel.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "Stack",
+    "evidence": "The example constructs the named visible content and widget arrangement; the shared renderer renders this exact example to the linked SVG.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/layout/stack.md",
+    "text": "Unpositioned children use the stack's `Alignment`.",
+    "source": "stack.go",
+    "symbol": "Stack.BuildContainerLayoutNode",
+    "evidence": "Alignment values map to the StackNode default alignment.",
+    "source_sha256": "501c3bcf1f46943d292ce03a7f9e1235c698399ce667d881a9bb3cd7b4116862"
+  },
+  {
+    "page": "docs/layout/stack.md",
+    "text": "Without an explicit size, non-positioned children determine the stack's intrinsic size.",
+    "source": "layout/stack_node.go",
+    "symbol": "StackNode.ComputeLayout",
+    "evidence": "The first measurement pass takes maximum contributions only from non-positioned children.",
+    "source_sha256": "7badeab73a1513df2a49884220e77293fc190f6f2cfe56bc41b5e46ed887788c"
+  },
+  {
+    "page": "docs/layout/stack.md",
+    "text": "`Positioned` children do not contribute to that intrinsic size.",
+    "source": "layout/stack_node_test.go",
+    "symbol": "TestStackNode_PositionedDoesNotAffectSize",
+    "evidence": "Tests verify positioned children do not determine stack size.",
+    "source_sha256": "8b125955e0140b4c68386eaf3858911a3fa04502fb778f94da9796c1401f375b"
+  },
+  {
+    "page": "docs/layout/stack.md",
+    "text": "`Positioned` uses optional `Top`, `Right`, `Bottom`, and `Left` offsets from the stack's border box.",
+    "source": "layout/stack_node.go",
+    "symbol": "StackChild; StackNode.ComputeLayout",
+    "evidence": "The fields are *int and positioned constraints use border-box dimensions.",
+    "source_sha256": "7badeab73a1513df2a49884220e77293fc190f6f2cfe56bc41b5e46ed887788c"
+  },
+  {
+    "page": "docs/layout/stack.md",
+    "text": "A nil edge leaves that edge unconstrained.",
+    "source": "stack.go",
+    "symbol": "Positioned",
+    "evidence": "Each edge field documents nil as not constrained.",
+    "source_sha256": "501c3bcf1f46943d292ce03a7f9e1235c698399ce667d881a9bb3cd7b4116862"
+  },
+  {
+    "page": "docs/layout/stack.md",
+    "text": "Setting both left and right offsets stretches the child across the remaining width.",
+    "source": "layout/stack_node.go",
+    "symbol": "StackNode.computePositionedConstraints",
+    "evidence": "The two-edge case creates a tight width equal to stackWidth-left-right.",
+    "source_sha256": "7badeab73a1513df2a49884220e77293fc190f6f2cfe56bc41b5e46ed887788c"
+  },
+  {
+    "page": "docs/layout/stack.md",
+    "text": "Setting both top and bottom offsets does the same for height.",
+    "source": "layout/stack_node.go",
+    "symbol": "StackNode.computePositionedConstraints",
+    "evidence": "The two-edge case creates a tight height equal to stackHeight-top-bottom.",
+    "source_sha256": "7badeab73a1513df2a49884220e77293fc190f6f2cfe56bc41b5e46ed887788c"
+  },
+  {
+    "page": "docs/layout/stack.md",
+    "text": "`IntPtr(n)` supplies an edge offset.",
+    "source": "stack.go",
+    "symbol": "IntPtr",
+    "evidence": "The helper returns &n.",
+    "source_sha256": "501c3bcf1f46943d292ce03a7f9e1235c698399ce667d881a9bb3cd7b4116862"
+  },
+  {
+    "page": "docs/layout/stack.md",
+    "text": "`PositionedAt(top, left, child)` sets the top and left offsets.",
+    "source": "stack.go",
+    "symbol": "PositionedAt",
+    "evidence": "The helper returns a Positioned with those fields.",
+    "source_sha256": "501c3bcf1f46943d292ce03a7f9e1235c698399ce667d881a9bb3cd7b4116862"
+  },
+  {
+    "page": "docs/layout/stack.md",
+    "text": "`PositionedFill(child)` sets all four offsets to zero.",
+    "source": "stack.go",
+    "symbol": "PositionedFill",
+    "evidence": "The helper assigns the address of zero to all four edge fields.",
+    "source_sha256": "501c3bcf1f46943d292ce03a7f9e1235c698399ce667d881a9bb3cd7b4116862"
+  },
+  {
+    "page": "docs/layout/stack.md",
+    "text": "[Floating](../floating.md)",
+    "source": "floating.go",
+    "symbol": "Floating",
+    "evidence": "Floating registers content for the overlay renderer.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/widgets/tooltip.md",
+    "text": "`Tooltip` shows contextual text when its child is hovered or focused.",
+    "source": "tooltip.go",
+    "symbol": "Tooltip.isVisible",
+    "evidence": "The method returns true for focused Child or hovered child subtree.",
+    "source_sha256": "650263c7ed0c4679a0c517c5a690408682c1c5e1fd1fd648313e971a495be9d3"
+  },
+  {
+    "page": "docs/widgets/tooltip.md",
+    "text": "A focused Save button with help text below it.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "Tooltip",
+    "evidence": "The example constructs the named visible content and widget arrangement; the shared renderer renders this exact example to the linked SVG.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/widgets/tooltip.md",
+    "text": "`Content` supplies plain text, while nonempty `Spans` take precedence.",
+    "source": "tooltip.go",
+    "symbol": "Tooltip.buildContent",
+    "evidence": "The method returns Text with Spans when len(Spans)>0, otherwise Content.",
+    "source_sha256": "650263c7ed0c4679a0c517c5a690408682c1c5e1fd1fd648313e971a495be9d3"
+  },
+  {
+    "page": "docs/widgets/tooltip.md",
+    "text": "`Position` accepts `TooltipTop`, `TooltipBottom`, `TooltipLeft`, or `TooltipRight`.",
+    "source": "tooltip.go",
+    "symbol": "TooltipPosition",
+    "evidence": "The enum declares these four values.",
+    "source_sha256": "650263c7ed0c4679a0c517c5a690408682c1c5e1fd1fd648313e971a495be9d3"
+  },
+  {
+    "page": "docs/widgets/tooltip.md",
+    "text": "The default position is above the child.",
+    "source": "tooltip.go",
+    "symbol": "TooltipTop; Tooltip.anchorPoint",
+    "evidence": "TooltipTop is zero and maps to AnchorTopCenter.",
+    "source_sha256": "650263c7ed0c4679a0c517c5a690408682c1c5e1fd1fd648313e971a495be9d3"
+  },
+  {
+    "page": "docs/widgets/tooltip.md",
+    "text": "`Offset` sets the gap in cells and defaults to zero.",
+    "source": "tooltip.go",
+    "symbol": "Tooltip.offsetValue",
+    "evidence": "The integer Offset becomes signed X or Y according to position.",
+    "source_sha256": "650263c7ed0c4679a0c517c5a690408682c1c5e1fd1fd648313e971a495be9d3"
+  },
+  {
+    "page": "docs/widgets/tooltip.md",
+    "text": "`Style` overrides the tooltip text's appearance.",
+    "source": "tooltip.go",
+    "symbol": "Tooltip.tooltipStyle",
+    "evidence": "The helper starts with t.Style before filling missing colors and padding.",
+    "source_sha256": "650263c7ed0c4679a0c517c5a690408682c1c5e1fd1fd648313e971a495be9d3"
+  },
+  {
+    "page": "docs/widgets/tooltip.md",
+    "text": "Without color overrides, the tooltip uses the theme's surface and text colors.",
+    "source": "tooltip.go",
+    "symbol": "Tooltip.tooltipStyle",
+    "evidence": "Unset background and foreground providers become theme.Surface and theme.Text.",
+    "source_sha256": "650263c7ed0c4679a0c517c5a690408682c1c5e1fd1fd648313e971a495be9d3"
+  },
+  {
+    "page": "docs/widgets/tooltip.md",
+    "text": "When all padding fields are zero, the tooltip adds one cell on each horizontal side.",
+    "source": "tooltip.go",
+    "symbol": "Tooltip.tooltipStyle",
+    "evidence": "The all-zero check assigns EdgeInsetsXY(1,0).",
+    "source_sha256": "650263c7ed0c4679a0c517c5a690408682c1c5e1fd1fd648313e971a495be9d3"
+  },
+  {
+    "page": "docs/widgets/tooltip.md",
+    "text": "An omitted `ID` uses an automatically generated anchor ID.",
+    "source": "tooltip.go",
+    "symbol": "Tooltip.anchorID",
+    "evidence": "The method returns ctx.AutoID when the explicit ID is empty.",
+    "source_sha256": "650263c7ed0c4679a0c517c5a690408682c1c5e1fd1fd648313e971a495be9d3"
+  },
+  {
+    "page": "docs/widgets/tooltip.md",
+    "text": "A nil child or a disabled context prevents the tooltip from appearing.",
+    "source": "tooltip.go",
+    "symbol": "Tooltip.isVisible",
+    "evidence": "The first condition rejects nil Child or ctx.IsDisabled.",
+    "source_sha256": "650263c7ed0c4679a0c517c5a690408682c1c5e1fd1fd648313e971a495be9d3"
+  },
+  {
+    "page": "docs/widgets/tooltip.md",
+    "text": "[Floating](../floating.md)",
+    "source": "tooltip.go",
+    "symbol": "Tooltip.Build",
+    "evidence": "Tooltip registers a Floating overlay for visible content.",
+    "source_sha256": "650263c7ed0c4679a0c517c5a690408682c1c5e1fd1fd648313e971a495be9d3"
+  },
+  {
+    "page": "docs/widgets/empty.md",
+    "text": "`EmptyWidget` draws nothing and reports zero size.",
+    "source": "conditional.go",
+    "symbol": "EmptyWidget.Layout; EmptyWidget.Render",
+    "evidence": "Layout returns Size{} and Render is empty.",
+    "source_sha256": "a4e927da2b86e1560d43c4a549114091037889ab7df34e96e7011289488930b2"
+  },
+  {
+    "page": "docs/widgets/empty.md",
+    "text": "Build complete and 0 errors appear on adjacent lines without hidden error content.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "Empty",
+    "evidence": "The example constructs the named visible content and widget arrangement; the shared renderer renders this exact example to the linked SVG.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/widgets/empty.md",
+    "text": "`ShowWhen(false, child)` returns `EmptyWidget{}`.",
+    "source": "conditional.go",
+    "symbol": "ShowWhen",
+    "evidence": "The false branch returns EmptyWidget.",
+    "source_sha256": "a4e927da2b86e1560d43c4a549114091037889ab7df34e96e7011289488930b2"
+  },
+  {
+    "page": "docs/widgets/empty.md",
+    "text": "`HideWhen(true, child)` returns the same empty placeholder.",
+    "source": "conditional.go",
+    "symbol": "HideWhen",
+    "evidence": "The helper delegates to ShowWhen(!condition,child).",
+    "source_sha256": "a4e927da2b86e1560d43c4a549114091037889ab7df34e96e7011289488930b2"
+  },
+  {
+    "page": "docs/widgets/empty.md",
+    "text": "The example hides an error message and leaves the two visible lines adjacent.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "Empty",
+    "evidence": "Column has zero spacing and an explicit EmptyWidget plus ShowWhen(false) between two text children.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/widgets/empty.md",
+    "text": "A parent's `Spacing` still applies between its children.",
+    "source": "layout/linear_node.go",
+    "symbol": "LinearNode",
+    "evidence": "Gap calculation uses the child count, including zero-sized children.",
+    "source_sha256": "74c626be6d08fb2d551640169bf347a9722daa07f10b61f24d4673587a1bdcf0"
+  },
+  {
+    "page": "docs/widgets/empty.md",
+    "text": "`Spacer` provides an empty region with explicit or flexible dimensions.",
+    "source": "spacer.go",
+    "symbol": "Spacer.GetContentDimensions",
+    "evidence": "Spacer resolves explicit dimensions or Flex(1) defaults.",
+    "source_sha256": "18de75940252ea7d0039c17e3424609d1fc6d6407bef835aa095b98a357abe47"
+  },
+  {
+    "page": "docs/widgets/empty.md",
+    "text": "[Spacer](../layout/spacer.md)",
+    "source": "spacer.go",
+    "symbol": "Spacer",
+    "evidence": "Spacer reserves empty layout space.",
+    "source_sha256": "18de75940252ea7d0039c17e3424609d1fc6d6407bef835aa095b98a357abe47"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "`Floating` displays a child as an overlay above the main widget tree.",
+    "source": "render.go",
+    "symbol": "Renderer.renderFloats",
+    "evidence": "Floating entries are rendered in the overlay phase.",
+    "source_sha256": "c0f360ae9480e92b7a570432257466a329d8715bea8dd4d157aafcc18552d9d5"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "A centered saved notification overlays the project file list.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "Floating",
+    "evidence": "The example constructs the named visible content and widget arrangement; the shared renderer renders this exact example to the linked SVG.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "`Visible` controls whether the float registers for rendering.",
+    "source": "floating.go",
+    "symbol": "Floating.Build",
+    "evidence": "The false case returns EmptyWidget without adding an entry.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "The float contributes no space to its parent layout.",
+    "source": "floating.go",
+    "symbol": "Floating.Build",
+    "evidence": "Both visible and hidden branches return EmptyWidget.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "Without `Config.AnchorID`, `Config.Position` selects a screen position and `Config.Offset` adjusts it in cells.",
+    "source": "floating.go",
+    "symbol": "calculateAbsolutePosition",
+    "evidence": "The switch computes screen positions and returns x+offset.X,y+offset.Y.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "Positions include the center and the top or bottom at left, center, or right.",
+    "source": "floating.go",
+    "symbol": "FloatPosition",
+    "evidence": "The enum and calculateAbsolutePosition define all listed placements.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "`FloatPositionAbsolute` is the default and uses `Config.Offset` as screen coordinates.",
+    "source": "floating.go",
+    "symbol": "calculateAbsolutePosition",
+    "evidence": "The absolute case sets x,y to zero before adding offset.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "With `Config.AnchorID`, `Config.Anchor` places the overlay relative to that widget.",
+    "source": "floating.go",
+    "symbol": "calculateAnchorPosition",
+    "evidence": "The method uses the anchor bounds and selected anchor point.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "`AnchorBottomLeft` requests placement below the anchor, aligned with its left edge.",
+    "source": "floating.go",
+    "symbol": "calculateAnchorPosition",
+    "evidence": "That case assigns bounds.X and bounds.Y+bounds.Height.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "Other anchor points place it above, below, left, or right, with edge or center alignment.",
+    "source": "floating.go",
+    "symbol": "calculateAnchorPosition",
+    "evidence": "The switch implements the twelve directional anchor constants.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "`Config.Modal: true` adds a backdrop, blocks pointer input to underlying content, and confines Tab navigation to the overlay.",
+    "source": "render.go",
+    "symbol": "Renderer.renderFloats",
+    "evidence": "Modal child content is wrapped in FocusTrap; backdrop and event routing use the modal configuration.",
+    "source_sha256": "c0f360ae9480e92b7a570432257466a329d8715bea8dd4d157aafcc18552d9d5"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "`Config.BackdropColor` overrides the default translucent black backdrop.",
+    "source": "floating.go",
+    "symbol": "DefaultModalBackdropColor; FloatConfig",
+    "evidence": "The default is RGBA(0,0,0,0.5), and FloatConfig includes the override.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "`Config.OnDismiss` receives dismissal requests. Its callback must update the state that controls `Visible` to hide the overlay.",
+    "source": "floating.go",
+    "symbol": "FloatConfig.OnDismiss; Floating.Build",
+    "evidence": "OnDismiss is only a callback; Floating.Build registers content whenever Visible is true. The source example sets the visibility signal false in OnDismiss.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "Escape dismissal defaults to enabled when `Config.OnDismiss` is set.",
+    "source": "floating.go",
+    "symbol": "FloatConfig.shouldDismissOnEsc",
+    "evidence": "An explicit pointer wins; otherwise it returns OnDismiss != nil.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "Outside-click dismissal defaults to enabled for non-modal floats with `Config.OnDismiss`.",
+    "source": "floating.go",
+    "symbol": "FloatConfig.shouldDismissOnClickOutside",
+    "evidence": "An explicit pointer wins; otherwise it returns !Modal && OnDismiss != nil.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "`Config.DismissOnEsc` and `Config.DismissOnClickOutside` override those defaults.",
+    "source": "floating.go",
+    "symbol": "FloatConfig.shouldDismissOnEsc; FloatConfig.shouldDismissOnClickOutside",
+    "evidence": "Each helper returns the pointed-to bool when nonnil.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "`Config.PointerPassthrough: true` lets mouse input reach content beneath the overlay and skips outside-click dismissal.",
+    "source": "float_passthrough_test.go",
+    "symbol": "TestFloatPointerPassthrough; TestFloatPointerPassthrough_StackingAndDismissal",
+    "evidence": "Tests cover underlying click/wheel/hover routing and dismissal bypass.",
+    "source_sha256": "b7a69fd60eb4e9e6df31f86450c3c4159b24677fa353625b69c3ab736bc6c45c"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "Modal behavior takes precedence over pointer passthrough.",
+    "source": "floating.go",
+    "symbol": "FloatConfig.takesPointer",
+    "evidence": "The method returns Modal || !PointerPassthrough.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "Pointer passthrough does not disable keyboard focus or Escape dismissal.",
+    "source": "floating.go",
+    "symbol": "FloatConfig",
+    "evidence": "The field contract specifies unchanged keyboard behavior; takesPointer is separate from dismissal and focus.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "`BuildChild` takes precedence over `Child` and runs after the main tree has been laid out.",
+    "source": "floating.go",
+    "symbol": "Floating.BuildChild",
+    "evidence": "The field contract specifies deferred execution and precedence, and renderFloats selects the callback.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "Its `FloatGeometry` contains screen bounds, anchor bounds, clipped visible anchor bounds, and an `AnchorFound` flag.",
+    "source": "floating.go",
+    "symbol": "FloatGeometry",
+    "evidence": "The struct declares Screen, AnchorBounds, AnchorVisibleBounds, and AnchorFound.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "Anchor bounds include padding and border but exclude margin.",
+    "source": "floating.go",
+    "symbol": "FloatGeometry",
+    "evidence": "The geometry contract defines anchor border-box coordinates.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "A missing anchor has `AnchorFound == false` and zero anchor rectangles.",
+    "source": "floating_geometry_test.go",
+    "symbol": "TestFloatingGeometry_MissingAnchorAndNilContent",
+    "evidence": "The test asserts false and zero rectangles for a missing anchor.",
+    "source_sha256": "d031030d935a95e38a623e5fc044675bef504a09596965e0a8a3bd50bcba53a0"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "Returning nil produces empty content.",
+    "source": "floating_geometry_test.go",
+    "symbol": "TestFloatingGeometry_MissingAnchorAndNilContent",
+    "evidence": "The test returns nil and verifies that fallback Child does not appear.",
+    "source_sha256": "d031030d935a95e38a623e5fc044675bef504a09596965e0a8a3bd50bcba53a0"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "Signal reads in `BuildChild` subscribe to updates.",
+    "source": "floating_geometry_test.go",
+    "symbol": "TestFloatingGeometry_MovementResizeAndReactiveReads",
+    "evidence": "Changing the read label signal rebuilds content and updates ScreenText.",
+    "source_sha256": "d031030d935a95e38a623e5fc044675bef504a09596965e0a8a3bd50bcba53a0"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "The callback must not mutate signals.",
+    "source": "floating.go",
+    "symbol": "Floating.BuildChild",
+    "evidence": "The callback contract prohibits signal writes.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "Only the main tree and earlier overlays are available as anchors.",
+    "source": "floating.go",
+    "symbol": "FloatGeometry",
+    "evidence": "The struct contract excludes the current and later overlay geometry.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "[Tooltip](widgets/tooltip.md)",
+    "source": "tooltip.go",
+    "symbol": "Tooltip",
+    "evidence": "Tooltip provides focus and hover help.",
+    "source_sha256": "650263c7ed0c4679a0c517c5a690408682c1c5e1fd1fd648313e971a495be9d3"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "[FocusTrap](widgets/focustrap.md)",
+    "source": "focus_trap.go",
+    "symbol": "FocusTrap",
+    "evidence": "FocusTrap confines focus navigation.",
+    "source_sha256": "99fc5f6ed65f1af8cdd5eb1294dac39e3e49435c15e4b7e2f08f63d516b62404"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "The renderer clamps the final position to keep the overlay on screen.",
+    "source": "render.go",
+    "symbol": "Renderer.renderFloats",
+    "evidence": "Calls clampToScreen after calculating overlay coordinates.",
+    "source_sha256": "c0f360ae9480e92b7a570432257466a329d8715bea8dd4d157aafcc18552d9d5"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "These dimensions describe the content box. Padding, border, and margin add to the outer space a widget occupies.",
+    "source": "widget.go",
+    "symbol": "Dimensioned; DimensionSet",
+    "evidence": "Dimensioned describes content-box dimensions and automatic padding and border additions; margins surround the border box.",
+    "source_sha256": "32b05f4f7381d427517715accd471d9f4afc77f14f3db70df364fd80ba76b760"
+  },
+  {
+    "page": "docs/layout/index.md",
+    "text": "Leaving a dimension unset allows widget-specific defaults, such as `Dock` filling available space. Setting `Auto` explicitly requests content sizing.",
+    "source": "dimension.go",
+    "symbol": "Auto; Dimension.IsUnset",
+    "evidence": "Auto has a nonzero value to distinguish it from an unset Dimension; widgets such as Dock apply defaults only to unset dimensions.",
+    "source_sha256": "84ecc296f1737eec5dc3f26082d9c8488b28045324adb69a72bff96dc4146d8a"
+  },
+  {
+    "page": "docs/layout/row-column.md",
+    "text": "An explicit `Auto` width or height keeps a nested `Row` or `Column` content-sized on that axis when the parent uses `CrossAxisStretch`.",
+    "source": "layout/linear_node.go",
+    "symbol": "LinearNode.positionChildren",
+    "evidence": "CrossAxisStretch checks PreservesCrossSize; Row and Column set preserve flags for explicit Auto dimensions.",
+    "source_sha256": "74c626be6d08fb2d551640169bf347a9722daa07f10b61f24d4673587a1bdcf0"
+  },
+  {
+    "page": "docs/layout/scrollable.md",
+    "text": "Retain the same state across `Build()` calls so scrolling does not reset when another signal changes.",
+    "source": "scroll.go",
+    "symbol": "NewScrollState; Scrollable.BuildContainerLayoutNode",
+    "evidence": "NewScrollState creates zero offset signals, and BuildContainerLayoutNode reads offsets from the supplied State.",
+    "source_sha256": "3cc4f0ae7f9f204d029e9e7e8234d9bead0f8d5b426b5ee84b3f2c671955d614"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "Retain the same state across `Build()` calls to preserve the divider position.",
+    "source": "split_pane.go",
+    "symbol": "NewSplitPaneState; SplitPaneState",
+    "evidence": "The constructor creates a new DividerPosition signal from its initialPosition argument.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/layout/splitpane.md",
+    "text": "Unset width and height both default to `Flex(1)`.",
+    "source": "split_pane.go",
+    "symbol": "SplitPane.GetContentDimensions",
+    "evidence": "Each unset dimension becomes Flex(1) after style and direct field resolution.",
+    "source_sha256": "f93bd2621518634fbf84c4c26e304b36c5e1eb2cc9e43617df716c75d3332193"
+  },
+  {
+    "page": "docs/floating.md",
+    "text": "A modal focuses its first focusable child when focus is outside it, unless a pending `RequestFocus` targets another child inside it.",
+    "source": "render.go",
+    "symbol": "Renderer.renderFloats",
+    "evidence": "The modal branch checks focusedID and pendingFocusID against focusables added by the overlay; otherwise it requests its first focusable child.",
+    "source_sha256": "c0f360ae9480e92b7a570432257466a329d8715bea8dd4d157aafcc18552d9d5"
+  },
+  {
+    "page": "docs/widgets/focustrap.md",
+    "text": "`FocusTrap` confines Tab navigation to its child subtree once a child has focus.",
+    "source": "focus_trap_test.go",
+    "symbol": "TestFocusTrap_NextWrapsWithinTrap; TestFocusTrap_PreviousWrapsWithinTrap",
+    "evidence": "Tests start focused inside a trap and verify forward/backward cycling remains there.",
+    "source_sha256": "caf1ae37013126d6f7efeeb6425f12dd5bed8244cfaf39dd5f7f25a8a875c132"
+  },
+  {
+    "page": "docs/widgets/focustrap.md",
+    "text": "Two editable profile fields inside a focus trap.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "FocusTrap",
+    "evidence": "The example constructs the named visible content and widget arrangement; the shared renderer renders this exact example to the linked SVG.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/widgets/focustrap.md",
+    "text": "`Active: true` enables trapping, and `ID` identifies the trap scope.",
+    "source": "render_tree.go",
+    "symbol": "BuildRenderTree",
+    "evidence": "The FocusTrap branch pushes the explicit or generated ID when Active is true.",
+    "source_sha256": "c53390175ca3f507b3d44a31c4954f7248704b33809b1044d55d5044a2e69b70"
+  },
+  {
+    "page": "docs/widgets/focustrap.md",
+    "text": "An omitted `ID` uses an automatically generated scope ID.",
+    "source": "render_tree.go",
+    "symbol": "BuildRenderTree",
+    "evidence": "The active FocusTrap branch uses ctx.AutoID when WidgetID returns empty.",
+    "source_sha256": "c53390175ca3f507b3d44a31c4954f7248704b33809b1044d55d5044a2e69b70"
+  },
+  {
+    "page": "docs/widgets/focustrap.md",
+    "text": "The wrapper delegates layout to `Child` and adds no border or padding.",
+    "source": "render_tree.go",
+    "symbol": "BuildRenderTree",
+    "evidence": "The FocusTrap branch returns recursive BuildRenderTree on Child directly.",
+    "source_sha256": "c53390175ca3f507b3d44a31c4954f7248704b33809b1044d55d5044a2e69b70"
+  },
+  {
+    "page": "docs/widgets/focustrap.md",
+    "text": "When `Active` is false, the wrapper adds no focus restriction of its own.",
+    "source": "focus_trap_test.go",
+    "symbol": "TestFocusTrap_InactiveTrapIsTransparent",
+    "evidence": "render_tree.go only pushes an active trap; an enclosing trap remains in effect.",
+    "source_sha256": "caf1ae37013126d6f7efeeb6425f12dd5bed8244cfaf39dd5f7f25a8a875c132"
+  },
+  {
+    "page": "docs/widgets/focustrap.md",
+    "text": "Nested traps use the innermost active scope for their descendants.",
+    "source": "focus_trap_test.go",
+    "symbol": "TestFocusTrap_NestedTraps",
+    "evidence": "Inner trap children cycle together, while outer trap children use the outer scope.",
+    "source_sha256": "caf1ae37013126d6f7efeeb6425f12dd5bed8244cfaf39dd5f7f25a8a875c132"
+  },
+  {
+    "page": "docs/widgets/focustrap.md",
+    "text": "The example creates each text input state once, before the widget tree is built.",
+    "source": "docs/widget-examples/layout/examples.go",
+    "symbol": "FocusTrap",
+    "evidence": "The example constructor creates both TextInputState values and returns the tree.",
+    "source_sha256": "df1322f36d52d4fb150179d21ac319f1e185173aa6c45ba4fb6a21bad6c093eb"
+  },
+  {
+    "page": "docs/widgets/focustrap.md",
+    "text": "[Floating](../floating.md)",
+    "source": "render.go",
+    "symbol": "Renderer.renderFloats",
+    "evidence": "Modal float content is wrapped in FocusTrap.",
+    "source_sha256": "c0f360ae9480e92b7a570432257466a329d8715bea8dd4d157aafcc18552d9d5"
+  },
+  {
+    "page": "docs/widgets/focustrap.md",
+    "text": "[TextInput](textinput.md)",
+    "source": "text_input.go",
+    "symbol": "TextInput",
+    "evidence": "TextInput supplies the editable fields.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  }
+]

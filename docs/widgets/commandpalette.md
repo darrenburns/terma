@@ -1,94 +1,50 @@
 # CommandPalette
 
-A filterable command palette with fuzzy search, nested levels, and keyboard-driven selection. It opens as a modal float over the app.
+`CommandPalette` displays a searchable modal list of commands with optional nested levels.
+
+![An open command palette with New note and Open settings commands.](../assets/widgets/commandpalette.svg)
+
+## [Example](index.md#run-an-example)
 
 ```go
-palette := NewCommandPaletteState("Commands", []CommandPaletteItem{
-    {Label: "New File", Hint: "Ctrl+N", Action: newFile},
-    {Divider: "View"},
-    {Label: "Toggle Word Wrap", FilterText: "Toggle Word Wrap soft wrap", Action: toggleWrap},
-    {Label: "Theme", Children: themeItems},
-})
-
-CommandPalette{
-    ID:             "palette",
-    State:          palette,
-    OnCursorChange: previewItem,
-}
+--8<-- "docs/widget-examples/inputs/examples.go:commandpalette"
 ```
 
-Call `palette.Open()` to show it. Actions don't close the palette on their own, so call `palette.Close()` in them when they should.
+## Behavior
 
-## Positioning
-
-By default, the palette sits at the top center of the screen with a two-row inset.
-Use `Position` and `Offset` for screen positioning, or `AnchorID` to attach it to
-another widget's current layout bounds:
-
-```go
-Text{ID: "tab-bar", Content: "Request one | Request two"}
-
-CommandPalette{
-    ID:       "tab-picker",
-    State:    palette,
-    AnchorID: "tab-bar",
-    // Anchor defaults to AnchorBottomLeft: directly below, aligned left.
-    Style:    Style{Width: Cells(40)},
-}
-```
-
-The anchor widget needs a stable ID. The palette follows its position and size on
-the first frame and on later layout changes and terminal resizes; the application
-doesn't need to measure or cache coordinates. `AnchorID` takes precedence over
-`Position`. Set `Anchor` to any [floating anchor point](../floating.md#anchor-based-positioning),
-such as `AnchorBottomRight` to align with the tab bar's right edge.
-
-For anchored palettes, `Offset` is used exactly as given, with no screen-top
-inset. For example, `Offset{Y: 1}` leaves one row below a bottom anchor. Placement
-uses the usual floating-widget screen clamping. If the anchor ID cannot be found,
-the existing floating-widget fallback places it at `Offset` coordinates, clamped
-to the screen. Palette focus, filtering, selection, and dismissal behavior are
-the same with either positioning mode.
-
-Run `go run ./cmd/command-palette-anchor-example` to try moving the anchor and
-switching between left and right alignment while the palette is open.
+- Create state once with `NewCommandPaletteState` and reuse it across builds.
+- `State.Open()` shows the palette, and `State.Close()` hides it.
+- Keep the palette in the widget tree while hidden so it can restore focus after closing.
+- Selecting an item without `Children` calls its `Action`. The palette stays open unless your callback closes it.
+- `OnSelect` overrides the default action and nested-level handling.
+- Up and Down, or Ctrl+P and Ctrl+N, move between selectable items.
+- Home and End choose the first and last selectable items.
+- Enter chooses the current item.
+- `OnCursorChange` receives the current selectable item after palette navigation or a query change.
 
 ## Searching
 
-Typing filters the current level with fuzzy matching: the query's characters must appear in order, but not next to each other, so `tw` finds "Toggle Word Wrap". Whitespace separates terms, which can match in any order (`wrap toggle` also finds it).
+- Each level starts with fuzzy matching enabled.
+- Fuzzy results are ranked by match score. Dividers disappear while the query contains non-whitespace characters.
+- When the query contains non-whitespace characters, changing it moves the cursor to the first selectable result.
+- When the query is empty or whitespace, the first selectable `Current: true` item receives the cursor, or the first selectable item if none is current.
+- `FilterText` replaces the label as the search text, so it must include any label words you want to match.
+- Matches through hidden keywords rank below comparable label matches.
+- `State.CurrentLevel().FilterState.Mode.Set(FilterContains)` selects substring matching in the original item order.
 
-Results are ranked best match first:
+## Nested levels and dismissal
 
-- Matches at the start of words score highest, so `file` lists "New File" before "Profile Settings". Initials count too: `ps` finds "Profile Settings" first.
-- Consecutive characters score higher than scattered ones.
-- Between matches of equal quality, shorter labels come first (`copy` lists "Copy" before "Copy Path"), then the original order.
-- `FilterText` adds hidden search keywords. An item that matches only through its keywords ranks below a comparable match on a visible label, and has nothing highlighted.
+- An item's `Children` callback supplies a new level when the item is selected.
+- `ChildrenTitle` supplies the breadcrumb title, with the item label as its fallback.
+- Each nested level starts with an empty query, and returning to a parent preserves the parent's query and cursor.
+- Escape returns to the parent level or dismisses the palette at the root.
+- Backspace on an empty query also returns to the parent unless `DisableBackspaceToPop` is set.
+- An outside click dismisses the palette and calls `OnDismiss`.
+- `Close()` resets the level stack, queries, and cursor, while `Close(true)` preserves them.
+- Closing requests focus for the previous widget when it has an explicit ID, unless `SetNextFocusIDOnClose` supplies another ID.
 
-While a query is entered, results are one ranked list and dividers are hidden. They return when the query is cleared.
+## Positioning
 
-For substring matching in the original item order instead, set `level.FilterState.Mode` to `FilterContains`.
-
-## The cursor
-
-- Every change to the query moves the cursor to the top result.
-- With an empty query the cursor rests on the level's `Current` item if it has one, otherwise on the first selectable item. Mark the item that represents the current value (the active theme, say) with `Current: true` so a level opens on it rather than on its first item. This matters when `OnCursorChange` previews the item under the cursor.
-- Up/Down (or Ctrl+P/Ctrl+N) move between selectable items, skipping dividers and disabled items. Home/End jump to the first and last.
-- Clicking an item moves the cursor to it, and double-clicking chooses it, as Enter does. Focus stays in the search input throughout.
-
-## Nested levels
-
-An item with `Children` shows a `▸` and opens a nested level on Enter. `Children` is called at that point, so it can build items from current state. The breadcrumb shows the path, using `ChildrenTitle` (or the label).
-
-Each level has its own query, cursor and scroll position. A nested level always opens with an empty query. Going back returns to the parent as it was left, with its query and the cursor on the item that opened the level. To go back, use Escape, Backspace in an empty query (unless `DisableBackspaceToPop` is set), or click a breadcrumb.
-
-## Closing
-
-Escape at the root level or a click outside the palette dismisses it and calls `OnDismiss`. `Close()` hides it. Either way the next `Open()` starts fresh: back at the root level with an empty query and the cursor reset. Use `Close(true)` to keep the level stack, queries and cursors for the next open.
-
-Focus returns to the widget that had it before the palette opened, or to the ID given with `SetNextFocusIDOnClose`.
-
-=== "Code"
-
-    ```go
-    --8<-- "cmd/command-palette-example/main.go"
-    ```
+- The palette defaults to the top center with a two-row inset.
+- `AnchorID` positions the palette relative to a widget and takes precedence over `Position`.
+- An anchored palette defaults to `AnchorBottomLeft` and uses `Offset` without the top inset.

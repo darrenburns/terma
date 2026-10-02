@@ -1,0 +1,1226 @@
+[
+  {
+    "page": "docs/widgets/list.md",
+    "text": "`List` displays a navigable sequence of items.",
+    "source": "list.go",
+    "symbol": "List.Build",
+    "evidence": "Build creates one row per visible item and List.Keybinds provides navigation.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "A list containing Inbox, Today, and Upcoming.",
+    "source": "docs/widget-examples/collections/examples.go",
+    "symbol": "List",
+    "evidence": "The compiled example constructs the stated widgets and sample content.",
+    "source_sha256": "5784a1f5a6cfb634915105c66ffcddb7d669fbb782cf7980e638a26b3d61d4d3"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "`NewListState` stores the items, cursor position, and selection.",
+    "source": "list.go",
+    "symbol": "NewListState",
+    "evidence": "Constructor initializes Items, CursorIndex, and Selection signals.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "`SetItems`, `Append`, `InsertAt`, and `RemoveAt` update the items.",
+    "source": "list.go",
+    "symbol": "ListState.SetItems",
+    "evidence": "These methods mutate the Items signal and maintain cursor bounds.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "`SelectedItem` returns the item at the cursor, while `SelectedItems` returns the multi-selection.",
+    "source": "list.go",
+    "symbol": "ListState.SelectedItem",
+    "evidence": "SelectedItem indexes CursorIndex; SelectedItems iterates Selection keys.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "Up and Down, or `k` and `j`, move the cursor.",
+    "source": "list.go",
+    "symbol": "List.Keybinds",
+    "evidence": "The four keys bind keyCursorUp and keyCursorDown.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "Home and End jump to the first and last visible items.",
+    "source": "list.go",
+    "symbol": "List.keyCursorToLast",
+    "evidence": "Home binds keyCursorToFirst; End uses the last filtered view index.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "Enter and a double-click call `OnSelect`, or `ActivateOnClick` enables single-click activation.",
+    "source": "list.go",
+    "symbol": "List.handleMouseDown",
+    "evidence": "Keybinds binds enter to selectItem; handleMouseDown invokes OnSelect for ActivateOnClick or repeated clicks.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "With `MultiSelect`, Shift navigation, Shift-click, and dragging extend the selection.",
+    "source": "list.go",
+    "symbol": "List.Keybinds",
+    "evidence": "Conditional shift keybinds call range selection; mouse handlers select ranges when MultiSelect is true.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "The default renderer formats each item with `fmt.Sprintf(\"%v\", item)`.",
+    "source": "list.go",
+    "symbol": "defaultListItemWidget.Build",
+    "evidence": "Build formats the item before constructing presented text.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "`RenderItem` receives the item and its active and selected flags.",
+    "source": "list.go",
+    "symbol": "List.RenderItem",
+    "evidence": "The field type is func(item T, active bool, selected bool) Widget.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "`Filter` and `MatchItem` control filtering, while `RenderItemWithMatch` also receives the match result.",
+    "source": "list.go",
+    "symbol": "List.Build",
+    "evidence": "List.Build computes or reuses the filtered view and passes each cached match to RenderItemWithMatch, which takes precedence over RenderItem.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "`List` computes the filtered view during rendering. `State.ApplyFilter` can compute it earlier, and `FilteredCount` reports the last computed view size.",
+    "source": "list.go",
+    "symbol": "ListState.ApplyFilter; List.Build; ListState.FilteredCount",
+    "evidence": "Build computes or reuses cached view indices; ApplyFilter can populate the cache ahead of Build; FilteredCount reads the stored view length.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "`CursorIndex` and selection indices refer to the source items even when filtering changes the visible order.",
+    "source": "list.go",
+    "symbol": "List.setCursorToViewIndex; ListState.SelectedItems",
+    "evidence": "Navigation maps visible indices to source indices; SelectedItems indexes the original Items signal using selection keys.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "`OnSelect` receives one item. Multi-selection is available separately through `State.SelectedItems()`.",
+    "source": "list.go",
+    "symbol": "List.OnSelect; List.selectItem",
+    "evidence": "The callback takes T only; SelectedItems separately walks Selection in source order.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "A shared `ScrollState` connects the list to a surrounding `Scrollable` and keeps cursor movements in view.",
+    "source": "list.go",
+    "symbol": "List.revealCursor",
+    "evidence": "revealCursor derives the cursor region and updates the supplied ScrollState.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/list.md",
+    "text": "[Table](table.md) displays rows in columns.",
+    "source": "table.go",
+    "symbol": "Table",
+    "evidence": "Table has Columns and constructs cells for each row.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`Table` displays navigable rows and columns.",
+    "source": "table.go",
+    "symbol": "Table.Build",
+    "evidence": "Build constructs a tableContainer with per-row, per-column cells.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "A table with Name and Role columns and three people.",
+    "source": "docs/widget-examples/collections/examples.go",
+    "symbol": "Table",
+    "evidence": "The compiled example constructs the stated widgets and sample content.",
+    "source_sha256": "5784a1f5a6cfb634915105c66ffcddb7d669fbb782cf7980e638a26b3d61d4d3"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`NewTableState` holds the rows, cursor, and selection.",
+    "source": "table.go",
+    "symbol": "NewTableState",
+    "evidence": "Initializes Rows, CursorIndex, CursorColumn, and Selection.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`Columns` defines each column width and optional header widget.",
+    "source": "table.go",
+    "symbol": "TableColumn",
+    "evidence": "TableColumn has Width and Header fields, consumed by Build.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`RenderHeader` supplies each header, with the column's `Header` as the fallback when the callback returns nil.",
+    "source": "table.go",
+    "symbol": "Table.Build",
+    "evidence": "Table.Build falls back to col.Header when RenderHeader returns nil.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "The default renderer reads cells from slice or array rows.",
+    "source": "table.go",
+    "symbol": "tableDefaultCellContent",
+    "evidence": "Reflection handles Slice and Array values and formats the indexed element.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`RenderCell` receives the row, source row index, column index, and active and selected flags. A custom renderer controls the cell's appearance, including selection highlighting.",
+    "source": "table.go",
+    "symbol": "tableCell.Build",
+    "evidence": "Calls the renderer with sourceRow and column, plus active/selected flags, and returns the supplied widget without adding cursor/selection styles.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`Filter` and `MatchCell` keep rows with a matching cell.",
+    "source": "table.go",
+    "symbol": "Table.filteredRows",
+    "evidence": "Each row is included if any column produces a matched result.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`RenderCellWithMatch` receives the matching data for each cell and takes precedence over `RenderCell`.",
+    "source": "table.go",
+    "symbol": "Table.Build; tableCell.Build",
+    "evidence": "Build adapts RenderCell only when RenderCellWithMatch is nil; forwards per-cell cached match data.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`CursorIndex` and row indices passed to renderers and matchers refer to `State.Rows`, even after filtering or sorting.",
+    "source": "table.go",
+    "symbol": "Table.Build; Table.filteredRows",
+    "evidence": "Build maps each filtered/sorted view row back to its source row index; matchers receive original rows and indices before sorting.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`SetRows`, `Append`, `Prepend`, `InsertAt`, `RemoveAt`, `RemoveWhere`, and `Clear` update the data in `TableState`.",
+    "source": "table.go",
+    "symbol": "TableState.SetRows; TableState.InsertAt; TableState.RemoveWhere",
+    "evidence": "These exported state methods update Rows and reconcile applicable cursor/selection state.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "Up and Down, or `k` and `j`, move between visible rows. Home and End move to the first and last visible rows.",
+    "source": "table.go",
+    "symbol": "Table.Keybinds; Table.keyCursorToFirst; Table.keyCursorToLast",
+    "evidence": "Arrow and j/k handlers use viewIndices; home/end choose first/last visible row.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`TableSelectionCursor` highlights a cell by default. `TableSelectionRow` highlights a row, and `TableSelectionColumn` highlights a column.",
+    "source": "table.go",
+    "symbol": "TableSelectionMode; tableCellActive",
+    "evidence": "Cursor is the zero enum value; active cells compare both coordinates, row only, or column only by mode.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "Left and Right move between columns in cursor and column modes.",
+    "source": "table.go",
+    "symbol": "Table.Keybinds",
+    "evidence": "Horizontal keybinds are conditional on TableSelectionCursor or TableSelectionColumn.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "With `MultiSelect`, Shift navigation and pointer selection extend the selection according to the selection mode.",
+    "source": "table.go",
+    "symbol": "Table.Keybinds",
+    "evidence": "Mode-specific Shift callbacks and extendSelectionTo select rows, columns, or a cell box.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "Enter and a double-click call `OnSelect(row T)`, or `ActivateOnClick` enables single-click activation.",
+    "source": "table.go",
+    "symbol": "Table.selectRow; Table.handleMouseDown",
+    "evidence": "OnSelect accepts T; Enter, repeated clicks, and ActivateOnClick invoke it for the normalized cursor row.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "Selection keys depend on the mode: row indices, column indices, or `rowIndex * len(Columns) + colIndex` for cells.",
+    "source": "table.go",
+    "symbol": "tableCellSelected; cellIndex",
+    "evidence": "Row mode keys are row indices, column mode keys are column indices, cursor mode keys are row*columnCount+column.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`SelectedRow()` returns the cursor row and a boolean indicating whether it exists. `SelectedRows()` is intended for row-selection mode.",
+    "source": "table.go",
+    "symbol": "TableState.SelectedRow; TableState.SelectedRows",
+    "evidence": "SelectedRow validates cursor bounds and returns T,bool; SelectedRows scans row indices and assumes row-based selection.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`NewTableState` tracks rows by position. `NewTableStateWithRowID(rows, rowID)` preserves the cursor and row or cell selections across `SetRows` when the same unique IDs remain.",
+    "source": "table_features.go",
+    "symbol": "NewTableStateWithRowID; TableState.replaceIdentifiedRows",
+    "evidence": "Constructor installs an ID extractor; SetRows maps cursor and row/cell selection keys between old/new unique IDs.",
+    "source_sha256": "5c0293f60e79c34bce5436665fe41bab99a064a93b8c8a853df92f8943627a5d"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "The ID function must return stable, nonempty, unique strings without side effects. Empty, duplicate, or removed IDs lose their selections, and a cursor that cannot be preserved is clamped.",
+    "source": "table_features.go",
+    "symbol": "NewTableStateWithRowID; uniqueTableRowIDs; TableState.replaceIdentifiedRows",
+    "evidence": "Constructor contract requires pure stable IDs; empty/duplicate IDs are not mapped, missing selections are dropped, and unmapped cursors are clamped.",
+    "source_sha256": "5c0293f60e79c34bce5436665fe41bab99a064a93b8c8a853df92f8943627a5d"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`SetRows` performs identity reconciliation. Calling `State.Rows.Set(...)` directly bypasses it.",
+    "source": "table.go",
+    "symbol": "TableState.SetRows",
+    "evidence": "SetRows calls replaceIdentifiedRows when rowID is set; raw signal writes do not invoke the state method.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "This example uses names as unique row IDs and enables sorting, resizing, and a frozen header.",
+    "source": "docs/widget-examples/collections/examples.go",
+    "symbol": "TableControls",
+    "evidence": "The example extracts row[0] as ID, supplies a name comparator, marks that column resizable, and enables FrozenHeader.",
+    "source_sha256": "5784a1f5a6cfb634915105c66ffcddb7d669fbb782cf7980e638a26b3d61d4d3"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "Each sortable or resizable column needs a unique, nonempty `TableColumn.ID`.",
+    "source": "table_features.go",
+    "symbol": "Table.validColumnID; Table.sortableColumn; Table.resizeColumn",
+    "evidence": "Sorting and resizing reject empty IDs and IDs shared by more than one column.",
+    "source_sha256": "5c0293f60e79c34bce5436665fe41bab99a064a93b8c8a853df92f8943627a5d"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`Comparators` maps column IDs to functions that return a negative value, zero, or a positive value for two rows.",
+    "source": "table_features.go",
+    "symbol": "Table.sortedRows",
+    "evidence": "Looks up comparator by ColumnID and tests its return value against zero for ordering.",
+    "source_sha256": "5c0293f60e79c34bce5436665fe41bab99a064a93b8c8a853df92f8943627a5d"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "Clicking a sortable header or pressing Ctrl+S cycles the current column through ascending, descending, and unsorted order.",
+    "source": "table_features.go",
+    "symbol": "Table.headerMouseDown; Table.cycleSort",
+    "evidence": "Header clicks set CursorColumn and cycle ascending, descending, then zero/none. Table.Keybinds binds ctrl+s to cycleSort for CursorColumn.",
+    "source_sha256": "5c0293f60e79c34bce5436665fe41bab99a064a93b8c8a853df92f8943627a5d"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`State.Sort.Set(TableSort{ColumnID: \"name\", Direction: TableSortAscending})` sets the sort programmatically.",
+    "source": "table.go",
+    "symbol": "TableState.Sort; Table.Build",
+    "evidence": "Sort is Signal[TableSort]; Build reads its current value and passes it to sortedRows.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "Sorting changes the visible order without changing `State.Rows`. Filtering runs first, and equal comparator results retain source order.",
+    "source": "table_features.go",
+    "symbol": "Table.sortedRows",
+    "evidence": "Build calls filteredRows first; sortedRows creates a separate permutation and uses source indices to break equal comparator results.",
+    "source_sha256": "5c0293f60e79c34bce5436665fe41bab99a064a93b8c8a853df92f8943627a5d"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`TableSortNone` restores the filtered order, including fuzzy-match ranking when enabled.",
+    "source": "table_features.go",
+    "symbol": "Table.sortedRows",
+    "evidence": "Any direction other than ascending/descending returns the already-filtered rows and indices unchanged, retaining their fuzzy ranking.",
+    "source_sha256": "5c0293f60e79c34bce5436665fe41bab99a064a93b8c8a853df92f8943627a5d"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`Resizable` enables dragging the rightmost cell of a column header and Ctrl+Left or Ctrl+Right on the current column. Ctrl+R restores its configured width.",
+    "source": "table.go",
+    "symbol": "Table.Keybinds",
+    "evidence": "Ctrl+left/right call resizeCurrent, ctrl+r calls resetCurrentWidth; table_features.go headerMouseDown starts a drag on the rightmost header cell.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`MinWidth` and `MaxWidth` constrain resized widths in cells. The minimum is at least one cell, and a zero maximum means unlimited.",
+    "source": "table_features.go",
+    "symbol": "Table.clampColumnWidth",
+    "evidence": "Clamps to max(1,MinWidth); only applies MaxWidth when positive, with the minimum taking priority.",
+    "source_sha256": "5c0293f60e79c34bce5436665fe41bab99a064a93b8c8a853df92f8943627a5d"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`State.ColumnWidths` stores width overrides by column ID.",
+    "source": "table_features.go",
+    "symbol": "Table.resizeColumn",
+    "evidence": "Writes the clamped integer width to State.ColumnWidths under the column ID.",
+    "source_sha256": "5c0293f60e79c34bce5436665fe41bab99a064a93b8c8a853df92f8943627a5d"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "A shared `ScrollState` connects a regular table to a surrounding `Scrollable` for cursor visibility.",
+    "source": "table.go",
+    "symbol": "Table.revealCursor",
+    "evidence": "Without an owned viewport, revealCursor uses the supplied shared ScrollState for cursor visibility.",
+    "source_sha256": "cf88fdd17a569f40aa260c2dda0508d25d3ea03362f95d60afd0b24a7c73d680"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "`FrozenHeader` keeps headers visible, and `FrozenColumns` keeps the first N columns visible during horizontal scrolling.",
+    "source": "table_layout.go",
+    "symbol": "tableNode.ComputeLayout",
+    "evidence": "Viewport layout applies FrozenRows/FrozenColumns through clipViewportCells; Table.BuildContainerLayoutNode sets these from the frozen options.",
+    "source_sha256": "ab98d117a7176fe2eb14065ab054152b7743a9c56c317f8fc0960101d4429893"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "Either frozen option gives the table its own viewport. A bounded `Style.Width` and `Style.Height` define its visible area without a surrounding `Scrollable`.",
+    "source": "table_features.go",
+    "symbol": "Table.ownsViewport",
+    "evidence": "State plus FrozenHeader or positive FrozenColumns enables an owned viewport; table layout applies Style dimensions to its container.",
+    "source_sha256": "5c0293f60e79c34bce5436665fe41bab99a064a93b8c8a853df92f8943627a5d"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "The built-in viewport uses the supplied `ScrollState`, or an internal one when none is supplied. Alt+Left and Alt+Right pan horizontally by three cells.",
+    "source": "table_features.go",
+    "symbol": "Table.viewportState",
+    "evidence": "Returns ScrollState when supplied, otherwise State.viewport; Table.Keybinds pans this state three cells for alt+left/right.",
+    "source_sha256": "5c0293f60e79c34bce5436665fe41bab99a064a93b8c8a853df92f8943627a5d"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "[List](list.md) displays one item per row without column definitions.",
+    "source": "list.go",
+    "symbol": "List.Build",
+    "evidence": "List builds a Column of item widgets and has no Columns field.",
+    "source_sha256": "89b763a8bbb5bf76ffd9627cee13d15edbdb68fda406b1f5ced396452942002a"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "`Tree` displays hierarchical nodes with navigation and expansion.",
+    "source": "tree.go",
+    "symbol": "Tree.Build",
+    "evidence": "Build flattens visible hierarchy and renders rows with expansion indicators.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "An expanded Project node containing main.go and README.md, followed by Archive.",
+    "source": "docs/widget-examples/collections/examples.go",
+    "symbol": "Tree",
+    "evidence": "The compiled example constructs the stated widgets and sample content.",
+    "source_sha256": "5784a1f5a6cfb634915105c66ffcddb7d669fbb782cf7980e638a26b3d61d4d3"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "`NewTreeState` stores root nodes, the cursor path, collapsed nodes, and selection.",
+    "source": "tree.go",
+    "symbol": "NewTreeState",
+    "evidence": "Constructor initializes Nodes, CursorPath, Collapsed, and Selection.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "Each `TreeNode` holds `Data` and optional `Children`.",
+    "source": "tree.go",
+    "symbol": "TreeNode",
+    "evidence": "The struct contains Data T and Children []TreeNode[T].",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "Loaded nodes with children start expanded unless their state marks them collapsed.",
+    "source": "tree.go",
+    "symbol": "Tree.nodeExpanded",
+    "evidence": "Returns true for loaded expandable nodes unless State.IsCollapsed is true.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "Up and Down move between visible nodes.",
+    "source": "tree.go",
+    "symbol": "Tree.Keybinds",
+    "evidence": "Bindings invoke keyCursorUp and keyCursorDown on view paths.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "Left collapses a node or moves to its parent, while Right expands a node or moves to its first child.",
+    "source": "tree.go",
+    "symbol": "Tree.collapseOrMoveToParent",
+    "evidence": "This method and expandOrMoveToChild implement the conditional actions.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "Space toggles expansion.",
+    "source": "tree.go",
+    "symbol": "Tree.Keybinds",
+    "evidence": "Both space spellings bind toggleExpansion.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "Enter and a double-click on a node's label invoke `OnSelect(node T, selected []T)` with the cursor node and the selected nodes.",
+    "source": "tree.go",
+    "symbol": "Tree.selectNode; Tree.handleMouseDown",
+    "evidence": "selectNode passes cursor data and getSelectedNodes to the two-argument OnSelect callback; label double-click invokes it.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "`ActivateOnClick` enables single-click activation on a node label. A click on its expansion indicator toggles expansion instead.",
+    "source": "tree.go",
+    "symbol": "Tree.handleMouseDown",
+    "evidence": "Checks indicator hit regions before activation; label activation uses ActivateOnClick or a repeated click.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "`MultiSelect` enables range selection with Shift navigation, Shift-click, and dragging.",
+    "source": "tree.go",
+    "symbol": "Tree.Keybinds",
+    "evidence": "Conditional keybindings extend selection; mouse handlers use MultiSelect for range selection.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "`NodeID` supplies stable identifiers for collapsed and selected nodes. Without it, identifiers are based on node paths.",
+    "source": "tree.go",
+    "symbol": "TreeState.idForNode",
+    "evidence": "Uses nonempty NodeID results, otherwise pathKey(path); collapse and selection use these IDs.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "`CursorPath` and `TreeNodeContext.Path` contain source child indices, starting at the root, even when a filter hides other nodes.",
+    "source": "tree.go",
+    "symbol": "Tree.filterVisible; TreeNodeContext",
+    "evidence": "filterVisible builds paths by appending source child indices, not positions in the filtered output.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "`ClearSelection` clears selected nodes. `ClearAnchor` resets the starting point for the next Shift selection without clearing the current selection.",
+    "source": "tree.go",
+    "symbol": "TreeState.ClearSelection; TreeState.ClearAnchor; Tree.handleShiftMove",
+    "evidence": "ClearSelection resets Selection, ClearAnchor only resets anchorPath, and the next shift move sets a missing anchor to the cursor.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "`RenderNode` receives the data and a `TreeNodeContext` containing depth, path, expansion, and selection information.",
+    "source": "tree.go",
+    "symbol": "TreeNodeContext",
+    "evidence": "Struct fields provide these values and RenderNode accepts this type.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "`Filter` keeps matching loaded nodes and their ancestors, including matches under collapsed parents. It does not load children to search them.",
+    "source": "tree.go",
+    "symbol": "Tree.filterVisible",
+    "evidence": "Recurses over existing Children without checking collapsed state or invoking OnExpand; includes matching nodes and ancestors.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "`RenderNodeWithMatch` also receives the match result.",
+    "source": "tree.go",
+    "symbol": "Tree.RenderNodeWithMatch",
+    "evidence": "Field signature includes MatchResult.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "For lazy loading, a nil `Children` slice uses `HasChildren` to determine whether the node can expand.",
+    "source": "tree.go",
+    "symbol": "Tree.nodeExpandable",
+    "evidence": "When Children is nil, nodeExpandable delegates to HasChildren.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "`OnExpand` receives a callback that installs the loaded children.",
+    "source": "tree.go",
+    "symbol": "Tree.expandNode",
+    "evidence": "Passes a callback that calls State.SetChildren for the node path.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "`ShowGuideLines`, `Indent`, and the indicator fields control the hierarchy markers. Guide lines are enabled by default, and the default indent is two cells.",
+    "source": "tree.go",
+    "symbol": "Tree.Build",
+    "evidence": "Nonpositive Indent defaults to 2; nil ShowGuideLines defaults to true; indicator fields control expanded/collapsed/leaf labels.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "A shared `ScrollState` connects the tree to a surrounding `Scrollable` for cursor visibility.",
+    "source": "tree.go",
+    "symbol": "Tree.revealCursor",
+    "evidence": "Computes cursor row region and reveals it using ScrollState.",
+    "source_sha256": "3728ccd8bfd3d83a491338b8f3538088b2b65fdee8f40ebc47b8daefd8a3ab5f"
+  },
+  {
+    "page": "docs/widgets/tree.md",
+    "text": "[DirectoryTree](directorytree.md) adds filesystem defaults to `Tree`.",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree.resolvedTree",
+    "evidence": "Supplies path IDs, name matching, directory expansion, and loading.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "`DirectoryTree` displays filesystem entries through `Tree[DirectoryEntry]`.",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree",
+    "evidence": "Embeds Tree[DirectoryEntry] and Build delegates to its resolved Tree.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "A DirectoryTree with an expanded project directory and two sample files.",
+    "source": "docs/widget-examples/collections/examples.go",
+    "symbol": "DirectoryTreePreview",
+    "evidence": "The compiled example constructs the stated widgets and sample content.",
+    "source_sha256": "5784a1f5a6cfb634915105c66ffcddb7d669fbb782cf7980e638a26b3d61d4d3"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "The first snippet browses the current directory, while the image and registered demo use the preloaded sample below.",
+    "source": "docs/widget-examples/collections/examples.go",
+    "symbol": "DirectoryTree",
+    "evidence": "The compiled example constructs the stated widgets and sample content.",
+    "source_sha256": "5784a1f5a6cfb634915105c66ffcddb7d669fbb782cf7980e638a26b3d61d4d3"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "`NewDirectoryTreeState` creates a single root, while `NewDirectoryTreeStateWithRoots` accepts multiple paths.",
+    "source": "directory_tree.go",
+    "symbol": "NewDirectoryTreeStateWithRoots",
+    "evidence": "Loops over supplied root paths and passes the resulting nodes to NewTreeState.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "The embedded `Tree` holds state, callbacks, filtering, selection, and scroll configuration.",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree",
+    "evidence": "Embeds Tree[DirectoryEntry], whose fields carry those settings.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "Expanding an unloaded directory reads its children in a goroutine.",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree.loadChildren",
+    "evidence": "resolvedTree installs OnExpand; loadChildren launches a goroutine that calls readChildren.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "The default `ReadDir` uses `os.ReadDir`, while a custom function can provide entries from another source.",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree.readChildren",
+    "evidence": "Selects d.ReadDir or defaultDirectoryReadDir, which invokes os.ReadDir.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "Entries whose names start with a dot are excluded unless `IncludeHidden` is true.",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree.readChildren",
+    "evidence": "Skips dot-prefixed names when IncludeHidden is false.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "The default order puts directories first, then sorts names without case sensitivity.",
+    "source": "directory_tree.go",
+    "symbol": "defaultDirectorySort",
+    "evidence": "Compares IsDir first, then directoryEntrySortKey, which lowercases Name.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "`Sort` replaces the default ordering.",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree.readChildren",
+    "evidence": "Calls d.Sort when non-nil, otherwise defaultDirectorySort.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "`EagerLoad` recursively loads unloaded descendants in the background and collapses newly loaded directories that have children.",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree.eagerLoad",
+    "evidence": "eagerLoad calls Collapse only when len(children)>0.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "A read error appears as an error node.",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree.readChildren",
+    "evidence": "Returns a directoryTreeErrorNode when ReadDir returns an error.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "The default labels use `D` for directories, `F` for files, and `!` for errors.",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree.defaultRenderNode",
+    "evidence": "Selects these exact icon strings before the label.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "Filtering matches entry names, and node identifiers default to entry paths.",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree.resolvedTree",
+    "evidence": "Default MatchNode uses entry.Name and NodeID returns entry.Path.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "Filtering searches only loaded nodes. `EagerLoad` makes descendants available to filtering as their directory reads complete.",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree.eagerLoad; DirectoryTree.resolvedTree",
+    "evidence": "Eager loading recursively installs Children with SetChildren, making them visible to Tree filtering; matching itself only walks loaded nodes.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/directorytree.md",
+    "text": "[Tree](tree.md) describes the shared navigation and selection behavior.",
+    "source": "directory_tree.go",
+    "symbol": "DirectoryTree.Keybinds",
+    "evidence": "Keybinds and mouse methods delegate to the resolved Tree.",
+    "source_sha256": "cc1c269a95e8ddb3534e245c08251b7755744f72336e1502c7053ef0518bd875"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "`TabBar` displays horizontal tabs, and `TabView` adds the active tab's content below the bar.",
+    "source": "tab.go",
+    "symbol": "TabView.Build",
+    "evidence": "Constructs a Column with TabBar and Switcher keyed by ActiveKey.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "Home and Settings tabs with the Home content visible.",
+    "source": "docs/widget-examples/collections/examples.go",
+    "symbol": "Tabs",
+    "evidence": "The compiled example constructs the stated widgets and sample content.",
+    "source_sha256": "5784a1f5a6cfb634915105c66ffcddb7d669fbb782cf7980e638a26b3d61d4d3"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "`TabState` stores the tabs and the active key.",
+    "source": "tab.go",
+    "symbol": "TabState",
+    "evidence": "Contains tabs and activeKey signals.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "`NewTabState` activates the first tab when the list is nonempty.",
+    "source": "tab.go",
+    "symbol": "NewTabState",
+    "evidence": "Initial activeKey is tabs[0].Key when len(tabs)>0.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "Each `Tab` has a unique `Key`, a visible `Label`, and optional `Content`.",
+    "source": "tab.go",
+    "symbol": "Tab",
+    "evidence": "Field declarations describe key identity, label, and content.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "`TabBar` ignores `Content`, while `TabView` uses it for the selected view.",
+    "source": "tab.go",
+    "symbol": "TabView.Build",
+    "evidence": "TabBar builds labels while TabView maps Content widgets by Key.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "Left and Right, or `h` and `l`, select adjacent tabs and wrap at the ends.",
+    "source": "tab.go",
+    "symbol": "TabBar.Keybinds",
+    "evidence": "Bindings call selectPrevious/selectNext, whose state methods wrap indices.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "`KeybindPattern` supports plain, Alt, or Ctrl number keys for the first nine tabs. The default, `TabKeybindNone`, disables number shortcuts.",
+    "source": "tab.go",
+    "symbol": "TabKeybindPattern; TabBar.Keybinds",
+    "evidence": "Zero-valued TabKeybindNone disables position bindings; other patterns create bindings for at most nine tabs.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "Clicking a tab activates it.",
+    "source": "tab.go",
+    "symbol": "tabItem.Build",
+    "evidence": "Tab label Click callback sets active key and invokes OnTabChange.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "`Closable` adds close buttons and Ctrl+W.",
+    "source": "tab.go",
+    "symbol": "TabBar.Keybinds",
+    "evidence": "Adds ctrl+w when Closable; tabItem.Build adds close control.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "If `OnTabClose` is set, it handles closure instead of the bar calling `RemoveTab`.",
+    "source": "tab.go",
+    "symbol": "TabBar.closeActive",
+    "evidence": "Invokes callback if present, otherwise State.RemoveTab; button closure matches this behavior.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "`AllowReorder` enables Ctrl+H and Ctrl+L to move the active tab.",
+    "source": "tab.go",
+    "symbol": "TabBar.Keybinds",
+    "evidence": "Adds ctrl+h and ctrl+l mapped to moveActiveLeft/right.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "`AddTab`, `InsertTab`, `RemoveTab`, and `SetLabel` update tabs through `TabState`.",
+    "source": "tab.go",
+    "symbol": "TabState.AddTab",
+    "evidence": "These methods update the tabs signal.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "`TabStyle` and `ActiveTabStyle` customize the inactive and active tabs.",
+    "source": "tab.go",
+    "symbol": "TabBar.Build",
+    "evidence": "Selects TabStyle or ActiveTabStyle according to active state before constructing tabItem.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "`TabView.ContentStyle` styles the content area.",
+    "source": "tab.go",
+    "symbol": "TabView.Build",
+    "evidence": "Copies ContentStyle into the Switcher style.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/tabs.md",
+    "text": "[Switcher](switcher.md) displays content selected by a string key.",
+    "source": "switcher.go",
+    "symbol": "Switcher",
+    "evidence": "Active key selects a child from the Children map.",
+    "source_sha256": "4c0c6f104ed9a27944f202894d2b770d601ef057991457969bbe65f262b7a40f"
+  },
+  {
+    "page": "docs/widgets/breadcrumbs.md",
+    "text": "`Breadcrumbs` displays a path as text segments separated by a configurable separator.",
+    "source": "breadcrumbs.go",
+    "symbol": "Breadcrumbs.Build",
+    "evidence": "Loops over Path and inserts separator Text widgets between labels.",
+    "source_sha256": "a7a397e7b2da58f0f833127c49bdd403be46b323a22de1fd7cf79991faf9a36d"
+  },
+  {
+    "page": "docs/widgets/breadcrumbs.md",
+    "text": "Projects, Terma, and Docs breadcrumbs above a selection message.",
+    "source": "docs/widget-examples/collections/examples.go",
+    "symbol": "Breadcrumbs",
+    "evidence": "The compiled example constructs the stated widgets and sample content.",
+    "source_sha256": "5784a1f5a6cfb634915105c66ffcddb7d669fbb782cf7980e638a26b3d61d4d3"
+  },
+  {
+    "page": "docs/widgets/breadcrumbs.md",
+    "text": "`Path` supplies the segment labels in display order.",
+    "source": "breadcrumbs.go",
+    "symbol": "Breadcrumbs.Build",
+    "evidence": "Ranges over Path from index zero and appends each label.",
+    "source_sha256": "a7a397e7b2da58f0f833127c49bdd403be46b323a22de1fd7cf79991faf9a36d"
+  },
+  {
+    "page": "docs/widgets/breadcrumbs.md",
+    "text": "`Separator` defaults to `>` with one space on either side.",
+    "source": "breadcrumbs.go",
+    "symbol": "Breadcrumbs.Build",
+    "evidence": "Empty separator becomes > and is wrapped with spaces.",
+    "source_sha256": "a7a397e7b2da58f0f833127c49bdd403be46b323a22de1fd7cf79991faf9a36d"
+  },
+  {
+    "page": "docs/widgets/breadcrumbs.md",
+    "text": "`OnSelect` makes each segment clickable and receives its zero-based index, including the final segment.",
+    "source": "breadcrumbs.go",
+    "symbol": "Breadcrumbs.Build",
+    "evidence": "Installs a Text.Click callback for every segment if OnSelect is non-nil.",
+    "source_sha256": "a7a397e7b2da58f0f833127c49bdd403be46b323a22de1fd7cf79991faf9a36d"
+  },
+  {
+    "page": "docs/widgets/breadcrumbs.md",
+    "text": "The callback determines what navigation occurs.",
+    "source": "breadcrumbs.go",
+    "symbol": "Breadcrumbs.Build",
+    "evidence": "The click handler only calls b.OnSelect(index); it does not mutate Path or route elsewhere.",
+    "source_sha256": "a7a397e7b2da58f0f833127c49bdd403be46b323a22de1fd7cf79991faf9a36d"
+  },
+  {
+    "page": "docs/widgets/breadcrumbs.md",
+    "text": "Without `OnSelect`, the segments are plain text.",
+    "source": "breadcrumbs.go",
+    "symbol": "Breadcrumbs.Build",
+    "evidence": "Appends Text without a Click callback when OnSelect is nil.",
+    "source_sha256": "a7a397e7b2da58f0f833127c49bdd403be46b323a22de1fd7cf79991faf9a36d"
+  },
+  {
+    "page": "docs/widgets/breadcrumbs.md",
+    "text": "An empty path renders an `EmptyWidget`.",
+    "source": "breadcrumbs.go",
+    "symbol": "Breadcrumbs.Build",
+    "evidence": "Returns EmptyWidget when len(Path)==0.",
+    "source_sha256": "a7a397e7b2da58f0f833127c49bdd403be46b323a22de1fd7cf79991faf9a36d"
+  },
+  {
+    "page": "docs/widgets/breadcrumbs.md",
+    "text": "The default colors distinguish clickable ancestors, the final segment, and separators.",
+    "source": "breadcrumbs.go",
+    "symbol": "Breadcrumbs.Build",
+    "evidence": "Uses theme.Link for earlier clickable segments, theme.Text otherwise, and theme.TextMuted for separators.",
+    "source_sha256": "a7a397e7b2da58f0f833127c49bdd403be46b323a22de1fd7cf79991faf9a36d"
+  },
+  {
+    "page": "docs/widgets/breadcrumbs.md",
+    "text": "`Style.ForegroundColor` overrides these default colors.",
+    "source": "breadcrumbs.go",
+    "symbol": "Breadcrumbs.Build",
+    "evidence": "Theme colors are chosen only when the copied style foreground is unset.",
+    "source_sha256": "a7a397e7b2da58f0f833127c49bdd403be46b323a22de1fd7cf79991faf9a36d"
+  },
+  {
+    "page": "docs/widgets/breadcrumbs.md",
+    "text": "When `ID` is set, clickable segments receive IDs formed as `<ID>-segment-<index>`.",
+    "source": "breadcrumbs.go",
+    "symbol": "Breadcrumbs.Build",
+    "evidence": "Uses fmt.Sprintf with %s-segment-%d when OnSelect is non-nil and ID is nonempty.",
+    "source_sha256": "a7a397e7b2da58f0f833127c49bdd403be46b323a22de1fd7cf79991faf9a36d"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "A table with a sortable Name header and Mina, Leon, and Ada rows.",
+    "source": "docs/widget-examples/collections/examples.go",
+    "symbol": "TableControls",
+    "evidence": "The registered TableControls example supplies the three named rows and a comparator for the Name header; the generated SVG shows the unsorted indicator.",
+    "source_sha256": "5784a1f5a6cfb634915105c66ffcddb7d669fbb782cf7980e638a26b3d61d4d3"
+  },
+  {
+    "page": "docs/widgets/table.md",
+    "text": "Run this example with `go run ./docs/widget-examples -widget table-controls`.",
+    "source": "docs/widget-examples/main.go",
+    "symbol": "run; examples",
+    "evidence": "The -widget flag selects an entry by Name and runs its Widget; collections.Examples registers TableControls under table-controls.",
+    "source_sha256": "5de4ff7a0929c5d516adb0333835fdb461fbaabd31bfe12fd16c71ec47eb6760"
+  },
+  {
+    "page": "docs/widgets/keybindbar.md",
+    "text": "`KeybindBar` displays keybindings from the focused widget and its ancestors.",
+    "source": "keybindbar.go",
+    "symbol": "KeybindBar.Build",
+    "evidence": "Calls ctx.ActiveKeybinds, which collects the focused chain through FocusManager.",
+    "source_sha256": "0c4bb426e0cedb7033fc9d016875c49e369ced585f619acd79247dcca8585efa"
+  },
+  {
+    "page": "docs/widgets/keybindbar.md",
+    "text": "A Save button, its status, and a keybinding bar.",
+    "source": "docs/widget-examples/collections/examples.go",
+    "symbol": "KeybindBar",
+    "evidence": "The compiled example constructs the stated widgets and sample content.",
+    "source_sha256": "5784a1f5a6cfb634915105c66ffcddb7d669fbb782cf7980e638a26b3d61d4d3"
+  },
+  {
+    "page": "docs/widgets/keybindbar.md",
+    "text": "The bar updates when focus changes or reactive state read by `Keybinds` changes.",
+    "source": "keybindbar_test.go",
+    "symbol": "TestReactivityKeybindBarFollowsSelection",
+    "evidence": "Test changes input selection and verifies Copy appears and disappears in the bar.",
+    "source_sha256": "9268ee5c894d202b57f552cdae6b1c65259f63c37b82fd397574555ce0ba82ac"
+  },
+  {
+    "page": "docs/widgets/keybindbar.md",
+    "text": "Bindings with `Hidden` set are omitted.",
+    "source": "keybindbar.go",
+    "symbol": "KeybindBar.Build",
+    "evidence": "Skips kb.Hidden before building visible groups.",
+    "source_sha256": "0c4bb426e0cedb7033fc9d016875c49e369ced585f619acd79247dcca8585efa"
+  },
+  {
+    "page": "docs/widgets/keybindbar.md",
+    "text": "Among visible bindings, duplicate keys appear once, with the focused widget taking precedence over ancestors.",
+    "source": "keybindbar.go",
+    "symbol": "KeybindBar.Build",
+    "evidence": "Build skips Hidden before marking a key as seen; ActiveKeybinds orders focused bindings before ancestor bindings.",
+    "source_sha256": "0c4bb426e0cedb7033fc9d016875c49e369ced585f619acd79247dcca8585efa"
+  },
+  {
+    "page": "docs/widgets/keybindbar.md",
+    "text": "Consecutive bindings with the same `Name` share one label, with their keys joined by `/`.",
+    "source": "keybindbar.go",
+    "symbol": "KeybindBar.Build",
+    "evidence": "Groups adjacent matching names and joins their keys using strings.Join with slash.",
+    "source_sha256": "0c4bb426e0cedb7033fc9d016875c49e369ced585f619acd79247dcca8585efa"
+  },
+  {
+    "page": "docs/widgets/keybindbar.md",
+    "text": "Hints that do not fit are omitted from the end rather than truncated.",
+    "source": "keybindbar.go",
+    "symbol": "keybindBarLine.Render",
+    "evidence": "Stops before the first whole hint that would exceed ctx.Width.",
+    "source_sha256": "0c4bb426e0cedb7033fc9d016875c49e369ced585f619acd79247dcca8585efa"
+  },
+  {
+    "page": "docs/widgets/keybindbar.md",
+    "text": "The default width is `Flex(1)`, and the default height is one cell.",
+    "source": "keybindbar.go",
+    "symbol": "KeybindBar.GetContentDimensions",
+    "evidence": "Unset dimensions resolve to Flex(1) and Cells(1).",
+    "source_sha256": "0c4bb426e0cedb7033fc9d016875c49e369ced585f619acd79247dcca8585efa"
+  },
+  {
+    "page": "docs/widgets/keybindbar.md",
+    "text": "`FormatKey` changes the displayed key names.",
+    "source": "keybindbar.go",
+    "symbol": "KeybindBar.formatKey",
+    "evidence": "Invokes custom FormatKey when set.",
+    "source_sha256": "0c4bb426e0cedb7033fc9d016875c49e369ced585f619acd79247dcca8585efa"
+  },
+  {
+    "page": "docs/widgets/keybindbar.md",
+    "text": "Without a formatter, a literal space becomes `space`, and other keys keep their names.",
+    "source": "keybindbar.go",
+    "symbol": "KeybindBar.formatKey",
+    "evidence": "Only maps the literal space key; returns other strings unchanged.",
+    "source_sha256": "0c4bb426e0cedb7033fc9d016875c49e369ced585f619acd79247dcca8585efa"
+  },
+  {
+    "page": "docs/widgets/keybindbar.md",
+    "text": "`Style` controls the bar's appearance.",
+    "source": "keybindbar.go",
+    "symbol": "KeybindBar.Build",
+    "evidence": "Passes Style into the rendered Text.",
+    "source_sha256": "0c4bb426e0cedb7033fc9d016875c49e369ced585f619acd79247dcca8585efa"
+  },
+  {
+    "page": "docs/widgets/keybindbar.md",
+    "text": "[Jumper](jumper.md) exposes its jump toggle in the keybinding bar.",
+    "source": "jump.go",
+    "symbol": "Jumper.Keybinds",
+    "evidence": "Returns a non-hidden Jump binding for the toggle key.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "`Jumper` adds labeled keyboard targets to its child widget.",
+    "source": "jump.go",
+    "symbol": "Jumper.Build",
+    "evidence": "Registers jumpOverlay while active and returns Child.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "Jump mode labels a folder list and its visible items.",
+    "source": "docs/widget-examples/collections/examples.go",
+    "symbol": "JumperPreview",
+    "evidence": "The compiled example constructs the stated widgets and sample content.",
+    "source_sha256": "5784a1f5a6cfb634915105c66ffcddb7d669fbb782cf7980e638a26b3d61d4d3"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "The image and registered demo start with jump mode active through the preview function below.",
+    "source": "docs/widget-examples/collections/examples.go",
+    "symbol": "JumperPreview",
+    "evidence": "The compiled example constructs the stated widgets and sample content.",
+    "source_sha256": "5784a1f5a6cfb634915105c66ffcddb7d669fbb782cf7980e638a26b3d61d4d3"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "`NewJumpState` creates inactive jump state.",
+    "source": "jump.go",
+    "symbol": "NewJumpState",
+    "evidence": "Initializes active to false and typed to an empty string.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "Ctrl+O toggles jump mode by default, and `Key` changes this binding.",
+    "source": "jump.go",
+    "symbol": "Jumper.toggleKey",
+    "evidence": "Returns DefaultJumpKey ctrl+o when Key is empty.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "`Targets` assigns fixed keys to widget IDs.",
+    "source": "jump.go",
+    "symbol": "JumpTarget",
+    "evidence": "Key and ID define each static target; overlay resolves targets by ID.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "A static target on a focusable widget moves focus to it, while a container target focuses its first focusable descendant.",
+    "source": "jump.go",
+    "symbol": "resolveJumpLabels",
+    "evidence": "Static resolution uses a focusable target or the first candidate contained in its bounds.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "A target with an `Action` calls it instead of changing focus.",
+    "source": "jump.go",
+    "symbol": "JumpState.jump",
+    "evidence": "Action branch calls action and returns before RequestFocus.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "Static keys can contain multiple characters, but one key must not prefix another.",
+    "source": "jump.go",
+    "symbol": "JumpState.handleKey",
+    "evidence": "Exact matches execute immediately before prefix matching, making longer prefixed keys unreachable.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "`Dynamic` adds hints to visible list items, tree nodes, table rows or cells, tabs, and other jump targets.",
+    "source": "jump.go",
+    "symbol": "Jumper.Dynamic",
+    "evidence": "Dynamic collection uses Jumpable items and remaining focusable widgets; builtin widgets implement Jump.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "A static target on a non-focusable `Jumpable` item invokes its jump behavior.",
+    "source": "jump.go",
+    "symbol": "resolveJumpLabels",
+    "evidence": "resolveJumpLabels checks direct focusable candidates first, then resolves a non-focusable Jumpable through jumpItem, whose action calls Jump.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "Custom widgets implement `Jumpable` with a `Jump()` method.",
+    "source": "jump.go",
+    "symbol": "Jumpable",
+    "evidence": "The interface contains Jump().",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "`Hints` supplies the characters for dynamic labels.",
+    "source": "jump.go",
+    "symbol": "Jumper.Hints",
+    "evidence": "Dynamic label generation selects Hints or DefaultJumpHints.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "Typing part of a label narrows the hints, and Backspace removes the last typed character.",
+    "source": "jump.go",
+    "symbol": "JumpState.handleKey",
+    "evidence": "Prefix match updates typed and backspace removes the last rune.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "Escape, the toggle key, a click, or an unmatched key leaves jump mode.",
+    "source": "jump.go",
+    "symbol": "JumpState.handleKey",
+    "evidence": "Escape/toggle/unmatched input deactivate; jump overlay mouse handler deactivates on click.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "Only visible targets receive labels. When focus is inside a trap, jumps stay within that trap.",
+    "source": "jump.go",
+    "symbol": "resolveJumpLabels",
+    "evidence": "resolveJumpLabels derives trapID from the currently focused entry, then restricts candidates and item holders to that scope.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "`State.Activate()` enters jump mode programmatically.",
+    "source": "jump.go",
+    "symbol": "JumpState.Activate",
+    "evidence": "Clears typed and sets active true.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "`State.IsActive()` and `State.Typed()` read reactive state.",
+    "source": "jump.go",
+    "symbol": "JumpState.IsActive",
+    "evidence": "IsActive and Typed use signal Get.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "`LabelStyle` changes label styling, and `Backdrop` controls the tint behind labels.",
+    "source": "jump.go",
+    "symbol": "Jumper",
+    "evidence": "Fields are consumed by overlay rendering for label style and backdrop color.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "[Tabs](tabs.md) provides `TabBar.TabID` for targeting an individual tab.",
+    "source": "tab.go",
+    "symbol": "TabBar.TabID",
+    "evidence": "Returns a stable ID derived from the bar ID and tab key.",
+    "source_sha256": "f8b2e2f8c9ba1460727da2bbf47d88573af905c7a08df8d6225f69ab5bc54ea5"
+  },
+  {
+    "page": "docs/widgets/jumper.md",
+    "text": "Create state once with `NewJumpState` and reuse it across builds.",
+    "source": "jump.go",
+    "symbol": "NewJumpState",
+    "evidence": "The constructor allocates fresh signals and initial state; calling it in each Build would discard the current state.",
+    "source_sha256": "1c6e8f1f597ac465b80abfe174b348b4bc063a95c1a4ecca3a804504baacd91a"
+  }
+]
