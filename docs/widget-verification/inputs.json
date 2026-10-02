@@ -1,0 +1,1186 @@
+[
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "`Menu` displays a floating list of actions with optional submenus, shortcut hints, and dividers.",
+    "source": "menu.go",
+    "symbol": "Menu.Build",
+    "evidence": "Build registers Floating; renderItem displays label, divider, and shortcut or submenu suffix.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "A File menu with New note, Open note, and a disabled Export item.",
+    "source": "docs/widget-examples/inputs/examples.go",
+    "symbol": "Menu",
+    "evidence": "The example constructs the widgets and text described in the image alt text; the parent renderer captures this registered example.",
+    "source_sha256": "e1532654763a50fffdea246c8179024388c85bee900b31092cc3b5a880d16685"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "`NewMenuState` stores the items and chooses the first selectable item.",
+    "source": "menu.go",
+    "symbol": "NewMenuState",
+    "evidence": "The constructor stores items and sets cursorIndex from firstSelectableIndex.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "Up and Down, or `k` and `j`, move through selectable items and wrap at the ends.",
+    "source": "menu.go",
+    "symbol": "Menu.Keybinds",
+    "evidence": "Binds lowercase k/j and arrow keys; moveNext and movePrevious wrap and skip unselectable items.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "Home and End move to the first and last selectable items.",
+    "source": "menu.go",
+    "symbol": "Menu.Keybinds",
+    "evidence": "home/end call moveFirst/moveLast, which scan selectable items.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "Enter and Space select the current item.",
+    "source": "menu.go",
+    "symbol": "Menu.Keybinds",
+    "evidence": "The enter and space bindings call selectCurrent.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "`Disabled` items and dividers cannot be selected.",
+    "source": "menu.go",
+    "symbol": "MenuItem.IsSelectable",
+    "evidence": "IsSelectable returns false for Disabled or IsDivider.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "`Shortcut` displays a hint without registering a keybinding.",
+    "source": "menu.go",
+    "symbol": "Menu.Keybinds",
+    "evidence": "Keybinds contains only fixed navigation keys; menuItemSuffix renders Shortcut as text.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "An empty `MenuItem` creates a plain divider, while `Divider` adds a title.",
+    "source": "menu.go",
+    "symbol": "MenuItem.IsDivider",
+    "evidence": "An otherwise empty item is a divider; renderItem uses Divider as the title.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "Right or `l` opens the selected item's `Children` submenu.",
+    "source": "menu.go",
+    "symbol": "Menu.Keybinds",
+    "evidence": "Right and lowercase l both bind openSubmenu.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "Selecting an item with children also opens its submenu.",
+    "source": "menu.go",
+    "symbol": "Menu.selectCurrent",
+    "evidence": "The Children branch calls openSubmenu and returns.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "Left or `h` closes a submenu and returns focus to its parent. At the top level, it calls `OnDismiss`.",
+    "source": "menu.go",
+    "symbol": "Menu.closeSubmenu",
+    "evidence": "Closes an open submenu and requests parent focus; a submenu with no child calls dismiss, whose parent callback closes it. Root dismissal invokes OnDismiss.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "For a leaf item, `OnSelect` overrides the item's `Action`.",
+    "source": "menu.go",
+    "symbol": "Menu.selectCurrent",
+    "evidence": "OnSelect runs and returns before Action.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "The menu stays in the widget tree until your application hides it.",
+    "source": "menu.go",
+    "symbol": "Menu.Build",
+    "evidence": "Menu always registers a visible float when State is non-nil; selectCurrent and dismiss do not own visibility.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "The example hides the menu after selection or dismissal and reopens it with the File button.",
+    "source": "docs/widget-examples/inputs/examples.go",
+    "symbol": "menuExample.Build",
+    "evidence": "OnSelect and OnDismiss set visible false; the button sets visible true; ShowWhen reads visible.",
+    "source_sha256": "e1532654763a50fffdea246c8179024388c85bee900b31092cc3b5a880d16685"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "Escape calls `OnDismiss`, and an outside click also calls it when supplied.",
+    "source": "menu.go",
+    "symbol": "Menu.dismissCallback",
+    "evidence": "The escape binding calls dismiss; Build forwards dismissCallback into non-modal Floating, whose default outside dismissal requires a callback.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "`AnchorID` attaches the menu below a widget at `AnchorBottomLeft` unless `Anchor` is set.",
+    "source": "menu.go",
+    "symbol": "Menu.anchor",
+    "evidence": "When AnchorID is present and Anchor unset, anchor returns AnchorBottomLeft.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/menu.md",
+    "text": "`Position` and `Offset` place a menu without an anchor.",
+    "source": "menu.go",
+    "symbol": "Menu.Build",
+    "evidence": "Build forwards Position and Offset to FloatConfig.",
+    "source_sha256": "41f63db30b89454ef822fe511bdc445fa4a11212ad7121d97e8a1628c880038c"
+  },
+  {
+    "page": "docs/widgets/button.md",
+    "text": "`Button` displays a label and calls `OnPress` when activated.",
+    "source": "button.go",
+    "symbol": "Button.press",
+    "evidence": "press invokes the non-nil OnPress callback, and Build renders Label between brackets.",
+    "source_sha256": "e0908aca7963fe2a93deed91cab6dfd0fef881b75abfcc724196259409ef52af"
+  },
+  {
+    "page": "docs/widgets/button.md",
+    "text": "A Save button above the text Ready to save.",
+    "source": "docs/widget-examples/inputs/examples.go",
+    "symbol": "Button",
+    "evidence": "The example constructs the widgets and text described in the image alt text; the parent renderer captures this registered example.",
+    "source_sha256": "e1532654763a50fffdea246c8179024388c85bee900b31092cc3b5a880d16685"
+  },
+  {
+    "page": "docs/widgets/button.md",
+    "text": "A left click activates the button.",
+    "source": "button.go",
+    "symbol": "Button.OnClick",
+    "evidence": "MouseLeft calls press; other buttons skip press.",
+    "source_sha256": "e0908aca7963fe2a93deed91cab6dfd0fef881b75abfcc724196259409ef52af"
+  },
+  {
+    "page": "docs/widgets/button.md",
+    "text": "Enter and Space activate the focused button through its keybindings.",
+    "source": "button.go",
+    "symbol": "Button.Keybinds",
+    "evidence": "The enter and space bindings call press.",
+    "source_sha256": "e0908aca7963fe2a93deed91cab6dfd0fef881b75abfcc724196259409ef52af"
+  },
+  {
+    "page": "docs/widgets/button.md",
+    "text": "The optional `Click` callback receives mouse clicks after `OnPress` runs for a left click.",
+    "source": "button.go",
+    "symbol": "Button.OnClick",
+    "evidence": "The Click branch follows the MouseLeft press branch and has no mouse-button condition.",
+    "source_sha256": "e0908aca7963fe2a93deed91cab6dfd0fef881b75abfcc724196259409ef52af"
+  },
+  {
+    "page": "docs/widgets/button.md",
+    "text": "`DisableFocus` prevents keyboard focus.",
+    "source": "button.go",
+    "symbol": "Button.IsFocusable",
+    "evidence": "IsFocusable returns the negation of DisableFocus.",
+    "source_sha256": "e0908aca7963fe2a93deed91cab6dfd0fef881b75abfcc724196259409ef52af"
+  },
+  {
+    "page": "docs/widgets/button.md",
+    "text": "The example changes the status text to Saved when you activate the button.",
+    "source": "docs/widget-examples/inputs/examples.go",
+    "symbol": "Button",
+    "evidence": "OnPress sets the status signal to Saved and SignalText reads it.",
+    "source_sha256": "e1532654763a50fffdea246c8179024388c85bee900b31092cc3b5a880d16685"
+  },
+  {
+    "page": "docs/widgets/button.md",
+    "text": "`Variant` selects the default foreground and background colors from the theme.",
+    "source": "button.go",
+    "symbol": "buttonVariantColors",
+    "evidence": "The switch maps each ButtonVariant to a pair of theme colors.",
+    "source_sha256": "e0908aca7963fe2a93deed91cab6dfd0fef881b75abfcc724196259409ef52af"
+  },
+  {
+    "page": "docs/widgets/button.md",
+    "text": "The variants are `ButtonDefault`, `ButtonPrimary`, `ButtonAccent`, `ButtonSuccess`, `ButtonError`, `ButtonWarning`, and `ButtonInfo`.",
+    "source": "button.go",
+    "symbol": "ButtonVariant",
+    "evidence": "These seven constants are declared by the ButtonVariant const block.",
+    "source_sha256": "e0908aca7963fe2a93deed91cab6dfd0fef881b75abfcc724196259409ef52af"
+  },
+  {
+    "page": "docs/widgets/button.md",
+    "text": "`Style` accepts explicit colors and dimensions.",
+    "source": "button.go",
+    "symbol": "Button.Build",
+    "evidence": "Build copies Style and applies variant colors only where the style colors are unset.",
+    "source_sha256": "e0908aca7963fe2a93deed91cab6dfd0fef881b75abfcc724196259409ef52af"
+  },
+  {
+    "page": "docs/widgets/button.md",
+    "text": "While focused, the button uses the variant colors.",
+    "source": "button.go",
+    "symbol": "Button.Build",
+    "evidence": "The focused branch overrides style foreground and background with variantFg and variantBg, with hover tint applied.",
+    "source_sha256": "e0908aca7963fe2a93deed91cab6dfd0fef881b75abfcc724196259409ef52af"
+  },
+  {
+    "page": "docs/widgets/checkbox.md",
+    "text": "`Checkbox` displays a checked or unchecked indicator with an optional label.",
+    "source": "checkbox.go",
+    "symbol": "Checkbox.Build",
+    "evidence": "Build chooses the indicator from State.Checked and appends a nonempty Label.",
+    "source_sha256": "49137000126fc5b8810944b4e3c4d816b4554749100f56da9779dc033af1fce2"
+  },
+  {
+    "page": "docs/widgets/checkbox.md",
+    "text": "A checked checkbox labeled Enable notifications.",
+    "source": "docs/widget-examples/inputs/examples.go",
+    "symbol": "Checkbox",
+    "evidence": "The example constructs the widgets and text described in the image alt text; the parent renderer captures this registered example.",
+    "source_sha256": "e1532654763a50fffdea246c8179024388c85bee900b31092cc3b5a880d16685"
+  },
+  {
+    "page": "docs/widgets/checkbox.md",
+    "text": "`NewCheckboxState` sets the initial checked value.",
+    "source": "checkbox.go",
+    "symbol": "NewCheckboxState",
+    "evidence": "The constructor initializes Checked with NewSignal(checked).",
+    "source_sha256": "49137000126fc5b8810944b4e3c4d816b4554749100f56da9779dc033af1fce2"
+  },
+  {
+    "page": "docs/widgets/checkbox.md",
+    "text": "Enter and Space toggle the focused checkbox.",
+    "source": "checkbox.go",
+    "symbol": "Checkbox.Keybinds",
+    "evidence": "The enter and space bindings both call toggle.",
+    "source_sha256": "49137000126fc5b8810944b4e3c4d816b4554749100f56da9779dc033af1fce2"
+  },
+  {
+    "page": "docs/widgets/checkbox.md",
+    "text": "A mouse click also toggles the checkbox.",
+    "source": "checkbox.go",
+    "symbol": "Checkbox.OnClick",
+    "evidence": "OnClick unconditionally calls toggle.",
+    "source_sha256": "49137000126fc5b8810944b4e3c4d816b4554749100f56da9779dc033af1fce2"
+  },
+  {
+    "page": "docs/widgets/checkbox.md",
+    "text": "`OnChange` receives the new value after the widget toggles its state.",
+    "source": "checkbox.go",
+    "symbol": "Checkbox.toggle",
+    "evidence": "toggle calls State.Toggle before invoking OnChange with State.IsChecked.",
+    "source_sha256": "49137000126fc5b8810944b4e3c4d816b4554749100f56da9779dc033af1fce2"
+  },
+  {
+    "page": "docs/widgets/checkbox.md",
+    "text": "Calling `State.SetChecked` or `State.Toggle` updates the state without calling the widget's `OnChange` callback.",
+    "source": "checkbox.go",
+    "symbol": "CheckboxState.SetChecked",
+    "evidence": "SetChecked only sets Checked; CheckboxState.Toggle only updates Checked; OnChange belongs to Checkbox.toggle.",
+    "source_sha256": "49137000126fc5b8810944b4e3c4d816b4554749100f56da9779dc033af1fce2"
+  },
+  {
+    "page": "docs/widgets/checkbox.md",
+    "text": "`State.IsChecked()` reads the value without subscribing to changes.",
+    "source": "checkbox.go",
+    "symbol": "CheckboxState.IsChecked",
+    "evidence": "IsChecked calls Checked.Peek.",
+    "source_sha256": "49137000126fc5b8810944b4e3c4d816b4554749100f56da9779dc033af1fce2"
+  },
+  {
+    "page": "docs/widgets/checkbox.md",
+    "text": "`State.Checked.Get()` subscribes when read during a tracked render phase.",
+    "source": "signal.go",
+    "symbol": "Signal.Get",
+    "evidence": "Get records the current render-phase subscription in listeners and trackDependency before returning the value.",
+    "source_sha256": "ceddbd9b6ac8984b48225b2fb69d696c7eab29b450f86d401deb4bbc64df5be8"
+  },
+  {
+    "page": "docs/widgets/checkbox.md",
+    "text": "`DisableFocus` prevents keyboard focus.",
+    "source": "checkbox.go",
+    "symbol": "Checkbox.IsFocusable",
+    "evidence": "IsFocusable returns the negation of DisableFocus.",
+    "source_sha256": "49137000126fc5b8810944b4e3c4d816b4554749100f56da9779dc033af1fce2"
+  },
+  {
+    "page": "docs/widgets/checkbox.md",
+    "text": "The example returns a pointer because `Checkbox` implements its widget methods with pointer receivers.",
+    "source": "checkbox.go",
+    "symbol": "Checkbox.Build",
+    "evidence": "Build has receiver *Checkbox, as do the focus and interaction methods.",
+    "source_sha256": "49137000126fc5b8810944b4e3c4d816b4554749100f56da9779dc033af1fce2"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "`TextInput` edits one line of text with cursor movement, selection, and horizontal scrolling.",
+    "source": "text_input.go",
+    "symbol": "TextInput.Render",
+    "evidence": "Render draws one content row with selection and cursor; updateScrollOffset keeps the focused cursor within the viewport.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "A text input containing hello@terma.dev above a submission prompt.",
+    "source": "docs/widget-examples/inputs/examples.go",
+    "symbol": "TextInput",
+    "evidence": "The example constructs the widgets and text described in the image alt text; the parent renderer captures this registered example.",
+    "source_sha256": "e1532654763a50fffdea246c8179024388c85bee900b31092cc3b5a880d16685"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "`NewTextInputState` stores the initial text and places the cursor at its end.",
+    "source": "text_input.go",
+    "symbol": "NewTextInputState",
+    "evidence": "The constructor splits the initial text into graphemes and sets CursorIndex to their count.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "`State.GetText()` reads the current text without subscribing to changes.",
+    "source": "text_input.go",
+    "symbol": "TextInputState.GetText",
+    "evidence": "GetText joins Content.Peek(), so the read is non-reactive.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "`OnChange` receives text after edits handled by the widget.",
+    "source": "text_input.go",
+    "symbol": "TextInput.notifyChange",
+    "evidence": "notifyChange calls OnChange with State.GetText; editing handlers call notifyChange.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "Enter calls `OnSubmit` while the input is editable.",
+    "source": "text_input.go",
+    "symbol": "TextInput.Keybinds",
+    "evidence": "The enter binding exists inside canEdit and calls submit, which calls OnSubmit.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "`Placeholder` appears when the text is empty.",
+    "source": "text_input.go",
+    "symbol": "TextInput.Render",
+    "evidence": "The empty-graphemes branch renders Placeholder regardless of focus.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "The content height is always one cell, with border and padding added outside it.",
+    "source": "text_input.go",
+    "symbol": "TextInput.GetContentDimensions",
+    "evidence": "GetContentDimensions returns Cells(1), and its contract states border and padding add to outer size.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "Left and Right move by one grapheme, while Home and End move to the beginning and end.",
+    "source": "text_input.go",
+    "symbol": "TextInput.Keybinds",
+    "evidence": "These bindings call the state cursor methods that adjust grapheme indexes or choose zero and len(content).",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "Ctrl+Left and Ctrl+Right move by word.",
+    "source": "text_input.go",
+    "symbol": "TextInput.Keybinds",
+    "evidence": "The bindings call cursorWordLeft and cursorWordRight.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "Shift with these movement keys extends the selection.",
+    "source": "text_input.go",
+    "symbol": "TextInput.Keybinds",
+    "evidence": "Shift+Left, Shift+Right, Shift+Home, Shift+End, Ctrl+Shift+Left, and Ctrl+Shift+Right call selection methods.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "Ctrl+A selects all text.",
+    "source": "text_input.go",
+    "symbol": "TextInput.Keybinds",
+    "evidence": "ctrl+a is bound to selectAll.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "Without a selection, Backspace deletes before the cursor, and Delete removes the grapheme at the cursor.",
+    "source": "text_input.go",
+    "symbol": "TextInput.deleteBackward",
+    "evidence": "deleteBackward and deleteForward replace the selection first or call the corresponding state deletion.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "Without a selection, Ctrl+U deletes to the beginning, Ctrl+K deletes to the end, and Ctrl+W deletes the previous word.",
+    "source": "text_input.go",
+    "symbol": "TextInput.Keybinds",
+    "evidence": "The three bindings call deleteToBeginning, deleteToEnd, and deleteWordBackward.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "`ExtraKeybinds` precede the default bindings.",
+    "source": "text_input.go",
+    "symbol": "TextInput.Keybinds",
+    "evidence": "The return value prepends ExtraKeybinds.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "`State.ReadOnly` blocks user edits while cursor movement and selection remain available.",
+    "source": "text_input.go",
+    "symbol": "TextInput.Keybinds",
+    "evidence": "Navigation and selection bindings are unconditional; editing keys and OnKey insertion require canEdit.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "`OnPaste` can consume pasted text by returning `true`.",
+    "source": "text_input.go",
+    "symbol": "TextInput.HandlePaste",
+    "evidence": "HandlePaste returns immediately when OnPaste returns true.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "`TextArea` edits multiple lines with cursor movement, selection, and configurable wrapping.",
+    "source": "text_area.go",
+    "symbol": "TextArea.Keybinds",
+    "evidence": "Keybinds contains multi-line movement, selection, and newline insertion; layout reads State.WrapMode.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "A text area with release notes and a prompt to add a summary.",
+    "source": "docs/widget-examples/inputs/examples.go",
+    "symbol": "TextArea",
+    "evidence": "The example constructs the widgets and text described in the image alt text; the parent renderer captures this registered example.",
+    "source_sha256": "e1532654763a50fffdea246c8179024388c85bee900b31092cc3b5a880d16685"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "`NewTextAreaState` stores the initial text, places the cursor at its end, and enables soft wrapping.",
+    "source": "text_area.go",
+    "symbol": "NewTextAreaState",
+    "evidence": "The constructor sets Content, CursorIndex to grapheme count, and WrapMode to WrapSoft.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "`Style.Width` and `Style.Height` set the content dimensions.",
+    "source": "text_area.go",
+    "symbol": "TextArea.GetContentDimensions",
+    "evidence": "The method resolves dimensions from Style, with legacy dimension fallbacks.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "`State.GetText()` reads the current text without subscribing to changes.",
+    "source": "text_area.go",
+    "symbol": "TextAreaState.GetText",
+    "evidence": "GetText joins Content.Peek(), so the read is non-reactive.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "Enter inserts a newline while editing is enabled.",
+    "source": "text_area.go",
+    "symbol": "TextArea.Keybinds",
+    "evidence": "The enter Newline binding is appended when canInsert returns true.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "Ctrl+Enter calls `OnSubmit` when that callback is set.",
+    "source": "text_area.go",
+    "symbol": "TextArea.Keybinds",
+    "evidence": "The ctrl+enter binding is appended only when OnSubmit is non-nil.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "`OnChange` receives the text after edits handled by the widget.",
+    "source": "text_area.go",
+    "symbol": "TextArea.notifyChange",
+    "evidence": "Editing handlers invoke notifyChange, which passes State.GetText to OnChange.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "Arrow keys move the cursor, and Shift with an arrow key extends the selection.",
+    "source": "text_area.go",
+    "symbol": "TextArea.Keybinds",
+    "evidence": "All four plain arrows and shift arrows are bound to movement and selection methods.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "Home and End move to the boundaries of the current newline-delimited line, while Ctrl+Left and Ctrl+Right move by word.",
+    "source": "text_area.go",
+    "symbol": "TextAreaState.CursorHome",
+    "evidence": "CursorHome and CursorEnd use lineBoundsForIndex, which searches for newline graphemes rather than visual wrap boundaries; Keybinds maps Ctrl+Left/Right to word movement.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "Ctrl+A selects all text.",
+    "source": "text_area.go",
+    "symbol": "TextArea.Keybinds",
+    "evidence": "ctrl+a calls selectAll.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "A double click selects a word, and a triple click selects a line.",
+    "source": "text_area.go",
+    "symbol": "TextArea.OnMouseDown",
+    "evidence": "ClickCount 2 calls SelectWord; ClickCount 3 calls SelectLine.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "`State.ReadOnly` blocks user edits while movement and selection remain available.",
+    "source": "text_area.go",
+    "symbol": "TextArea.Keybinds",
+    "evidence": "Navigation and selection bindings are built before the canInsert guard; canInsert checks ReadOnly.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "`State.WrapMode` supports `WrapNone`, `WrapSoft`, and `WrapHard`.",
+    "source": "text_area.go",
+    "symbol": "buildTextAreaLayoutWithColumns",
+    "evidence": "The layout handles no wrapping, wrapping at whitespace for WrapSoft, and cell-width breaks for WrapHard.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "`State.ToggleWrap()` changes `WrapNone` to `WrapSoft`, and either wrapping mode to `WrapNone`.",
+    "source": "text_area.go",
+    "symbol": "TextAreaState.ToggleWrap",
+    "evidence": "The method sets WrapSoft when WrapNone and sets WrapNone otherwise.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "`State.SearchQuery` highlights text matches, with case sensitivity controlled by `State.SearchCaseSensitive`.",
+    "source": "text_area_search.go",
+    "symbol": "TextAreaState.matchesFor",
+    "evidence": "The search cache computes matches from query and caseSensitive; TextArea.Render reads these matches for painting.",
+    "source_sha256": "d783e8cfb62e6f7d129c3f80919c440b664aa65d38a85b9ba163d5c7f3c28a98"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "`ExtraKeybinds` precede default bindings, and `OnPaste` can consume a paste by returning `true`.",
+    "source": "text_area.go",
+    "symbol": "TextArea.Keybinds",
+    "evidence": "Keybinds prepends ExtraKeybinds; HandlePaste returns before insertion when OnPaste returns true.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "`Autocomplete` wraps a `TextInput` or `TextArea` with a list of suggestions.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.wrapChild",
+    "evidence": "wrapChild dispatches to wrapTextInput and wrapTextArea; buildPopup creates the suggestion list.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "A city input with London, Lisbon, and Lima suggestions.",
+    "source": "docs/widget-examples/inputs/examples.go",
+    "symbol": "Autocomplete",
+    "evidence": "The example constructs the widgets and text described in the image alt text; the parent renderer captures this registered example.",
+    "source_sha256": "e1532654763a50fffdea246c8179024388c85bee900b31092cc3b5a880d16685"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "`State.SetSuggestions` replaces the available suggestions.",
+    "source": "autocomplete.go",
+    "symbol": "AutocompleteState.SetSuggestions",
+    "evidence": "It updates both Suggestions and listState.Items.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "`Suggestion.Label` is the displayed text, while `Value` is the inserted text.",
+    "source": "autocomplete.go",
+    "symbol": "Suggestion",
+    "evidence": "defaultRenderSuggestion renders Label; insertion strategies choose Value.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "The built-in insertion strategies use `Label` when `Value` is empty.",
+    "source": "autocomplete.go",
+    "symbol": "InsertReplace",
+    "evidence": "All four insertion strategies fall back from empty Value to Label.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "The input keeps focus while Up and Down move through visible suggestions.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.buildPopup",
+    "evidence": "The popup List uses DisableFocus true, while injected input bindings call selection movement.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "Enter or Tab accepts a visible suggestion, and Escape dismisses the popup.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.popupKeybindsForTextInput",
+    "evidence": "The input and area popup bindings call selection on Enter/Tab and dismiss on Escape when visible.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "Selection updates the input, calls its `OnChange`, dismisses the popup, then calls `OnSelect`.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.selectSuggestion",
+    "evidence": "selectSuggestion sets text and cursor, calls child OnChange, calls dismiss, then invokes OnSelect.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "The popup normally dismisses when the input loses focus.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.dismissOnBlurEnabled",
+    "evidence": "The method defaults to true and Build hides a visible popup when its child is unfocused.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "The example disables that behavior so the suggestions remain visible before the input receives focus.",
+    "source": "docs/widget-examples/inputs/examples.go",
+    "symbol": "Autocomplete",
+    "evidence": "The example supplies DismissOnBlur BoolPtr(false).",
+    "source_sha256": "e1532654763a50fffdea246c8179024388c85bee900b31092cc3b5a880d16685"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "Without `TriggerChars`, the query is the text before the cursor.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.extractQuery",
+    "evidence": "When no triggers are configured, extractQuery returns runes up to cursorPos.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "With `TriggerChars`, the query starts after a trigger at the beginning of the text or after whitespace.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.findTriggerPosition",
+    "evidence": "The backward scan recognizes a configured trigger at index zero or following whitespace.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "`TriggerAnywhere` also permits a trigger inside a word.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.findTriggerPosition",
+    "evidence": "TriggerAnywhere bypasses the word-start condition.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "`MinChars` sets the minimum query length for the popup.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.updateTriggerAndQuery",
+    "evidence": "shouldShow requires queryRuneCount >= MinChars.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "Matching defaults to `FilterContains`. `FilterFuzzy` enables fuzzy matching.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.matchMode",
+    "evidence": "matchMode returns MatchMode whose zero value is FilterContains, and the filter consumes it.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "The default insertion replaces the entire input without triggers, or replaces the trigger and query when triggers are configured.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.selectSuggestion",
+    "evidence": "A nil Insert chooses InsertReplace or InsertFromTrigger based on TriggerChars.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "The `Insert` field accepts `InsertAtCursor`, `InsertReplaceWord`, or a custom `InsertStrategy`.",
+    "source": "autocomplete.go",
+    "symbol": "InsertStrategy",
+    "evidence": "The Insert field accepts InsertStrategy; selectSuggestion invokes the configured strategy.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "`AnchorToInput` aligns the popup with the input content area and matches its width.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.buildFloatConfig",
+    "evidence": "The config offsets by content insets; buildPopup uses the measured anchorWidth.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "`CommandPalette` displays a searchable modal list of commands with optional nested levels.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.Build",
+    "evidence": "Build registers a modal Floating; selectCurrent pushes children as levels.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "An open command palette with New note and Open settings commands.",
+    "source": "docs/widget-examples/inputs/examples.go",
+    "symbol": "CommandPalette",
+    "evidence": "The example constructs the widgets and text described in the image alt text; the parent renderer captures this registered example.",
+    "source_sha256": "e1532654763a50fffdea246c8179024388c85bee900b31092cc3b5a880d16685"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "`State.Open()` shows the palette, and `State.Close()` hides it.",
+    "source": "command_palette.go",
+    "symbol": "CommandPaletteState.Open",
+    "evidence": "Open sets Visible true; Close sets it false.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "Selecting an item without `Children` calls its `Action`. The palette stays open unless your callback closes it.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.selectCurrent",
+    "evidence": "The default leaf-selection path invokes Action without calling Close.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "`OnSelect` overrides the default action and nested-level handling.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.selectCurrent",
+    "evidence": "The OnSelect branch returns before Children and Action handling.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "Up and Down, or Ctrl+P and Ctrl+N, move between selectable items.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.buildInput",
+    "evidence": "These bindings call moveCursor, which tests IsSelectable.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "Home and End choose the first and last selectable items.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.buildInput",
+    "evidence": "Home and End call moveCursorToStart and moveCursorToEnd, which find selectable indices.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "Enter chooses the current item.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.buildInput",
+    "evidence": "enter is bound to selectCurrent.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "`OnCursorChange` receives the current selectable item after palette navigation or a query change.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.notifyCursorChange",
+    "evidence": "Palette movement, query changes, push/pop handlers, and breadcrumb navigation call notifyCursorChange; direct state mutations do not automatically invoke the callback.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "Each level starts with fuzzy matching enabled.",
+    "source": "command_palette.go",
+    "symbol": "newCommandPaletteLevel",
+    "evidence": "The constructor sets FilterState.Mode to FilterFuzzy.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "Fuzzy results are ranked by match score. Dividers disappear while the query contains non-whitespace characters.",
+    "source": "command_palette.go",
+    "symbol": "commandPaletteFilteredView",
+    "evidence": "Fuzzy views are sorted by score; commandPaletteMatchItem excludes dividers for nonempty queries.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "When the query contains non-whitespace characters, changing it moves the cursor to the first selectable result.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.buildInput",
+    "evidence": "onFilterChange updates Query then calls resetCursor.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "When the query is empty or whitespace, the first selectable `Current: true` item receives the cursor, or the first selectable item if none is current.",
+    "source": "command_palette.go",
+    "symbol": "CommandPaletteState.resetCursor",
+    "evidence": "The method chooses currentItemIndex only when the trimmed query is empty.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "`FilterText` replaces the label as the search text, so it must include any label words you want to match.",
+    "source": "command_palette.go",
+    "symbol": "commandPaletteMatchItem",
+    "evidence": "When FilterText differs from Label, a failed FilterText match returns before label matching.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "Matches through hidden keywords rank below comparable label matches.",
+    "source": "command_palette.go",
+    "symbol": "commandPaletteMatchItem",
+    "evidence": "The keyword score loses commandPaletteKeywordPenalty; matching labels can restore the better score.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "`State.CurrentLevel().FilterState.Mode.Set(FilterContains)` selects substring matching in the original item order.",
+    "source": "command_palette.go",
+    "symbol": "commandPaletteFilteredView",
+    "evidence": "Sorting only runs for FilterFuzzy; FilterContains uses the ApplyFilter source order.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "An item's `Children` callback supplies a new level when the item is selected.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.selectCurrent",
+    "evidence": "Selection calls item.Children and passes its result to PushLevel.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "`ChildrenTitle` supplies the breadcrumb title, with the item label as its fallback.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.selectCurrent",
+    "evidence": "Empty ChildrenTitle is replaced with item.Label before PushLevel.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "Each nested level starts with an empty query, and returning to a parent preserves the parent's query and cursor.",
+    "source": "command_palette.go",
+    "symbol": "CommandPaletteState.PushLevel",
+    "evidence": "PushLevel creates fresh InputState; PopLevel removes only the top stack entry.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "Escape returns to the parent level or dismisses the palette at the root.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.handleEscape",
+    "evidence": "It first tries PopLevel, then calls dismiss.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "Backspace on an empty query also returns to the parent unless `DisableBackspaceToPop` is set.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.handleBackspace",
+    "evidence": "The handler pops on empty input; buildInput installs it only when DisableBackspaceToPop is false.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "An outside click dismisses the palette and calls `OnDismiss`.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.Build",
+    "evidence": "Build sets DismissOnClickOutside true and OnDismiss p.dismiss, which closes state then invokes the callback.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "`Close()` resets the level stack, queries, and cursor, while `Close(true)` preserves them.",
+    "source": "command_palette.go",
+    "symbol": "CommandPaletteState.Close",
+    "evidence": "Close calls resetToRoot unless the first keepPosition argument is true.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "Closing requests focus for the previous widget when it has an explicit ID, unless `SetNextFocusIDOnClose` supplies another ID.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.Build",
+    "evidence": "Build saves the focused Identifiable.WidgetID and on the hidden transition requests nextFocusID or lastFocusID only when nonempty.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "The palette defaults to the top center with a two-row inset.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.floatOffset",
+    "evidence": "floatPosition defaults to TopCenter; floatOffset fills zero Y with defaultCommandPaletteTopOffsetY, which is 2.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "`AnchorID` positions the palette relative to a widget and takes precedence over `Position`.",
+    "source": "floating.go",
+    "symbol": "FloatConfig",
+    "evidence": "Anchor-based positioning uses AnchorID when present; CommandPalette.Build forwards AnchorID and Position.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "An anchored palette defaults to `AnchorBottomLeft` and uses `Offset` without the top inset.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.floatAnchor",
+    "evidence": "floatAnchor chooses AnchorBottomLeft; floatOffset returns Offset directly when AnchorID is nonempty.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "`Dialog` displays a centered modal overlay with content and action buttons.",
+    "source": "dialog.go",
+    "symbol": "Dialog.Build",
+    "evidence": "Build creates a Column of Content and Buttons and registers a centered modal FloatEntry.",
+    "source_sha256": "d3ea53bfca94d3a3e1990c530062a38c6fb62084de9b8969f133318add19ed0c"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "A Welcome dialog with workspace text and a Continue button.",
+    "source": "docs/widget-examples/inputs/examples.go",
+    "symbol": "Dialog",
+    "evidence": "The example constructs the widgets and text described in the image alt text; the parent renderer captures this registered example.",
+    "source_sha256": "e1532654763a50fffdea246c8179024388c85bee900b31092cc3b5a880d16685"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "`Visible` controls whether the dialog registers an overlay.",
+    "source": "dialog.go",
+    "symbol": "Dialog.Build",
+    "evidence": "The false Visible branch returns EmptyWidget before float registration.",
+    "source_sha256": "d3ea53bfca94d3a3e1990c530062a38c6fb62084de9b8969f133318add19ed0c"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "`Content` accepts any widget.",
+    "source": "dialog.go",
+    "symbol": "Dialog",
+    "evidence": "Content has type Widget and Build appends it to body children when non-nil.",
+    "source_sha256": "d3ea53bfca94d3a3e1990c530062a38c6fb62084de9b8969f133318add19ed0c"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "Buttons appear from left to right in a row aligned to the right.",
+    "source": "dialog.go",
+    "symbol": "Dialog.Build",
+    "evidence": "Build iterates Buttons in order and creates a Row with MainAlign MainAxisEnd.",
+    "source_sha256": "d3ea53bfca94d3a3e1990c530062a38c6fb62084de9b8969f133318add19ed0c"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "When the dialog becomes visible, it requests focus for the first button.",
+    "source": "dialog.go",
+    "symbol": "Dialog.Build",
+    "evidence": "The first button gets RequestFocus when wasVisible is false.",
+    "source_sha256": "d3ea53bfca94d3a3e1990c530062a38c6fb62084de9b8969f133318add19ed0c"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "Buttons without IDs receive IDs derived from the dialog ID and their index.",
+    "source": "dialog.go",
+    "symbol": "Dialog.Build",
+    "evidence": "Empty button IDs become fmt.Sprintf with dialogID and the button index.",
+    "source_sha256": "d3ea53bfca94d3a3e1990c530062a38c6fb62084de9b8969f133318add19ed0c"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "The modal traps keyboard focus and places a backdrop behind its content.",
+    "source": "floating.go",
+    "symbol": "FloatConfig",
+    "evidence": "Modal defines trapped focus and a backdrop, and Dialog sets Modal true.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "Escape calls `OnDismiss` when that callback is set.",
+    "source": "floating.go",
+    "symbol": "FloatConfig.shouldDismissOnEsc",
+    "evidence": "The default returns OnDismiss != nil, and Dialog forwards its callback.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "A backdrop click does not dismiss this dialog.",
+    "source": "floating.go",
+    "symbol": "FloatConfig.shouldDismissOnClickOutside",
+    "evidence": "The default excludes Modal floats, and Dialog does not set an explicit override.",
+    "source_sha256": "3d669e9b1080e604e196c73c929eb771b5fc90f13c28acaf857ad85127eeb20e"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "Your callbacks control visibility, as the Continue button and `OnDismiss` do in the example.",
+    "source": "docs/widget-examples/inputs/examples.go",
+    "symbol": "dialogExample.Build",
+    "evidence": "Both callbacks call closeDialog, which sets visible false; Dialog.Visible reads the signal.",
+    "source_sha256": "e1532654763a50fffdea246c8179024388c85bee900b31092cc3b5a880d16685"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "The default border is rounded, with `Title` centered in its top edge.",
+    "source": "dialog.go",
+    "symbol": "Dialog.Build",
+    "evidence": "When Border is zero, Build creates RoundedBorder with BorderTitleCenter for a nonempty Title.",
+    "source_sha256": "d3ea53bfca94d3a3e1990c530062a38c6fb62084de9b8969f133318add19ed0c"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "The default width is 60 percent of the available width.",
+    "source": "dialog.go",
+    "symbol": "Dialog.Build",
+    "evidence": "An unset Style.Width is assigned Percent(60).",
+    "source_sha256": "d3ea53bfca94d3a3e1990c530062a38c6fb62084de9b8969f133318add19ed0c"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "Default padding is two cells horizontally and one cell vertically.",
+    "source": "dialog.go",
+    "symbol": "Dialog.Build",
+    "evidence": "Zero Padding is replaced with EdgeInsetsXY(2, 1).",
+    "source_sha256": "d3ea53bfca94d3a3e1990c530062a38c6fb62084de9b8969f133318add19ed0c"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "`Style` overrides the default colors, border, padding, and width when those values are set.",
+    "source": "dialog.go",
+    "symbol": "Dialog.Build",
+    "evidence": "Defaults are only applied to unset colors/width and zero border/padding.",
+    "source_sha256": "d3ea53bfca94d3a3e1990c530062a38c6fb62084de9b8969f133318add19ed0c"
+  },
+  {
+    "page": "docs/widgets/checkbox.md",
+    "text": "Create state once with `NewCheckboxState` and reuse it across builds.",
+    "source": "checkbox.go",
+    "symbol": "NewCheckboxState",
+    "evidence": "The constructor allocates fresh signals and initial state; calling it in each Build would discard the current state.",
+    "source_sha256": "49137000126fc5b8810944b4e3c4d816b4554749100f56da9779dc033af1fce2"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "Create state once with `NewTextInputState` and reuse it across builds.",
+    "source": "text_input.go",
+    "symbol": "NewTextInputState",
+    "evidence": "The constructor allocates fresh signals and initial state; calling it in each Build would discard the current state.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "Create state once with `NewTextAreaState` and reuse it across builds.",
+    "source": "text_area.go",
+    "symbol": "NewTextAreaState",
+    "evidence": "The constructor allocates fresh signals and initial state; calling it in each Build would discard the current state.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "Create state once with `NewAutocompleteState` and reuse it across builds.",
+    "source": "autocomplete.go",
+    "symbol": "NewAutocompleteState",
+    "evidence": "The constructor allocates fresh signals and initial state; calling it in each Build would discard the current state.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "Create state once with `NewCommandPaletteState` and reuse it across builds.",
+    "source": "command_palette.go",
+    "symbol": "NewCommandPaletteState",
+    "evidence": "The constructor allocates fresh signals and initial state; calling it in each Build would discard the current state.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "`Child` must be a `TextInput` or `TextArea` value with its own state and a stable, nonempty `ID`.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.wrapChild; Autocomplete.isChildFocused",
+    "evidence": "The type switches handle only TextInput and TextArea values; focus detection returns false for an empty child ID, which hides the popup with default DismissOnBlur.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "`OnDismiss` also runs when selection dismisses the popup.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.dismiss",
+    "evidence": "selectSuggestion calls dismiss before OnSelect; dismiss invokes OnDismiss when supplied.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/autocomplete.md",
+    "text": "A triggered query ends at whitespace.",
+    "source": "autocomplete.go",
+    "symbol": "Autocomplete.findTriggerPosition",
+    "evidence": "The backwards scan stops at whitespace before accepting a trigger.",
+    "source_sha256": "bc2ab7b4da9830aedbdd8a1dc83abcddb9eb1143f73fccff74727d70fc3055f6"
+  },
+  {
+    "page": "docs/widgets/textinput.md",
+    "text": "`State.SetText()` replaces the text and clamps the cursor without calling `OnChange`.",
+    "source": "text_input.go",
+    "symbol": "TextInputState.SetText",
+    "evidence": "SetText updates Content and clamps the cursor; it has no widget callback reference.",
+    "source_sha256": "25c64c2ab3acd59175b8f8d3385895e7b6b974d7ff553a8eafbe0e23d17d70f6"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "`State.SetText()` replaces the text and clamps the cursor without calling `OnChange`.",
+    "source": "text_area.go",
+    "symbol": "TextAreaState.SetText",
+    "evidence": "SetText updates Content and clamps the cursor; it has no widget callback reference.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "With `RequireInsertMode: true`, Escape leaves insert mode, and I or Enter re-enters it.",
+    "source": "text_area.go",
+    "symbol": "TextArea.Keybinds",
+    "evidence": "RequireInsertMode installs escape while InsertMode is true; otherwise it installs i and enter to enter insert mode.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/textarea.md",
+    "text": "New state starts in insert mode. Set `State.InsertMode.Set(false)` during setup to start in navigation mode.",
+    "source": "text_area.go",
+    "symbol": "NewTextAreaState; TextArea.canInsert",
+    "evidence": "The constructor initializes InsertMode true; canInsert checks it only when RequireInsertMode is true.",
+    "source_sha256": "913f83f84c75771c45ab28e3a1c4cd75938fd9b3c7a78ea813c0f21ec5d46c9e"
+  },
+  {
+    "page": "docs/widgets/commandpalette.md",
+    "text": "Keep the palette in the widget tree while hidden so it can restore focus after closing.",
+    "source": "command_palette.go",
+    "symbol": "CommandPalette.Build",
+    "evidence": "The hidden-after-visible Build branch performs focus restoration and updates wasVisible; removing the widget bypasses that branch.",
+    "source_sha256": "f9974332cde675548ad52528e8eeb57a843e7d49eef5ef063a81ac8cdbd2b31f"
+  },
+  {
+    "page": "docs/widgets/dialog.md",
+    "text": "Keep the dialog in the widget tree with `Visible: false` when hidden so its next opening requests button focus again.",
+    "source": "dialog.go",
+    "symbol": "Dialog.Build",
+    "evidence": "The hidden branch resets dialogVisibility for the dialog ID; removing the widget does not execute that reset.",
+    "source_sha256": "d3ea53bfca94d3a3e1990c530062a38c6fb62084de9b8969f133318add19ed0c"
+  }
+]

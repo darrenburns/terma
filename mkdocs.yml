@@ -1,6 +1,11 @@
 site_name: Terma
 site_description: A declarative terminal UI framework for Go
 docs_dir: docs
+exclude_docs: |
+  /README.md
+  widget-verification/
+  widget-examples/
+  minimal-examples/
 
 theme:
   name: material
@@ -47,13 +52,20 @@ nav:
     - Button: widgets/button.md
     - Checkbox: widgets/checkbox.md
     - CommandPalette: widgets/commandpalette.md
+    - Dialog: widgets/dialog.md
+    - EmptyWidget: widgets/empty.md
+    - FilePicker: widgets/filepicker.md
+    - Form and Field: widgets/form.md
     - FocusTrap: widgets/focustrap.md
     - Image: widgets/image.md
     - Jumper: widgets/jumper.md
     - KeybindBar: widgets/keybindbar.md
     - List: widgets/list.md
+    - Markdown: widgets/markdown.md
     - Menu: widgets/menu.md
+    - PresentedText: widgets/presentedtext.md
     - ProgressBar: widgets/progressbar.md
+    - SelectBox: widgets/select.md
     - Sparkline: widgets/sparkline.md
     - Spinner: widgets/spinner.md
     - Switcher: widgets/switcher.md

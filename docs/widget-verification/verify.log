@@ -1,0 +1,44 @@
+?   	github.com/darrenburns/terma/docs/widget-examples	[no test files]
+?   	github.com/darrenburns/terma/docs/widget-examples/collections	[no test files]
+?   	github.com/darrenburns/terma/docs/widget-examples/demo	[no test files]
+?   	github.com/darrenburns/terma/docs/widget-examples/display	[no test files]
+?   	github.com/darrenburns/terma/docs/widget-examples/inputs	[no test files]
+?   	github.com/darrenburns/terma/docs/widget-examples/layout	[no test files]
+?   	github.com/darrenburns/terma/docs/minimal-examples/widget-start	[no test files]
+docs/assets/widgets/autocomplete.svg
+docs/assets/widgets/breadcrumbs.svg
+docs/assets/widgets/button.svg
+docs/assets/widgets/checkbox.svg
+docs/assets/widgets/commandpalette.svg
+docs/assets/widgets/custom-widgets.svg
+docs/assets/widgets/dialog.svg
+docs/assets/widgets/directorytree.svg
+docs/assets/widgets/dock.svg
+docs/assets/widgets/empty.svg
+docs/assets/widgets/floating.svg
+docs/assets/widgets/floating-geometry.svg
+docs/assets/widgets/focustrap.svg
+docs/assets/widgets/image.svg
+docs/assets/widgets/jumper.svg
+docs/assets/widgets/keybindbar.svg
+docs/assets/widgets/list.svg
+docs/assets/widgets/menu.svg
+docs/assets/widgets/presentedtext.svg
+docs/assets/widgets/progressbar.svg
+docs/assets/widgets/row-column.svg
+docs/assets/widgets/scrollable.svg
+docs/assets/widgets/spacer.svg
+docs/assets/widgets/sparkline.svg
+docs/assets/widgets/spinner.svg
+docs/assets/widgets/splitpane.svg
+docs/assets/widgets/stack.svg
+docs/assets/widgets/switcher.svg
+docs/assets/widgets/table.svg
+docs/assets/widgets/tabs.svg
+docs/assets/widgets/text.svg
+docs/assets/widgets/textarea.svg
+docs/assets/widgets/textinput.svg
+docs/assets/widgets/tooltip.svg
+docs/assets/widgets/tree.svg
+Checked 36 public widgets, 36 pages, and 535 evidence-backed prose entries.
+Evidence coverage is mechanical; source review establishes whether each claim is true.

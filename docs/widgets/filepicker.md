@@ -4,17 +4,20 @@
 
 ## Quick start
 
+Create the state once during setup. Add `picker` to your widget tree and handle
+`OnSelect` and `OnCancel` in your application.
+
 ```go
-state := NewFilePickerState(startDirectory)
-FilePicker{
-    ID: "open-file",
-    State: state,
-    Mode: FilePickerOpen, // FilePickerSave or FilePickerDirectory
-    Filters: []FileFilter{{Label: "Go source", Patterns: []string{"*.go"}}},
-    MultiSelect: true, // Open only
-    OnSelect: func(paths []string) { /* caller opens or saves */ },
-    OnCancel: func() {},
-    Style: Style{Width: Flex(1), Height: Flex(1)},
+state := terma.NewFilePickerState(startDirectory)
+picker := terma.FilePicker{
+	ID:          "open-file",
+	State:       state,
+	Mode:        terma.FilePickerOpen, // Also FilePickerSave or FilePickerDirectory
+	Filters:     []terma.FileFilter{{Label: "Go source", Patterns: []string{"*.go"}}},
+	MultiSelect: true, // Open only
+	OnSelect:    func(paths []string) { /* caller opens or saves */ },
+	OnCancel:    func() {},
+	Style:       terma.Style{Width: terma.Flex(1), Height: terma.Cells(20)},
 }
 ```
 
@@ -40,8 +43,10 @@ Use `Navigate` rather than assigning `Directory` directly, so entries and select
 
 - Save mode shows a filename field. It accepts one nonempty basename, preserving spaces/Unicode, rejecting `.`, `..`, separators and NUL. Navigate using the path field instead of placing parent components in the filename. The active file filter applies to the candidate; mismatches are errors, not silently rewritten names.
 - Missing candidate is returned to the caller immediately. Existing regular file (including a valid symlink to one) requires an explicit overwrite confirmation. An existing directory, broken symlink or special file is rejected.
-- Overwrite confirmation is a nested modal with Cancel first. Escape/dismiss cancels only confirmation and returns focus to filename. Confirm rechecks the exact candidate and rejects changed filename/directory/mode/target type. For OS metadata it also compares file identity, so a renamed replacement or retargeted symlink cannot reuse approval even when size, mode and modification time match. Virtual filesystems without OS identity use the metadata comparison. Same-file changes that preserve checked metadata and changes after confirmation remain the caller’s responsibility. An existing target that vanishes before confirmation may still be accepted as a new file. The widget itself never overwrites anything.
-- While confirmation is open, Cancel or Escape dismisses only confirmation. Otherwise cancelling the picker calls OnCancel once and does not call OnSelect. Confirming an already completed attempt does nothing. The caller owns hiding or replacing the widget after completion.
+- Overwrite confirmation is a nested modal with **Keep existing** first and **Overwrite** second. **Keep existing** or Escape cancels confirmation and returns focus to the filename field.
+- **Overwrite** rechecks the exact candidate. A changed filename, directory, mode, or target type rejects confirmation. If the target vanished, the picker can accept the path as a new file after checking the parent directory.
+- With OS metadata, confirmation compares file identity, size, mode, and modification time. A replacement file or retargeted symlink requires fresh confirmation. Virtual filesystems without OS identity use the metadata comparison. Callers must still handle changes after confirmation or same-file changes that preserve the checked metadata.
+- While confirmation is open, **Keep existing**, `Cancel()`, or Escape dismisses only confirmation. Otherwise cancelling the picker calls OnCancel once and does not call OnSelect. Confirming an already completed attempt does nothing. The caller owns hiding or replacing the widget after completion.
 
 ### Keyboard, mouse, focus, layout
 

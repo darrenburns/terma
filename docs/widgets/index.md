@@ -1,80 +1,77 @@
 # Widgets
 
-Widgets are the building blocks of Terma applications. Everything in Terma is a widget, from simple text to complex interactive lists.
+A Terma widget implements `Build(BuildContext) Widget`.
 
-## Widget Categories
+## Run an example
 
-### Layout Widgets
+The examples included below use `t` as the import alias for `github.com/darrenburns/terma`.
+Each example function returns a widget that can be passed to `t.Run`.
+Create state once, outside `Build()`, so rebuilds preserve edits, selection, and scroll position.
 
-Widgets that arrange and position other widgets:
-
-- [Row & Column](../layout/row-column.md) - Arrange children linearly
-- [Dock](../layout/dock.md) - Edge-docking layout
-- [Scrollable](../layout/scrollable.md) - Scrolling container
-- [Floating](../floating.md) - Overlays, modals, and dropdowns
-- [Spacer](../layout/spacer.md) - Empty space for layout control
-
-### Content Widgets
-
-Widgets that display content:
-
-- Text - Display plain or rich text
-- [Image](image.md) - Static images with Kitty, Sixel and coloured block fallback
-- [TextInput](textinput.md) - Single-line text entry
-- Button - Focusable button with press handler
-- List - Generic navigable list
-- Table - Navigable multi-column table
-- [Tree](tree.md) - Hierarchical expandable list
-- [DirectoryTree](directorytree.md) - Directory tree powered by Tree
-- [ProgressBar](progressbar.md) - Horizontal progress indicator
-- [Tabs](tabs.md) - TabBar and TabView for tab navigation
-
-### Conditional & Switching Widgets
-
-- [Switcher](switcher.md) - Show one widget at a time from a keyed collection
-- [ShowWhen / HideWhen](../conditional.md#showwhen--hidewhen) - Toggle widget presence
-- [VisibleWhen / InvisibleWhen](../conditional.md#visiblewhen--invisiblewhen) - Toggle visibility while preserving space
-
-### Utility Widgets
-
-- KeybindBar - Display active keybindings
-- [Spacer](spacer.md) - Empty space for layout control
-- [Spinner](../animation.md#spinner) - Animated loading indicators
-- [Tooltip](tooltip.md) - Contextual help text on focus
-
-## Creating Custom Widgets
-
-Every widget implements the `Widget` interface:
+This complete program displays a text widget.
 
 ```go
-type Widget interface {
-    Build(ctx BuildContext) Widget
-}
+--8<-- "docs/minimal-examples/widget-start/main.go"
 ```
 
-Leaf widgets (those that render directly) return themselves from `Build()`. Composite widgets return a tree of other widgets.
+From the repository root, run a documented example with `-widget`.
 
-```go
-// Leaf widget example
-type MyLeafWidget struct{}
-
-func (w MyLeafWidget) Build(ctx BuildContext) Widget {
-    return w  // Returns itself
-}
-
-// Composite widget example
-type MyCompositeWidget struct {
-    Title string
-}
-
-func (w MyCompositeWidget) Build(ctx BuildContext) Widget {
-    return Column{
-        Children: []Widget{
-            Text{Content: w.Title},
-            // ... more widgets
-        },
-    }
-}
+```sh
+go run ./docs/widget-examples -widget button
+go run ./docs/widget-examples -list
 ```
 
-For a full guide to authoring widgets with phase-aware invalidation, see [Custom Widgets](custom-widgets.md).
+`-list` prints all available example names.
+The [getting started guide](../getting-started.md) walks through a complete application.
+
+## Text and status
+
+- [Text](text.md)
+- [PresentedText](presentedtext.md)
+- [Image](image.md)
+- [Markdown](markdown.md)
+- [ProgressBar](progressbar.md)
+- [Sparkline](sparkline.md)
+- [Spinner](spinner.md)
+
+## Input and actions
+
+- [Button](button.md)
+- [Checkbox](checkbox.md)
+- [TextInput](textinput.md)
+- [TextArea](textarea.md)
+- [Autocomplete](autocomplete.md)
+- [SelectBox](select.md)
+- [Form and Field](form.md)
+- [FilePicker](filepicker.md)
+- [CommandPalette](commandpalette.md)
+- [Menu](menu.md)
+- [Dialog](dialog.md)
+
+## Collections and navigation
+
+- [List](list.md)
+- [Table](table.md)
+- [Tree](tree.md)
+- [DirectoryTree](directorytree.md)
+- [TabBar and TabView](tabs.md)
+- [Breadcrumbs](breadcrumbs.md)
+- [KeybindBar](keybindbar.md)
+- [Jumper](jumper.md)
+
+## Composition
+
+- [Switcher](switcher.md)
+- [FocusTrap](focustrap.md)
+- [Tooltip](tooltip.md)
+- [EmptyWidget](empty.md)
+
+## Layout
+
+[Row and Column](../layout/row-column.md), [Dock](../layout/dock.md), [Scrollable](../layout/scrollable.md), [SplitPane](../layout/splitpane.md), and [Stack](../layout/stack.md) arrange child widgets.
+[Spacer](../layout/spacer.md) reserves empty layout space.
+[Floating](../floating.md) places content above the main layout.
+
+## Custom widgets
+
+[Custom widgets](custom-widgets.md) compose existing widgets or implement their own rendering.

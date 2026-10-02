@@ -8,21 +8,21 @@ options. Use stable scalar IDs for records containing slices or maps.
 ```go
 state := terma.NewSelectState[string]() // allocate once, outside Build
 widget := terma.SelectBox[string]{
-    ID: "environment",
-    State: state,
-    Options: []terma.SelectOption[string]{
-        {Label: "Development", Value: "dev"},
-        {Label: "Production", Value: "prod", Disabled: true},
-    },
-    Placeholder: "Choose environment",
-    Searchable: true,
-    MaxVisible: 8,
-    Style: terma.Style{Width: terma.Cells(30)},
-    OnChange: func(value string) { /* a different value was committed */ },
+	ID:    "environment",
+	State: state,
+	Options: []terma.SelectOption[string]{
+		{Label: "Development", Value: "dev"},
+		{Label: "Production", Value: "prod", Disabled: true},
+	},
+	Placeholder: "Choose environment",
+	Searchable:  true,
+	MaxVisible:  8,
+	Style:       terma.Style{Width: terma.Cells(30)},
+	OnChange:    func(value string) { /* a different value was committed */ },
 }
 value, set := state.Value() // reactive; zero and unset are different
-state.SetValue("dev")      // programmatic updates do not call OnChange
-state.Clear()              // return to unset; closes any open popup
+state.SetValue("dev")       // programmatic updates do not call OnChange
+state.Clear()               // return to unset; closes any open popup
 ```
 
 `Style` styles the control; `PopupStyle` styles the popup. `Disabled` prevents
@@ -43,21 +43,20 @@ recommended. `MaxVisible <= 0` defaults to eight option rows.
   traversal. Focus remains on the control while searching and choosing. Clicking
   the control toggles its popup. An outside click dismisses the popup without
   activating the content underneath, including when used inside a dialog.
-* Searchable controls accept printable text, including spaces, directly; typing
-  opens the popup. Search is Unicode case-insensitive substring matching on labels.
+* Searchable controls accept printable text, including spaces, directly. Typing opens the popup, except that Space on a closed control opens
+  it without adding a search character. Search is Unicode case-insensitive substring matching on labels.
   Backspace removes one Unicode code point and Ctrl+U clears the search. Search is
-  transient and resets every time the popup closes. No normalization or fuzzy
-  matching is promised. Nonsearchable controls leave printable keys unhandled.
+  transient and resets every time the popup closes. Search does not normalize Unicode or use fuzzy matching. Nonsearchable controls leave printable keys unhandled.
 * Disabled options remain visible, are dimmed and marked, and cannot be highlighted
-  or committed. Empty lists say “No options”; searches with no results say “No
-  matches”; all-disabled results are visible with no highlight. Enter does nothing
+  or committed. Empty lists say "No options"; searches with no results say "No
+  matches"; all-disabled results are visible with no highlight. Enter does nothing
   in these states. Escape and Tab still work.
 * Values use Go equality and should be stable, reflexive comparable keys (not NaN,
   and not interface values containing maps/slices). Duplicate labels are supported.
   Duplicate values refer to the same selection; the first matching option supplies
   the closed label. Recommitting a duplicate does not call OnChange.
 * Removing a selected option does not silently change application state: the
-  control displays “Unavailable selection” until the option returns or the caller
+  control displays "Unavailable selection" until the option returns or the caller
   changes/clears it. Disabled committed options retain their label. If the active
   option disappears or becomes disabled while open, the first enabled match is
   used. Reordering options preserves the highlight by value.

@@ -1,0 +1,6 @@
+INFO    -  Cleaning site directory
+INFO    -  Building documentation to directory: /private/tmp/terma-widget-docs-site
+INFO    -  The following pages exist in the docs directory, but are not included in the "nav" configuration:
+  - benchmarks/performance-audit/README.md
+  - benchmarks/performance-audit/verification.md
+INFO    -  Documentation built in 0.49 seconds

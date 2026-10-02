@@ -1,25 +1,25 @@
 # Text
 
-A leaf widget that displays plain or rich text content, with optional wrapping and alignment.
+`Text` displays plain text or a sequence of styled spans.
 
-Set `Style.BackgroundColor` directly to a gradient; no container wrapper is needed:
+![Bold deployment status above wrapped text.](../assets/widgets/text.svg)
+
+## [Example](index.md#run-an-example)
 
 ```go
-terma.Text{
-    Content: "Gradient background",
-    Style: terma.Style{
-        Width: terma.Cells(30),
-        BackgroundColor: terma.NewGradient(
-            terma.Hex("#962814"),
-            terma.Hex("#142896"),
-        ).WithAngle(90),
-    },
-}
+--8<-- "docs/widget-examples/display/examples.go:text"
 ```
 
-Background gradients span the Text's border box, including padding and borders.
-Wrapped lines and aligned text keep the gradient at their cell positions.
-`SpanStyle.Background` overrides the gradient for that span; translucent span
-backgrounds blend over it. Translucent Text backgrounds blend over the underlying
-background once, and foreground colors blend over the resulting background.
-A wide terminal glyph uses its leading cell's color for the whole glyph.
+## Behavior
+
+- `Content` supplies plain text, and nonempty `Spans` take precedence.
+- `WrapNone` is the default and clips lines at the available width.
+- `WrapSoft` wraps at word boundaries and breaks words that exceed the available width.
+- `WrapHard` breaks lines at the available width.
+- `TextAlignLeft`, `TextAlignCenter`, and `TextAlignRight` position each line within the available width.
+- `Style` sets dimensions, colors, padding, borders, and text decoration.
+- Span styles can override the base text style.
+
+## Related
+
+- For changing values, [PresentedText](presentedtext.md) provides reactive text helpers.
