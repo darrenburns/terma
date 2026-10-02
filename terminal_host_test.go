@@ -107,6 +107,23 @@ func TestDrawCellsClipsWideCellsAndLeavesNeighbours(t *testing.T) {
 	}
 }
 
+func TestDrawCellsPreservesWideCellAcrossDamageBoundary(t *testing.T) {
+	for name, damagedColumn := range map[string]int{"leader": 1, "continuation": 2} {
+		t.Run(name, func(t *testing.T) {
+			buffer := uv.NewBuffer(5, 1)
+			ctx := NewRenderContext(buffer, 5, 1, nil, nil, BuildContext{}, nil)
+			cells := []uv.Cell{{Content: "a", Width: 1}, {Content: "界", Width: 2, Style: uv.Style{Attrs: uv.AttrBold}}, {}, {Content: "b", Width: 1}}
+			ctx.DrawCells(0, 0, cells)
+			ctx.clip = Rect{X: damagedColumn, Width: 1, Height: 1}
+			ctx.DrawCells(0, 0, cells)
+			require.Equal(t, cells[1], *buffer.CellAt(1, 0))
+			require.True(t, buffer.CellAt(2, 0).IsZero())
+			require.Equal(t, "a", buffer.CellAt(0, 0).Content)
+			require.Equal(t, "b", buffer.CellAt(3, 0).Content)
+		})
+	}
+}
+
 type cursorRecorder struct {
 	x, y    int
 	visible bool
@@ -144,4 +161,28 @@ func TestTextInputKeepsHiddenIMECursor(t *testing.T) {
 	terminal := &cursorRecorder{}
 	positionCursor(terminal, &WidgetEntry{Widget: input, Bounds: Rect{X: 4, Y: 2, Width: 10, Height: 1}, Visible: Rect{X: 4, Y: 2, Width: 10, Height: 1}})
 	require.Equal(t, cursorRecorder{x: 9, y: 2}, *terminal)
+}
+
+type compositeCursorWidget struct {
+	terminalHostWidget
+}
+
+func (w *compositeCursorWidget) WidgetID() string { return "composite-cursor" }
+func (w *compositeCursorWidget) Build(BuildContext) Widget {
+	return Text{Content: "terminal", Width: Cells(8), Height: Cells(4)}
+}
+
+func TestCursorProviderOnCompositeWidget(t *testing.T) {
+	widget := &compositeCursorWidget{terminalHostWidget{x: 3, y: 2, visible: true}}
+	root := Row{Children: []Widget{Text{Content: "side", Width: Cells(4)}, widget}}
+	focus := NewFocusManager()
+	renderer := NewRenderer(uv.NewBuffer(20, 5), 20, 5, focus, NewAnySignal[Focusable](nil), NewAnySignal[Widget](nil))
+	t.Cleanup(func() { renderer.rootNode.dispose() })
+	focus.SetFocusables(renderer.Render(root))
+	require.Equal(t, widget.WidgetID(), focus.FocusedID())
+	entry := renderer.WidgetByID(focus.FocusedID())
+	require.NotNil(t, entry)
+	terminal := &cursorRecorder{}
+	positionCursor(terminal, entry)
+	require.Equal(t, cursorRecorder{x: 7, y: 2, visible: true}, *terminal)
 }

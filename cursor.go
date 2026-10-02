@@ -11,7 +11,10 @@ func positionCursor(terminal cursorTerminal, entry *WidgetEntry) {
 	if entry == nil {
 		return
 	}
-	provider, ok := entry.Widget.(CursorProvider)
+	provider, ok := entry.EventWidget.(CursorProvider)
+	if !ok {
+		provider, ok = entry.Widget.(CursorProvider)
+	}
 	if !ok {
 		return
 	}

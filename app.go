@@ -713,8 +713,6 @@ func Run(root Widget) (runErr error) {
 				case uv.WindowPixelSizeEvent, uv.CellSizeEvent, uv.ModeReportEvent:
 					// Shared mouse/image geometry and capability replies (above).
 				case uv.KeyPressEvent:
-					// Focus can change between keys in one frame. Flush before
-					// deciding whether the new focused widget owns this key.
 					if scheduler.pending {
 						renderNow()
 					}

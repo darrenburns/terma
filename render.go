@@ -130,7 +130,8 @@ func (ctx *RenderContext) ClipBounds() Rect {
 
 // DrawCells draws a row of terminal cells relative to the context. The slice
 // contains one entry per column, including width-zero wide-cell continuations.
-// A wide glyph cut by the clip boundary becomes spaces with the glyph's style.
+// A wide glyph cut by the widget's visible boundary becomes styled spaces.
+// Repainting either column of a visible wide glyph redraws the entire glyph.
 func (ctx *RenderContext) DrawCells(x, y int, cells []uv.Cell) {
 	absY := ctx.Y + y
 	if absY < ctx.clip.Y || absY >= ctx.clip.Y+ctx.clip.Height {
@@ -140,15 +141,15 @@ func (ctx *RenderContext) DrawCells(x, y int, cells []uv.Cell) {
 		cell := cells[col]
 		width := max(1, cell.Width)
 		absX := ctx.X + x + col
-		left := max(absX, ctx.clip.X)
-		right := min(absX+width, ctx.clip.X+ctx.clip.Width)
-		if left < right {
+		left := max(absX, ctx.visible.X)
+		right := min(absX+width, ctx.visible.X+ctx.visible.Width)
+		if left < right && left < ctx.clip.X+ctx.clip.Width && right > ctx.clip.X {
 			if cell.Width > 0 && left == absX && right == absX+width {
 				ctx.terminal.SetCell(absX, absY, &cell)
 			} else {
 				cell.Content = " "
 				cell.Width = 1
-				for column := left; column < right; column++ {
+				for column := max(left, ctx.clip.X); column < min(right, ctx.clip.X+ctx.clip.Width); column++ {
 					ctx.terminal.SetCell(column, absY, &cell)
 				}
 			}
