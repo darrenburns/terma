@@ -16,6 +16,7 @@ import (
 	"github.com/darrenburns/terma/cmd/internal/demos/progressdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/scrolldemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/selectdemo"
+	"github.com/darrenburns/terma/cmd/internal/demos/shimmerdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/splitpanedemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/switcherdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/tabledemo"
@@ -48,6 +49,7 @@ var demos = []Entry{
 	{Info: palettedemo.Info, Command: "./cmd/command-palette-example", New: palettedemo.New},
 	{Info: dialogdemo.Info, Command: "./cmd/dialog-example", New: dialogdemo.New},
 	{Info: progressdemo.Info, Command: "./cmd/progressbar-example", New: progressdemo.New},
+	{Info: shimmerdemo.Info, Command: "./cmd/shimmer-example", New: shimmerdemo.New},
 	{Info: jumpdemo.Info, Command: "./cmd/jump-example", New: jumpdemo.New},
 }
 

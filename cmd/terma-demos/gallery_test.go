@@ -154,3 +154,14 @@ func TestGalleryEntriesHaveUniqueKeys(test *testing.T) {
 		seen[entry.Key] = true
 	}
 }
+
+func TestGalleryOpensShimmerDemo(test *testing.T) {
+	galleryTheme(test)
+	g := NewGallery(demos)
+	test.Cleanup(func() { require.NoError(test, g.Close()) })
+	openDemo(test, g, "Shimmer")
+	screen := renderGallery(g).ScreenText()
+	for _, text := range []string{"≡ Shimmer", "01 the classic", "Thinking about your request...", "11 a comet around the card", "Indexing"} {
+		require.Contains(test, screen, text)
+	}
+}
