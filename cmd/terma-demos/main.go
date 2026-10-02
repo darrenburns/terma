@@ -6,15 +6,20 @@ import (
 	"github.com/darrenburns/terma/cmd/internal/demokit"
 	"github.com/darrenburns/terma/cmd/internal/demos/checkboxdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/dialogdemo"
+	"github.com/darrenburns/terma/cmd/internal/demos/filepickerdemo"
+	"github.com/darrenburns/terma/cmd/internal/demos/formdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/jumpdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/listdemo"
+	"github.com/darrenburns/terma/cmd/internal/demos/markdowndemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/menudemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/palettedemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/progressdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/scrolldemo"
+	"github.com/darrenburns/terma/cmd/internal/demos/selectdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/splitpanedemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/switcherdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/tabledemo"
+	"github.com/darrenburns/terma/cmd/internal/demos/tablefeaturesdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/tabsdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/textareademo"
 	"github.com/darrenburns/terma/cmd/internal/demos/textinputdemo"
@@ -23,6 +28,12 @@ import (
 
 // demos lists the gallery's demos in the order they're shown.
 var demos = []Entry{
+	{Info: selectdemo.Info, Command: "./cmd/select-demo", New: selectdemo.New},
+	{Info: formdemo.Info, Command: "./cmd/form-demo", New: formdemo.New},
+	{Info: markdowndemo.Info, Command: "./cmd/markdown-demo", New: markdowndemo.New},
+	{Info: tablefeaturesdemo.Info, Command: "./cmd/table-features-demo", New: tablefeaturesdemo.New},
+	{Info: filepickerdemo.Info, Command: "./cmd/filepicker-demo", New: filepickerdemo.New},
+
 	{Info: listdemo.Info, Command: "./cmd/list-demo", New: listdemo.New},
 	{Info: tabledemo.Info, Command: "./cmd/table-demo", New: tabledemo.New},
 	{Info: treedemo.Info, Command: "./cmd/tree-example", New: treedemo.New},

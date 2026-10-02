@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
 
 	t "github.com/darrenburns/terma"
 	"github.com/darrenburns/terma/cmd/internal/demokit"
@@ -267,4 +269,16 @@ func (homeKeysPanel) Build(ctx t.BuildContext) t.Widget {
 			key("ctrl+c", "$Error", "quit"),
 		},
 	}
+}
+
+// Close releases resources owned by demos after the gallery exits.
+func (g *Gallery) Close() error {
+	var result error
+	for key, demo := range g.instances {
+		if closer, ok := demo.(io.Closer); ok {
+			result = errors.Join(result, closer.Close())
+		}
+		delete(g.instances, key)
+	}
+	return result
 }

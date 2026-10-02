@@ -8,7 +8,9 @@
 package demokit
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"slices"
 
@@ -16,6 +18,8 @@ import (
 )
 
 // Demo is a widget demo that can run on its own or inside the gallery.
+// Demos that own resources may implement io.Closer; Run and the gallery close
+// them when the app exits, preserving their state while switching demos.
 type Demo interface {
 	t.Widget
 	// InitialFocus returns the ID of the widget to focus when the demo is
@@ -55,13 +59,20 @@ var SwitchHint string
 
 // Run starts a demo as a standalone app.
 func Run(demo Demo) {
+	if err := run(demo); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run(demo Demo) (err error) {
+	if closer, ok := demo.(io.Closer); ok {
+		defer func() { err = errors.Join(err, closer.Close()) }()
+	}
 	t.SetTheme(Themes[0])
 	if id := demo.InitialFocus(); id != "" {
 		t.RequestFocus(id)
 	}
-	if err := t.Run(demo); err != nil {
-		log.Fatal(err)
-	}
+	return t.Run(demo)
 }
 
 // Header is the title bar across the top of a demo.

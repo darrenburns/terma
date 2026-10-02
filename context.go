@@ -35,6 +35,9 @@ type BuildContext struct {
 	floatCollector *FloatCollector
 	// disabled is true if within a disabled subtree (set by DisabledWhen wrapper)
 	disabled bool
+	// scrollToView resolves content-local rows through retained ancestor layouts.
+	// It is available before painting, including for fully clipped widgets.
+	scrollToView func(*ScrollState, int, int) bool
 }
 
 // NewBuildContext creates a new build context.
@@ -85,6 +88,7 @@ func (ctx BuildContext) PushChild(index int) BuildContext {
 		path:           newPath,
 		floatCollector: ctx.floatCollector,
 		disabled:       ctx.disabled,
+		scrollToView:   ctx.scrollToView,
 	}
 }
 
@@ -107,6 +111,7 @@ func (ctx BuildContext) WithDisabled() BuildContext {
 		path:           ctx.path,
 		floatCollector: ctx.floatCollector,
 		disabled:       true,
+		scrollToView:   ctx.scrollToView,
 	}
 }
 

@@ -116,17 +116,18 @@ func (m *mouseRouter) blocked(x, y int) bool {
 // took the event instead: a modal covers the point, or (when dismiss is set)
 // a press outside the top overlay dismissed it.
 func (m *mouseRouter) target(x, y int, dismiss bool) (entry *WidgetEntry, consumed bool) {
-	if m.renderer.pointerFloatAt(x, y) == nil && m.renderer.HasFloats() {
-		if dismiss {
-			topFloat := m.renderer.topPointerFloat()
-			if topFloat != nil && topFloat.Config.shouldDismissOnClickOutside() && topFloat.Config.OnDismiss != nil {
-				topFloat.Config.OnDismiss()
-				return nil, true
-			}
-		}
-		if m.renderer.HasModalFloat() {
+	hitFloat := m.renderer.pointerFloatAt(x, y)
+	if dismiss {
+		topFloat := m.renderer.topPointerFloat()
+		// A parent overlay is still outside its nested popup. Consume the
+		// dismissing press so it cannot also activate the content underneath.
+		if topFloat != nil && hitFloat != topFloat && topFloat.Config.shouldDismissOnClickOutside() && topFloat.Config.OnDismiss != nil {
+			topFloat.Config.OnDismiss()
 			return nil, true
 		}
+	}
+	if hitFloat == nil && m.renderer.HasModalFloat() {
+		return nil, true
 	}
 	return m.renderer.WidgetAt(x, y), false
 }
