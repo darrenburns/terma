@@ -1133,3 +1133,8 @@ func (t TextInput) CursorScreenPosition(widgetX int) int {
 	scrollOffset := t.State.scrollOffset
 	return widgetX + cursorX - scrollOffset
 }
+
+// CursorPosition locates the hidden IME cursor. Render draws the text cursor.
+func (t TextInput) CursorPosition() (x, y int, visible bool) {
+	return t.CursorScreenPosition(0), 0, false
+}

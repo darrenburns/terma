@@ -560,17 +560,7 @@ func Run(root Widget) (runErr error) {
 		if mouse.reconcileHover() {
 			renderer.Update(root)
 		}
-		// Position terminal cursor for IME support (emoji picker, input methods)
-		// Must be before Display() since MoveTo only takes effect on next Display call
-		if focusedID := focusManager.FocusedID(); focusedID != "" {
-			if entry := renderer.WidgetByID(focusedID); entry != nil {
-				if textInput, ok := entry.Widget.(TextInput); ok {
-					cursorX := textInput.CursorScreenPosition(entry.Bounds.X)
-					cursorY := entry.Bounds.Y
-					t.MoveTo(cursorX, cursorY)
-				}
-			}
-		}
+		positionCursor(t, renderer.WidgetByID(focusManager.FocusedID()))
 
 		// Sequences queued with WriteTerminal (clipboard writes and reads)
 		// go out with this frame.
@@ -723,34 +713,35 @@ func Run(root Widget) (runErr error) {
 				case uv.WindowPixelSizeEvent, uv.CellSizeEvent, uv.ModeReportEvent:
 					// Shared mouse/image geometry and capability replies (above).
 				case uv.KeyPressEvent:
+					// Focus can change between keys in one frame. Flush before
+					// deciding whether the new focused widget owns this key.
+					if scheduler.pending {
+						renderNow()
+					}
+					keyEvent := KeyEvent{event: ev}
+					captured := focusManager.capturesKey(keyEvent)
 					// Check for app-level quit keys
-					if ev.MatchString("ctrl+c") {
+					if !captured && ev.MatchString("ctrl+c") {
 						cancel()
 						return
 					}
 
 					// Screen export keybind
-					if ev.MatchString("ctrl+shift+s") {
+					if !captured && ev.MatchString("ctrl+shift+s") {
 						exportScreenToFile()
 						continue
 					}
 
 					// Suspend on Ctrl+Z
-					if ev.MatchString("ctrl+z") {
+					if !captured && ev.MatchString("ctrl+z") {
 						_ = suspend(func() error {
 							return uv.Suspend() // Blocks until resumed via `fg`
 						})
 						continue
 					}
 
-					// Keys are routed by what's on screen: a key that opened jump
-					// mode or a dialog, or moved focus, must be drawn before the
-					// next key is routed, even when it arrives within a frame.
-					if scheduler.pending {
-						renderNow()
-					}
 					restartCursorBlink()
-					dispatchKey(renderer, focusManager, root, KeyEvent{event: ev})
+					dispatchKey(renderer, focusManager, root, keyEvent)
 
 					// Re-render after key press (for signal updates and focus changes)
 					requestRender()

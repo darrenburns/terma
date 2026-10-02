@@ -29,6 +29,11 @@ func (k KeyEvent) Text() string {
 	return uv.Key(k.event).Text
 }
 
+// Raw returns the key event, including modifiers and alternate key codes.
+func (k KeyEvent) Raw() uv.KeyPressEvent {
+	return k.event
+}
+
 // MouseEvent wraps a mouse interaction with click-chain metadata.
 // Wheel events use Button for direction and have ClickCount zero.
 type MouseEvent struct {
@@ -154,7 +159,8 @@ type Hoverable interface {
 }
 
 // KeyCapturer is implemented by widgets that capture certain key events,
-// preventing them from bubbling to ancestors. When a KeyCapturer has focus,
+// preventing them from bubbling to ancestors or invoking built-in shortcuts
+// such as Tab navigation, Ctrl+C, Ctrl+Z, and screen export. When it has focus,
 // ancestor keybinds are filtered based on CapturesKey() - only keybinds
 // for keys that are NOT captured will be shown in the KeybindBar.
 //
@@ -165,6 +171,12 @@ type KeyCapturer interface {
 	// CapturesKey returns true if this widget captures the given key,
 	// preventing it from bubbling to ancestors.
 	CapturesKey(key string) bool
+}
+
+// CursorProvider positions the terminal cursor relative to the widget's border
+// box. A hidden cursor still positions input-method candidate windows.
+type CursorProvider interface {
+	CursorPosition() (x, y int, visible bool)
 }
 
 // Blurrable is implemented by widgets that want to be notified when they
@@ -308,6 +320,15 @@ func (fm *FocusManager) focusedEntry() *FocusableEntry {
 		}
 	}
 	return nil
+}
+
+func (fm *FocusManager) capturesKey(event KeyEvent) bool {
+	entry := fm.focusedEntry()
+	if entry == nil {
+		return false
+	}
+	capturer, ok := entry.Focusable.(KeyCapturer)
+	return ok && capturer.CapturesKey(event.Key())
 }
 
 // ActiveKeybinds returns all declarative keybindings currently active
@@ -543,13 +564,13 @@ func (fm *FocusManager) HandleKey(event KeyEvent) bool {
 	Log("---------")
 	Log("HandleKey: received key %q", event.Key())
 
-	// Handle Tab navigation
-	if event.MatchString("tab") {
+	captured := fm.capturesKey(event)
+	if !captured && event.MatchString("tab") {
 		Log("HandleKey: tab navigation triggered")
 		fm.FocusNext()
 		return true
 	}
-	if event.MatchString("shift+tab") {
+	if !captured && event.MatchString("shift+tab") {
 		Log("HandleKey: shift+tab navigation triggered")
 		fm.FocusPrevious()
 		return true
@@ -585,6 +606,9 @@ func (fm *FocusManager) HandleKey(event KeyEvent) bool {
 	Log("HandleKey: calling OnKey on focused widget %q", focusedEntry.ID)
 	if focusedEntry.Focusable.OnKey(event) {
 		Log("HandleKey: key %q handled by OnKey on focused widget %q", event.Key(), focusedEntry.ID)
+		return true
+	}
+	if captured {
 		return true
 	}
 	Log("HandleKey: focused widget %q did not handle key, bubbling up", focusedEntry.ID)

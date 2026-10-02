@@ -128,6 +128,35 @@ func (ctx *RenderContext) ClipBounds() Rect {
 	return ctx.clip
 }
 
+// DrawCells draws a row of terminal cells relative to the context. The slice
+// contains one entry per column, including width-zero wide-cell continuations.
+// A wide glyph cut by the clip boundary becomes spaces with the glyph's style.
+func (ctx *RenderContext) DrawCells(x, y int, cells []uv.Cell) {
+	absY := ctx.Y + y
+	if absY < ctx.clip.Y || absY >= ctx.clip.Y+ctx.clip.Height {
+		return
+	}
+	for col := 0; col < len(cells); {
+		cell := cells[col]
+		width := max(1, cell.Width)
+		absX := ctx.X + x + col
+		left := max(absX, ctx.clip.X)
+		right := min(absX+width, ctx.clip.X+ctx.clip.Width)
+		if left < right {
+			if cell.Width > 0 && left == absX && right == absX+width {
+				ctx.terminal.SetCell(absX, absY, &cell)
+			} else {
+				cell.Content = " "
+				cell.Width = 1
+				for column := left; column < right; column++ {
+					ctx.terminal.SetCell(column, absY, &cell)
+				}
+			}
+		}
+		col += width
+	}
+}
+
 // SubContext creates a child context offset from this one.
 // The child's clip rect is the intersection of the parent's clip rect and the child's bounds.
 func (ctx *RenderContext) SubContext(xOffset, yOffset, width, height int) *RenderContext {
