@@ -935,6 +935,10 @@ func (ctx *RenderContext) drawSpan(x, y int, span Span, baseStyle Style, spanWid
 
 // Renderer handles the widget tree rendering pipeline.
 type Renderer struct {
+	drag                            *dragSession
+	dragDirty                       bool
+	dragDamage                      []Rect
+	paintingDrag                    bool
 	imageSlot                       int
 	images                          *imageBuffer
 	presentation                    CellBuffer
@@ -953,6 +957,7 @@ type Renderer struct {
 	// modalCount tracks the number of modal floats rendered in the last pass.
 	modalCount int
 	rootNode   *widgetNode
+	rootWidget Widget
 
 	retainedFloats []retainedFloat
 
@@ -1049,6 +1054,7 @@ func (r *Renderer) Stats() RenderStats {
 // Render or Update. Buffers implementing ResizableCellBuffer are resized too;
 // other buffers must be resized by the caller. Negative dimensions become zero.
 func (r *Renderer) Resize(width, height int) {
+	r.cancelDrag()
 	width, height = max(0, width), max(0, height)
 	if buffer, ok := r.terminal.(ResizableCellBuffer); ok {
 		buffer.Resize(width, height)
@@ -1547,6 +1553,7 @@ func (r *Renderer) renderFloats(ctx *RenderContext, buildCtx BuildContext) {
 		}
 
 		// Render the float at its computed position
+		paintFloatShadow(ctx, Rect{X: x, Y: y, Width: floatWidth, Height: floatHeight}, floatShadow(entry.Config))
 		r.renderTree(ctx, floatTree, x, y)
 	}
 }

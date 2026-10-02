@@ -165,7 +165,7 @@ func (d *TabDemo) Build(ctx t.BuildContext) t.Widget {
 			BackgroundColor: theme.Background,
 		},
 		Top: []t.Widget{
-			demokit.Header{Title: "Tabs", Tagline: "A TabView driven by a TabState"},
+			demokit.Header{Title: "Tabs", Tagline: "Drag tab labels to reorder. Escape cancels."},
 		},
 		Bottom: []t.Widget{
 			footer{demo: d},
@@ -254,6 +254,7 @@ func (a tabsArea) Build(ctx t.BuildContext) t.Widget {
 		State:          d.tabs,
 		KeybindPattern: t.TabKeybindNumbers,
 		AllowReorder:   true,
+		DragShadow:     &t.FloatShadow{Color: theme.Primary.WithAlpha(0.35), BlurRadius: 1},
 		Closable:       true,
 		OnTabClose:     d.closeTab,
 		OnTabChange:    d.onTabChange,
@@ -384,7 +385,7 @@ func (infoPage) Build(ctx t.BuildContext) t.Widget {
 				Children: []t.Widget{
 					item("Keyboard navigation (←/→, h/l)"),
 					item("Position keybinds (1-9, alt+1-9 or ctrl+1-9)"),
-					item("Reordering with AllowReorder (ctrl+h/l)"),
+					item("Reordering with AllowReorder (drag labels or ctrl+h/l)"),
 					item("Closable tabs with a × button and OnTabClose"),
 					item("Click a tab to select it"),
 					item("Add, insert and remove tabs through TabState"),
@@ -521,6 +522,7 @@ func (keysPanel) Build(ctx t.BuildContext) t.Widget {
 		Width: t.Flex(1),
 		Style: demokit.PanelStyle(theme, "Keys", false),
 		Children: []t.Widget{
+			key("drag", theme.Primary, "move tab; Esc cancels"),
 			key("←→ 1-9", theme.Info, "select tab"),
 			key("ctrl+h/l", theme.Secondary, "move tab"),
 			key("ctrl+w", theme.Error, "close tab"),

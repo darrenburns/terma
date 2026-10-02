@@ -12,8 +12,10 @@ import (
 )
 
 type retainedFloat struct {
-	entry FloatEntry
-	root  *widgetNode
+	entry       FloatEntry
+	root        *widgetNode
+	shadow      FloatShadow
+	paintBounds Rect
 	// The overlay's hit-test entries are registry entries [registryStart, registryEnd).
 	registryStart int
 	registryEnd   int
@@ -178,6 +180,11 @@ func (r *Renderer) patchLayoutCache(node *widgetNode) bool {
 }
 
 func (p *retainedLayoutNode) ComputeLayout(constraints layout.Constraints) layout.ComputedLayout {
+	if drag := p.renderer.drag; drag != nil {
+		if frozen, ok := drag.frozen[p.node]; ok {
+			return frozen
+		}
+	}
 	// Construction discards stale entries for dirty and forced layouts. Results
 	// computed since then are reusable too: flex and stretch can measure the
 	// same child under identical constraints several times within one frame.
@@ -243,7 +250,7 @@ func (r *Renderer) updateInternal(root Widget) (focusables []FocusableEntry, lay
 	if r.rootNode == nil || r.fullRenderRequired {
 		return r.renderFull(root)
 	}
-	if r.maxDirtyLevel() >= DirtyLayout {
+	if r.dragDirty || r.maxDirtyLevel() >= DirtyLayout {
 		return r.renderFrame(root, false)
 	}
 	if r.hasPaintDirty() {
@@ -268,6 +275,7 @@ func (r *Renderer) renderFull(root Widget) (focusables []FocusableEntry, layoutW
 // have changed when a parent rebuilt. Focus and float collection still traverse
 // the whole tree so their ordering and inherited scopes remain correct.
 func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []FocusableEntry, layoutWidth, layoutHeight int) {
+	r.rootWidget = root
 	r.fullRenderRequired = false
 	r.lastFrameMode = rendererFrameFull
 	r.fullRenderCount++
@@ -289,6 +297,9 @@ func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []Focus
 	buildCtx.renderer = r
 	r.rootNode = r.buildRetainedNode(r.rootNode, root, buildCtx, r.focusCollector, rebuildAll)
 	r.floatCollector.raiseTopmost()
+	if r.reconcileDrag() {
+		return r.renderFrame(root, false)
+	}
 
 	if r.rootNode == nil {
 		r.lastFocusables = nil
@@ -308,18 +319,26 @@ func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []Focus
 
 	// Opening or closing an overlay repaints everything: a modal's backdrop
 	// covers the whole screen. Otherwise repaint only what changed.
-	if rebuildAll || !r.floatSetMatches() {
+	fullPaint := rebuildAll || !r.floatSetMatches()
+	if fullPaint && r.drag == nil {
 		if scr, ok := r.terminal.(uv.Screen); ok {
 			screen.Clear(scr)
 		}
 		ctx := NewRenderContext(r.terminal, r.width, r.height, r.focusCollector, r.focusManager, buildCtx, r.widgetRegistry)
+		r.resetDragPaint()
 		r.paintRetainedNode(ctx, r.rootNode, 0, 0, Rect{}, false, true)
+		r.paintDrag(ctx, Rect{}, false, true)
 		r.placeFloats(ctx, buildCtx, false)
 	} else {
 		r.lastFrameMode = rendererFrameReflow
-		r.reflowPaint(buildCtx)
+		r.reflowPaint(buildCtx, fullPaint)
 	}
 
+	if r.reconcileDrag() {
+		return r.renderFrame(root, false)
+	}
+	r.dragDirty = false
+	r.dragDamage = nil
 	focusables = r.focusCollector.Focusables()
 	r.lastFocusables = focusables
 	r.clearDirtyFlags()
@@ -362,6 +381,7 @@ func (r *Renderer) renderPartial(root Widget) (focusables []FocusableEntry, layo
 		r.clearRect(clipped)
 		ctx := NewRenderContext(r.terminal, r.width, r.height, r.focusCollector, r.focusManager, buildCtx, r.widgetRegistry)
 		ctx.clip = ctx.clip.Intersect(clipped)
+		r.resetDragPaint()
 		r.paintRetainedNode(ctx, r.rootNode, 0, 0, clipped, true, false)
 		r.paintRetainedFloats(ctx, clipped)
 	}
@@ -466,6 +486,7 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 		// children. Keep this node's registrations for frames that reuse Build.
 		node.floats = node.floats[:0]
 		for i := floatStart; i < len(r.floatCollector.entries); i++ {
+			r.floatCollector.entries[i].owner = node
 			node.floats = append(node.floats, r.floatCollector.entries[i])
 			r.floatCollector.entries[i].fresh = true
 		}
@@ -717,6 +738,12 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 	if node == nil {
 		return Rect{}
 	}
+	if d := r.drag; d != nil && d.phase == dragging && node == d.source && !r.paintingDrag {
+		d.context = ctx
+		box := node.layout.Box
+		d.slotBounds = Rect{X: ctx.X + screenX + box.Margin.Left, Y: ctx.Y + screenY + box.Margin.Top, Width: box.Width, Height: box.Height}
+		return Rect{}
+	}
 	if partial && !node.subtreeBounds.Intersects(damage) {
 		return Rect{}
 	}
@@ -769,7 +796,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 	if r.geometryOnly {
 		// A clean subtree with the same layout in the same place is exactly as
 		// it was: replay its hit-test entries instead of walking it.
-		if recordRegistry && node.layoutReused && node.subtreeDirtyLevel() == DirtyNone && node.bounds == nodeBounds && node.hitClip == ctx.clip && node.registered != nil {
+		if r.drag == nil && !r.dragDirty && recordRegistry && node.layoutReused && node.subtreeDirtyLevel() == DirtyNone && node.bounds == nodeBounds && node.hitClip == ctx.clip && node.registered != nil {
 			start := len(r.widgetRegistry.entries)
 			r.widgetRegistry.appendEntries(node.registered)
 			node.registered = r.registeredSince(start)
@@ -1162,6 +1189,8 @@ func (r *Renderer) recordRegistry(node *widgetNode, bounds, clip Rect) {
 		eventWidget = node.widget
 	}
 	r.widgetRegistry.recordTree(node.widget, eventWidget, node.eventID, node.buildContext.hoverScope+node.autoID, bounds, bounds.Intersect(clip), node.buildContext.IsDisabled())
+	r.widgetRegistry.entries[len(r.widgetRegistry.entries)-1].node = node
+	r.widgetRegistry.entries[len(r.widgetRegistry.entries)-1].pointerPassthrough = r.paintingDrag
 	if node.parent != nil {
 		r.widgetRegistry.entries[len(r.widgetRegistry.entries)-1].parentID = node.parent.eventID
 	}
@@ -1203,19 +1232,24 @@ func (r *Renderer) recordReflowDamage(node *widgetNode, bounds, subtreeBounds, v
 // reflowPaint repaints only what changed after a rebuild and relayout. A
 // measuring pass records every node's new position, the hit-test registry and
 // the damage; the partial painter then redraws just the damaged areas.
-func (r *Renderer) reflowPaint(buildCtx BuildContext) {
+func (r *Renderer) reflowPaint(buildCtx BuildContext, fullPaint bool) {
 	ctx := NewRenderContext(r.terminal, r.width, r.height, r.focusCollector, r.focusManager, buildCtx, r.widgetRegistry)
 	r.reflowDamage = r.reflowDamage[:0]
 	r.floatsChanged = false
 	r.geometryOnly = true
+	r.resetDragPaint()
 	r.paintRetainedNode(ctx, r.rootNode, 0, 0, Rect{}, false, true)
+	r.paintDrag(ctx, Rect{}, false, true)
 	r.placeFloats(ctx, buildCtx, true)
 	r.geometryOnly = false
+	for _, rect := range r.dragDamage {
+		r.reflowDamage = append(r.reflowDamage, r.overlayDamage(rect))
+	}
 
 	fullScreen := Rect{Width: r.width, Height: r.height}
 	// A topmost overlay (jump mode's labels) is drawn from where everything
 	// beneath it is, so any change beneath can move what it shows.
-	if r.floatsChanged || (len(r.reflowDamage) > 0 && r.hasTopmostFloat()) {
+	if fullPaint || r.floatsChanged || (len(r.reflowDamage) > 0 && r.hasTopmostFloat()) {
 		r.reflowDamage = append(r.reflowDamage, fullScreen)
 	}
 	rects := coalesceDamage(r.reflowDamage, fullScreen)
@@ -1224,6 +1258,7 @@ func (r *Renderer) reflowPaint(buildCtx BuildContext) {
 		r.clearRect(rect)
 		paintCtx := NewRenderContext(r.terminal, r.width, r.height, r.focusCollector, r.focusManager, buildCtx, r.widgetRegistry)
 		paintCtx.clip = paintCtx.clip.Intersect(rect)
+		r.resetDragPaint()
 		r.paintRetainedNode(paintCtx, r.rootNode, 0, 0, rect, true, false)
 		r.paintRetainedFloats(paintCtx, rect)
 	}
@@ -1303,6 +1338,10 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 			continue
 		}
 		entry := r.floatCollector.entries[i]
+		entry.dragOwned = r.dragOwnsFloat(entry.owner)
+		if entry.dragOwned {
+			entry.Config.PointerPassthrough = true
+		}
 		focusableCountBefore := r.focusCollector.Len()
 		child := entry.Child
 		geometryChanged := false
@@ -1389,10 +1428,25 @@ func (r *Renderer) placeFloats(ctx *RenderContext, buildCtx BuildContext, measur
 		}
 
 		registryStart := len(r.widgetRegistry.entries)
+		shadow := floatShadow(entry.Config)
+		paintBounds := shadow.bounds(Rect{X: x, Y: y, Width: floatWidth, Height: floatHeight})
+		if measure {
+			if i >= len(oldFloats) || oldFloats[i].paintBounds != paintBounds || oldFloats[i].shadow != shadow {
+				r.reflowDamage = append(r.reflowDamage, r.overlayDamage(paintBounds))
+				if i < len(oldFloats) {
+					r.reflowDamage = append(r.reflowDamage, r.overlayDamage(oldFloats[i].paintBounds))
+				}
+			}
+		} else {
+			paintFloatShadow(ctx, Rect{X: x, Y: y, Width: floatWidth, Height: floatHeight}, shadow)
+		}
 		r.paintRetainedNode(ctx, floatRoot, x, y, Rect{}, false, true)
+		r.paintDrag(ctx, Rect{}, false, true)
 		r.retainedFloats = append(r.retainedFloats, retainedFloat{
 			entry:         entry,
 			root:          floatRoot,
+			shadow:        shadow,
+			paintBounds:   paintBounds,
 			registryStart: registryStart,
 			registryEnd:   len(r.widgetRegistry.entries),
 		})
@@ -1445,12 +1499,24 @@ func (r *Renderer) captureKey(event KeyEvent) bool {
 }
 
 func (r *Renderer) paintRetainedFloats(ctx *RenderContext, damage Rect) {
-	for _, floatNode := range r.retainedFloats {
+	paint := func(floatNode retainedFloat) {
 		if floatNode.entry.Config.Modal {
 			r.renderModalBackdrop(ctx, floatNode.entry.Config.BackdropColor)
 		}
 		if floatNode.root != nil {
+			paintFloatShadow(ctx, Rect{X: floatNode.entry.X, Y: floatNode.entry.Y, Width: floatNode.entry.Width, Height: floatNode.entry.Height}, floatNode.shadow)
 			r.paintRetainedNode(ctx, floatNode.root, floatNode.entry.X, floatNode.entry.Y, damage, true, false)
+		}
+	}
+	for _, floatNode := range r.retainedFloats {
+		if !floatNode.entry.dragOwned {
+			paint(floatNode)
+		}
+	}
+	r.paintDrag(ctx, damage, true, false)
+	for _, floatNode := range r.retainedFloats {
+		if floatNode.entry.dragOwned {
+			paint(floatNode)
 		}
 	}
 }

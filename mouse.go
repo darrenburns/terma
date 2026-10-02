@@ -162,6 +162,7 @@ func (m *mouseRouter) capturedOwner() *WidgetEntry {
 
 // subX and subY place the pointer within its cell (see MouseEvent.SubCellX).
 func (m *mouseRouter) press(ev uv.MouseClickEvent, subX, subY float64, now time.Time) {
+	m.renderer.cancelDrag()
 	m.pressed = true
 	m.captureID = ""
 	m.ownerID = ""
@@ -181,6 +182,7 @@ func (m *mouseRouter) press(ev uv.MouseClickEvent, subX, subY float64, now time.
 	}
 	clickCount := m.clicks.nextClick(entry.ID, ev.Button, ev.X, ev.Y, now)
 	event := buildMouseEvent(uv.Mouse(ev), subX, subY, entry, clickCount)
+	m.armDrag(entry, ev, subX, subY)
 
 	m.captureID = entry.ID
 
@@ -204,6 +206,17 @@ func (m *mouseRouter) press(ev uv.MouseClickEvent, subX, subY float64, now time.
 // release ends the press. It goes to the widget that took the press, so a
 // drag released over another widget still ends where it started.
 func (m *mouseRouter) release(ev uv.MouseReleaseEvent, subX, subY float64) {
+	if m.renderer.drag != nil {
+		if ev.Button != m.captureButton && ev.Button != uv.MouseNone {
+			return
+		}
+		// A model change can precede its scheduled frame. Resolve source and
+		// target changes before committing against the last frame's registry.
+		if m.renderer.maxDirtyLevel() >= DirtyLayout {
+			m.renderer.Update(m.renderer.rootWidget)
+		}
+		m.releaseDrag(ev, subX, subY)
+	}
 	pressed := m.pressed
 	pressedID := m.captureID
 	entry := m.captured()
@@ -242,10 +255,13 @@ func (m *mouseRouter) motion(ev uv.MouseMotionEvent, subX, subY float64) bool {
 	changed := false
 	if m.pressed {
 		if ev.Button == uv.MouseNone {
+			m.renderer.cancelDrag()
 			// Motion with no button held means the release was never reported,
 			// e.g. it happened outside the terminal window.
 			m.release(uv.MouseReleaseEvent{X: ev.X, Y: ev.Y, Button: m.captureButton, Mod: ev.Mod}, subX, subY)
 			changed = true
+		} else if m.renderer.drag != nil {
+			changed = m.moveDrag(ev.X, ev.Y, subX, subY)
 		} else {
 			pointer := uv.Mouse{X: ev.X, Y: ev.Y, Button: m.captureButton, Mod: ev.Mod}
 			entry := m.captured()

@@ -12,10 +12,12 @@ type Tab struct {
 // TabState holds the state for a TabBar or TabView widget.
 // It is the source of truth for tabs and the active tab, and must be provided to TabBar/TabView.
 type TabState struct {
-	tabs       AnySignal[[]Tab]
-	activeKey  Signal[string]
-	editingKey Signal[string]    // For rename support
-	hover      itemHover[string] // Key of the tab under the pointer
+	dragPreview *tabDragPreview
+	dragVersion Signal[uint64]
+	tabs        AnySignal[[]Tab]
+	activeKey   Signal[string]
+	editingKey  Signal[string]    // For rename support
+	hover       itemHover[string] // Key of the tab under the pointer
 }
 
 // NewTabState creates a new TabState with the given tabs.
@@ -29,10 +31,11 @@ func NewTabState(tabs []Tab) *TabState {
 		activeKey = tabs[0].Key
 	}
 	return &TabState{
-		tabs:       NewAnySignal(tabs),
-		activeKey:  NewSignal(activeKey),
-		editingKey: NewSignal(""),
-		hover:      newItemHover[string](),
+		dragVersion: NewSignal(uint64(0)),
+		tabs:        NewAnySignal(tabs),
+		activeKey:   NewSignal(activeKey),
+		editingKey:  NewSignal(""),
+		hover:       newItemHover[string](),
 	}
 }
 
@@ -42,10 +45,11 @@ func NewTabStateWithActive(tabs []Tab, activeKey string) *TabState {
 		tabs = []Tab{}
 	}
 	return &TabState{
-		tabs:       NewAnySignal(tabs),
-		activeKey:  NewSignal(activeKey),
-		editingKey: NewSignal(""),
-		hover:      newItemHover[string](),
+		dragVersion: NewSignal(uint64(0)),
+		tabs:        NewAnySignal(tabs),
+		activeKey:   NewSignal(activeKey),
+		editingKey:  NewSignal(""),
+		hover:       newItemHover[string](),
 	}
 }
 
@@ -311,7 +315,8 @@ type TabBar struct {
 	OnTabChange    func(key string)      // Tab selection callback
 	OnTabClose     func(key string)      // Close button callback
 	Closable       bool                  // Show close buttons
-	AllowReorder   bool                  // Enable ctrl+left/right reordering
+	AllowReorder   bool                  // Enable keyboard and drag reordering
+	DragShadow     *FloatShadow          // Optional shadow while dragging a tab
 	Width          Dimension             // Deprecated: use Style.Width
 	Height         Dimension             // Deprecated: use Style.Height
 	Style          Style                 // Container style
@@ -538,6 +543,11 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 	}
 
 	tabs := t.State.Tabs()
+	barID := t.ID
+	if barID == "" {
+		barID = ctx.AutoID()
+	}
+	tabs = t.State.displayedTabs(barID, tabs)
 	activeKey := t.State.ActiveKey()
 	theme := ctx.Theme()
 
@@ -573,7 +583,19 @@ func (t TabBar) Build(ctx BuildContext) Widget {
 			style.Padding = EdgeInsetsXY(2, 0)
 		}
 
-		children = append(children, tabItem{bar: t, tab: tab, active: isActive, style: style})
+		headerID := tabHeaderID(barID, tab.Key)
+		labelID := t.TabID(tab.Key)
+		if labelID == "" {
+			labelID = tabPartID(barID, tab.Key, "label")
+		}
+		item := tabItem{id: headerID, labelID: labelID, bar: t, tab: tab, active: isActive, style: style}
+		if t.AllowReorder && t.State.editingKey.Peek() == "" {
+			item.id = tabPartID(barID, tab.Key, "body")
+			children = append(children, Draggable[string]{ID: headerID, Payload: tab.Key, Child: item, HandleID: labelID, Shadow: t.DragShadow,
+				behavior: &tabDragBehavior{state: t.State, barID: barID, key: tab.Key}})
+		} else {
+			children = append(children, item)
+		}
 	}
 
 	style := t.Style
@@ -603,7 +625,8 @@ type TabView struct {
 	OnTabChange    func(key string)  // Tab selection callback
 	OnTabClose     func(key string)  // Close button callback
 	Closable       bool              // Show close buttons
-	AllowReorder   bool              // Enable ctrl+left/right reordering
+	AllowReorder   bool              // Enable keyboard and drag reordering
+	DragShadow     *FloatShadow      // Optional shadow while dragging a tab
 	Width          Dimension         // Deprecated: use Style.Width
 	Height         Dimension         // Deprecated: use Style.Height
 	Style          Style             // Container style
@@ -651,6 +674,7 @@ func (t TabView) Build(ctx BuildContext) Widget {
 		OnTabClose:     t.OnTabClose,
 		Closable:       t.Closable,
 		AllowReorder:   t.AllowReorder,
+		DragShadow:     t.DragShadow,
 		Style:          t.TabBarStyle,
 		TabStyle:       t.TabStyle,
 		ActiveTabStyle: t.ActiveTabStyle,
@@ -699,11 +723,15 @@ func (t TabView) Build(ctx BuildContext) Widget {
 // tabItem shows one tab of a TabBar. An inactive tab lightens while the
 // pointer is over it; only that tab rebuilds when the pointer comes or goes.
 type tabItem struct {
-	bar    TabBar
-	tab    Tab
-	active bool
-	style  Style
+	id      string
+	labelID string
+	bar     TabBar
+	tab     Tab
+	active  bool
+	style   Style
 }
+
+func (i tabItem) WidgetID() string { return i.id }
 
 func (i tabItem) Build(ctx BuildContext) Widget {
 	t := i.bar
@@ -721,7 +749,7 @@ func (i tabItem) Build(ctx BuildContext) Widget {
 		// A node of its own, so its ID, click and Jump belong to the label.
 		return passThrough{child: tabLabel{
 			Text: Text{
-				ID:      t.TabID(tabKey),
+				ID:      i.labelID,
 				Content: i.tab.Label,
 				Style:   style,
 				Click:   func(MouseEvent) { activate() },
@@ -742,7 +770,7 @@ func (i tabItem) Build(ctx BuildContext) Widget {
 		Children: []Widget{
 			tabLabel{
 				Text: Text{
-					ID:      t.TabID(tabKey),
+					ID:      i.labelID,
 					Content: i.tab.Label,
 					Style:   labelStyle,
 					Click:   func(MouseEvent) { activate() },

@@ -47,6 +47,29 @@
 - The callback must not mutate signals.
 - Only the main tree and earlier overlays are available as anchors.
 
+## Shadows and glows
+
+`Config.Shadow` adds a customizable effect around any floating widget. Nil keeps the existing appearance without a shadow.
+
+```go
+FloatConfig{
+	Shadow: &FloatShadow{
+		Color:      Black.WithAlpha(0.45),
+		Offset:     Offset{X: 1, Y: 1},
+		BlurRadius: 2,
+		Spread:     1,
+	},
+}
+```
+
+- `Color` sets the tint and opacity. A transparent color disables the effect.
+- `Offset` shifts the shadow in terminal cells. A zero offset gives a glow around the widget.
+- `Spread` expands the solid part of the effect. `BlurRadius` controls its fading edge. Negative values are treated as zero.
+- The effect blends with existing text and background colors. It preserves glyphs and links beneath it.
+- Shadow cells do not change layout, anchor geometry, or pointer hit areas.
+
+[Draggable](drag-and-drop.md) and tab headers use the same effect while floating.
+
 ## Related
 
 - [Tooltip](widgets/tooltip.md)

@@ -60,6 +60,20 @@ The launcher binds only to `127.0.0.1`. A random URL token, exact Host validatio
 and same-origin WebSocket checks restrict access to sessions. It is a local
 development tool, not a public hosting service or an app sandbox.
 
+## Mouse coordinates with fractional cell sizes
+
+Browser font scaling can produce fractional cell widths while the terminal
+reports an integer pixel size. In pixel mouse mode this can make clicks drift
+horizontally from the visible glyph, especially farther along a row. If clicks
+land beside their targets, launch the app with cell-based mouse reporting:
+
+```sh
+go run ./cmd/terma-browser -- env TERMA_DISABLE_PIXEL_MOUSE=1 go run ./cmd/tab-example
+```
+
+Dragging still works, but positions update by whole terminal cells instead of
+fractions of a cell.
+
 ## Bundled dependencies
 
 Browser files in `cmd/terma-browser/web/vendor` come from `@xterm/xterm` 5.5.0

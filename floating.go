@@ -67,6 +67,8 @@ var DefaultModalBackdropColor = RGBA(0, 0, 0, 0.5)
 
 // FloatConfig configures positioning and behavior for a floating widget.
 type FloatConfig struct {
+	// Shadow paints a shadow or glow behind the float. Nil disables the effect.
+	Shadow *FloatShadow
 	// hoverScope lets contextual help remain part of its trigger's hover area
 	// when screen clamping places the overlay beneath the pointer.
 	hoverScope string
@@ -237,6 +239,8 @@ func (f Floating) Build(ctx BuildContext) Widget {
 
 // FloatEntry stores a registered floating widget for deferred rendering.
 type FloatEntry struct {
+	owner      *widgetNode
+	dragOwned  bool
 	Config     FloatConfig
 	Child      Widget
 	BuildChild func(BuildContext, FloatGeometry) Widget

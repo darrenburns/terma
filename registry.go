@@ -53,11 +53,13 @@ func (r Rect) Union(other Rect) Rect {
 
 // WidgetEntry stores a widget along with its position and identity.
 type WidgetEntry struct {
-	parentID    string // Event identity of the containing widget, for pointer bubbling.
-	Widget      Widget
-	EventWidget Widget
-	ID          string
-	treePath    string // Stable tree identity, including for explicitly named widgets.
+	node               *widgetNode
+	pointerPassthrough bool
+	parentID           string // Event identity of the containing widget, for pointer bubbling.
+	Widget             Widget
+	EventWidget        Widget
+	ID                 string
+	treePath           string // Stable tree identity, including for explicitly named widgets.
 	// Bounds is the widget's border box in screen coordinates. Local mouse
 	// coordinates are relative to it. It can extend past what is drawn, for
 	// example when an ancestor has scrolled part of the widget out of view.
@@ -163,7 +165,7 @@ func (r *WidgetRegistry) topmostIn(x, y, lo, hi int, match func(*WidgetEntry) bo
 			break
 		}
 		entry := &r.entries[index]
-		if entry.Visible.Contains(x, y) && (match == nil || match(entry)) {
+		if !entry.pointerPassthrough && entry.Visible.Contains(x, y) && (match == nil || match(entry)) {
 			return entry
 		}
 	}

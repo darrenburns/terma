@@ -811,6 +811,9 @@ func Run(root Widget) (runErr error) {
 // overlay; and finally to the root widget, which handles keys when nothing is
 // focused.
 func dispatchKey(renderer *Renderer, focusManager *FocusManager, root Widget, event KeyEvent) {
+	if event.MatchString("escape") && renderer.cancelDrag() {
+		return
+	}
 	if renderer.captureKey(event) {
 		return
 	}
