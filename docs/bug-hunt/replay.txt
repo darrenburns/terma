@@ -1,3 +1,0 @@
-All five original defects reproduced at 2871302c7d54ad7633a86c5925f00049e1ccc921.
-ok  	github.com/darrenburns/terma	0.429s
-All five regressions pass on the current checkout.
