@@ -1189,7 +1189,7 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 }
 
 func (r *Renderer) renderTreeWithParent(ctx *RenderContext, tree RenderTree, screenX, screenY int, parentID string) {
-	if invisible, ok := tree.Widget.(invisibleWrapper); ok && !invisible.visible {
+	if _, ok := tree.Widget.(invisibleWrapper); ok {
 		return
 	}
 

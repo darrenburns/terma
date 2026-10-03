@@ -47,7 +47,6 @@ func HideWhen(condition bool, child Widget) Widget {
 
 type invisibleWrapper struct {
 	passThrough
-	visible bool
 }
 
 func (w invisibleWrapper) Build(_ BuildContext) Widget {
@@ -71,7 +70,10 @@ func (w invisibleWrapper) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
 //
 //	VisibleWhen(hasData.Get(), Chart{})  // reserves chart space even when no data
 func VisibleWhen(condition bool, child Widget) Widget {
-	return invisibleWrapper{passThrough: passThrough{child: child}, visible: condition}
+	if condition {
+		return child
+	}
+	return invisibleWrapper{passThrough: passThrough{child: child}}
 }
 
 // InvisibleWhen is the inverse of VisibleWhen.

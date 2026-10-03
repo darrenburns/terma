@@ -514,7 +514,7 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 		defer fc.PopAncestor()
 	}
 
-	if invisible, ok := node.widget.(invisibleWrapper); ok && !invisible.visible {
+	if _, ok := node.widget.(invisibleWrapper); ok {
 		fc = nil
 		ctx.floatCollector = nil
 	}
@@ -771,7 +771,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		Width:  box.Width,
 		Height: box.Height,
 	}
-	if invisible, ok := node.widget.(invisibleWrapper); ok && !invisible.visible {
+	if _, ok := node.widget.(invisibleWrapper); ok {
 		if r.geometryOnly {
 			r.recordReflowDamage(node, nodeBounds, Rect{}, ctx.visible)
 		}
