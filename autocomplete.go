@@ -814,7 +814,6 @@ func (a Autocomplete) getChildTextAndCursor() (string, int) {
 	return "", 0
 }
 
-// Separately inserted fragments can combine into fewer graphemes when joined.
 func autocompleteCursorPosition(content []string, cursor int) int {
 	return len(splitGraphemes(joinGraphemes(content[:cursor])))
 }

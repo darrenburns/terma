@@ -1,0 +1,198 @@
+--- FAIL: TestAutocomplete_UnicodeSuggestionRemainsEditable (0.00s)
+    --- FAIL: TestAutocomplete_UnicodeSuggestionRemainsEditable/input (0.00s)
+        autocomplete_editing_regression_test.go:21: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:21
+            	Error:      	Not equal: 
+            	            	expected: 1
+            	            	actual  : 3
+            	Test:       	TestAutocomplete_UnicodeSuggestionRemainsEditable/input
+        autocomplete_editing_regression_test.go:22: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:22
+            	Error:      	func (assert.PanicTestFunc)(0x100621b30) should not panic
+            	            		Panic value:	runtime error: slice bounds out of range [:3] with capacity 1
+            	            		Panic stack:	goroutine 12 [running]:
+            	            	runtime/debug.Stack()
+            	            		/Users/darrenburns/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.5.darwin-arm64/src/runtime/debug/stack.go:26 +0x64
+            	            	github.com/stretchr/testify/assert.didPanic.func1()
+            	            		/Users/darrenburns/go/pkg/mod/github.com/stretchr/testify@v1.11.1/assert/assertions.go:1286 +0x6c
+            	            	panic({0x100dc33c0?, 0x1400002c660?})
+            	            		/Users/darrenburns/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.5.darwin-arm64/src/runtime/panic.go:783 +0x120
+            	            	github.com/darrenburns/terma.(*TextInputState).Insert.func1({0x1400039c940, 0x1, 0x1})
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/text_input.go:104 +0x200
+            	            	github.com/darrenburns/terma.AnySignal[...].Update(0x100e53e40?, 0x140004aa008)
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/signal.go:252 +0xa0
+            	            	github.com/darrenburns/terma.(*TextInputState).Insert(0x140006556e0, {0x100c73688?, 0x1003312c0?})
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/text_input.go:100 +0x84
+            	            	github.com/darrenburns/terma.(*TextInputState).ReplaceSelection(0x140006556e0, {0x100c73688, 0x1})
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/text_input.go:415 +0x38
+            	            	github.com/darrenburns/terma.TextInput.HandlePaste({{0x0, 0x0}, 0x0, 0x140006556e0, {0x0, 0x0}, {0x0, 0x0}, {0x0, 0x0}, ...}, ...)
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/text_input.go:758 +0x1ec
+            	            	github.com/darrenburns/terma.TestAutocomplete_UnicodeSuggestionRemainsEditable.func1.1()
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:22 +0x5c
+            	            	github.com/stretchr/testify/assert.didPanic(0x1013d8d30?)
+            	            		/Users/darrenburns/go/pkg/mod/github.com/stretchr/testify@v1.11.1/assert/assertions.go:1291 +0x70
+            	            	github.com/stretchr/testify/assert.NotPanics({0x100e3f680, 0x14000602a80}, 0x1400039c9d0, {0x0, 0x0, 0x0})
+            	            		/Users/darrenburns/go/pkg/mod/github.com/stretchr/testify@v1.11.1/assert/assertions.go:1362 +0x70
+            	            	github.com/stretchr/testify/require.NotPanics({0x100e43278, 0x14000602a80}, 0x1400039c9d0, {0x0, 0x0, 0x0})
+            	            		/Users/darrenburns/go/pkg/mod/github.com/stretchr/testify@v1.11.1/require/require.go:1711 +0xa4
+            	            	github.com/darrenburns/terma.TestAutocomplete_UnicodeSuggestionRemainsEditable.func1(0x14000602a80)
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:22 +0x24c
+            	            	testing.tRunner(0x14000602a80, 0x14000340030)
+            	            		/Users/darrenburns/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.5.darwin-arm64/src/testing/testing.go:1934 +0xc8
+            	            	created by testing.(*T).Run in goroutine 11
+            	            		/Users/darrenburns/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.5.darwin-arm64/src/testing/testing.go:1997 +0x364
+            	Test:       	TestAutocomplete_UnicodeSuggestionRemainsEditable/input
+    --- FAIL: TestAutocomplete_UnicodeSuggestionRemainsEditable/area (0.00s)
+        autocomplete_editing_regression_test.go:29: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:29
+            	Error:      	Not equal: 
+            	            	expected: 1
+            	            	actual  : 3
+            	Test:       	TestAutocomplete_UnicodeSuggestionRemainsEditable/area
+        autocomplete_editing_regression_test.go:30: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:30
+            	Error:      	func (assert.PanicTestFunc)(0x100621ac0) should not panic
+            	            		Panic value:	runtime error: slice bounds out of range [:3] with capacity 1
+            	            		Panic stack:	goroutine 13 [running]:
+            	            	runtime/debug.Stack()
+            	            		/Users/darrenburns/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.5.darwin-arm64/src/runtime/debug/stack.go:26 +0x64
+            	            	github.com/stretchr/testify/assert.didPanic.func1()
+            	            		/Users/darrenburns/go/pkg/mod/github.com/stretchr/testify@v1.11.1/assert/assertions.go:1286 +0x6c
+            	            	panic({0x100dc33c0?, 0x1400002c690?})
+            	            		/Users/darrenburns/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.5.darwin-arm64/src/runtime/panic.go:783 +0x120
+            	            	github.com/darrenburns/terma.(*TextAreaState).Insert.func1({0x1400039ca90, 0x1, 0x1})
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/text_area.go:82 +0x200
+            	            	github.com/darrenburns/terma.AnySignal[...].Update(0x100e53e40?, 0x100c73128)
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/signal.go:252 +0xa0
+            	            	github.com/darrenburns/terma.(*TextAreaState).Insert(0x140001b2488, {0x100c73688?, 0x14000038d78?})
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/text_area.go:79 +0x84
+            	            	github.com/darrenburns/terma.(*TextAreaState).ReplaceSelection(0x140001b2488, {0x100c73688, 0x1})
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/text_area.go:420 +0x38
+            	            	github.com/darrenburns/terma.TextArea.HandlePaste({{0x0, 0x0}, 0x0, 0x140001b2488, {0x0, 0x0}, {0x0, 0x0}, {0x0, 0x0, ...}, ...}, ...)
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/text_area.go:1239 +0xb0
+            	            	github.com/darrenburns/terma.TestAutocomplete_UnicodeSuggestionRemainsEditable.func1.2()
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:30 +0x4c
+            	            	github.com/stretchr/testify/assert.didPanic(0x1013d8d30?)
+            	            		/Users/darrenburns/go/pkg/mod/github.com/stretchr/testify@v1.11.1/assert/assertions.go:1291 +0x70
+            	            	github.com/stretchr/testify/assert.NotPanics({0x100e3f680, 0x14000602e00}, 0x1400039cb10, {0x0, 0x0, 0x0})
+            	            		/Users/darrenburns/go/pkg/mod/github.com/stretchr/testify@v1.11.1/assert/assertions.go:1362 +0x70
+            	            	github.com/stretchr/testify/require.NotPanics({0x100e43278, 0x14000602e00}, 0x1400039cb10, {0x0, 0x0, 0x0})
+            	            		/Users/darrenburns/go/pkg/mod/github.com/stretchr/testify@v1.11.1/require/require.go:1711 +0xa4
+            	            	github.com/darrenburns/terma.TestAutocomplete_UnicodeSuggestionRemainsEditable.func1(0x14000602e00)
+            	            		/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:30 +0x418
+            	            	testing.tRunner(0x14000602e00, 0x140003400f0)
+            	            		/Users/darrenburns/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.5.darwin-arm64/src/testing/testing.go:1934 +0xc8
+            	            	created by testing.(*T).Run in goroutine 11
+            	            		/Users/darrenburns/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.5.darwin-arm64/src/testing/testing.go:1997 +0x364
+            	Test:       	TestAutocomplete_UnicodeSuggestionRemainsEditable/area
+--- FAIL: TestAutocomplete_TriggerAfterGrapheme (0.00s)
+    autocomplete_editing_regression_test.go:44: 
+        	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:44
+        	Error:      	Not equal: 
+        	            	expected: "jo"
+        	            	actual  : ""
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1 +1 @@
+        	            	-jo
+        	            	+
+        	Test:       	TestAutocomplete_TriggerAfterGrapheme
+    autocomplete_editing_regression_test.go:46: 
+        	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:46
+        	Error:      	Not equal: 
+        	            	expected: "👩\u200d💻 @john"
+        	            	actual  : "👩\u200d💻 @johnjo"
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1 +1 @@
+        	            	-👩‍💻 @john
+        	            	+👩‍💻 @johnjo
+        	Test:       	TestAutocomplete_TriggerAfterGrapheme
+    autocomplete_editing_regression_test.go:47: 
+        	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:47
+        	Error:      	Not equal: 
+        	            	expected: 7
+        	            	actual  : 9
+        	Test:       	TestAutocomplete_TriggerAfterGrapheme
+--- FAIL: TestAutocomplete_TextAreaEnterReplacesSelection (0.00s)
+    autocomplete_editing_regression_test.go:59: 
+        	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:59
+        	Error:      	Not equal: 
+        	            	expected: "hello \n"
+        	            	actual  : "hello world\n"
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,2 @@
+        	            	-hello 
+        	            	+hello world
+        	            	 
+        	Test:       	TestAutocomplete_TextAreaEnterReplacesSelection
+    autocomplete_editing_regression_test.go:60: 
+        	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:60
+        	Error:      	Not equal: 
+        	            	expected: 7
+        	            	actual  : 12
+        	Test:       	TestAutocomplete_TextAreaEnterReplacesSelection
+    autocomplete_editing_regression_test.go:61: 
+        	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/autocomplete_editing_regression_test.go:61
+        	Error:      	Not equal: 
+        	            	expected: "hello \n"
+        	            	actual  : "hello world\n"
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,2 @@
+        	            	-hello 
+        	            	+hello world
+        	            	 
+        	Test:       	TestAutocomplete_TextAreaEnterReplacesSelection
+--- FAIL: TestVisibleWhenPreservesChildOutput (0.00s)
+    conditional_visibility_test.go:12: 
+        	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/conditional_visibility_test.go:12
+        	Error:      	Should be zero, but was 13
+        	Test:       	TestVisibleWhenPreservesChildOutput
+        	Messages:   	VisibleWhen(true) must render its child
+--- FAIL: TestVisibleWhenHiddenPreservesChildSize (0.00s)
+    conditional_visibility_test.go:18: 
+        	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/conditional_visibility_test.go:18
+        	Error:      	Not equal: 
+        	            	expected: 12
+        	            	actual  : 0
+        	Test:       	TestVisibleWhenHiddenPreservesChildSize
+        	Messages:   	hidden child must reserve its width
+--- FAIL: TestListFilterRefreshesWhenInputsChange (0.00s)
+    --- FAIL: TestListFilterRefreshesWhenInputsChange/case_sensitivity (0.00s)
+        list_filter_regression_test.go:62: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/list_filter_regression_test.go:62
+            	Error:      	"Apple               \napricot             \n                    \n                    " should not contain "Apple"
+            	Test:       	TestListFilterRefreshesWhenInputsChange/case_sensitivity
+    --- FAIL: TestListFilterRefreshesWhenInputsChange/matching_mode (0.00s)
+        list_filter_regression_test.go:61: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/list_filter_regression_test.go:61
+            	Error:      	"                    \n                    \n                    \n                    " does not contain "apple"
+            	Test:       	TestListFilterRefreshesWhenInputsChange/matching_mode
+    --- FAIL: TestListFilterRefreshesWhenInputsChange/replacement_items (0.00s)
+        list_filter_regression_test.go:61: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/list_filter_regression_test.go:61
+            	Error:      	"pear                \n                    \n                    \n                    " does not contain "apple"
+            	Test:       	TestListFilterRefreshesWhenInputsChange/replacement_items
+    --- FAIL: TestListFilterRefreshesWhenInputsChange/in-place_item_update (0.00s)
+        list_filter_regression_test.go:61: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/list_filter_regression_test.go:61
+            	Error:      	"pear                \n                    \n                    \n                    " does not contain "apple"
+            	Test:       	TestListFilterRefreshesWhenInputsChange/in-place_item_update
+--- FAIL: TestDefaultListCursorProjectsOntoFilteredView (0.00s)
+    list_filter_regression_test.go:79: 
+        	Error Trace:	/private/tmp/terma-bug-hunt-20261003/baseline/list_filter_regression_test.go:79
+        	Error:      	"banana              \nblueberry           \n                    \n                    " does not contain "> banana"
+        	Test:       	TestDefaultListCursorProjectsOntoFilteredView
+FAIL
+FAIL	github.com/darrenburns/terma	0.441s
+FAIL

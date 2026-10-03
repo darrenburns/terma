@@ -1,0 +1,138 @@
+--- FAIL: TestAutocomplete_SeparatelyInsertedCombiningMark (0.00s)
+    --- FAIL: TestAutocomplete_SeparatelyInsertedCombiningMark/input/insert_before_suffix (0.00s)
+        autocomplete_editing_regression_test.go:170: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/editing/autocomplete_editing_regression_test.go:170
+            	Error:      	Not equal: 
+            	            	expected: "é!x"
+            	            	actual  : "éx!"
+            	            	
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1 +1 @@
+            	            	-é!x
+            	            	+éx!
+            	Test:       	TestAutocomplete_SeparatelyInsertedCombiningMark/input/insert_before_suffix
+        autocomplete_editing_regression_test.go:172: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/editing/autocomplete_editing_regression_test.go:172
+            	Error:      	Not equal: 
+            	            	expected: "é!?x"
+            	            	actual  : "éx!?"
+            	            	
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1 +1 @@
+            	            	-é!?x
+            	            	+éx!?
+            	Test:       	TestAutocomplete_SeparatelyInsertedCombiningMark/input/insert_before_suffix
+    --- FAIL: TestAutocomplete_SeparatelyInsertedCombiningMark/input/query_before_suffix (0.00s)
+        autocomplete_editing_regression_test.go:177: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/editing/autocomplete_editing_regression_test.go:177
+            	Error:      	Not equal: 
+            	            	expected: "a"
+            	            	actual  : "ab"
+            	            	
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1 +1 @@
+            	            	-a
+            	            	+ab
+            	Test:       	TestAutocomplete_SeparatelyInsertedCombiningMark/input/query_before_suffix
+        autocomplete_editing_regression_test.go:181: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/editing/autocomplete_editing_regression_test.go:181
+            	Error:      	Not equal: 
+            	            	expected: "ac"
+            	            	actual  : "acb"
+            	            	
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1 +1 @@
+            	            	-ac
+            	            	+acb
+            	Test:       	TestAutocomplete_SeparatelyInsertedCombiningMark/input/query_before_suffix
+        autocomplete_editing_regression_test.go:182: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/editing/autocomplete_editing_regression_test.go:182
+            	Error:      	Not equal: 
+            	            	expected: "ac"
+            	            	actual  : "acb"
+            	            	
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1 +1 @@
+            	            	-ac
+            	            	+acb
+            	Test:       	TestAutocomplete_SeparatelyInsertedCombiningMark/input/query_before_suffix
+    --- FAIL: TestAutocomplete_SeparatelyInsertedCombiningMark/area/insert_before_suffix (0.00s)
+        autocomplete_editing_regression_test.go:170: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/editing/autocomplete_editing_regression_test.go:170
+            	Error:      	Not equal: 
+            	            	expected: "é!x"
+            	            	actual  : "éx!"
+            	            	
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1 +1 @@
+            	            	-é!x
+            	            	+éx!
+            	Test:       	TestAutocomplete_SeparatelyInsertedCombiningMark/area/insert_before_suffix
+        autocomplete_editing_regression_test.go:172: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/editing/autocomplete_editing_regression_test.go:172
+            	Error:      	Not equal: 
+            	            	expected: "é!?x"
+            	            	actual  : "éx!?"
+            	            	
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1 +1 @@
+            	            	-é!?x
+            	            	+éx!?
+            	Test:       	TestAutocomplete_SeparatelyInsertedCombiningMark/area/insert_before_suffix
+    --- FAIL: TestAutocomplete_SeparatelyInsertedCombiningMark/area/query_before_suffix (0.00s)
+        autocomplete_editing_regression_test.go:177: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/editing/autocomplete_editing_regression_test.go:177
+            	Error:      	Not equal: 
+            	            	expected: "a"
+            	            	actual  : "ab"
+            	            	
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1 +1 @@
+            	            	-a
+            	            	+ab
+            	Test:       	TestAutocomplete_SeparatelyInsertedCombiningMark/area/query_before_suffix
+        autocomplete_editing_regression_test.go:181: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/editing/autocomplete_editing_regression_test.go:181
+            	Error:      	Not equal: 
+            	            	expected: "ac"
+            	            	actual  : "acb"
+            	            	
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1 +1 @@
+            	            	-ac
+            	            	+acb
+            	Test:       	TestAutocomplete_SeparatelyInsertedCombiningMark/area/query_before_suffix
+        autocomplete_editing_regression_test.go:182: 
+            	Error Trace:	/private/tmp/terma-bug-hunt-20261003/editing/autocomplete_editing_regression_test.go:182
+            	Error:      	Not equal: 
+            	            	expected: "ac"
+            	            	actual  : "acb"
+            	            	
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1 +1 @@
+            	            	-ac
+            	            	+acb
+            	Test:       	TestAutocomplete_SeparatelyInsertedCombiningMark/area/query_before_suffix
+FAIL
+FAIL	github.com/darrenburns/terma	0.374s
+FAIL

@@ -1,0 +1,8 @@
+--- FAIL: TestVisibleWhenPreservesStackOverflow (0.00s)
+    conditional_visibility_test.go:183: 
+        	Error Trace:	/Users/darrenburns/.codex/worktrees/terma-bug-hunt/terma/conditional_visibility_test.go:183
+        	Error:      	Should be zero, but was 2
+        	Test:       	TestVisibleWhenPreservesStackOverflow
+FAIL
+FAIL	github.com/darrenburns/terma	0.428s
+FAIL
