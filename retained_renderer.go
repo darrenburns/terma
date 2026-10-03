@@ -514,6 +514,11 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 		defer fc.PopAncestor()
 	}
 
+	if invisible, ok := node.widget.(invisibleWrapper); ok && !invisible.visible {
+		fc = nil
+		ctx.floatCollector = nil
+	}
+
 	childWidgets := extractChildren(node.widget)
 	quiet := walkQuietWidget(widget, node)
 	if !rebuild {
@@ -766,6 +771,17 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 		Width:  box.Width,
 		Height: box.Height,
 	}
+	if invisible, ok := node.widget.(invisibleWrapper); ok && !invisible.visible {
+		if r.geometryOnly {
+			r.recordReflowDamage(node, nodeBounds, Rect{}, ctx.visible)
+		}
+		node.registered = nil
+		node.prevBox = *box
+		node.bounds = nodeBounds
+		node.subtreeBounds = Rect{}
+		return Rect{}
+	}
+
 	if partial && !nodeBounds.Intersects(damage) && !node.subtreeBounds.Intersects(damage) {
 		return Rect{}
 	}
