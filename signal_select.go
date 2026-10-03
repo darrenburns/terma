@@ -119,7 +119,20 @@ func captureNotification[T any](value T, listeners map[*widgetNode]dependencyMas
 	return n
 }
 
+// deliver marks listeners dirty on the event loop. A background goroutine
+// can't mark them itself: marking walks node parents and intrinsic-size
+// caches that the renderer rewrites while it builds.
 func (n signalNotification[T]) deliver() {
+	if len(n.listeners) == 0 && len(n.selectors) == 0 {
+		return
+	}
+	if dispatchIfOffLoop(n.deliverOnLoop) {
+		return
+	}
+	n.deliverOnLoop()
+}
+
+func (n signalNotification[T]) deliverOnLoop() {
 	for _, listener := range n.listeners {
 		listener.node.markDirtyMask(listener.mask)
 	}

@@ -3,6 +3,8 @@ package terma
 import (
 	"context"
 	"sync"
+
+	"github.com/petermattis/goid"
 )
 
 type dispatchQueue struct {
@@ -49,13 +51,16 @@ var (
 	appRuntimeMu          sync.RWMutex
 	appDispatchQueue      *dispatchQueue
 	appLifecycleCtx       context.Context
+	appLoopGoroutine      int64
 	headlessDispatchQueue *dispatchQueue
 )
 
+// setAppRuntimeState must be called from the goroutine that runs the event loop.
 func setAppRuntimeState(ctx context.Context, queue *dispatchQueue) {
 	appRuntimeMu.Lock()
 	appLifecycleCtx = ctx
 	appDispatchQueue = queue
+	appLoopGoroutine = goid.Get()
 	appRuntimeMu.Unlock()
 }
 
@@ -63,7 +68,21 @@ func clearAppRuntimeState() {
 	appRuntimeMu.Lock()
 	appLifecycleCtx = nil
 	appDispatchQueue = nil
+	appLoopGoroutine = 0
 	appRuntimeMu.Unlock()
+}
+
+// dispatchIfOffLoop queues fn for the event loop when called from another
+// goroutine of a running app. Otherwise it returns false and the caller runs
+// fn itself, so work done on the loop is never deferred.
+func dispatchIfOffLoop(fn func()) bool {
+	appRuntimeMu.RLock()
+	loop := appLoopGoroutine
+	appRuntimeMu.RUnlock()
+	if loop == 0 || loop == goid.Get() {
+		return false
+	}
+	return dispatchIfRunning(fn)
 }
 
 func currentAppContext() context.Context {
