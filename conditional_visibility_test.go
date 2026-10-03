@@ -172,3 +172,13 @@ func TestVisibleWhenLegacyDoesNotDuplicateFloatingChildren(t *testing.T) {
 		require.Equal(t, countFloats(child), countFloats(VisibleWhen(true, child)))
 	}
 }
+
+func TestVisibleWhenPreservesStackOverflow(t *testing.T) {
+	child := Stack{Width: Cells(3), Height: Cells(1), Children: []Widget{
+		Text{Content: "abc"},
+		PositionedAt(0, 3, Text{Content: "OV"}),
+	}}
+	expected := RenderToBuffer(child, 20, 4)
+	actual := RenderToBuffer(VisibleWhen(true, child), 20, 4)
+	require.Zero(t, CompareBuffers(expected, actual, 20, 4).MismatchedCells)
+}
