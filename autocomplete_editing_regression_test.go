@@ -108,3 +108,27 @@ func TestAutocomplete_QueriesUseGraphemePositions(t *testing.T) {
 		})
 	}
 }
+
+func TestSnapshot_AutocompleteEditing(t *testing.T) {
+	t.Run("unicode", func(t *testing.T) {
+		state := NewTextInputState("👩‍💻 @jo")
+		popup := NewAutocompleteState()
+		popup.SetSuggestions([]Suggestion{{Label: "john", Value: "@john"}})
+		input := TextInput{State: state, Width: Cells(24)}
+		ac := Autocomplete{State: popup, Child: input, TriggerChars: []rune{'@'}}
+		ac.updateTriggerAndQuery(ac.getChildTextAndCursor())
+		ac.onEnterTextInput()
+		input.HandlePaste("!")
+		AssertSnapshot(t, input, 26, 3, "Autocomplete preserves a joined emoji and replaces the complete trigger query before further typing.")
+	})
+
+	t.Run("selection", func(t *testing.T) {
+		state := NewTextAreaState("hello world")
+		state.SelectionAnchor.Set(6)
+		area := TextArea{State: state, Width: Cells(24), Height: Cells(3)}
+		ac := Autocomplete{State: NewAutocompleteState(), Child: area}
+		ac.onEnterTextArea()
+		area.HandlePaste("next line")
+		AssertSnapshot(t, area, 26, 4, "Enter replaces the selected word when autocomplete has no suggestions, and typing continues on the next line.")
+	})
+}

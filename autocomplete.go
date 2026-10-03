@@ -17,7 +17,8 @@ type Suggestion struct {
 // InsertStrategy defines how a suggestion is inserted into the text.
 // It receives the current text, cursor position, the selected suggestion,
 // and the trigger position (or -1 if no trigger), and returns the new text
-// and new cursor position.
+// and new cursor position. Cursor and trigger positions are grapheme indexes,
+// matching TextInputState and TextAreaState.
 type InsertStrategy func(text string, cursor int, suggestion Suggestion, triggerPos int) (newText string, newCursor int)
 
 // InsertReplace replaces the entire text with the suggestion value.
@@ -26,7 +27,7 @@ var InsertReplace InsertStrategy = func(text string, cursor int, suggestion Sugg
 	if value == "" {
 		value = suggestion.Label
 	}
-	return value, utf8.RuneCountInString(value)
+	return value, len(splitGraphemes(value))
 }
 
 // InsertFromTrigger replaces text from the trigger position to cursor with the suggestion.
@@ -37,23 +38,19 @@ var InsertFromTrigger InsertStrategy = func(text string, cursor int, suggestion 
 		value = suggestion.Label
 	}
 
-	runes := []rune(text)
+	graphemes := splitGraphemes(text)
 	if triggerPos < 0 {
 		triggerPos = 0
 	}
-	if triggerPos > len(runes) {
-		triggerPos = len(runes)
+	if triggerPos > len(graphemes) {
+		triggerPos = len(graphemes)
 	}
-	if cursor > len(runes) {
-		cursor = len(runes)
+	if cursor > len(graphemes) {
+		cursor = len(graphemes)
 	}
 
-	// Build new text: before trigger + value + after cursor
-	newRunes := append([]rune{}, runes[:triggerPos]...)
-	newRunes = append(newRunes, []rune(value)...)
-	newRunes = append(newRunes, runes[cursor:]...)
-
-	return string(newRunes), triggerPos + utf8.RuneCountInString(value)
+	prefix := joinGraphemes(graphemes[:triggerPos]) + value
+	return prefix + joinGraphemes(graphemes[cursor:]), len(splitGraphemes(prefix))
 }
 
 // InsertAtCursor inserts the suggestion value at the cursor position.
@@ -63,19 +60,16 @@ var InsertAtCursor InsertStrategy = func(text string, cursor int, suggestion Sug
 		value = suggestion.Label
 	}
 
-	runes := []rune(text)
-	if cursor > len(runes) {
-		cursor = len(runes)
+	graphemes := splitGraphemes(text)
+	if cursor > len(graphemes) {
+		cursor = len(graphemes)
 	}
 	if cursor < 0 {
 		cursor = 0
 	}
 
-	newRunes := append([]rune{}, runes[:cursor]...)
-	newRunes = append(newRunes, []rune(value)...)
-	newRunes = append(newRunes, runes[cursor:]...)
-
-	return string(newRunes), cursor + utf8.RuneCountInString(value)
+	prefix := joinGraphemes(graphemes[:cursor]) + value
+	return prefix + joinGraphemes(graphemes[cursor:]), len(splitGraphemes(prefix))
 }
 
 // InsertReplaceWord replaces the current word (delimited by whitespace) with the suggestion.
@@ -85,9 +79,9 @@ var InsertReplaceWord InsertStrategy = func(text string, cursor int, suggestion 
 		value = suggestion.Label
 	}
 
-	runes := []rune(text)
-	if cursor > len(runes) {
-		cursor = len(runes)
+	graphemes := splitGraphemes(text)
+	if cursor > len(graphemes) {
+		cursor = len(graphemes)
 	}
 	if cursor < 0 {
 		cursor = 0
@@ -95,22 +89,26 @@ var InsertReplaceWord InsertStrategy = func(text string, cursor int, suggestion 
 
 	// Find word start (scan backward to whitespace)
 	wordStart := cursor
-	for wordStart > 0 && !unicode.IsSpace(runes[wordStart-1]) {
+	for wordStart > 0 {
+		r, _ := utf8.DecodeRuneInString(graphemes[wordStart-1])
+		if unicode.IsSpace(r) {
+			break
+		}
 		wordStart--
 	}
 
 	// Find word end (scan forward to whitespace)
 	wordEnd := cursor
-	for wordEnd < len(runes) && !unicode.IsSpace(runes[wordEnd]) {
+	for wordEnd < len(graphemes) {
+		r, _ := utf8.DecodeRuneInString(graphemes[wordEnd])
+		if unicode.IsSpace(r) {
+			break
+		}
 		wordEnd++
 	}
 
-	// Build new text: before word + value + after word
-	newRunes := append([]rune{}, runes[:wordStart]...)
-	newRunes = append(newRunes, []rune(value)...)
-	newRunes = append(newRunes, runes[wordEnd:]...)
-
-	return string(newRunes), wordStart + utf8.RuneCountInString(value)
+	prefix := joinGraphemes(graphemes[:wordStart]) + value
+	return prefix + joinGraphemes(graphemes[wordEnd:]), len(splitGraphemes(prefix))
 }
 
 // AutocompleteState holds the state for an Autocomplete widget.
@@ -577,10 +575,7 @@ func (a Autocomplete) onEnterTextArea() {
 		return
 	}
 	if ta, ok := a.Child.(TextArea); ok && ta.State != nil && ta.canInsert() {
-		ta.State.InsertNewline()
-		if ta.OnChange != nil {
-			ta.OnChange(ta.State.GetText())
-		}
+		ta.insertNewline()
 	}
 }
 
@@ -641,14 +636,14 @@ func (a Autocomplete) findTriggerPosition(text string, cursorPos int) int {
 		return -1 // No triggers means always-on mode
 	}
 
-	runes := []rune(text)
-	if cursorPos > len(runes) {
-		cursorPos = len(runes)
+	graphemes := splitGraphemes(text)
+	if cursorPos > len(graphemes) {
+		cursorPos = len(graphemes)
 	}
 
 	// Search backwards from cursor; the query can't span whitespace.
 	for i := cursorPos - 1; i >= 0; i-- {
-		r := runes[i]
+		r, _ := utf8.DecodeRuneInString(graphemes[i])
 		if unicode.IsSpace(r) {
 			break
 		}
@@ -656,7 +651,11 @@ func (a Autocomplete) findTriggerPosition(text string, cursorPos int) int {
 			continue
 		}
 		// Unless TriggerAnywhere is set, a trigger must start a word.
-		if a.TriggerAnywhere || i == 0 || unicode.IsSpace(runes[i-1]) {
+		if a.TriggerAnywhere || i == 0 {
+			return i
+		}
+		previous, _ := utf8.DecodeRuneInString(graphemes[i-1])
+		if unicode.IsSpace(previous) {
 			return i
 		}
 	}
@@ -676,15 +675,15 @@ func (a Autocomplete) isTriggerChar(r rune) bool {
 
 // extractQuery extracts the text between trigger and cursor.
 func (a Autocomplete) extractQuery(text string, cursorPos int, triggerPos int) string {
-	runes := []rune(text)
-	if cursorPos > len(runes) {
-		cursorPos = len(runes)
+	graphemes := splitGraphemes(text)
+	if cursorPos > len(graphemes) {
+		cursorPos = len(graphemes)
 	}
 
 	if triggerPos < 0 {
 		// No trigger - in always-on mode, the entire text up to cursor is the query
 		if len(a.TriggerChars) == 0 {
-			return string(runes[:cursorPos])
+			return joinGraphemes(graphemes[:cursorPos])
 		}
 		return ""
 	}
@@ -694,7 +693,7 @@ func (a Autocomplete) extractQuery(text string, cursorPos int, triggerPos int) s
 	if queryStart > cursorPos {
 		return ""
 	}
-	return string(runes[queryStart:cursorPos])
+	return joinGraphemes(graphemes[queryStart:cursorPos])
 }
 
 // matchMode returns the configured match mode.
