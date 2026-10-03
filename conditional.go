@@ -55,9 +55,7 @@ func (w invisibleWrapper) Build(_ BuildContext) Widget {
 }
 
 func (w invisibleWrapper) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
-	if !w.visible {
-		ctx.floatCollector = nil
-	}
+	ctx.floatCollector = nil
 	return w.passThrough.BuildLayoutNode(ctx)
 }
 
