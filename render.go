@@ -1189,6 +1189,10 @@ func (r *Renderer) renderTree(ctx *RenderContext, tree RenderTree, screenX, scre
 }
 
 func (r *Renderer) renderTreeWithParent(ctx *RenderContext, tree RenderTree, screenX, screenY int, parentID string) {
+	if _, ok := tree.Widget.(invisibleWrapper); ok {
+		return
+	}
+
 	// Bind current event ID to this render node so auto-ID focus works in Render().
 	selfCtx := *ctx
 	selfCtx.currentEventID = tree.EventID

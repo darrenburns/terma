@@ -18,13 +18,15 @@ type ListState[T any] struct {
 	dragging    bool           // A press on an item is held, so pointer motion moves the cursor
 	hover       itemHover[int] // Source index of the item under the pointer
 
-	itemLayouts       []listItemLayout  // Cached layout metrics (per item)
-	revealCursor      func()            // Scrolls the cursor into view; set by the List that shows this state
-	revealed          cursorReveal[int] // Where the cursor was last scrolled into view
-	viewIndices       []int             // View index -> source index for filtered views
-	viewIndexBySource map[int]int       // Source index -> view index for filtered views
-	cachedMatches     []MatchResult     // Cached match results from filtering
-	cachedFilterQuery string            // Query used for cached filter results
+	itemLayouts         []listItemLayout  // Cached layout metrics (per item)
+	revealCursor        func()            // Scrolls the cursor into view; set by the List that shows this state
+	revealed            cursorReveal[int] // Where the cursor was last scrolled into view
+	viewIndices         []int             // View index -> source index for filtered views
+	viewIndexBySource   map[int]int       // Source index -> view index for filtered views
+	cachedMatches       []MatchResult     // Cached match results from filtering
+	cachedFilterQuery   string            // Query used for cached filter results
+	cachedFilterOptions FilterOptions
+	cachedItemsRevision uint64
 }
 
 // NewListState creates a new ListState with the given initial items.
@@ -453,7 +455,7 @@ func (s *ListState[T]) SelectRange(from, to int) {
 // Returns the number of items that match the filter.
 // The cached results are used by List.Build() to avoid re-filtering.
 func (s *ListState[T]) ApplyFilter(filter *FilterState, matchItem func(item T, query string, options FilterOptions) MatchResult) int {
-	items := s.Items.Peek()
+	items, itemsRevision := s.Items.peekWithRevision()
 	if len(items) == 0 {
 		s.setViewIndices(nil)
 		s.cachedMatches = nil
@@ -476,6 +478,8 @@ func (s *ListState[T]) ApplyFilter(filter *FilterState, matchItem func(item T, q
 	s.setViewIndices(filtered.Indices)
 	s.cachedMatches = filtered.Matches
 	s.cachedFilterQuery = query
+	s.cachedFilterOptions = options
+	s.cachedItemsRevision = itemsRevision
 
 	return len(filtered.Items)
 }
@@ -557,6 +561,8 @@ type defaultListItemWidget[T any] struct {
 	sourceIdx    int
 	match        MatchResult
 	prefixWidth  int
+	itemCount    int
+	firstSource  int
 }
 
 func (c listContainer[T]) Build(ctx BuildContext) Widget {
@@ -630,7 +636,7 @@ func (w defaultListItemWidget[T]) currentPrefix() string {
 	}
 
 	focused := w.focusManager != nil && w.focusID != "" && w.focusManager.FocusedID() == w.focusID
-	showCursor := w.sourceIdx == cursorIdx && focused
+	showCursor := w.sourceIdx == w.list.State.renderedCursor(cursorIdx, w.itemCount, w.firstSource) && focused
 	if showCursor {
 		return w.list.CursorPrefix
 	}
@@ -654,7 +660,7 @@ func (w defaultListItemWidget[T]) currentStyle() Style {
 	}
 
 	focused := w.focusManager != nil && w.focusID != "" && w.focusManager.FocusedID() == w.focusID
-	showCursor := w.sourceIdx == cursorIdx && focused
+	showCursor := w.sourceIdx == w.list.State.renderedCursor(cursorIdx, w.itemCount, w.firstSource) && focused
 	style := Style{ForegroundColor: w.theme.Text, Width: Flex(1)}
 	if showCursor {
 		style.BackgroundColor = w.theme.ActiveCursor
@@ -671,7 +677,9 @@ func (w defaultListItemWidget[T]) currentStyle() Style {
 func (w defaultListItemWidget[T]) paintState(ctx *RenderContext) (showCursor, selected bool) {
 	active := w.sourceIdx == 0
 	if w.list.State != nil {
-		active = Select(w.list.State.CursorIndex, func(cursor int) bool { return cursor == w.sourceIdx })
+		active = Select(w.list.State.CursorIndex, func(cursor int) bool {
+			return w.list.State.renderedCursor(cursor, w.itemCount, w.firstSource) == w.sourceIdx
+		})
 		if w.list.MultiSelect {
 			selected = w.list.selectedSelect(w.sourceIdx)
 		}
@@ -903,7 +911,7 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 	}
 
 	// Get items (subscribes to changes via signal)
-	items := l.State.Items.Get()
+	items, itemsRevision := l.State.Items.getWithRevision()
 	if len(items) == 0 {
 		l.State.itemLayouts = nil
 		l.State.setViewIndices(nil)
@@ -912,9 +920,11 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 
 	query, options := filterStateValues(l.Filter)
 
-	// Check if we have cached filter results for this query
 	var filtered FilteredView[T]
-	useCached := l.State.cachedFilterQuery == query && l.State.viewIndices != nil
+	useCached := l.State.cachedFilterQuery == query &&
+		l.State.cachedFilterOptions == options &&
+		l.State.cachedItemsRevision == itemsRevision &&
+		l.State.viewIndices != nil
 	if useCached {
 		if len(l.State.cachedMatches) > 0 && len(l.State.cachedMatches) != len(l.State.viewIndices) {
 			useCached = false
@@ -953,6 +963,8 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 		l.State.setViewIndices(filtered.Indices)
 		l.State.cachedMatches = filtered.Matches
 		l.State.cachedFilterQuery = query
+		l.State.cachedFilterOptions = options
+		l.State.cachedItemsRevision = itemsRevision
 	}
 
 	if len(filtered.Items) == 0 {
@@ -995,6 +1007,8 @@ func (l List[T]) Build(ctx BuildContext) Widget {
 				sourceIdx:    filtered.Indices[viewIdx],
 				match:        match,
 				prefixWidth:  prefixWidth,
+				itemCount:    len(items),
+				firstSource:  filtered.Indices[0],
 			}
 		}
 

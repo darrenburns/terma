@@ -1,5 +1,7 @@
 package terma
 
+import "github.com/darrenburns/terma/layout"
+
 // EmptyWidget is a placeholder widget that renders nothing and takes no space.
 // Use this directly or via ShowWhen/HideWhen for conditional rendering.
 type EmptyWidget struct{}
@@ -43,31 +45,17 @@ func HideWhen(condition bool, child Widget) Widget {
 	return ShowWhen(!condition, child)
 }
 
-// invisibleWrapper reserves layout space for a child but optionally skips rendering.
-// Used by VisibleWhen/InvisibleWhen for CSS visibility-like behavior.
 type invisibleWrapper struct {
-	child   Widget
-	visible bool
+	passThrough
 }
 
-// Build returns itself to handle Layout and Render.
 func (w invisibleWrapper) Build(_ BuildContext) Widget {
 	return w
 }
 
-// Layout builds the child and returns its size, reserving space regardless of visibility.
-func (w invisibleWrapper) Layout(ctx BuildContext, constraints Constraints) Size {
-	built := w.child.Build(ctx)
-	if layoutable, ok := built.(Layoutable); ok {
-		return layoutable.Layout(ctx, constraints)
-	}
-	return Size{}
-}
-
-// Render only renders the child when visible.
-// When invisible, the space is reserved but nothing is drawn and no focus/hover events occur.
-func (w invisibleWrapper) Render(ctx *RenderContext) {
-	// No-op - renderTree takes care of rendering now.
+func (w invisibleWrapper) BuildLayoutNode(ctx BuildContext) layout.LayoutNode {
+	ctx.floatCollector = nil
+	return w.passThrough.BuildLayoutNode(ctx)
 }
 
 // VisibleWhen reserves space for a child regardless of visibility.
@@ -82,7 +70,10 @@ func (w invisibleWrapper) Render(ctx *RenderContext) {
 //
 //	VisibleWhen(hasData.Get(), Chart{})  // reserves chart space even when no data
 func VisibleWhen(condition bool, child Widget) Widget {
-	return invisibleWrapper{child: child, visible: condition}
+	if condition {
+		return child
+	}
+	return invisibleWrapper{passThrough: passThrough{child: child}}
 }
 
 // InvisibleWhen is the inverse of VisibleWhen.

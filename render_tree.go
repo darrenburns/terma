@@ -126,6 +126,11 @@ func BuildRenderTree(widget Widget, ctx BuildContext, constraints layout.Constra
 
 // buildChildTrees recursively builds RenderTrees for all children.
 func buildChildTrees(widget Widget, ctx BuildContext, computed layout.ComputedLayout, fc *FocusCollector) []RenderTree {
+	if _, ok := widget.(invisibleWrapper); ok {
+		fc = nil
+		ctx.floatCollector = nil
+	}
+
 	// Extract children from the widget
 	widgetChildren := extractChildren(widget)
 
