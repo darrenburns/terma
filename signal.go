@@ -6,11 +6,16 @@ import (
 	"runtime"
 	"sync"
 	"sync/atomic"
+
+	"github.com/petermattis/goid"
 )
 
+// signalReadContext is the widget whose build, layout or paint is running, and
+// the goroutine running it. Reads from other goroutines must not subscribe it.
 type signalReadContext struct {
-	node  *widgetNode
-	phase dependencyMask
+	node      *widgetNode
+	phase     dependencyMask
+	goroutine int64
 }
 
 var currentSignalRead signalReadContext
@@ -19,7 +24,7 @@ var currentSignalReadMu sync.Mutex
 func withSignalRead[T any](node *widgetNode, phase dependencyMask, fn func() T) T {
 	currentSignalReadMu.Lock()
 	prev := currentSignalRead
-	currentSignalRead = signalReadContext{node: node, phase: phase}
+	currentSignalRead = signalReadContext{node: node, phase: phase, goroutine: goid.Get()}
 	currentSignalReadMu.Unlock()
 	defer func() {
 		currentSignalReadMu.Lock()
@@ -31,8 +36,12 @@ func withSignalRead[T any](node *widgetNode, phase dependencyMask, fn func() T) 
 
 func currentReadSubscription() signalReadContext {
 	currentSignalReadMu.Lock()
-	defer currentSignalReadMu.Unlock()
-	return currentSignalRead
+	read := currentSignalRead
+	currentSignalReadMu.Unlock()
+	if read.goroutine != goid.Get() {
+		return signalReadContext{}
+	}
+	return read
 }
 
 var debugRenderCauseEnabled atomic.Bool
