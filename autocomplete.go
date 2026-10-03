@@ -380,7 +380,7 @@ func (a Autocomplete) wrapTextInput(child TextInput, ctx BuildContext, enablePop
 	child.OnChange = func(text string) {
 		cursorPos := 0
 		if child.State != nil {
-			cursorPos = child.State.CursorIndex.Peek()
+			cursorPos = autocompleteCursorPosition(child.State.Content.Peek(), child.State.CursorIndex.Peek())
 		}
 		a.handleTextChange(text, cursorPos)
 		if originalOnChange != nil {
@@ -414,7 +414,7 @@ func (a Autocomplete) wrapTextArea(child TextArea, ctx BuildContext, enablePopup
 	child.OnChange = func(text string) {
 		cursorPos := 0
 		if child.State != nil {
-			cursorPos = child.State.CursorIndex.Peek()
+			cursorPos = autocompleteCursorPosition(child.State.Content.Peek(), child.State.CursorIndex.Peek())
 		}
 		a.handleTextChange(text, cursorPos)
 		if originalOnChange != nil {
@@ -802,14 +802,21 @@ func (a Autocomplete) getChildTextAndCursor() (string, int) {
 	switch child := a.Child.(type) {
 	case TextInput:
 		if child.State != nil {
-			return joinGraphemes(child.State.Content.Get()), child.State.CursorIndex.Get()
+			content := child.State.Content.Get()
+			return joinGraphemes(content), autocompleteCursorPosition(content, child.State.CursorIndex.Get())
 		}
 	case TextArea:
 		if child.State != nil {
-			return joinGraphemes(child.State.Content.Get()), child.State.CursorIndex.Get()
+			content := child.State.Content.Get()
+			return joinGraphemes(content), autocompleteCursorPosition(content, child.State.CursorIndex.Get())
 		}
 	}
 	return "", 0
+}
+
+// Separately inserted fragments can combine into fewer graphemes when joined.
+func autocompleteCursorPosition(content []string, cursor int) int {
+	return len(splitGraphemes(joinGraphemes(content[:cursor])))
 }
 
 // setChildTextAndCursor updates the child's text and cursor position.
