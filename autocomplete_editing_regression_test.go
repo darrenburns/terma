@@ -132,3 +132,56 @@ func TestSnapshot_AutocompleteEditing(t *testing.T) {
 		AssertSnapshot(t, area, 26, 4, "Enter replaces the selected word when autocomplete has no suggestions, and typing continues on the next line.")
 	})
 }
+
+func TestAutocomplete_SeparatelyInsertedCombiningMark(t *testing.T) {
+	for _, kind := range []string{"input", "area"} {
+		for _, scenario := range []string{"insert before suffix", "query before suffix"} {
+			t.Run(kind+"/"+scenario, func(t *testing.T) {
+				var moveLeft func()
+				var getText func() string
+				var paste func(string) bool
+				var query string
+				ac := Autocomplete{
+					State:         NewAutocompleteState(),
+					Insert:        InsertAtCursor,
+					OnQueryChange: func(value string) { query = value },
+				}
+				if scenario == "query before suffix" {
+					ac.TriggerChars = []rune{'@'}
+				}
+				if kind == "input" {
+					state := NewTextInputState("")
+					ac.Child = TextInput{State: state}
+					child := ac.wrapTextInput(ac.Child.(TextInput), BuildContext{}, true).(TextInput)
+					paste, moveLeft, getText = child.HandlePaste, state.CursorLeft, state.GetText
+				} else {
+					state := NewTextAreaState("")
+					ac.Child = TextArea{State: state}
+					child := ac.wrapTextArea(ac.Child.(TextArea), BuildContext{}, true).(TextArea)
+					paste, moveLeft, getText = child.HandlePaste, state.CursorLeft, state.GetText
+				}
+
+				paste("e")
+				paste("\u0301")
+				if scenario == "insert before suffix" {
+					paste("x")
+					moveLeft()
+					ac.selectSuggestion(Suggestion{Value: "!"})
+					assert.Equal(t, "e\u0301!x", getText())
+					paste("?")
+					assert.Equal(t, "e\u0301!?x", getText())
+				} else {
+					paste(" @ab")
+					moveLeft()
+					ac.updateTriggerAndQuery(ac.getChildTextAndCursor())
+					assert.Equal(t, "a", ac.State.filterQuery)
+					assert.Equal(t, 2, ac.State.triggerPosition)
+					paste("c")
+					assert.Equal(t, "e\u0301 @acb", getText())
+					assert.Equal(t, "ac", ac.State.filterQuery)
+					assert.Equal(t, "ac", query)
+				}
+			})
+		}
+	}
+}
