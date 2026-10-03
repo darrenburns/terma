@@ -157,3 +157,18 @@ func TestReactivityInitiallyHiddenVisibility(t *testing.T) {
 	sequence.frame("revealed", func(s *visibilityScene) { s.visible.Set(true) })
 	require.Contains(t, sequence.actual.renderer.ScreenText(), "three")
 }
+
+func TestVisibleWhenLegacyDoesNotDuplicateFloatingChildren(t *testing.T) {
+	for _, child := range []Widget{
+		Floating{Visible: true, Child: Text{Content: "FLOAT"}},
+		Column{Children: []Widget{Floating{Visible: true, Child: Text{Content: "FLOAT"}}}},
+	} {
+		countFloats := func(widget Widget) int {
+			floats := NewFloatCollector()
+			ctx := NewBuildContext(NewFocusManager(), NewAnySignal[Focusable](nil), NewAnySignal[Widget](nil), floats)
+			BuildRenderTree(widget, ctx, layout.Loose(24, 8), nil)
+			return len(floats.Entries())
+		}
+		require.Equal(t, countFloats(child), countFloats(VisibleWhen(true, child)))
+	}
+}
