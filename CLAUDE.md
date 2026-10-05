@@ -32,6 +32,28 @@ You can run snapshot tests. This means you can add debug logging,
 write a snapshot test which will exercise the logic and hit the logs, and then you can read the log file
 yourself.
 
+### Driving apps in tests with Pilot
+
+`NewPilot(t, app, w, h)` (`pilot.go`) runs an app through the same `appSession` (`app_session.go`) that
+`Run` uses: retained renderer, focus, modal focus, keybinds, mouse hit testing, paste. Use it for any test
+that needs input followed by a check, instead of building a renderer/focus manager/mouse router by hand.
+
+```go
+p := NewPilot(t, app, 60, 20)
+p.Type("hello")
+p.Press("tab", "enter")       // keys spelled as in Keybind.Key
+p.Click("submit")             // hit-tested click on the widget's centre
+p.MouseDown(x, y, uv.MouseLeft, uv.ModShift); p.MouseUp(x, y, uv.MouseLeft, uv.ModShift)
+p.Advance(100 * time.Millisecond) // frozen clock: animations/blink move only here
+p.WaitUntil(func() bool { return p.TextOf("status") == "done" }, 0) // background goroutines
+assert.Equal(t, "ok", p.FocusedID())
+p.AssertSnapshot("after-submit", "description") // testdata/<TestName>_after-submit.svg
+```
+
+Every input settles (dispatched work, signal updates, focus requests) before returning. One Pilot at a
+time; no `t.Parallel`. Internals are reachable from package tests via `p.session` (`renderer`, `focus`,
+`mouse`). See `docs/testing.md`.
+
 ### Driving real apps with tmux
 
 To check a change in a real app (event loop, key handling, terminal output), build the example and drive
@@ -105,6 +127,8 @@ func TestMyWidget_States(t *testing.T) {
 | `AssertSnapshot(t, widget, width, height, description...)` | Basic snapshot assertion |
 | `AssertSnapshotNamed(t, name, widget, width, height, description...)` | Named snapshot (multiple per test) |
 | `RenderToBuffer(widget, width, height)` | Render widget to buffer for inspection |
+| `NewPilot(t, app, width, height)` | Run an app, drive it with input, then read or snapshot the screen |
+| `Pilot.AssertSnapshot(name, description...)` | Snapshot the Pilot's current screen as `testdata/<TestName>_<name>.svg` |
 
 Golden files are stored in `testdata/<TestName>.svg`. The test framework generates an HTML gallery at `testdata/snapshot_gallery.html` for visual review.
 
@@ -123,6 +147,8 @@ Golden files are stored in `testdata/<TestName>.svg`. The test framework generat
 | File | Purpose |
 |------|---------|
 | `app.go` | Main event loop, `Run()` entry point |
+| `app_session.go` | Frame and input routing shared by `Run` and `Pilot` |
+| `pilot.go` | `Pilot` test driver: keys, typing, paste, clicks, resize, frozen clock |
 | `signal.go` | Reactive `Signal[T]` and `AnySignal[T]` |
 | `widget.go` | Core `Widget`, `Layoutable`, `Renderable` interfaces |
 | `layout.go` | `Column`, `Row` layout widgets |

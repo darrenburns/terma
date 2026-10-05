@@ -13,6 +13,7 @@ import (
 	"github.com/darrenburns/terma/cmd/internal/demos/markdowndemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/menudemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/palettedemo"
+	"github.com/darrenburns/terma/cmd/internal/demos/pilotdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/progressdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/scrolldemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/selectdemo"
@@ -51,6 +52,7 @@ var demos = []Entry{
 	{Info: progressdemo.Info, Command: "./cmd/progressbar-example", New: progressdemo.New},
 	{Info: shimmerdemo.Info, Command: "./cmd/shimmer-example", New: shimmerdemo.New},
 	{Info: jumpdemo.Info, Command: "./cmd/jump-example", New: jumpdemo.New},
+	{Info: pilotdemo.Info, Command: "./cmd/pilot-demo", New: pilotdemo.New},
 }
 
 func main() {
