@@ -2,7 +2,6 @@ package terma
 
 import (
 	"fmt"
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/stretchr/testify/require"
 	"slices"
 	"strings"
@@ -213,53 +212,15 @@ func TestTableProbeOversizedColumnRevealsLeadingText(t *testing.T) {
 	require.Equal(t, 2, scroll.GetOffsetX(), "manual panning should remain where the user puts it")
 }
 
-// clickScene renders a widget on a bare renderer without publishing focus,
-// so its first frame draws the auto-focused widget unfocused.
-// TestTableProbeOversizedRowRevealsLeadingLine's golden records that frame.
-type clickScene struct {
-	t        *testing.T
-	root     Widget
-	buf      *uv.Buffer
-	renderer *Renderer
-	focus    *FocusManager
-	focused  AnySignal[Focusable]
-	width    int
-	height   int
-}
-
-func newClickScene(t *testing.T, root Widget, width, height int) *clickScene {
-	t.Helper()
-	buf := uv.NewBuffer(width, height)
-	focus := NewFocusManager()
-	focus.SetRootWidget(root)
-	focused := NewAnySignal[Focusable](nil)
-	renderer := NewRenderer(buf, width, height, focus, focused, NewAnySignal[Widget](nil))
-	s := &clickScene{t: t, root: root, buf: buf, renderer: renderer, focus: focus, focused: focused, width: width, height: height}
-	focus.SetFocusables(renderer.Render(root))
-	return s
-}
-
-func (s *clickScene) draw() {
-	s.focused.Set(s.focus.Focused())
-	s.focus.SetFocusables(s.renderer.Update(s.root))
-}
-
-func (s *clickScene) snapshot(name, description string) {
-	s.t.Helper()
-	assertBufferSnapshot(s.t, name, s.buf, s.width, s.height, DefaultSVGOptions(), description)
-}
-
 func TestTableProbeOversizedRowRevealsLeadingLine(t *testing.T) {
 	scroll := NewScrollState()
 	table := Table[[]string]{ID: "tall-leading", State: NewTableState([][]string{{"A\nB\nC"}}), ScrollState: scroll,
 		Columns: []TableColumn{{Header: Text{Content: "Header"}, Width: Cells(8)}}, FrozenHeader: true, Style: Style{Width: Flex(1), Height: Flex(1)}}
-	scene := newClickScene(t, table, 10, 2)
-	require.Equal(t, "A", scene.buf.CellAt(0, 1).Content, "initial auto-reveal should show the start of an oversized row")
-	scene.snapshot("TableProbe_oversized_row_start", "Initial navigation shows the leading line of a row taller than its available body pane")
+	p := NewPilot(t, table, 10, 2)
+	require.Equal(t, "A", p.Buffer().CellAt(0, 1).Content, "initial auto-reveal should show the start of an oversized row")
+	p.AssertSnapshot("start", "Initial navigation shows the leading line of a row taller than its available body pane, the focused row highlighted")
 	scroll.SetOffset(100)
-	scene.draw()
-	require.Equal(t, "C", scene.buf.CellAt(0, 1).Content, "manual scroll can still reach the final line")
-	require.True(t, scene.focus.HandleKey(makeKeyEvent(uv.KeyHome, 0)))
-	scene.draw()
-	require.Equal(t, "A", scene.buf.CellAt(0, 1).Content, "explicit navigation reveals the start again")
+	require.Equal(t, "C", p.Buffer().CellAt(0, 1).Content, "manual scroll can still reach the final line")
+	p.Press("home")
+	require.Equal(t, "A", p.Buffer().CellAt(0, 1).Content, "explicit navigation reveals the start again")
 }

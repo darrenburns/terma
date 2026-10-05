@@ -268,25 +268,6 @@ func TestFormProbeInvalidRevealAfterErrorGrowth(t *testing.T) {
 
 }
 
-// formInputHarness drives the actual renderer, focus manager and key dispatcher.
-func formInputHarness(t *testing.T, root Widget) (*mouseRouter, *Renderer, func(KeyEvent)) {
-	t.Helper()
-	previous := pendingFocusID
-	t.Cleanup(func() { pendingFocusID = previous })
-	pendingFocusID = ""
-	router, renderer := renderForMouse(root, 50, 24)
-	return router, renderer, func(event KeyEvent) {
-		dispatchKey(renderer, router.focusManager, root, event)
-		requested := pendingFocusID
-		pendingFocusID = ""
-		router.focusManager.SetFocusables(renderer.Render(root))
-		if requested != "" {
-			router.focusManager.FocusByID(requested)
-		}
-		renderer.Render(root)
-	}
-}
-
 func TestFormProbeNestedRevealAndUnmount(t *testing.T) {
 	value := NewTextInputState("")
 	field := NewTextInputField("nested-invalid", value, Required("Detail required"))
@@ -295,21 +276,24 @@ func TestFormProbeNestedRevealAndUnmount(t *testing.T) {
 	form := Form{State: state}
 	content := Column{Style: Style{Padding: EdgeInsetsAll(1)}, Children: []Widget{Text{Content: "one\ntwo\nthree\nfour"}, Field{Label: "Detail", State: field, Child: TextInput{State: value}}}}
 	form.Child = Column{Children: []Widget{Button{ID: "nested-submit", Label: "Submit", OnPress: func() { form.Submit() }}, Scrollable{State: inner, Style: Style{Width: Cells(32), Height: Cells(3)}, Child: content}}}
-	root := Dialog{ID: "probe-nested-dialog", Visible: true, Style: Style{Width: Cells(42)}, Content: FocusTrap{ID: "nested-trap", Active: true, Child: Scrollable{State: outer, Style: Style{Width: Cells(36), Height: Cells(4)}, Child: Column{Children: []Widget{Text{Content: "above\nabove"}, form}}}}}
-	router, renderer, key := formInputHarness(t, root)
-	assertBufferSnapshot(t, "FormProbe_nested_before", renderer.terminal.(*uv.Buffer), 50, 24, DefaultSVGOptions(), "Padded nested scroll areas before an invalid submission")
-	key(makeKeyEvent(uv.KeyEnter, 0))
-	require.Equal(t, "nested-invalid", router.focusManager.FocusedID())
-	input := renderer.WidgetByID("nested-invalid")
+	dialogContent := NewAnySignal[Widget](FocusTrap{ID: "nested-trap", Active: true, Child: Scrollable{State: outer, Style: Style{Width: Cells(36), Height: Cells(4)}, Child: Column{Children: []Widget{Text{Content: "above\nabove"}, form}}}})
+	root := pilotBuilder(func(BuildContext) Widget {
+		return Dialog{ID: "probe-nested-dialog", Visible: true, Style: Style{Width: Cells(42)}, Content: dialogContent.Get()}
+	})
+	p := NewPilot(t, root, 50, 24)
+	p.AssertSnapshot("before", "Padded nested scroll areas before an invalid submission, with the auto-focused Submit button drawn focused")
+	p.Press("enter")
+	require.Equal(t, "nested-invalid", p.FocusedID())
+	input := p.session.renderer.WidgetByID("nested-invalid")
 	require.NotNil(t, input)
 	require.Greater(t, input.Visible.Height, 0)
-	assertBufferSnapshot(t, "FormProbe_nested_invalid", renderer.terminal.(*uv.Buffer), 50, 24, DefaultSVGOptions(), "First-invalid input is visible through both scroll viewports after submission")
+	p.AssertSnapshot("invalid", "First-invalid input is visible through both scroll viewports after submission")
 	// A removed invalid input still blocks submit, without scrolling its old tree.
-	root.Content = Button{ID: "replacement", Label: "Replacement"}
-	renderer.Render(root)
+	dialogContent.Set(Button{ID: "replacement", Label: "Replacement"})
+	p.settle()
 	oldInner, oldOuter := inner.GetOffset(), outer.GetOffset()
 	require.False(t, form.Submit())
-	renderer.Render(root)
+	p.settle()
 	require.Equal(t, oldInner, inner.GetOffset())
 	require.Equal(t, oldOuter, outer.GetOffset())
 }
