@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/charmbracelet/x/ansi"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,14 +20,14 @@ func TestCustomListCursorProjection(t *testing.T) {
 			}
 			return Text{Content: prefix + item}
 		}}
-	scene := newClickScene(t, list, 20, 4)
-	t.Cleanup(func() { scene.renderer.rootNode.dispose() })
-	screen := func() string { return ansi.Strip(BufferToANSI(scene.buf, scene.width, scene.height)) }
+	p := NewPilot(t, list, 20, 4)
+	t.Cleanup(func() { p.session.renderer.rootNode.dispose() })
+	screen := p.ScreenText
 	require.Contains(t, screen(), "> apple")
 
 	clear(builds)
 	state.CursorIndex.Set(2)
-	scene.draw()
+	p.settle()
 	require.Equal(t, map[string]int{"apple": 1, "cherry": 1}, builds, "direct writes rebuild only the old and new cursor rows")
 	require.Contains(t, screen(), "> cherry")
 
@@ -37,26 +36,26 @@ func TestCustomListCursorProjection(t *testing.T) {
 		item   string
 	}{{-5, "apple"}, {99, "blueberry"}} {
 		state.CursorIndex.Set(tc.cursor)
-		scene.draw()
+		p.settle()
 		require.Equal(t, tc.cursor, state.CursorIndex.Peek(), "painting clamps the projection without changing stored state")
 		require.Contains(t, screen(), "> "+tc.item)
 	}
 
 	filter.Query.Set("b")
-	scene.draw()
+	p.settle()
 	state.CursorIndex.Set(2) // Cherry is absent: show the first visible source index.
-	scene.draw()
+	p.settle()
 	require.Contains(t, screen(), "> banana")
 	require.Equal(t, 2, state.CursorIndex.Peek())
 	state.CursorIndex.Set(3)
-	scene.draw()
+	p.settle()
 	require.Contains(t, screen(), "> blueberry")
 
 	filter.Query.Set("a") // Rebuild with a different source/view mapping.
-	scene.draw()
+	p.settle()
 	require.Contains(t, screen(), "> apple")
 	state.CursorIndex.Set(1)
-	scene.draw()
+	p.settle()
 	require.Contains(t, screen(), "> banana", "selectors consult the current filtered view")
 }
 
