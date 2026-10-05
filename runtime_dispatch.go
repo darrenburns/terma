@@ -73,6 +73,11 @@ func currentAppContext() context.Context {
 	return ctx
 }
 
+func appShuttingDown() bool {
+	ctx := currentAppContext()
+	return ctx != nil && ctx.Err() != nil
+}
+
 func dispatchIfRunning(fn func()) bool {
 	if fn == nil {
 		return false
@@ -104,12 +109,14 @@ func drainPendingDispatches() {
 // Dispatch schedules fn to run on the app/event-loop goroutine before the next
 // rendered frame. During a headless Renderer render, fn runs after the frame
 // finishes, and the renderer draws again before returning. Outside an app or a
-// headless render, fn runs immediately.
+// headless render, fn runs immediately. Between Quit and Run returning, fn is
+// dropped: no frame will show its effects, and running it on the caller's
+// goroutine would race the app's last frame.
 func Dispatch(fn func()) {
 	if fn == nil {
 		return
 	}
-	if dispatchIfRunning(fn) {
+	if dispatchIfRunning(fn) || appShuttingDown() {
 		return
 	}
 	appRuntimeMu.RLock()
