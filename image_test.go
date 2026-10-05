@@ -162,7 +162,7 @@ func TestImageRetainedSequence(t *testing.T) {
 		if a.images != nil {
 			ap, ep := uv.NewBuffer(24, 13), uv.NewBuffer(24, 13)
 			paint := func(b *imageBuffer, p *uv.Buffer) {
-				copyImageCells(p, b, 24, 13)
+				copyCells(p, b, 24, 13)
 				k := newKittyImages()
 				k.paint(p, b, 8, 16)
 				for _, u := range k.uploads {

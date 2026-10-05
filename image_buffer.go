@@ -137,7 +137,7 @@ func (b *imageBuffer) removeNode(n *widgetNode) {
 		}
 	}
 }
-func copyImageCells(dst CellBuffer, src CellBuffer, w, h int) {
+func copyCells(dst CellBuffer, src CellBuffer, w, h int) {
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; {
 			c := src.CellAt(x, y)
@@ -172,7 +172,7 @@ func (r *Renderer) finishImages(root Widget) (switched bool) {
 	}
 	if r.images != nil {
 		r.images.prune()
-		copyImageCells(r.presentation, r.images, r.width, r.height)
+		copyCells(r.presentation, r.images, r.width, r.height)
 	}
 	return switched
 }

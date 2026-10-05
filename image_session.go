@@ -129,7 +129,7 @@ func (s *imageSession) present(t imageTerminal, r *Renderer, debug func(), debug
 	protocol := s.detector.protocol(now, valid)
 	cw, ch := r.imageCellSize()
 	// Recreate the presentation each frame, including after terminal Erase.
-	copyImageCells(t, r.images, r.width, r.height)
+	copyCells(t, r.images, r.width, r.height)
 	if protocol == "kitty" {
 		s.kitty.paint(t, r.images, cw, ch)
 	}
@@ -169,7 +169,7 @@ func (s *imageSession) present(t imageTerminal, r *Renderer, debug func(), debug
 		// Sixel erasure is terminal dependent. A full screen erase followed by
 		// complete cell presentation is conservative and leaves no removed residue.
 		t.Erase()
-		copyImageCells(t, r.images, r.width, r.height)
+		copyCells(t, r.images, r.width, r.height)
 		if protocol == "kitty" {
 			s.kitty.paint(t, r.images, cw, ch)
 		}
