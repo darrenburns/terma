@@ -105,8 +105,9 @@ func (s *JumpState) Typed() string {
 
 // handleKey takes every key press while jump mode is active. Typing a
 // target's key jumps to it; typing the start of one or more keys narrows the
-// labels to those; anything else leaves jump mode.
-func (s *JumpState) handleKey(event KeyEvent, toggleKey string) bool {
+// labels to those; anything else leaves jump mode, and is passed to unmatched
+// if set.
+func (s *JumpState) handleKey(event KeyEvent, toggleKey string, unmatched func(KeyEvent)) bool {
 	if event.MatchString("escape") || event.MatchString(toggleKey) {
 		s.Deactivate()
 		return true
@@ -121,7 +122,7 @@ func (s *JumpState) handleKey(event KeyEvent, toggleKey string) bool {
 
 	text := event.Text()
 	if text == "" || text == " " {
-		s.Deactivate()
+		s.leave(event, unmatched)
 		return true
 	}
 	typed := s.typed.Peek() + text
@@ -137,8 +138,15 @@ func (s *JumpState) handleKey(event KeyEvent, toggleKey string) bool {
 			return true
 		}
 	}
-	s.Deactivate()
+	s.leave(event, unmatched)
 	return true
+}
+
+func (s *JumpState) leave(event KeyEvent, unmatched func(KeyEvent)) {
+	s.Deactivate()
+	if unmatched != nil {
+		unmatched(event)
+	}
 }
 
 func (s *JumpState) jump(label jumpLabel) {
@@ -154,7 +162,7 @@ func (s *JumpState) jump(label jumpLabel) {
 // Vimium's link hints. Pressing Key (ctrl+o by default) overlays a short
 // label on each target; typing a label moves focus straight to its target.
 // Escape, the toggle key, a click or any key that matches no label leaves
-// jump mode.
+// jump mode; Unmatched can take that last key instead of it being dropped.
 //
 // Targets come from two places, which can be combined:
 //
@@ -198,8 +206,12 @@ type Jumper struct {
 	// Key toggles jump mode. Defaults to DefaultJumpKey. It is bound on the
 	// Jumper, so it works while focus is anywhere inside Child. Call
 	// State.Activate from your own keybind to enter jump mode another way.
-	Key   string
-	Child Widget
+	Key string
+	// Unmatched receives a key that matches no label, after jump mode has
+	// ended, so jump mode can share keys with commands of your own. Without
+	// it the key is dropped. Escape and Key only ever leave jump mode.
+	Unmatched func(KeyEvent)
+	Child     Widget
 	// LabelStyle styles the labels. Unset colors default to the theme's
 	// accent; labels are always padded by one cell on each side.
 	LabelStyle Style
@@ -222,14 +234,14 @@ func (j Jumper) toggleKey() string {
 // Child unchanged, so a Jumper never affects layout.
 func (j Jumper) Build(ctx BuildContext) Widget {
 	if j.State != nil && j.State.active.Get() && ctx.floatCollector != nil {
-		state, toggleKey := j.State, j.toggleKey()
+		state, toggleKey, unmatched := j.State, j.toggleKey(), j.Unmatched
 		ctx.floatCollector.Add(FloatEntry{
 			Config: FloatConfig{Position: FloatPositionTopLeft},
 			Child:  jumpOverlay{jumper: j, typed: j.State.typed.Get()},
 			// Above every other overlay, taking keys before the focused widget.
 			topmost: true,
 			captureKey: func(event KeyEvent) bool {
-				return state.handleKey(event, toggleKey)
+				return state.handleKey(event, toggleKey, unmatched)
 			},
 		})
 	}

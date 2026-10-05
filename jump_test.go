@@ -55,6 +55,7 @@ type jumpScene struct {
 	name      *TextInputState
 	previewed Signal[int]
 	dialog    Signal[bool]
+	unmatched []string
 }
 
 func newJumpScene(dynamic bool, hints string) func() *jumpScene {
@@ -80,8 +81,9 @@ func (s *jumpScene) Build(ctx BuildContext) Widget {
 			{Key: "n", ID: "name"},
 			{Key: "p", ID: "preview", Action: func() { s.previewed.Update(func(n int) int { return n + 1 }) }},
 		},
-		Dynamic: s.dynamic,
-		Hints:   s.hints,
+		Dynamic:   s.dynamic,
+		Hints:     s.hints,
+		Unmatched: func(event KeyEvent) { s.unmatched = append(s.unmatched, event.Key()) },
 		Child: Row{
 			Spacing: 1,
 			Children: []Widget{
@@ -188,6 +190,9 @@ func TestJumpLeavingWithoutJumping(t *testing.T) {
 		require.False(t, scene.jump.active.Peek(), key)
 		require.Equal(t, "inbox", sequence.actual.focus.FocusedID(), key)
 	}
+	// Keys that match no label reach Unmatched; escape and the toggle key
+	// only leave.
+	require.Equal(t, []string{"x", "down"}, scene.unmatched)
 
 	// A click anywhere lands on the overlay and leaves jump mode.
 	sequence.press("Enter jump mode", "ctrl+o")
