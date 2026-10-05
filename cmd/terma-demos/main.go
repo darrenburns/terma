@@ -8,6 +8,7 @@ import (
 	"github.com/darrenburns/terma/cmd/internal/demos/dialogdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/filepickerdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/formdemo"
+	"github.com/darrenburns/terma/cmd/internal/demos/hyperlinkdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/jumpdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/listdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/markdowndemo"
@@ -50,6 +51,7 @@ var demos = []Entry{
 	{Info: dialogdemo.Info, Command: "./cmd/dialog-example", New: dialogdemo.New},
 	{Info: progressdemo.Info, Command: "./cmd/progressbar-example", New: progressdemo.New},
 	{Info: shimmerdemo.Info, Command: "./cmd/shimmer-example", New: shimmerdemo.New},
+	{Info: hyperlinkdemo.Info, Command: "./cmd/hyperlink-demo", New: hyperlinkdemo.New},
 	{Info: jumpdemo.Info, Command: "./cmd/jump-example", New: jumpdemo.New},
 }
 

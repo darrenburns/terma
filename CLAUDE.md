@@ -146,6 +146,8 @@ Golden files are stored in `testdata/<TestName>.svg`. The test framework generat
 | `menu.go` | Dropdown/context menu widget |
 | `dialog.go` | Modal `Dialog` widget (wraps `Floating`) |
 | `filter.go` | Text filtering/matching utilities |
+| `hyperlink.go` | OSC 8 link sanitizing for `SpanStyle.Link` |
+| `open_url.go` | `OpenURL`: open an HTTP(S) URL in the default browser |
 
 ### Widget Pattern
 
@@ -432,6 +434,11 @@ Stack{
   highlight band moves while the state runs (`Start`/`Stop`). Use it for any text, border or background color.
   `Path: ShimmerSweep` (default) crosses left to right; `ShimmerPerimeter` circles a border. Ticks repaint only.
 - **Cursor blink**: text cursors don't blink unless `SetCursorBlink(true)`.
+- **Hyperlinks**: `SpanStyle.Link` (or `LinkSpan(text, url, fg...)`, or markup `[link=URL]text[/]`) writes the
+  text as an OSC 8 hyperlink that the terminal opens on its own gesture (Cmd/Ctrl-click). Markdown links absolute
+  http(s)/mailto destinations the same way. Each cell carries its link, so repaints open and close links per run.
+  `BufferToANSI` emits OSC 8 and snapshot SVGs wrap linked text in `<a href>`. Terma never opens a link on click;
+  call `OpenURL(url)` from a key binding or handler for that. See `docs/hyperlinks.md`.
 
 ### Rich Text with Markup
 
@@ -446,9 +453,10 @@ Text{Spans: ParseMarkup("Press [b $Accent]Enter[/] to continue", ctx.Theme())}
 
 // Markup syntax: [style $ThemeColor on $Background]text[/]
 // Styles: bold/b, italic/i, underline/u
+// Links: [link=https://example.com]text[/] (underlined in $Link unless the tag names a color)
 // Theme colors: $Primary, $Secondary, $Accent, $Text, $TextMuted, $TextOnPrimary,
 //               $Surface, $SurfaceHover, $Background, $Border, $FocusRing,
-//               $Error, $Warning, $Success, $Info
+//               $Error, $Warning, $Success, $Info, $Link
 // Hex colors: #rrggbb
 ```
 

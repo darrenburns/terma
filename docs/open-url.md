@@ -21,3 +21,6 @@ missing launcher or nonzero exit status. A successful call means the launcher
 accepted the request; it cannot confirm that a browser loaded the page. The
 helper does not suspend the terminal UI. Call it from a [background task](async.md)
 to keep input and rendering responsive while the launcher runs.
+
+To make text that the terminal itself can open, see
+[Terminal hyperlinks](hyperlinks.md).
