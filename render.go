@@ -543,10 +543,12 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 					sb.WriteString(span.Text)
 				}
 				text = " " + sb.String() + " "
-				// Prepend space to first span, append space to last span
+				// Pad with the style of the first and last spans, but keep links
+				// to the title text itself.
 				if len(spans) > 0 {
-					spans[0].Text = " " + spans[0].Text
-					spans[len(spans)-1].Text = spans[len(spans)-1].Text + " "
+					lead, trail := spans[0].Style, spans[len(spans)-1].Style
+					lead.Link, trail.Link = "", ""
+					spans = append(append([]Span{{Text: " ", Style: lead}}, spans...), Span{Text: " ", Style: trail})
 				} else {
 					spans = []Span{{Text: "  "}}
 				}
@@ -683,7 +685,7 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 								cellStyle.UnderlineColor = span.Style.UnderlineColor.toANSI()
 							}
 
-							cell := &uv.Cell{Content: string(r), Width: 1, Style: cellStyle}
+							cell := &uv.Cell{Content: string(r), Width: 1, Style: cellStyle, Link: terminalLink(span.Style.Link)}
 							ctx.terminal.SetCell(absX, absY, cell)
 						}
 						col++
@@ -887,6 +889,7 @@ func (ctx *RenderContext) drawSpan(x, y int, span Span, baseStyle Style, spanWid
 	if span.Style.Strikethrough {
 		attrs |= uv.AttrStrikethrough
 	}
+	link := terminalLink(span.Style.Link)
 
 	// Draw each grapheme cluster as a cell, advancing by its display width
 	col := 0
@@ -953,7 +956,7 @@ func (ctx *RenderContext) drawSpan(x, y int, span Span, baseStyle Style, spanWid
 				cellStyle.UnderlineColor = span.Style.UnderlineColor.toANSI()
 			}
 
-			cell := &uv.Cell{Content: grapheme, Width: width, Style: cellStyle}
+			cell := &uv.Cell{Content: grapheme, Width: width, Style: cellStyle, Link: link}
 			ctx.terminal.SetCell(cellX, absY, cell)
 		}
 		col += width

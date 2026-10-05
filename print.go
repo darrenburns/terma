@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
 )
 
@@ -150,16 +151,17 @@ func BufferToANSI(buf CellBuffer, width, height int) string {
 				continue
 			}
 
-			// Collect consecutive cells with same style for efficiency
+			// Collect consecutive cells with same style and link for efficiency
 			var text strings.Builder
 			baseStyle := cell.Style
+			link := cell.Link
 
 			for x < width {
 				c := buf.CellAt(x, y)
 				if c == nil {
 					break
 				}
-				if !uvStylesEqual(&c.Style, &baseStyle) {
+				if !uvStylesEqual(&c.Style, &baseStyle) || c.Link != link {
 					break
 				}
 
@@ -178,6 +180,9 @@ func BufferToANSI(buf CellBuffer, width, height int) string {
 
 			// Apply style and write
 			styled := baseStyle.Styled(text.String())
+			if link.URL != "" {
+				styled = ansi.SetHyperlink(link.URL, link.Params) + styled + ansi.ResetHyperlink()
+			}
 			sb.WriteString(styled)
 		}
 
