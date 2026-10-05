@@ -208,6 +208,10 @@ type widgetNode struct {
 	deps   map[signalDependency]dependencyMask
 
 	intrinsic intrinsicSizeCache
+
+	// signals is the owning renderer's queue. It is set before the node can
+	// subscribe to a signal and never changes.
+	signals *signalDirtyQueue
 }
 
 // newWidgetNode creates a new widget node.
@@ -274,8 +278,44 @@ func (n *widgetNode) setDirtySubtree(level dirtyLevel) {
 	}
 }
 
-func (n *widgetNode) markDirtyMask(mask dependencyMask) {
-	n.markDirtyLevel(dirtyLevelForMask(mask))
+// markSignalDirty can run on any goroutine. Ancestors and the intrinsic size
+// cache belong to the render goroutine, so a renderer-owned node only records
+// its own level here and its renderer propagates it before reading dirtiness.
+func (n *widgetNode) markSignalDirty(mask dependencyMask) {
+	level := dirtyLevelForMask(mask)
+	if n == nil || level == DirtyNone {
+		return
+	}
+	if n.signals == nil {
+		n.markDirtyLevel(level)
+		return
+	}
+	n.setDirtySelf(level)
+	n.signals.add(n, level)
+}
+
+type signalDirtyQueue struct {
+	mu    sync.Mutex
+	nodes map[*widgetNode]dirtyLevel
+}
+
+func (q *signalDirtyQueue) add(n *widgetNode, level dirtyLevel) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if q.nodes == nil {
+		q.nodes = make(map[*widgetNode]dirtyLevel)
+	}
+	q.nodes[n] = max(q.nodes[n], level)
+}
+
+func (q *signalDirtyQueue) drain() {
+	q.mu.Lock()
+	nodes := q.nodes
+	q.nodes = nil
+	q.mu.Unlock()
+	for n, level := range nodes {
+		n.markDirtyLevel(level)
+	}
 }
 
 func (n *widgetNode) markDirtyLevel(level dirtyLevel) {

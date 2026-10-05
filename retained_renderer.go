@@ -275,6 +275,7 @@ func (r *Renderer) renderFull(root Widget) (focusables []FocusableEntry, layoutW
 // have changed when a parent rebuilt. Focus and float collection still traverse
 // the whole tree so their ordering and inherited scopes remain correct.
 func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []FocusableEntry, layoutWidth, layoutHeight int) {
+	r.signals.drain()
 	r.rootWidget = root
 	r.fullRenderRequired = false
 	r.lastFrameMode = rendererFrameFull
@@ -426,7 +427,7 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 			if old != nil {
 				old.dispose()
 			}
-			node = newWidgetNode(widget)
+			node = r.newNode(widget)
 		}
 		node.autoID = ctx.AutoID()
 		node.eventID = eventID
@@ -436,7 +437,7 @@ func (r *Renderer) buildRetainedNode(old *widgetNode, widget Widget, ctx BuildCo
 		// its auto ID is unchanged, but a pointer widget can change its own ID.
 		if eventID := widgetIdentity(widget, ctx); eventID != node.identity {
 			replaced := node
-			node = newWidgetNode(widget)
+			node = r.newNode(widget)
 			// The parent isn't repainting, so inherit the old painted area for
 			// the new node's damage to cover.
 			node.bounds, node.subtreeBounds = replaced.bounds, replaced.subtreeBounds
@@ -1628,7 +1629,14 @@ func scrollbarDamage(node *widgetNode) (Rect, bool) {
 	return column.Intersect(node.subtreeBounds), true
 }
 
+func (r *Renderer) newNode(widget Widget) *widgetNode {
+	node := newWidgetNode(widget)
+	node.signals = &r.signals
+	return node
+}
+
 func (r *Renderer) maxDirtyLevel() dirtyLevel {
+	r.signals.drain()
 	level := DirtyNone
 	if r.rootNode != nil && r.rootNode.subtreeDirtyLevel() > level {
 		level = r.rootNode.subtreeDirtyLevel()

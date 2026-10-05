@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 
 	uv "github.com/charmbracelet/ultraviolet"
@@ -109,4 +110,46 @@ func TestSignalReadFromBackgroundGoroutineDuringBuildDoesNotSubscribe(t *testing
 	if listeners != 0 || selectors != 0 {
 		t.Fatalf("background reads subscribed the widget being built: %d listener(s), %d selector(s)", listeners, selectors)
 	}
+}
+
+type offThreadSignalWidget struct {
+	paint Signal[int]
+}
+
+func (w *offThreadSignalWidget) Build(BuildContext) Widget { return w }
+func (w *offThreadSignalWidget) GetContentDimensions() (Dimension, Dimension) {
+	return Flex(1), Flex(1)
+}
+func (w *offThreadSignalWidget) Render(ctx *RenderContext) {
+	_ = w.paint.Get()
+	ctx.DrawText(0, 0, "x")
+}
+
+// A renderer driven without a running app, as in headless tests, has no event
+// loop to hand marking to.
+func TestSignalUpdateFromBackgroundGoroutineWhileRenderingHeadless(t *testing.T) {
+	widget := &offThreadSignalWidget{paint: NewSignal(0)}
+	root := Column{Children: []Widget{widget}}
+	renderer := newTestRenderer(uv.NewBuffer(20, 5), 20, 5)
+	renderer.Render(root)
+	stop := make(chan struct{})
+	var wait sync.WaitGroup
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+				widget.paint.Update(func(n int) int { return n + 1 })
+			}
+		}
+	}()
+	for i := 0; i < 200; i++ {
+		renderer.fullRenderRequired = true
+		renderer.Render(root)
+	}
+	close(stop)
+	wait.Wait()
 }
