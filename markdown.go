@@ -535,6 +535,7 @@ func (v *markdownView) Render(ctx *RenderContext) {
 			}
 			if v.disabled {
 				style.Foreground = v.theme.TextDisabled
+				style.Link = ""
 			}
 			ctx.DrawSpan(x, y, Span{Text: g.text, Style: style}, base)
 			x += g.width

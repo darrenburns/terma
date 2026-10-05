@@ -36,6 +36,9 @@ func TestParseMarkup_Link(t *testing.T) {
 	}
 	require.True(t, spans[1].Style.Bold)
 
+	spans = ParseMarkup("[link=]plain[/]", theme)
+	require.Equal(t, SpanStyle{}, spans[0].Style, "an empty link= is ignored")
+
 	spans = ParseMarkup("[$Link]styled[/]", theme)
 	require.Equal(t, theme.Link, spans[0].Style.Foreground)
 }
@@ -131,4 +134,7 @@ func TestBorderTitleLink(t *testing.T) {
 		}
 	}
 	require.Equal(t, "Docs", linked.String())
+	for _, x := range []int{1, 6} {
+		require.Equal(t, uv.UnderlineNone, buf.CellAt(x, 0).Style.Underline, "title padding at %d is not underlined like the link", x)
+	}
 }

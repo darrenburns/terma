@@ -159,6 +159,9 @@ func (p *markupParser) parseTagContent(content string) SpanStyle {
 		lower := strings.ToLower(token)
 
 		if strings.HasPrefix(lower, "link=") {
+			if len(token) == len("link=") {
+				continue
+			}
 			style.Link = token[len("link="):]
 			style.Underline = UnderlineSingle
 			linked = true

@@ -543,12 +543,16 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 					sb.WriteString(span.Text)
 				}
 				text = " " + sb.String() + " "
-				// Pad with the style of the first and last spans, but keep links
-				// to the title text itself.
+				// Pad with the style of the first and last spans, but keep links,
+				// and the underline that marks them, to the title text itself.
 				if len(spans) > 0 {
-					lead, trail := spans[0].Style, spans[len(spans)-1].Style
-					lead.Link, trail.Link = "", ""
-					spans = append(append([]Span{{Text: " ", Style: lead}}, spans...), Span{Text: " ", Style: trail})
+					pad := func(style SpanStyle) SpanStyle {
+						if style.Link != "" {
+							style.Link, style.Underline, style.UnderlineColor = "", UnderlineNone, Color{}
+						}
+						return style
+					}
+					spans = append(append([]Span{{Text: " ", Style: pad(spans[0].Style)}}, spans...), Span{Text: " ", Style: pad(spans[len(spans)-1].Style)})
 				} else {
 					spans = []Span{{Text: "  "}}
 				}

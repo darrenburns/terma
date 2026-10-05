@@ -20,6 +20,8 @@ terma.Text{Spans: []terma.Span{
 
 `Link` is a field of `SpanStyle`, so it survives everything that carries a
 span's style. A link that wraps onto several lines is a link on every line.
+`TextInput` and `TextArea` highlights ignore `Link`, because input text is not
+linked.
 
 ## Markup
 
@@ -30,7 +32,7 @@ terma.ParseMarkupToText("See [link=https://example.com/guide]the guide[/].", the
 ```
 
 A link tag underlines its text in the theme's `Link` color. Name a foreground
-color in the same tag to use another color:
+color in the same tag to use another color. An empty `[link=]` is ignored.
 
 ```go
 "[link=https://example.com/status $Error]Status page[/]"
@@ -45,7 +47,7 @@ color.
 `Markdown` links absolute `http`, `https` and `mailto` destinations and shows
 them in the theme's `Link` color. The terminal cannot resolve relative
 destinations and fragments, so those are not written as OSC 8. They are only
-active through `OnLink`.
+active through `OnLink`. A disabled `Markdown` writes no terminal links.
 
 ## Opening links from the app
 
