@@ -36,8 +36,10 @@ type JumpTarget struct {
 // content that isn't known until the app runs.
 //
 // Typing an item's hint calls Jump, then focuses the focusable widget
-// holding the item, such as its List. Implement Jumpable on your own widgets
-// to make them jump targets; Jump might select a card or open a link.
+// holding the item, such as its List, unless Jump requested focus itself.
+// Implement Jumpable on your own widgets to make them jump targets; Jump
+// might select a card or open a link. A Jumpable rendered inside another,
+// such as a custom List row, is labelled in place of the one holding it.
 type Jumpable interface {
 	Jump()
 }
@@ -451,6 +453,9 @@ func resolveJumpLabels(j Jumper, registry *WidgetRegistry, focusables []Focusabl
 		if taken[entry.ID] {
 			continue
 		}
+		if _, ok := entry.EventWidget.(Jumpable); ok && holdsJumpable(registry.entries[i+1:], entry.treePath) {
+			continue
+		}
 		if item, ok := jumpItem(entry, candidates, onScreen, trapID); ok {
 			dynamic = append(dynamic, item)
 			holders[item.focusID] = true
@@ -507,12 +512,31 @@ func jumpItem(entry *WidgetEntry, candidates []FocusableEntry, onScreen map[stri
 		focusID: holder,
 		at:      entry.Visible,
 		action: func() {
+			requested := pendingFocusID
 			item.Jump()
-			if holder != "" {
+			// An item that moved focus itself keeps it there.
+			if holder != "" && pendingFocusID == requested {
 				RequestFocus(holder)
 			}
 		},
 	}, true
+}
+
+// holdsJumpable reports whether a Jumpable is recorded inside the widget at
+// treePath, as when a List row renders a custom widget implementing Jumpable.
+// The innermost one is labelled, so a custom item decides what its jump does.
+// Descendants are recorded after their ancestor, so only later entries are
+// searched.
+func holdsJumpable(later []WidgetEntry, treePath string) bool {
+	if treePath == "" {
+		return false
+	}
+	for i := range later {
+		if _, ok := later[i].EventWidget.(Jumpable); ok && strings.HasPrefix(later[i].treePath, treePath+".") {
+			return true
+		}
+	}
+	return false
 }
 
 func containsRect(outer, inner Rect) bool {
