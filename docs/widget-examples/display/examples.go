@@ -82,6 +82,19 @@ func Spinner() t.Widget {
 
 // --8<-- [end:spinner]
 
+// --8<-- [start:toasts]
+func Toasts() t.Widget {
+	toasts := t.NewToastState(t.ToastOptions{})
+	toasts.Notify(t.Toast{Title: "Saved", Message: "Wrote notes.md", Severity: t.ToastSuccess})
+	toasts.Error("Copy failed")
+	return t.Column{Children: []t.Widget{
+		t.Button{ID: "save", Label: "Save", OnPress: func() { toasts.Success("Saved") }},
+		t.Toasts{State: toasts, Width: 28},
+	}}
+}
+
+// --8<-- [end:toasts]
+
 // --8<-- [start:image]
 func Image() t.Widget {
 	pixels := image.NewNRGBA(image.Rect(0, 0, 64, 32))
@@ -124,6 +137,7 @@ func Examples() []demo.Example {
 		{Name: "progressbar", Widget: ProgressBar, Width: 34, Height: 4},
 		{Name: "sparkline", Widget: Sparkline, Width: 34, Height: 4},
 		{Name: "spinner", Widget: Spinner, Width: 24, Height: 2},
+		{Name: "toasts", Widget: Toasts, Width: 40, Height: 10},
 		{Name: "image", Widget: Image, Width: 32, Height: 8},
 		{Name: "custom-widgets", Widget: CustomWidget, Width: 20, Height: 2},
 	}
