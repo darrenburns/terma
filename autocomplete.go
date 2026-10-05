@@ -823,13 +823,11 @@ func (a Autocomplete) setChildTextAndCursor(text string, cursor int) {
 	switch child := a.Child.(type) {
 	case TextInput:
 		if child.State != nil {
-			child.State.SetText(text)
-			child.State.CursorIndex.Set(cursor)
+			child.State.ReplaceText(text, cursor)
 		}
 	case TextArea:
 		if child.State != nil {
-			child.State.SetText(text)
-			child.State.CursorIndex.Set(cursor)
+			child.State.ReplaceText(text, cursor)
 		}
 	}
 }
