@@ -8,20 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// rightClick presses and releases the right button at (x, y).
-func (s *clickScene) rightClick(x, y int) {
-	s.t.Helper()
-	s.now = s.now.Add(time.Second)
-	s.router.press(uv.MouseClickEvent{X: x, Y: y, Button: uv.MouseRight}, 0.5, 0.5, s.now)
-	s.router.release(uv.MouseReleaseEvent{X: x, Y: y, Button: uv.MouseRight}, 0.5, 0.5)
-	s.draw()
-}
-
-// pause lets enough time pass that the next click starts a new click chain.
-func (s *clickScene) pause() {
-	s.now = s.now.Add(time.Second)
-}
-
 func TestTreeClick_ActivateOnClickSelectsOnSingleClick(t *testing.T) {
 	state := NewTreeState(mouseTreeNodes())
 	var selected []string

@@ -12,36 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// press holds the left button down at (x, y) and redraws.
-func (s *clickScene) press(x, y int, mod uv.KeyMod) {
-	s.t.Helper()
-	s.now = s.now.Add(50 * time.Millisecond)
-	s.router.press(uv.MouseClickEvent{X: x, Y: y, Button: uv.MouseLeft, Mod: mod}, 0.5, 0.5, s.now)
-	s.draw()
-}
-
-// move reports the pointer at (x, y) with the left button held, and redraws.
-func (s *clickScene) move(x, y int) {
-	s.t.Helper()
-	s.router.motion(uv.MouseMotionEvent{X: x, Y: y, Button: uv.MouseLeft}, 0.5, 0.5)
-	s.draw()
-}
-
-// release lets the left button up at (x, y) and redraws.
-func (s *clickScene) release(x, y int) {
-	s.t.Helper()
-	s.router.release(uv.MouseReleaseEvent{X: x, Y: y, Button: uv.MouseLeft}, 0.5, 0.5)
-	s.draw()
-}
-
-// drag presses at (x0, y0), moves to (x1, y1) and releases there.
-func (s *clickScene) drag(x0, y0, x1, y1 int) {
-	s.t.Helper()
-	s.press(x0, y0, 0)
-	s.move(x1, y1)
-	s.release(x1, y1)
-}
-
 func selectionSet(indices ...int) map[int]struct{} {
 	set := make(map[int]struct{}, len(indices))
 	for _, i := range indices {

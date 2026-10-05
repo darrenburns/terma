@@ -1,74 +1,12 @@
 package terma
 
 import (
-	"fmt"
 	"testing"
-	"time"
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// clickScene renders a widget on a live renderer, routes presses through the
-// app's mouse router and re-renders after each one, as the app loop does.
-type clickScene struct {
-	t        *testing.T
-	root     Widget
-	buf      *uv.Buffer
-	renderer *Renderer
-	focus    *FocusManager
-	router   *mouseRouter
-	focused  AnySignal[Focusable]
-	width    int
-	height   int
-	now      time.Time
-}
-
-func newClickScene(t *testing.T, root Widget, width, height int) *clickScene {
-	t.Helper()
-	buf := uv.NewBuffer(width, height)
-	focus := NewFocusManager()
-	focus.SetRootWidget(root)
-	hovered := NewAnySignal[Widget](nil)
-	focused := NewAnySignal[Focusable](nil)
-	renderer := NewRenderer(buf, width, height, focus, focused, hovered)
-	s := &clickScene{
-		t: t, root: root, buf: buf, renderer: renderer, focus: focus, width: width, height: height,
-		router: newMouseRouter(renderer, focus, hovered), focused: focused,
-		now: time.Now(),
-	}
-	focus.SetFocusables(renderer.Render(root))
-	return s
-}
-
-func (s *clickScene) draw() {
-	s.focused.Set(s.focus.Focused())
-	s.focus.SetFocusables(s.renderer.Update(s.root))
-}
-
-// click presses and releases the left button at (x, y). Clicks at the same
-// spot in quick succession form a double-click chain.
-func (s *clickScene) click(x, y int, mod uv.KeyMod) {
-	s.t.Helper()
-	s.now = s.now.Add(50 * time.Millisecond)
-	s.router.press(uv.MouseClickEvent{X: x, Y: y, Button: uv.MouseLeft, Mod: mod}, 0.5, 0.5, s.now)
-	s.router.release(uv.MouseReleaseEvent{X: x, Y: y, Button: uv.MouseLeft, Mod: mod}, 0.5, 0.5)
-	s.draw()
-}
-
-func (s *clickScene) snapshot(name, description string) {
-	s.t.Helper()
-	assertBufferSnapshot(s.t, name, s.buf, s.width, s.height, DefaultSVGOptions(), description)
-}
-
-func clickSceneItems(n int) []string {
-	items := make([]string, n)
-	for i := range items {
-		items[i] = fmt.Sprintf("Item %02d", i)
-	}
-	return items
-}
 
 func TestListClick_MovesCursorToClickedItem(t *testing.T) {
 	state := NewListState(numberedItems(5))

@@ -4,28 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// hover moves the pointer to (x, y) with no button held, then redraws and
-// reconciles hover as the app loop does.
-func (s *clickScene) hover(x, y int) {
-	s.t.Helper()
-	s.router.motion(uv.MouseMotionEvent{X: x, Y: y, Button: uv.MouseNone}, 0.5, 0.5)
-	s.draw()
-	if s.router.reconcileHover() {
-		s.draw()
-	}
-}
-
-func (s *clickScene) bgAt(x, y int) Color {
-	s.t.Helper()
-	cell := s.buf.CellAt(x, y)
-	require.NotNil(s.t, cell)
-	return FromANSI(cell.Style.Bg)
-}
 
 func hoveredListItem(state *ListState[string]) (int, bool) {
 	hovered := state.hover.signal.Peek()
