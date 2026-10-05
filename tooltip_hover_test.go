@@ -3,7 +3,6 @@ package terma
 import (
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -41,23 +40,16 @@ func TestTooltipHover_RetainedOverlayScopeChangeRebuilds(t *testing.T) {
 
 func TestTooltipHover_CustomChildUpdatesThroughRetainedRenderer(t *testing.T) {
 	root := hoverScreen{Tooltip{Content: "Custom help", Position: TooltipBottom, Child: tooltipHoverComposite{}}}
-	scene := newClickScene(t, root, 30, 6)
-	assert.False(t, scene.renderer.HasFloats())
-	move := func(x, y int) {
-		scene.router.motion(uv.MouseMotionEvent{X: x, Y: y, Button: uv.MouseNone}, 0.5, 0.5)
-		scene.renderer.Update(root)
-		if scene.router.reconcileHover() {
-			scene.renderer.Update(root)
-		}
-	}
-	move(2, 0)
-	require.True(t, scene.renderer.HasFloats())
-	buildFrames := scene.renderer.Stats().FullRenderCount
-	move(7, 0)
-	assert.True(t, scene.renderer.HasFloats())
-	assert.Equal(t, buildFrames, scene.renderer.Stats().FullRenderCount, "moving within the subtree does not rebuild its tooltip")
-	move(25, 5)
-	assert.False(t, scene.renderer.HasFloats())
+	p := NewPilot(t, root, 30, 6)
+	assert.False(t, p.session.renderer.HasFloats())
+	p.MouseMove(2, 0)
+	require.True(t, p.session.renderer.HasFloats())
+	buildFrames := p.session.renderer.Stats().FullRenderCount
+	p.MouseMove(7, 0)
+	assert.True(t, p.session.renderer.HasFloats())
+	assert.Equal(t, buildFrames, p.session.renderer.Stats().FullRenderCount, "moving within the subtree does not rebuild its tooltip")
+	p.MouseMove(25, 5)
+	assert.False(t, p.session.renderer.HasFloats())
 }
 
 func TestTooltipHover_SubtreePathBoundaries(t *testing.T) {
@@ -74,66 +66,65 @@ func TestTooltipHover_OverlayDoesNotShareMainTreeIdentity(t *testing.T) {
 		Tooltip{Content: "Main help", Position: TooltipBottom, Child: Text{Content: "Target"}},
 		Floating{Visible: true, Config: FloatConfig{Position: FloatPositionTopLeft, Offset: Offset{Y: 3}, Modal: true}, Child: tooltipHoverComposite{}},
 	}}}
-	scene := newClickScene(t, root, 30, 6)
-	require.Len(t, scene.renderer.floatCollector.entries, 1)
-	scene.hover(2, 0)
-	assert.Len(t, scene.renderer.floatCollector.entries, 1, "modal blocks underlying tooltip")
-	scene.hover(2, 3)
-	assert.Len(t, scene.renderer.floatCollector.entries, 1, "unrelated overlay descendants cannot trigger main tree help")
+	p := NewPilot(t, root, 30, 6)
+	require.Len(t, p.session.renderer.floatCollector.entries, 1)
+	p.MouseMove(2, 0)
+	assert.Len(t, p.session.renderer.floatCollector.entries, 1, "modal blocks underlying tooltip")
+	p.MouseMove(2, 3)
+	assert.Len(t, p.session.renderer.floatCollector.entries, 1, "unrelated overlay descendants cannot trigger main tree help")
 }
 
 func TestTooltipHover_NonFocusableChildEnterLeave(t *testing.T) {
 	for _, id := range []string{"target", ""} {
 		t.Run(id, func(t *testing.T) {
 			tooltip := Tooltip{ID: "help", Content: "Hover help", Position: TooltipBottom, Offset: 1, Child: Text{ID: id, Content: "Target"}}
-			scene := newClickScene(t, hoverScreen{tooltip}, 30, 6)
-			assert.False(t, scene.renderer.HasFloats())
-			scene.hover(2, 0)
-			require.True(t, scene.renderer.HasFloats())
-			assert.Equal(t, "", scene.focus.FocusedID(), "non-focusable hover does not take keyboard focus")
-			anchor := scene.renderer.WidgetByID("help")
+			p := NewPilot(t, hoverScreen{tooltip}, 30, 6)
+			assert.False(t, p.session.renderer.HasFloats())
+			p.MouseMove(2, 0)
+			require.True(t, p.session.renderer.HasFloats())
+			assert.Equal(t, "", p.FocusedID(), "non-focusable hover does not take keyboard focus")
+			anchor := p.session.renderer.WidgetByID("help")
 			require.NotNil(t, anchor)
-			float := scene.renderer.TopFloat()
+			float := p.session.renderer.TopFloat()
 			assert.Equal(t, anchor.Bounds.Y+anchor.Bounds.Height+1, float.Y)
-			scene.hover(25, 5)
-			assert.False(t, scene.renderer.HasFloats())
+			p.MouseMove(25, 5)
+			assert.False(t, p.session.renderer.HasFloats())
 		})
 	}
 }
 
 func TestTooltipHover_ClampedOverlayRemainsVisibleUnderPointer(t *testing.T) {
 	root := Tooltip{Content: "Hover help", Child: Text{Content: "Target"}}
-	scene := newClickScene(t, root, 30, 5)
-	scene.hover(2, 0)
-	assert.True(t, scene.renderer.HasFloats(), "a top tooltip clamped over its trigger must not flicker")
-	scene.hover(25, 4)
-	assert.False(t, scene.renderer.HasFloats())
+	p := NewPilot(t, root, 30, 5)
+	p.MouseMove(2, 0)
+	assert.True(t, p.session.renderer.HasFloats(), "a top tooltip clamped over its trigger must not flicker")
+	p.MouseMove(25, 4)
+	assert.False(t, p.session.renderer.HasFloats())
 }
 
 func TestTooltipHover_CompositeChildIncludesDescendants(t *testing.T) {
 	tooltip := Tooltip{Content: "Composite help", Position: TooltipBottom, Child: Row{
 		Children: []Widget{Text{ID: "first", Content: "First"}, Text{Content: "Second"}},
 	}}
-	scene := newClickScene(t, hoverScreen{tooltip}, 30, 6)
-	scene.hover(2, 0)
-	assert.True(t, scene.renderer.HasFloats())
-	scene.hover(7, 0)
-	assert.True(t, scene.renderer.HasFloats(), "moving between descendants keeps the tooltip visible")
-	scene.hover(25, 5)
-	assert.False(t, scene.renderer.HasFloats())
+	p := NewPilot(t, hoverScreen{tooltip}, 30, 6)
+	p.MouseMove(2, 0)
+	assert.True(t, p.session.renderer.HasFloats())
+	p.MouseMove(7, 0)
+	assert.True(t, p.session.renderer.HasFloats(), "moving between descendants keeps the tooltip visible")
+	p.MouseMove(25, 5)
+	assert.False(t, p.session.renderer.HasFloats())
 }
 
 func TestTooltipHover_FocusKeepsTooltipVisibleAfterPointerLeaves(t *testing.T) {
 	for _, id := range []string{"button", ""} {
 		t.Run(id, func(t *testing.T) {
 			tooltip := Tooltip{Content: "Focused help", Position: TooltipBottom, Child: Button{ID: id, Label: "Target"}}
-			scene := newClickScene(t, hoverScreen{tooltip}, 30, 6)
-			require.NotEmpty(t, scene.focus.FocusedID())
-			scene.draw()
-			assert.True(t, scene.renderer.HasFloats())
-			scene.hover(2, 0)
-			scene.hover(25, 5)
-			assert.True(t, scene.renderer.HasFloats())
+			p := NewPilot(t, hoverScreen{tooltip}, 30, 6)
+			require.NotEmpty(t, p.FocusedID())
+			assert.True(t, p.session.renderer.HasFloats())
+			p.MouseMove(2, 0)
+			p.MouseMove(25, 5)
+			assert.True(t, p.session.renderer.HasFloats())
 		})
 	}
 }
@@ -145,9 +136,9 @@ func TestTooltipHover_DisabledChildrenDoNotShowHelp(t *testing.T) {
 			if outside {
 				tooltip = DisabledWhen(true, Tooltip{Content: "Disabled help", Position: TooltipBottom, Child: Text{ID: "target", Content: "Target"}})
 			}
-			scene := newClickScene(t, hoverScreen{tooltip}, 30, 6)
-			scene.hover(2, 0)
-			assert.False(t, scene.renderer.HasFloats())
+			p := NewPilot(t, hoverScreen{tooltip}, 30, 6)
+			p.MouseMove(2, 0)
+			assert.False(t, p.session.renderer.HasFloats())
 		})
 	}
 }

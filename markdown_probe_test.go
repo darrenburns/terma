@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,30 +28,12 @@ func TestMarkdownProbeNestedScrollableRevealsLink(t *testing.T) {
 		Text{Content: "before"},
 		Markdown{ID: "nested-markdown", State: NewMarkdownState("[target](#target)"), ScrollState: scroll, OnLink: func(s string) { opened = append(opened, s) }},
 	}}}
-	scene := newClickScene(t, widget, 24, 1)
-	require.Equal(t, "nested-markdown", scene.focus.FocusedID())
-	require.True(t, scene.focus.HandleKey(markdownKey(uv.KeyRight, 0)))
-	scene.draw()
-	var visible strings.Builder
-	for y := 0; y < 1; y++ {
-		for x := 0; x < 24; x++ {
-			visible.WriteString(scene.buf.CellAt(x, y).Content)
-		}
-	}
-	require.Contains(t, visible.String(), "target", "keyboard-selected link must be brought into the containing viewport")
-	require.True(t, scene.focus.HandleKey(markdownKey(uv.KeyEnter, 0)))
+	p := NewPilot(t, widget, 24, 1)
+	require.Equal(t, "nested-markdown", p.FocusedID())
+	p.Press("right")
+	require.Contains(t, p.ScreenText(), "target", "keyboard-selected link must be brought into the containing viewport")
+	p.Press("enter")
 	require.Equal(t, []string{"#target"}, opened)
-}
-
-func markdownProbeVisibleText(buffer *uv.Buffer) string {
-	var out strings.Builder
-	for y := 0; y < buffer.Height(); y++ {
-		for x := 0; x < buffer.Width(); x++ {
-			out.WriteString(buffer.CellAt(x, y).Content)
-		}
-		out.WriteByte('\n')
-	}
-	return out.String()
 }
 
 func TestMarkdownProbeRevealThroughPaddedNestedViewports(t *testing.T) {
@@ -69,16 +50,15 @@ func TestMarkdownProbeRevealThroughPaddedNestedViewports(t *testing.T) {
 			}},
 		},
 	}}
-	scene := newClickScene(t, widget, 42, 24)
-	require.Equal(t, "deep-markdown", scene.focus.FocusedID())
-	require.True(t, scene.focus.HandleKey(markdownKey(uv.KeyRight, 0)))
-	scene.draw()
-	require.Contains(t, markdownProbeVisibleText(scene.buf), "last target")
+	p := NewPilot(t, widget, 42, 24)
+	require.Equal(t, "deep-markdown", p.FocusedID())
+	p.Press("right")
+	require.Contains(t, p.ScreenText(), "last target")
 	require.Zero(t, outer.GetOffset(), "only the containing viewport needs to move")
 	require.Positive(t, inner.GetOffset())
-	require.True(t, scene.focus.HandleKey(markdownKey(uv.KeyEnter, 0)))
+	p.Press("enter")
 	require.Equal(t, []string{"#last"}, opened)
-	scene.snapshot("MarkdownProbe_nested_reveal", "A link that began fully off-screen is revealed through preceding siblings, padding, margin and a nested viewport")
+	p.AssertSnapshot("nested_reveal", "A link that began fully off-screen is revealed through preceding siblings, padding, margin and a nested viewport")
 }
 
 type markdownProbeRetainedApp struct {
@@ -121,29 +101,22 @@ func TestMarkdownProbeIndependentSelectionCopyAndLinks(t *testing.T) {
 		Markdown{ID: "first", State: first, OnCopy: func(s string) { copies = append(copies, s) }, OnLink: func(s string) { opened = append(opened, s) }},
 		Markdown{ID: "second", State: second, OnCopy: func(s string) { copies = append(copies, s) }, OnLink: func(s string) { opened = append(opened, s) }},
 	}}
-	scene := newClickScene(t, widget, 32, 12)
-	key := func(code rune, mod uv.KeyMod) {
-		require.True(t, scene.focus.HandleKey(markdownKey(code, mod)))
-		scene.draw()
-	}
-	key('a', uv.ModCtrl)
-	key('y', 0)
+	p := NewPilot(t, widget, 32, 12)
+	p.Press("ctrl+a", "y")
 	require.Equal(t, []string{"First\n\nsame same"}, copies)
-	key(uv.KeyRight, 0)
-	key(uv.KeyRight, 0)
-	key(uv.KeyEnter, 0)
+	p.Press("right", "right", "enter")
 	require.Equal(t, []string{"#two"}, opened)
-	scene.focus.FocusNext()
-	scene.draw()
-	require.Equal(t, "second", scene.focus.FocusedID())
-	require.False(t, scene.focus.HandleKey(markdownKey('y', 0)), "selection must remain instance-local")
-	key('a', uv.ModCtrl)
-	key('y', 0)
+	p.Press("tab")
+	require.Equal(t, "second", p.FocusedID())
+	p.Press("y")
+	require.Equal(t, []string{"First\n\nsame same"}, copies, "selection must remain instance-local")
+	p.Press("ctrl+a", "y")
 	require.Equal(t, []string{"First\n\nsame same", "第二\n\nother"}, copies)
 	second.SetSource("new")
-	scene.draw()
-	require.False(t, scene.focus.HandleKey(markdownKey('y', 0)), "source replacement clears only its document selection")
-	scene.snapshot("MarkdownProbe_multiple_instances", "Two independent viewers retain separate sources, focus and document-selection state")
+	p.settle()
+	p.Press("y")
+	require.Equal(t, []string{"First\n\nsame same", "第二\n\nother"}, copies, "source replacement clears only its document selection")
+	p.AssertSnapshot("multiple_instances", "Two independent viewers retain separate sources, focus and document-selection state")
 }
 
 func TestMarkdownProbeBoundedInteractionModel(t *testing.T) {
@@ -152,36 +125,36 @@ func TestMarkdownProbeBoundedInteractionModel(t *testing.T) {
 	destinations := [][]string{{"#a", "#b"}, {"#c"}}
 	var copies, opened []string
 	state := NewMarkdownState(sources[0])
-	scene := newClickScene(t, Markdown{ID: "model", State: state, OnCopy: func(s string) { copies = append(copies, s) }, OnLink: func(s string) { opened = append(opened, s) }}, 24, 10)
+	p := NewPilot(t, Markdown{ID: "model", State: state, OnCopy: func(s string) { copies = append(copies, s) }, OnLink: func(s string) { opened = append(opened, s) }}, 24, 10)
 	source, plain, index, active, selected := sources[0], texts[0], 0, -1, false
 	rng := rand.New(rand.NewSource(20260930))
 	var wantCopies, wantOpened []string
 	for step := 0; step < 160; step++ {
 		switch rng.Intn(8) {
 		case 0:
-			scene.focus.HandleKey(markdownKey('a', uv.ModCtrl))
+			p.Press("ctrl+a")
 			selected = true
 		case 1:
-			scene.focus.HandleKey(markdownKey('y', 0))
+			p.Press("y")
 			if selected {
 				wantCopies = append(wantCopies, plain)
 			}
 		case 2:
-			scene.focus.HandleKey(markdownKey(uv.KeyEscape, 0))
+			p.Press("escape")
 			selected = false
 		case 3:
-			scene.focus.HandleKey(markdownKey(uv.KeyRight, 0))
+			p.Press("right")
 			active = (active + 1) % len(destinations[index])
 			selected = false
 		case 4:
-			scene.focus.HandleKey(markdownKey(uv.KeyLeft, 0))
+			p.Press("left")
 			if active < 0 {
 				active = 0
 			}
 			active = (active - 1 + len(destinations[index])) % len(destinations[index])
 			selected = false
 		case 5:
-			scene.focus.HandleKey(markdownKey(uv.KeyEnter, 0))
+			p.Press("enter")
 			if active >= 0 {
 				wantOpened = append(wantOpened, destinations[index][active])
 			}
@@ -196,7 +169,7 @@ func TestMarkdownProbeBoundedInteractionModel(t *testing.T) {
 			state.Append("\n\nend")
 			active, selected = -1, false
 		}
-		scene.draw()
+		p.settle()
 		require.Equal(t, source, state.Source(), "step %d source", step)
 		require.Equal(t, plain, state.PlainText(), "step %d text", step)
 		require.Equal(t, wantCopies, copies, "step %d copy callbacks", step)
@@ -229,21 +202,21 @@ func TestMarkdownProbeUnicodeLinkKeepsBorderCellsAligned(t *testing.T) {
 	widget := Scrollable{State: scroll, Width: Cells(28), Height: Cells(3), Style: Style{Border: RoundedBorder(Blue)}, Child: Markdown{
 		ID: "unicode-border", State: NewMarkdownState("[café é 👩‍💻 中文](#unicode)"), ScrollState: scroll, OnLink: func(string) {},
 	}}
-	scene := newClickScene(t, widget, 40, 8)
-	require.True(t, scene.focus.HandleKey(markdownKey(uv.KeyRight, 0)))
-	scene.draw()
+	p := NewPilot(t, widget, 40, 8)
+	p.Press("right")
+	buf := p.Buffer()
 	borderX := -1
 	for x := 0; x < 40; x++ {
-		if scene.buf.CellAt(x, 0).Content == "╮" {
+		if buf.CellAt(x, 0).Content == "╮" {
 			borderX = x
 			break
 		}
 	}
 	require.Positive(t, borderX)
 	for y := 1; y < 4; y++ {
-		require.Equal(t, "│", scene.buf.CellAt(borderX, y).Content, "right border row %d", y)
+		require.Equal(t, "│", buf.CellAt(borderX, y).Content, "right border row %d", y)
 		for x := borderX + 1; x < 40; x++ {
-			require.Empty(t, strings.TrimSpace(scene.buf.CellAt(x, y).Content), "outside border %d,%d", x, y)
+			require.Empty(t, strings.TrimSpace(buf.CellAt(x, y).Content), "outside border %d,%d", x, y)
 		}
 	}
 	control := widget
@@ -251,8 +224,8 @@ func TestMarkdownProbeUnicodeLinkKeepsBorderCellsAligned(t *testing.T) {
 	controlBuffer := RenderToBuffer(control, 40, 8)
 	for y := 0; y < 8; y++ {
 		for x := 0; x < 40; x++ {
-			require.Equal(t, controlBuffer.CellAt(x, y).Content, scene.buf.CellAt(x, y).Content, "plain Text control at %d,%d", x, y)
+			require.Equal(t, controlBuffer.CellAt(x, y).Content, buf.CellAt(x, y).Content, "plain Text control at %d,%d", x, y)
 		}
 	}
-	scene.snapshot("MarkdownProbe_unicode_border", "The cell buffer keeps a single aligned right border and blank exterior beside a selected ZWJ/CJK link")
+	p.AssertSnapshot("unicode_border", "The cell buffer keeps a single aligned right border and blank exterior beside a selected ZWJ/CJK link")
 }

@@ -7,12 +7,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func splitPaneHoverPoint(t *testing.T, scene *clickScene, pane SplitPane) (int, int) {
+func splitPaneHoverPoint(t *testing.T, p *Pilot, pane SplitPane) (int, int) {
 	t.Helper()
-	entry := scene.renderer.WidgetByID(pane.ID)
-	require.NotNil(t, entry)
+	bounds, ok := p.Bounds(pane.ID)
+	require.True(t, ok)
 	cache := pane.State.layoutCache
-	x, y := entry.Bounds.X+cache.contentOffsetX, entry.Bounds.Y+cache.contentOffsetY
+	x, y := bounds.X+cache.contentOffsetX, bounds.Y+cache.contentOffsetY
 	if pane.Orientation == SplitVertical {
 		y += cache.dividerPos
 	} else {
@@ -21,9 +21,9 @@ func splitPaneHoverPoint(t *testing.T, scene *clickScene, pane SplitPane) (int, 
 	return x, y
 }
 
-func newSplitPaneHoverScene(t *testing.T, pane SplitPane) *clickScene {
+func newSplitPaneHoverScene(t *testing.T, pane SplitPane) *Pilot {
 	t.Helper()
-	return newClickScene(t, hoverScreen{Column{Children: []Widget{
+	return NewPilot(t, hoverScreen{Column{Children: []Widget{
 		Button{ID: "other-focus", Label: "Other"}, pane,
 	}}}, 30, 12)
 }
@@ -36,44 +36,42 @@ func TestSplitPaneHover_OnlyDivider(t *testing.T) {
 				First: EmptyWidget{}, Second: EmptyWidget{}, DividerSize: 2,
 				Style: Style{Width: Cells(20), Height: Cells(8), Padding: EdgeInsetsAll(1)},
 			}
-			scene := newSplitPaneHoverScene(t, pane)
-			x, y := splitPaneHoverPoint(t, scene, pane)
-			base := scene.bgAt(x, y)
-			baseForeground := FromANSI(scene.buf.CellAt(x, y).Style.Fg)
-			scene.hover(x, y)
+			p := newSplitPaneHoverScene(t, pane)
+			x, y := splitPaneHoverPoint(t, p, pane)
+			base := bgAt(p, x, y)
+			baseForeground := FromANSI(p.Buffer().CellAt(x, y).Style.Fg)
+			p.MouseMove(x, y)
 			assert.True(t, pane.State.hovered.Peek())
-			assert.Equal(t, base, scene.bgAt(x, y), "hover leaves the background unchanged")
-			assert.Equal(t, getTheme().Hover.BlendOver(baseForeground), FromANSI(scene.buf.CellAt(x, y).Style.Fg))
+			assert.Equal(t, base, bgAt(p, x, y), "hover leaves the background unchanged")
+			assert.Equal(t, getTheme().Hover.BlendOver(baseForeground), FromANSI(p.Buffer().CellAt(x, y).Style.Fg))
 			assert.False(t, pane.State.dragging.Peek(), "hover does not start dragging")
-			assert.Equal(t, "other-focus", scene.focus.FocusedID())
+			assert.Equal(t, "other-focus", p.FocusedID())
 			assert.Equal(t, 0.5, pane.State.GetPosition())
 
-			entry := scene.renderer.WidgetByID(pane.ID)
-			paddingX, paddingY := x, entry.Bounds.Y
+			bounds, _ := p.Bounds(pane.ID)
+			paddingX, paddingY := x, bounds.Y
 			if orientation == SplitVertical {
-				paddingX, paddingY = entry.Bounds.X, y
+				paddingX, paddingY = bounds.X, y
 			}
-			scene.hover(paddingX, paddingY)
+			p.MouseMove(paddingX, paddingY)
 			assert.False(t, pane.State.hovered.Peek(), "padding along the divider's axis is not the divider")
-			assert.Equal(t, base, scene.bgAt(x, y))
-			assert.Equal(t, baseForeground, FromANSI(scene.buf.CellAt(x, y).Style.Fg))
-			scene.hover(entry.Bounds.X+pane.State.layoutCache.contentOffsetX, entry.Bounds.Y+pane.State.layoutCache.contentOffsetY)
+			assert.Equal(t, base, bgAt(p, x, y))
+			assert.Equal(t, baseForeground, FromANSI(p.Buffer().CellAt(x, y).Style.Fg))
+			p.MouseMove(bounds.X+pane.State.layoutCache.contentOffsetX, bounds.Y+pane.State.layoutCache.contentOffsetY)
 			assert.False(t, pane.State.hovered.Peek(), "pane content has no divider hover")
 
-			scene.hover(x, y)
+			p.MouseMove(x, y)
 			pane.State.SetPosition(0.8)
-			scene.draw()
-			scene.router.reconcileHover()
-			scene.draw()
+			p.settle()
 			assert.False(t, pane.State.hovered.Peek(), "moving the divider away clears stationary-pointer hover")
 
-			x, y = splitPaneHoverPoint(t, scene, pane)
+			x, y = splitPaneHoverPoint(t, p, pane)
 			toX, toY := x+2, y
 			if orientation == SplitVertical {
 				toX, toY = x, y-1
 			}
 			before := pane.State.GetPosition()
-			scene.drag(x, y, toX, toY)
+			drag(p, x, y, toX, toY)
 			assert.NotEqual(t, before, pane.State.GetPosition(), "existing mouse capture still resizes")
 			assert.False(t, pane.State.dragging.Peek(), "release ends dragging")
 		})
@@ -91,35 +89,35 @@ func TestSplitPaneHover_PreservesGradientAndFocusColors(t *testing.T) {
 		DividerBackground: background, DividerForeground: foreground,
 		DividerFocusBackground: focusBackground, DividerFocusForeground: focusForeground,
 	}
-	scene := newSplitPaneHoverScene(t, pane)
-	x, y := splitPaneHoverPoint(t, scene, pane)
-	scene.hover(x, y)
+	p := newSplitPaneHoverScene(t, pane)
+	x, y := splitPaneHoverPoint(t, p, pane)
+	p.MouseMove(x, y)
 	cache := pane.State.layoutCache
 	for localY := 0; localY < cache.contentHeight; localY++ {
-		assert.Equal(t, background.ColorAt(cache.contentWidth, cache.contentHeight, x, localY), scene.bgAt(x, y+localY))
-		assert.Equal(t, getTheme().Hover.BlendOver(foreground.ColorAt(cache.contentWidth, cache.contentHeight, x, localY)), FromANSI(scene.buf.CellAt(x, y+localY).Style.Fg))
+		assert.Equal(t, background.ColorAt(cache.contentWidth, cache.contentHeight, x, localY), bgAt(p, x, y+localY))
+		assert.Equal(t, getTheme().Hover.BlendOver(foreground.ColorAt(cache.contentWidth, cache.contentHeight, x, localY)), FromANSI(p.Buffer().CellAt(x, y+localY).Style.Fg))
 	}
-	scene.focus.FocusByID(pane.ID)
-	scene.draw()
-	assert.Equal(t, focusBackground.ColorAt(cache.contentWidth, cache.contentHeight, x, 0), scene.bgAt(x, y))
-	assert.Equal(t, getTheme().Hover.BlendOver(focusForeground.ColorAt(cache.contentWidth, cache.contentHeight, x, 0)), FromANSI(scene.buf.CellAt(x, y).Style.Fg))
-	scene.hover(29, 11)
-	assert.Equal(t, focusBackground.ColorAt(cache.contentWidth, cache.contentHeight, x, 0), scene.bgAt(x, y), "hover leave retains focus styling")
-	assert.Equal(t, focusForeground.ColorAt(cache.contentWidth, cache.contentHeight, x, 0), FromANSI(scene.buf.CellAt(x, y).Style.Fg))
-	scene.focus.FocusByID("other-focus")
+	p.session.focus.FocusByID(pane.ID)
+	p.settle()
+	assert.Equal(t, focusBackground.ColorAt(cache.contentWidth, cache.contentHeight, x, 0), bgAt(p, x, y))
+	assert.Equal(t, getTheme().Hover.BlendOver(focusForeground.ColorAt(cache.contentWidth, cache.contentHeight, x, 0)), FromANSI(p.Buffer().CellAt(x, y).Style.Fg))
+	p.MouseMove(29, 11)
+	assert.Equal(t, focusBackground.ColorAt(cache.contentWidth, cache.contentHeight, x, 0), bgAt(p, x, y), "hover leave retains focus styling")
+	assert.Equal(t, focusForeground.ColorAt(cache.contentWidth, cache.contentHeight, x, 0), FromANSI(p.Buffer().CellAt(x, y).Style.Fg))
+	p.session.focus.FocusByID("other-focus")
 	pane.State.setDragging(true)
-	scene.draw()
-	assert.Equal(t, focusForeground.ColorAt(cache.contentWidth, cache.contentHeight, x, 0), FromANSI(scene.buf.CellAt(x, y).Style.Fg), "dragging still uses focus colors")
+	p.settle()
+	assert.Equal(t, focusForeground.ColorAt(cache.contentWidth, cache.contentHeight, x, 0), FromANSI(p.Buffer().CellAt(x, y).Style.Fg), "dragging still uses focus colors")
 }
 
 func TestSplitPaneHover_DisabledDoesNotTint(t *testing.T) {
 	pane := SplitPane{ID: "split", State: NewSplitPaneState(0.5), First: EmptyWidget{}, Second: EmptyWidget{}, Style: Style{Width: Cells(20), Height: Cells(8)}}
-	scene := newClickScene(t, hoverScreen{DisabledWhen(true, pane)}, 30, 12)
-	x, y := splitPaneHoverPoint(t, scene, pane)
-	base := scene.bgAt(x, y)
-	baseForeground := FromANSI(scene.buf.CellAt(x, y).Style.Fg)
-	scene.hover(x, y)
+	p := NewPilot(t, hoverScreen{DisabledWhen(true, pane)}, 30, 12)
+	x, y := splitPaneHoverPoint(t, p, pane)
+	base := bgAt(p, x, y)
+	baseForeground := FromANSI(p.Buffer().CellAt(x, y).Style.Fg)
+	p.MouseMove(x, y)
 	assert.False(t, pane.State.hovered.Peek())
-	assert.Equal(t, base, scene.bgAt(x, y))
-	assert.Equal(t, baseForeground, FromANSI(scene.buf.CellAt(x, y).Style.Fg))
+	assert.Equal(t, base, bgAt(p, x, y))
+	assert.Equal(t, baseForeground, FromANSI(p.Buffer().CellAt(x, y).Style.Fg))
 }

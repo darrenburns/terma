@@ -47,20 +47,20 @@ func featureTable() Table[featureRow] {
 func TestTableFeaturesSorting(t *testing.T) {
 	table := featureTable()
 	original := slices.Clone(table.State.GetRows())
-	scene := newWheelScene(t, table, 40, 6)
+	p := NewPilot(t, table, 40, 6)
 	table.State.SelectIndex(0)
 	table.State.Select(0)
 	table.cycleSort(1)
-	scene.draw()
+	p.settle()
 	assert.Equal(t, []int{1, 2, 7, 4, 6, 0, 5, 3}, table.State.viewIndices)
 	assert.Equal(t, original, table.State.GetRows())
 	assert.Equal(t, 0, table.State.CursorIndex.Peek())
 	assert.True(t, table.State.IsSelected(0))
 	table.cycleSort(1)
-	scene.draw()
+	p.settle()
 	assert.Equal(t, []int{3, 5, 0, 6, 4, 7, 1, 2}, table.State.viewIndices)
 	table.cycleSort(1)
-	scene.draw()
+	p.settle()
 	assert.Equal(t, []int{0, 1, 2, 3, 4, 5, 6, 7}, table.State.viewIndices)
 	table.Columns[1].ID = "name"
 	assert.False(t, table.sortableColumn(0))
@@ -127,79 +127,79 @@ func TestTableFeaturesFilterAndSelection(t *testing.T) {
 	}
 	selected := 0
 	table.OnSelect = func(featureRow) { selected++ }
-	scene := newWheelScene(t, table, 40, 6)
+	p := NewPilot(t, table, 40, 6)
 	table.State.SelectIndex(0)
 	table.State.Select(0)
 	table.Filter.Query.Set("Ada")
-	scene.draw()
+	p.settle()
 	assert.Equal(t, 0, table.State.CursorIndex.Peek())
 	assert.True(t, table.State.IsSelected(0))
 	table.Filter.Query.Set("")
-	scene.draw()
+	p.settle()
 	assert.Equal(t, 0, table.State.CursorIndex.Peek())
 	table.Filter.Query.Set("NO SUCH ROW")
-	scene.draw()
+	p.settle()
 	table.selectRow()
 	assert.Zero(t, selected)
 	table.Filter.Query.Set("")
 	table.State.Sort.Set(TableSort{ColumnID: "age", Direction: TableSortAscending})
-	scene.draw()
+	p.settle()
 	table.keyCursorToFirst()
 	table.shiftRowDown()
 	assert.Equal(t, []int{1, 2}, table.State.SelectedIndices())
 }
 func TestTableFeaturesResizeAndMouse(t *testing.T) {
 	table := featureTable()
-	scene := newWheelScene(t, table, 30, 6)
+	p := NewPilot(t, table, 30, 6)
 	table.OnMouseDown(MouseEvent{X: 11, LocalX: 11, LocalY: 0, Button: uv.MouseLeft})
 	require.True(t, table.State.resizing)
 	table.OnMouseMove(MouseEvent{X: 100})
 	table.OnMouseUp(MouseEvent{})
-	scene.draw()
+	p.settle()
 	assert.Equal(t, 20, table.State.columnLayouts[0].width)
 	assert.Equal(t, TableSort{}, table.State.Sort.Peek())
 	assert.Empty(t, table.State.SelectedIndices())
 	table.resizeColumn(0, -30)
-	scene.draw()
+	p.settle()
 	assert.Equal(t, 4, table.State.columnLayouts[0].width)
 	table.resetCurrentWidth()
-	scene.draw()
+	p.settle()
 	assert.Equal(t, 12, table.State.columnLayouts[0].width)
 	table.OnMouseDown(MouseEvent{LocalX: 2, LocalY: 0, Button: uv.MouseLeft})
 	table.OnMouseUp(MouseEvent{})
-	scene.draw()
+	p.settle()
 	assert.Equal(t, TableSortAscending, table.State.Sort.Peek().Direction)
 	table.viewportState().SetOffset(0)
-	scene.draw()
+	p.settle()
 	table.OnMouseDown(MouseEvent{LocalX: 2, LocalY: 1, Button: uv.MouseLeft})
 	table.OnMouseUp(MouseEvent{})
 	assert.Equal(t, "Ada", table.CursorRow().Name)
 }
 func TestTableFeaturesFrozenSnapshots(t *testing.T) {
 	table := featureTable()
-	scene := newWheelScene(t, table, 30, 6)
-	scene.snapshot("TestTableFeatures_initial", "Frozen Name column and header, bounded 30×6 viewport")
-	scene.wheel(uv.MouseWheelDown, 3)
+	p := NewPilot(t, table, 30, 6)
+	p.AssertSnapshot("initial", "Frozen Name column and header, bounded 30×6 viewport")
+	p.Scroll(1, 1, 3)
 	assert.Equal(t, 3, table.viewportState().GetOffset())
-	scene.snapshot("TestTableFeatures_vertical", "Header stays at top while body scrolls three rows")
+	p.AssertSnapshot("vertical", "Header stays at top while body scrolls three rows")
 	table.viewportState().ScrollRight(8)
-	scene.draw()
-	scene.snapshot("TestTableFeatures_both_axes", "Name remains fixed while age/note pane shifts horizontally; header stays fixed vertically")
+	p.settle()
+	p.AssertSnapshot("both_axes", "Name remains fixed while age/note pane shifts horizontally; header stays fixed vertically")
 	table.OnMouseDown(MouseEvent{LocalX: 2, LocalY: 1, Button: uv.MouseLeft})
 	table.OnMouseUp(MouseEvent{})
 	assert.Equal(t, "Leo", table.CursorRow().Name)
 	table.State.Sort.Set(TableSort{ColumnID: "age", Direction: TableSortAscending})
-	scene.draw()
-	scene.snapshot("TestTableFeatures_ascending", "Age ascending indicator; cursor stays on Leo after sorting")
+	p.settle()
+	p.AssertSnapshot("ascending", "Age ascending indicator; cursor stays on Leo after sorting")
 	table.State.Sort.Set(TableSort{ColumnID: "age", Direction: TableSortDescending})
-	scene.draw()
-	scene.snapshot("TestTableFeatures_descending", "Age descending with same selected logical record")
+	p.settle()
+	p.AssertSnapshot("descending", "Age descending with same selected logical record")
 	table.resizeColumn(0, 6)
-	scene.draw()
-	scene.snapshot("TestTableFeatures_resized", "First column shrinks; scroll offsets are clamped and other columns use the released space")
+	p.settle()
+	p.AssertSnapshot("resized", "First column shrinks; scroll offsets are clamped and other columns use the released space")
 	table.State.SetRows(nil)
-	scene.draw()
-	scene.snapshot("TestTableFeatures_empty", "Empty data still shows sortable headers")
+	p.settle()
+	p.AssertSnapshot("empty", "Empty data still shows sortable headers")
 	for _, size := range [][2]int{{4, 3}, {1, 1}, {15, 2}} {
 		table := featureTable()
 		table.FrozenColumns = 99
@@ -224,15 +224,15 @@ func TestTableFeaturesReactiveSequence(t *testing.T) {
 
 func TestTableFeaturesControlsValidation(t *testing.T) {
 	table := featureTable()
-	scene := newWheelScene(t, table, 30, 6)
+	p := NewPilot(t, table, 30, 6)
 	table.State.Sort.Set(TableSort{ColumnID: "missing", Direction: TableSortAscending})
-	scene.draw()
+	p.settle()
 	assert.Equal(t, []int{0, 1, 2, 3, 4, 5, 6, 7}, table.State.viewIndices)
 	table.resizeColumn(0, 18)
-	scene.draw()
+	p.settle()
 	table.Columns[0], table.Columns[1] = table.Columns[1], table.Columns[0]
-	scene.root = table
-	scene.renderer.Render(table)
+	p.session.root = table
+	p.session.renderer.Render(table)
 	assert.Equal(t, 18, table.State.columnLayouts[1].width)
 	table.Columns[0].ID = table.Columns[1].ID
 	table.resizeColumn(0, 99)
@@ -245,26 +245,26 @@ func TestTableFeaturesControlsValidation(t *testing.T) {
 }
 func TestTableFeaturesDefaultRendererVariableHeight(t *testing.T) {
 	table := Table[[]string]{ID: "variable", State: NewTableState([][]string{{"A", "one\ntwo"}, {"B", "three\nfour\nfive"}, {"C", "six"}}), Columns: []TableColumn{{ID: "name", Width: Cells(6), Header: Text{Content: "Name"}}, {ID: "value", Width: Cells(12), Header: Text{Content: "Description"}}}, FrozenHeader: true, FrozenColumns: 1, Style: Style{Width: Flex(1), Height: Flex(1)}, ColumnSpacing: 1}
-	scene := newWheelScene(t, table, 17, 5)
-	scene.snapshot("TestTableFeatures_variable_height", "Multiline default cells share row heights in frozen viewport")
-	scene.wheel(uv.MouseWheelDown, 2)
+	p := NewPilot(t, table, 17, 5)
+	p.AssertSnapshot("variable_height", "Multiline default cells share row heights in frozen viewport")
+	p.Scroll(1, 1, 2)
 	table.viewportState().ScrollRight(2)
-	scene.draw()
-	scene.snapshot("TestTableFeatures_variable_height_scrolled", "Partially visible multiline row clips under header and fixed Name column")
+	p.settle()
+	p.AssertSnapshot("variable_height_scrolled", "Partially visible multiline row clips under header and fixed Name column")
 	table.OnMouseDown(MouseEvent{LocalX: 1, LocalY: 1, Button: uv.MouseLeft})
 	table.OnMouseUp(MouseEvent{})
 	assert.Equal(t, 1, table.State.CursorIndex.Peek())
 	table.keyCursorToLast()
-	scene.draw()
+	p.settle()
 	assert.Equal(t, 2, table.State.CursorIndex.Peek())
 	assert.Equal(t, 2, table.viewportState().GetOffset())
 }
 func TestTableFeaturesFrozenHeaderOptional(t *testing.T) {
 	table := featureTable()
 	table.FrozenHeader = false
-	scene := newWheelScene(t, table, 30, 5)
-	scene.wheel(uv.MouseWheelDown, 2)
-	scene.snapshot("TestTableFeatures_columns_only", "Frozen column remains while header scrolls away with body")
+	p := NewPilot(t, table, 30, 5)
+	p.Scroll(1, 1, 2)
+	p.AssertSnapshot("columns_only", "Frozen column remains while header scrolls away with body")
 	table.OnMouseDown(MouseEvent{LocalX: 1, LocalY: 0, Button: uv.MouseLeft})
 	table.OnMouseUp(MouseEvent{})
 	assert.Equal(t, "Ada", table.CursorRow().Name)
@@ -273,15 +273,15 @@ func TestTableFeaturesFrozenHeaderOptional(t *testing.T) {
 func TestTableFeaturesKeyboardRevealsColumns(t *testing.T) {
 	table := featureTable()
 	table.SelectionMode = TableSelectionCursor
-	scene := newWheelScene(t, table, 24, 5)
+	p := NewPilot(t, table, 24, 5)
 	table.keyCursorRight()
-	scene.draw()
+	p.settle()
 	assert.Equal(t, 0, table.viewportState().GetOffsetX())
 	table.keyCursorRight()
-	scene.draw()
+	p.settle()
 	assert.Positive(t, table.viewportState().GetOffsetX())
 	table.keyCursorLeft()
-	scene.draw()
+	p.settle()
 	assert.Equal(t, 0, table.viewportState().GetOffsetX())
 	table.FrozenColumns = 0
 	table.FrozenHeader = true
@@ -289,24 +289,24 @@ func TestTableFeaturesKeyboardRevealsColumns(t *testing.T) {
 	table.Columns[0].Header = nil
 	table.Columns[1].Header = nil
 	table.Columns[2].Header = nil
-	scene.root = table
-	scene.renderer.Render(table)
+	p.session.root = table
+	p.session.renderer.Render(table)
 	assert.Zero(t, table.viewportState().GetOffset())
 	assert.Zero(t, table.viewportState().GetOffsetX())
 }
 
 func TestTableFeaturesSortRevealSameFrame(t *testing.T) {
 	table := featureTable()
-	scene := newWheelScene(t, Column{Style: Style{Height: Flex(1)}, Children: []Widget{table}}, 30, 4)
+	p := NewPilot(t, Column{Style: Style{Height: Flex(1)}, Children: []Widget{table}}, 30, 4)
 	table.cycleSort(0)
-	scene.draw()
+	p.settle()
 	require.Positive(t, table.viewportState().GetOffset())
 	// The cursor's highlight must be in the viewport on this very frame,
 	// rather than waiting for another key or wheel event.
 	found := false
 	for y := 1; y < 4; y++ {
 		for x := 0; x < 12; x++ {
-			cell := scene.buf.CellAt(x, y)
+			cell := p.buf.CellAt(x, y)
 			if cell != nil && cell.Content == "Z" {
 				found = true
 			}
@@ -317,17 +317,17 @@ func TestTableFeaturesSortRevealSameFrame(t *testing.T) {
 
 func TestTableFeaturesPanBindingsAndWheel(t *testing.T) {
 	table := featureTable()
-	scene := newWheelScene(t, table, 24, 5)
+	p := NewPilot(t, table, 24, 5)
 	require.True(t, matchKeybind(makeKeyEvent(uv.KeyRight, uv.ModAlt), table.Keybinds()))
-	scene.draw()
+	p.settle()
 	assert.Equal(t, 3, table.viewportState().GetOffsetX())
 	require.True(t, table.OnMouseWheel(MouseEvent{Button: uv.MouseWheelRight}))
-	scene.draw()
+	p.settle()
 	assert.Equal(t, 4, table.viewportState().GetOffsetX())
 	require.True(t, matchKeybind(makeKeyEvent(uv.KeyLeft, uv.ModAlt), table.Keybinds()))
-	scene.draw()
+	p.settle()
 	assert.Equal(t, 1, table.viewportState().GetOffsetX())
 	require.True(t, table.OnMouseWheel(MouseEvent{Button: uv.MouseWheelLeft}))
-	scene.draw()
+	p.settle()
 	assert.Zero(t, table.viewportState().GetOffsetX())
 }

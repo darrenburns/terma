@@ -37,32 +37,32 @@ func (p *hoverRegionProbe) hoverRegionAt(entry *WidgetEntry, x, y int) *WidgetEn
 
 func TestHoverRegion_TransitionsWithinOwnerAndPreservesClicks(t *testing.T) {
 	probe := &hoverRegionProbe{}
-	scene := newClickScene(t, probe, 12, 4)
-	scene.hover(2, 1)
+	p := NewPilot(t, probe, 12, 4)
+	p.MouseMove(2, 1)
 	assert.Empty(t, probe.events)
 
-	scene.hover(7, 1)
+	p.MouseMove(7, 1)
 	require.Len(t, probe.events, 1)
 	assert.Equal(t, HoverEnter, probe.events[0].Type)
 	assert.Equal(t, "region-owner-region", probe.events[0].WidgetID)
 	assert.Equal(t, 1, probe.events[0].LocalX)
 	assert.Zero(t, probe.events[0].LocalY)
 
-	scene.hover(6, 1)
+	p.MouseMove(6, 1)
 	assert.Len(t, probe.events, 1, "motion within a region does not enter it again")
-	scene.click(7, 1, 0)
+	p.ClickAt(7, 1)
 	assert.Equal(t, 1, probe.clicks, "the original widget still receives clicks")
 
-	scene.hover(8, 1)
+	p.MouseMove(8, 1)
 	require.Len(t, probe.events, 2)
 	assert.Equal(t, HoverLeave, probe.events[1].Type)
 }
 
 func TestHoverRegion_DisabledOwnerDoesNotEnterRegion(t *testing.T) {
 	probe := &hoverRegionProbe{}
-	scene := newClickScene(t, DisabledWhen(true, probe), 12, 4)
-	scene.hover(7, 1)
-	scene.click(7, 1, 0)
+	p := NewPilot(t, DisabledWhen(true, probe), 12, 4)
+	p.MouseMove(7, 1)
+	p.ClickAt(7, 1)
 	assert.Empty(t, probe.events)
 	assert.Zero(t, probe.clicks)
 }

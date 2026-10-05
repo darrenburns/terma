@@ -51,23 +51,22 @@ func (s *selectDialogProbe) Build(BuildContext) Widget {
 
 func TestSelectBoxProbeOutsideClickWithinDialogCancels(t *testing.T) {
 	root := &selectDialogProbe{state: NewSelectState[int](), visible: NewSignal(true)}
-	scene := newClickScene(t, root, 70, 20)
-	scene.focus.FocusByID("choice")
-	scene.draw()
-	dispatchKey(scene.renderer, scene.focus, root, makeKeyEvent(uv.KeyEnter, 0))
-	scene.draw()
-	require.Contains(t, scene.renderer.ScreenText(), "Alpha")
+	p := NewPilot(t, root, 70, 20)
+	p.session.focus.FocusByID("choice")
+	p.settle()
+	p.Press("enter")
+	require.Contains(t, p.ScreenText(), "Alpha")
 	// Click visible non-focusable dialog content above the popup.
-	trigger := scene.renderer.WidgetByID("choice")
-	require.NotNil(t, trigger)
-	scene.click(trigger.Bounds.X+1, trigger.Bounds.Y-2, 0)
-	require.NotContains(t, scene.renderer.ScreenText(), "Alpha", "outside click cancels even inside a parent modal")
+	trigger, ok := p.Bounds("choice")
+	require.True(t, ok)
+	p.ClickAt(trigger.X+1, trigger.Y-2)
+	require.NotContains(t, p.ScreenText(), "Alpha", "outside click cancels even inside a parent modal")
 	_, set := root.state.Value()
 	require.False(t, set)
-	require.Equal(t, "choice", scene.focus.FocusedID())
+	require.Equal(t, "choice", p.FocusedID())
 	require.True(t, root.visible.Get(), "parent dialog stays open")
 	require.Zero(t, root.outsideClicks, "dismissing press does not activate underlying content")
-	scene.snapshot("SelectBox_Probe_DialogCancellation", "Outside click closes only the SelectBox popup and leaves its parent Dialog open")
+	p.AssertSnapshot("DialogCancellation", "Outside click closes only the SelectBox popup and leaves its parent Dialog open")
 }
 
 type selectNestedProbe struct {
@@ -151,12 +150,11 @@ func TestSelectBoxProbeClippedTriggerDoesNotReceiveClick(t *testing.T) {
 		SelectBox[int]{ID: "clipped-choice", State: state, Options: []SelectOption[int]{{Label: "Alpha", Value: 1}}, Style: Style{Width: Cells(20)}},
 		Text{Content: "Filler", Height: Cells(12)},
 	}}}
-	scene := newClickScene(t, root, 36, 8)
+	p := NewPilot(t, root, 36, 8)
 	scroll.SetOffset(5)
-	scene.draw()
-	require.NotContains(t, scene.renderer.ScreenText(), "Choose an option")
-	scene.click(3, 0, 0)
-	require.NotContains(t, scene.renderer.ScreenText(), "Alpha")
+	require.NotContains(t, p.ScreenText(), "Choose an option")
+	p.ClickAt(3, 0)
+	require.NotContains(t, p.ScreenText(), "Alpha")
 	_, set := state.Value()
 	require.False(t, set)
 }
