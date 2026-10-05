@@ -58,7 +58,7 @@ func (d editorDriver) changed(code rune, mod uv.KeyMod) bool {
 }
 
 func (d editorDriver) undo() bool { return d.changed('z', uv.ModCtrl) }
-func (d editorDriver) redo() bool { return d.changed('z', uv.ModCtrl|uv.ModShift) }
+func (d editorDriver) redo() bool { return d.changed('y', uv.ModCtrl) }
 
 func newTextAreaDriver(t *testing.T, initial string) (*TextAreaState, *fakeClock, editorDriver) {
 	state := NewTextAreaState(initial)
@@ -102,7 +102,7 @@ func TestTextAreaUndo_TypingGroupsByWord(t *testing.T) {
 
 	require.True(t, keys.redo())
 	assertTextArea(t, state, caretWant{text: "hello ", cursor: 6})
-	require.True(t, keys.changed('y', uv.ModCtrl), "ctrl+y redoes too")
+	require.True(t, keys.redo())
 	assertTextArea(t, state, caretWant{text: "hello world", cursor: 11})
 	assert.False(t, state.CanRedo())
 }
@@ -325,11 +325,11 @@ func TestTextAreaUndo_ReadOnlyIgnoresUndo(t *testing.T) {
 
 func TestTextAreaUndo_CapturesUndoKeysSoTheAppDoesNotSuspend(t *testing.T) {
 	area := TextArea{State: NewTextAreaState("")}
-	for _, key := range []string{"ctrl+z", "ctrl+shift+z", "ctrl+y"} {
+	for _, key := range []string{"ctrl+z", "ctrl+y"} {
 		assert.True(t, area.CapturesKey(key), key)
 	}
+	assert.False(t, area.CapturesKey("ctrl+shift+z"), "not a default redo key")
 	assert.Equal(t, "ctrl+z", KeyEvent{event: uv.KeyPressEvent{Code: 'z', Mod: uv.ModCtrl}}.Key())
-	assert.Equal(t, "ctrl+shift+z", KeyEvent{event: uv.KeyPressEvent{Code: 'z', Mod: uv.ModCtrl | uv.ModShift}}.Key())
 }
 
 func TestTextAreaUndo_ConfigurableKeys(t *testing.T) {

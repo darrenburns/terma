@@ -11,8 +11,9 @@ import (
 var DefaultUndoKeys = []string{"ctrl+z"}
 
 // DefaultRedoKeys redo the last undone edit in a TextInput or TextArea whose
-// RedoKeys is nil.
-var DefaultRedoKeys = []string{"ctrl+shift+z", "ctrl+y"}
+// RedoKeys is nil. ctrl+shift+z is left out: terminals without the kitty
+// keyboard protocol send it as ctrl+z, so it would undo instead.
+var DefaultRedoKeys = []string{"ctrl+y"}
 
 const (
 	// undoGroupPause ends a run of typing: a keystroke after a longer pause
