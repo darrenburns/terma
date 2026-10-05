@@ -87,6 +87,7 @@ func (d *demo) Build(ctx t.BuildContext) t.Widget {
 		ID:          "hyperlink-list",
 		State:       d.list,
 		ScrollState: d.scroll,
+		Style:       t.Style{Width: t.Flex(1)},
 		RenderItem: func(item resource, active, _ bool) t.Widget {
 			prefix, style := "  ", t.Style{}
 			if active {
@@ -99,27 +100,36 @@ func (d *demo) Build(ctx t.BuildContext) t.Widget {
 			}}
 		},
 	}
-	return t.Column{Width: t.Flex(1), Height: t.Flex(1), Children: []t.Widget{
-		demokit.Header{Title: "Hyperlinks", Tagline: "OSC 8 links your terminal can open"},
-		t.Column{Style: demokit.PanelStyle(theme, "Markup", false), Width: t.Flex(1), Children: []t.Widget{
-			t.Text{Wrap: t.WrapSoft, Width: t.Flex(1), Spans: t.ParseMarkup(
-				"Write "+first+" in markup, or give it [link=https://go.dev/doc $Accent]its own color[/]. "+
-					"Touching links ([link=https://example.com/a]one[/][link=https://example.com/b]two[/]) stay separate, "+
-					"[link=https://ja.wikipedia.org/wiki/日本語]日本語[/] keeps its link across wide cells, and "+
-					"[link=https://example.com/long]a long link label wraps onto the next line and is clickable on both lines[/].",
-				theme)},
-		}},
-		t.Column{Style: demokit.PanelStyle(theme, "Markdown", false), Width: t.Flex(1), Children: []t.Widget{
-			t.Markdown{State: d.markdown, DisableFocus: true},
-		}},
-		t.Scrollable{
-			State:  d.scroll,
-			Height: t.Flex(1),
-			Width:  t.Flex(1),
-			Style:  demokit.PanelStyle(theme, "List · o opens with OpenURL", ctx.IsFocused(list)),
-			Child:  list,
+	return t.Dock{
+		ID:    "hyperlink-demo-root",
+		Style: t.Style{BackgroundColor: theme.Background},
+		Top:   []t.Widget{demokit.Header{Title: "Hyperlinks", Tagline: "OSC 8 links your terminal can open"}},
+		Bottom: []t.Widget{
+			demokit.Footer(theme),
+			t.Row{Width: t.Flex(1), Style: t.Style{Padding: t.EdgeInsetsXY(1, 0)}, Children: []t.Widget{
+				t.SignalText(d.status, func(s string) string { return s }),
+			}},
 		},
-		t.SignalText(d.status, func(s string) string { return s }),
-		t.KeybindBar{Style: t.Style{BackgroundColor: theme.Surface}},
-	}}
+		Body: t.Column{Width: t.Flex(1), Height: t.Flex(1), Style: t.Style{Padding: t.EdgeInsetsXY(1, 0)}, Children: []t.Widget{
+			t.Column{Style: demokit.PanelStyle(theme, "Markup", false), Width: t.Flex(1), Children: []t.Widget{
+				t.Text{Wrap: t.WrapSoft, Width: t.Flex(1), Spans: t.ParseMarkup(
+					"Write "+first+" in markup, or give it [link=https://go.dev/doc $Accent]its own color[/]. "+
+						"Touching links ([link=https://example.com/a]one[/][link=https://example.com/b]two[/]) stay separate, "+
+						"[link=https://ja.wikipedia.org/wiki/日本語]日本語[/] keeps its link across wide cells, and "+
+						"[link=https://example.com/long]a long link label wraps onto the next line and is clickable on both lines[/].",
+					theme)},
+			}},
+			t.Column{Style: demokit.PanelStyle(theme, "Markdown", false), Width: t.Flex(1), Children: []t.Widget{
+				t.Markdown{State: d.markdown, DisableFocus: true},
+			}},
+			t.Column{
+				Style:  demokit.PanelStyle(theme, "List · o opens with OpenURL", ctx.IsFocused(list)),
+				Width:  t.Flex(1),
+				Height: t.Flex(1),
+				Children: []t.Widget{
+					t.Scrollable{State: d.scroll, Style: t.Style{Width: t.Flex(1), Height: t.Flex(1)}, Child: list},
+				},
+			},
+		}},
+	}
 }
