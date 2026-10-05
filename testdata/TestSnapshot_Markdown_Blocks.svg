@@ -33,7 +33,7 @@
   <text x="394.4" y="57.0" fill="#E0DEF4">,</text>
   <text x="411.2" y="57.0" fill="#E0DEF4">and</text>
   <text x="444.8" y="57.0" fill="#E0DEF4">a</text>
-  <text x="8.0" y="76.6" class="underline" fill="#C4A7E7">helpful guide</text>
+  <a href="https://example.com/guide"><text x="8.0" y="76.6" class="underline" fill="#C4A7E7">helpful guide</text></a>
   <text x="117.2" y="76.6" fill="#E0DEF4">.</text>
   <text x="8.0" y="115.8" fill="#908CAA">3.</text>
   <text x="33.2" y="115.8" fill="#E0DEF4">First</text>

@@ -32,8 +32,8 @@
   <text x="41.6" y="96.2" fill="#E0DEF4">,</text>
   <text x="58.4" y="96.2" fill="#E0DEF4">and</text>
   <text x="92.0" y="96.2" fill="#E0DEF4">a</text>
-  <text x="108.8" y="96.2" class="underline" fill="#C4A7E7">helpful</text>
-  <text x="8.0" y="115.8" class="underline" fill="#C4A7E7">guide</text>
+  <a href="https://example.com/guide"><text x="108.8" y="96.2" class="underline" fill="#C4A7E7">helpful</text></a>
+  <a href="https://example.com/guide"><text x="8.0" y="115.8" class="underline" fill="#C4A7E7">guide</text></a>
   <text x="50.0" y="115.8" fill="#E0DEF4">.</text>
   <text x="8.0" y="155.0" fill="#908CAA">3.</text>
   <text x="33.2" y="155.0" fill="#E0DEF4">First</text>
