@@ -86,6 +86,7 @@ func (a *App) Build(ctx t.BuildContext) t.Widget {
 					Placeholder: "Send a message, or / for commands",
 					OnSubmit:    a.submit,
 					Style: t.Style{
+						Width:   t.Flex(1),
 						Padding: t.EdgeInsetsXY(1, 0),
 						Border:  t.Border{Style: t.BorderRounded, Color: theme.Border},
 					},
@@ -168,10 +169,14 @@ type banner struct{}
 
 func (banner) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
-	return t.Text{
-		Content:   "LOUD NOISES",
-		TextAlign: t.TextAlignCenter,
-		Style:     t.Style{Width: t.Flex(1), BackgroundColor: theme.Primary, ForegroundColor: theme.TextOnPrimary, Bold: true},
+	return t.Row{
+		Width:     t.Flex(1),
+		MainAlign: t.MainAxisCenter,
+		Style:     t.Style{BackgroundColor: theme.Primary},
+		Children: []t.Widget{t.Text{
+			Content: "LOUD NOISES",
+			Style:   t.Style{ForegroundColor: theme.TextOnPrimary, Bold: true},
+		}},
 	}
 }
 
