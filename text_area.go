@@ -1,6 +1,7 @@
 package terma
 
 import (
+	"slices"
 	"sort"
 	"strings"
 	"unicode"
@@ -39,6 +40,7 @@ type TextAreaState struct {
 	revealed        cursorReveal[int] // Where the cursor was last scrolled into view
 	revealCursor    func()            // Scrolls the cursor into view; set by the TextArea that shows this state
 	search          textAreaSearchCache
+	history         textHistory
 }
 
 // NewTextAreaState creates a new TextAreaState with optional initial text.
@@ -62,12 +64,79 @@ func (s *TextAreaState) GetText() string {
 	return joinGraphemes(s.Content.Peek())
 }
 
-// SetText replaces the content and clamps the cursor.
+// SetText replaces the content and clamps the cursor. It loads a new
+// document, so it also clears the undo history; use ReplaceText for an edit
+// the user can undo.
 func (s *TextAreaState) SetText(text string) {
 	graphemes := splitGraphemes(text)
 	s.Content.Set(graphemes)
 	s.clampCursor()
 	s.resetPreferredColumn()
+	s.history.reset(s.fields())
+}
+
+// ReplaceText replaces the content as one undoable step and moves the cursor
+// to cursor (a grapheme index, clamped to the new content).
+func (s *TextAreaState) ReplaceText(text string, cursor int) {
+	graphemes := splitGraphemes(text)
+	start, oldEnd, newEnd := diffGraphemes(s.Content.Peek(), graphemes)
+	s.edit(start, oldEnd, graphemes[start:newEnd], clampInt(cursor, 0, len(graphemes)), editSingle)
+}
+
+// Undo reverts the last undo step, restoring the cursor and selection from
+// before it. It returns false when there is nothing to undo.
+func (s *TextAreaState) Undo() bool {
+	if !s.history.stepBack(s.fields()) {
+		return false
+	}
+	s.updatePreferredColumn()
+	return true
+}
+
+// Redo reapplies the last undone step. It returns false when there is
+// nothing to redo.
+func (s *TextAreaState) Redo() bool {
+	if !s.history.stepForward(s.fields()) {
+		return false
+	}
+	s.updatePreferredColumn()
+	return true
+}
+
+// CanUndo reports whether Undo would change the text.
+func (s *TextAreaState) CanUndo() bool {
+	return s.history.canUndo(s.fields())
+}
+
+// CanRedo reports whether Redo would change the text.
+func (s *TextAreaState) CanRedo() bool {
+	return s.history.canRedo(s.fields())
+}
+
+// ClearHistory forgets every undo and redo step.
+func (s *TextAreaState) ClearHistory() {
+	s.history.reset(s.fields())
+}
+
+func (s *TextAreaState) fields() textFields {
+	return textFields{content: s.Content, cursor: s.CursorIndex, anchor: s.SelectionAnchor}
+}
+
+func (s *TextAreaState) edit(start, end int, inserted []string, cursorAfter int, kind editKind) {
+	s.history.edit(s.fields(), start, end, inserted, cursorAfter, kind)
+	s.updatePreferredColumn()
+}
+
+// replaceSelection replaces the selection, or inserts at the cursor when
+// there is none.
+func (s *TextAreaState) replaceSelection(text string, kind editKind) {
+	start, end := s.GetSelectionBounds()
+	if start < 0 {
+		start = s.CursorIndex.Peek()
+		end = start
+	}
+	inserted := splitGraphemes(text)
+	s.edit(start, end, inserted, start+len(inserted), kind)
 }
 
 // Insert inserts text at the cursor position and advances the cursor.
@@ -75,21 +144,9 @@ func (s *TextAreaState) Insert(text string) {
 	if text == "" {
 		return
 	}
-	newGraphemes := splitGraphemes(text)
-	s.Content.Update(func(graphemes []string) []string {
-		cursor := s.CursorIndex.Peek()
-		result := make([]string, 0, len(graphemes)+len(newGraphemes))
-		result = append(result, graphemes[:cursor]...)
-		result = append(result, newGraphemes...)
-		result = append(result, graphemes[cursor:]...)
-		return result
-	})
-	s.CursorIndex.Update(func(cursor int) int {
-		return cursor + len(newGraphemes)
-	})
-	// Clear selection anchor to prevent unwanted selection after typing
-	s.SelectionAnchor.Set(-1)
-	s.updatePreferredColumn()
+	cursor := s.CursorIndex.Peek()
+	inserted := splitGraphemes(text)
+	s.edit(cursor, cursor, inserted, cursor+len(inserted), editSingle)
 }
 
 // InsertNewline inserts a newline at the cursor position.
@@ -103,24 +160,16 @@ func (s *TextAreaState) DeleteBackward() {
 	if cursor <= 0 {
 		return
 	}
-	s.Content.Update(func(graphemes []string) []string {
-		return append(graphemes[:cursor-1], graphemes[cursor:]...)
-	})
-	s.CursorIndex.Set(cursor - 1)
-	s.updatePreferredColumn()
+	s.edit(cursor-1, cursor, nil, cursor-1, editDeleteBackward)
 }
 
 // DeleteForward deletes the grapheme at the cursor.
 func (s *TextAreaState) DeleteForward() {
 	cursor := s.CursorIndex.Peek()
-	graphemes := s.Content.Peek()
-	if cursor >= len(graphemes) {
+	if cursor >= len(s.Content.Peek()) {
 		return
 	}
-	s.Content.Update(func(graphemes []string) []string {
-		return append(graphemes[:cursor], graphemes[cursor+1:]...)
-	})
-	s.updatePreferredColumn()
+	s.edit(cursor, cursor+1, nil, cursor, editDeleteForward)
 }
 
 // DeleteToBeginning deletes from cursor to beginning of line.
@@ -130,11 +179,7 @@ func (s *TextAreaState) DeleteToBeginning() {
 	if cursor <= start {
 		return
 	}
-	s.Content.Update(func(graphemes []string) []string {
-		return append(graphemes[:start], graphemes[cursor:]...)
-	})
-	s.CursorIndex.Set(start)
-	s.updatePreferredColumn()
+	s.edit(start, cursor, nil, start, editSingle)
 }
 
 // DeleteToEnd deletes from cursor to end of line.
@@ -144,10 +189,7 @@ func (s *TextAreaState) DeleteToEnd() {
 	if cursor >= end {
 		return
 	}
-	s.Content.Update(func(graphemes []string) []string {
-		return append(graphemes[:cursor], graphemes[end:]...)
-	})
-	s.updatePreferredColumn()
+	s.edit(cursor, end, nil, cursor, editSingle)
 }
 
 // DeleteWordBackward deletes the word before the cursor.
@@ -166,11 +208,7 @@ func (s *TextAreaState) DeleteWordBackward() {
 		newCursor--
 	}
 
-	s.Content.Update(func(graphemes []string) []string {
-		return append(graphemes[:newCursor], graphemes[cursor:]...)
-	})
-	s.CursorIndex.Set(newCursor)
-	s.updatePreferredColumn()
+	s.edit(newCursor, cursor, nil, newCursor, editSingle)
 }
 
 // CursorLeft moves the cursor left by one grapheme.
@@ -405,19 +443,14 @@ func (s *TextAreaState) DeleteSelection() bool {
 	if start < 0 {
 		return false
 	}
-	s.Content.Update(func(graphemes []string) []string {
-		return append(graphemes[:start], graphemes[end:]...)
-	})
-	s.CursorIndex.Set(start)
-	s.SelectionAnchor.Set(-1)
-	s.updatePreferredColumn()
+	s.edit(start, end, nil, start, editSingle)
 	return true
 }
 
-// ReplaceSelection deletes any selected text and inserts the given text.
+// ReplaceSelection replaces any selected text with the given text, as one
+// undoable step.
 func (s *TextAreaState) ReplaceSelection(text string) {
-	s.DeleteSelection()
-	s.Insert(text)
+	s.replaceSelection(text, editSingle)
 }
 
 func (s *TextAreaState) cursorVerticalMove(delta int) {
@@ -825,6 +858,10 @@ type TextArea struct {
 	Hover         func(HoverEvent) // Optional hover callback
 	Blur          func()           // Optional blur callback
 	ExtraKeybinds []Keybind        // Optional additional keybinds (checked before defaults)
+	// UndoKeys and RedoKeys undo and redo edits. Nil uses DefaultUndoKeys and
+	// DefaultRedoKeys; an empty slice turns the binding off.
+	UndoKeys []string
+	RedoKeys []string
 }
 
 // WidgetID returns the text area's unique identifier.
@@ -839,10 +876,14 @@ func (t TextArea) IsFocusable() bool {
 
 // CapturesKey returns true if this key would be captured by the text area
 // (i.e., typed as text rather than bubbling to ancestors). This is true for
-// printable characters without modifiers when in insert mode.
+// printable characters without modifiers when in insert mode, and for the undo
+// and redo keys, so ctrl+z undoes instead of suspending the app.
 func (t TextArea) CapturesKey(key string) bool {
 	if !t.canInsert() {
 		return false
+	}
+	if slices.Contains(undoKeysOr(t.UndoKeys), key) || slices.Contains(redoKeysOr(t.RedoKeys), key) {
+		return true
 	}
 	if strings.Contains(key, "+") {
 		return false
@@ -921,6 +962,11 @@ func (t TextArea) Keybinds() []Keybind {
 		keybinds = append(keybinds, Keybind{Key: "ctrl+enter", Name: "Submit", Action: t.submit})
 	}
 
+	if t.canInsert() {
+		// Ahead of the defaults, so a configured key such as ctrl+u wins.
+		keybinds = append(historyKeybinds(t.UndoKeys, t.RedoKeys, t.undo, t.redo), keybinds...)
+	}
+
 	if len(t.ExtraKeybinds) > 0 {
 		return append(t.ExtraKeybinds, keybinds...)
 	}
@@ -949,8 +995,22 @@ func (t TextArea) exitInsertMode() {
 
 func (t TextArea) insertNewline() {
 	if t.State != nil {
-		t.State.ReplaceSelection("\n")
+		t.State.replaceSelection("\n", editTyping)
 		t.notifyChange()
+	}
+}
+
+func (t TextArea) undo() {
+	if t.State != nil && t.State.Undo() {
+		t.notifyChange()
+		t.scrollCursorIntoView()
+	}
+}
+
+func (t TextArea) redo() {
+	if t.State != nil && t.State.Redo() {
+		t.notifyChange()
+		t.scrollCursorIntoView()
 	}
 }
 
@@ -1214,7 +1274,7 @@ func (t TextArea) OnKey(event KeyEvent) bool {
 
 	text := event.Text()
 	if text != "" {
-		t.State.ReplaceSelection(text)
+		t.State.replaceSelection(text, editTyping)
 		t.notifyChange()
 		return true
 	}
@@ -1222,7 +1282,7 @@ func (t TextArea) OnKey(event KeyEvent) bool {
 }
 
 // HandlePaste inserts pasted text at the cursor as a single edit, replacing
-// any selection, newlines included. OnPaste sees it first and can consume it.
+// any selection, newlines included. It is one undo step. OnPaste sees it first and can consume it.
 // Tabs become four spaces. Implements the PasteHandler interface.
 func (t TextArea) HandlePaste(text string) bool {
 	if t.State == nil {
