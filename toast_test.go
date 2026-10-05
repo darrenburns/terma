@@ -208,15 +208,9 @@ func TestToastsSnapshot(t *testing.T) {
 		"Two blue info toasts 30 cells wide in the top-left corner, then a muted right-aligned '+2 more' "+
 			"line beneath them for the toasts still waiting.")
 
-	paused, _ := newTestToastState(ToastOptions{})
-	id := paused.Info("Hovered toast")
-	paused.Info("Other toast")
-	paused.setPaused(id, true)
-	AssertSnapshotNamed(t, "Toasts_paused", scene(Toasts{State: paused, Position: FloatPositionTopCenter}), 60, 10,
-		"Two info toasts at the top centre. The first, hovered and paused, has the lighter surface-hover background.")
 }
 
-func TestToastsClickDismissesAndHoverPauses(t *testing.T) {
+func TestToastsPointerAnywhereOnCard(t *testing.T) {
 	state, clock := newTestToastState(ToastOptions{Timeout: time.Second})
 	state.Info("first")
 	state.Info("second")
@@ -224,21 +218,34 @@ func TestToastsClickDismissesAndHoverPauses(t *testing.T) {
 		Text{Content: "body"},
 		Toasts{ID: "toasts", State: state, Position: FloatPositionTopLeft, Width: 20},
 	}}
-	router, renderer := renderForMouse(root, 40, 10)
-	// first occupies rows 1-3 and second rows 5-7, starting at column 1.
-	require.Equal(t, "toasts-toast-1", hitID(renderer, 2, 2))
-	require.Equal(t, "toasts-toast-2", hitID(renderer, 2, 6))
+	buffer := uv.NewBuffer(40, 10)
+	hovered := NewAnySignal[Widget](nil)
+	focus := NewFocusManager()
+	renderer := NewRenderer(reactivityScreen{buffer}, 40, 10, focus, NewAnySignal[Focusable](nil), hovered)
+	renderer.Render(root)
+	router := newMouseRouter(renderer, focus, hovered)
+	// first's border spans rows 1-3 and second's rows 5-7, from column 1. Their
+	// messages start at column 5, inside the border, padding and icon.
+	require.Equal(t, "toasts-toast-1", hitID(renderer, 1, 2))
+	require.NotEqual(t, "toasts-toast-2", hitID(renderer, 6, 6), "the message text is its own hit target")
+	surface := buffer.CellAt(6, 2).Style.Bg
 
-	router.motion(uv.MouseMotionEvent{X: 2, Y: 6}, 0.5, 0.5)
+	router.motion(uv.MouseMotionEvent{X: 6, Y: 6}, 0.5, 0.5)
+	renderer.Update(root)
+	assert.NotEqual(t, surface, buffer.CellAt(6, 6).Style.Bg, "hovering the message highlights the card")
+	router.motion(uv.MouseMotionEvent{X: 1, Y: 6}, 0.5, 0.5)
+	renderer.Update(root)
+	assert.NotEqual(t, surface, buffer.CellAt(6, 6).Style.Bg, "moving onto the border stays within the card")
+
 	clock.advance(time.Second)
 	assert.Equal(t, []string{"second"}, toastMessages(state), "the hovered toast is held while the other expires")
-	renderer.Render(root)
+	renderer.Update(root)
 
-	router.press(uv.MouseClickEvent{X: 2, Y: 2, Button: uv.MouseLeft}, 0.5, 0.5, time.Now())
-	router.release(uv.MouseReleaseEvent{X: 2, Y: 2, Button: uv.MouseLeft}, 0.5, 0.5)
-	assert.Empty(t, toastMessages(state), "clicking the toast now at the top dismisses it")
-	renderer.Render(root)
-	assert.NotContains(t, hitID(renderer, 2, 2), "toast")
+	router.press(uv.MouseClickEvent{X: 6, Y: 2, Button: uv.MouseLeft}, 0.5, 0.5, time.Now())
+	router.release(uv.MouseReleaseEvent{X: 6, Y: 2, Button: uv.MouseLeft}, 0.5, 0.5)
+	assert.Empty(t, toastMessages(state), "pressing the message of the toast now at the top dismisses it")
+	renderer.Update(root)
+	assert.NotContains(t, renderer.ScreenText(), "second")
 }
 
 type reactivityToastScene struct {
@@ -273,12 +280,13 @@ func TestReactivityToasts(t *testing.T) {
 	require.Equal(t, 1, work.BuildCount, "only the counter rebuilds; the toast overlay is reused")
 	require.Contains(t, sequence.actual.renderer.ScreenText(), "Saved")
 
-	sequence.frame("Pause", func(s *reactivityToastScene) { s.toasts.setPaused(2, true) })
-	sequence.frame("Expire unpaused toast", func(s *reactivityToastScene) { s.clock.advance(time.Second) })
+	sequence.frame("Expire and promote", func(s *reactivityToastScene) { s.clock.advance(time.Second) })
 	require.NotContains(t, sequence.actual.renderer.ScreenText(), "Saved")
 	require.Contains(t, sequence.actual.renderer.ScreenText(), "Queued")
-	sequence.frame("Dismiss", func(s *reactivityToastScene) { s.toasts.Dismiss(2) })
-	sequence.frame("Clear", func(s *reactivityToastScene) { s.toasts.Clear() })
+	sequence.frame("Dismiss", func(s *reactivityToastScene) { s.toasts.Dismiss(3) })
 	require.NotContains(t, sequence.actual.renderer.ScreenText(), "Queued")
+	sequence.frame("Notify again", func(s *reactivityToastScene) { s.toasts.Info("Again") })
+	sequence.frame("Clear", func(s *reactivityToastScene) { s.toasts.Clear() })
+	require.NotContains(t, sequence.actual.renderer.ScreenText(), "Again")
 	sequence.frame("Unrelated change after clear", func(s *reactivityToastScene) { s.counter.Set(2) })
 }

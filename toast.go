@@ -289,7 +289,12 @@ func (t Toasts) Build(ctx BuildContext) Widget {
 
 	cards := make([]Widget, 0, len(view.visible)+1)
 	for _, item := range view.visible {
-		cards = append(cards, t.card(theme, prefix, width, item))
+		cards = append(cards, toastCard{
+			id:    fmt.Sprintf("%s-toast-%d", prefix, item.id),
+			state: t.State,
+			item:  item,
+			width: width,
+		})
 	}
 	if view.waiting > 0 {
 		cards = append(cards, Text{
@@ -308,39 +313,61 @@ func (t Toasts) Build(ctx BuildContext) Widget {
 	return EmptyWidget{}
 }
 
-func (t Toasts) card(theme ThemeData, prefix string, width int, item toastItem) Widget {
-	accent := item.toast.Severity.color(theme)
+// toastCard is one toast. It owns the pointer input over its whole area:
+// presses and hovers land on the innermost widget, which is usually the
+// message text rather than the card.
+type toastCard struct {
+	id    string
+	state *ToastState
+	item  toastItem
+	width int
+}
+
+func (c toastCard) WidgetID() string { return c.id }
+
+func (c toastCard) ownsDescendantPointer() {}
+
+// OnMouseDown dismisses on press, wherever in the card it lands.
+func (c toastCard) OnMouseDown(MouseEvent) {
+	c.state.Dismiss(c.item.id)
+}
+
+func (c toastCard) Build(ctx BuildContext) Widget {
+	hovered := ctx.isSubtreeHovered()
+	if hovered != c.item.paused {
+		state, id := c.state, c.item.id
+		Dispatch(func() { state.setPaused(id, hovered) })
+	}
+
+	theme := ctx.Theme()
+	toast := c.item.toast
+	accent := toast.Severity.color(theme)
 	background := theme.Surface
-	if item.paused {
+	if hovered {
 		background = theme.SurfaceHover
 	}
 	var lines []Widget
-	if item.toast.Title != "" {
+	if toast.Title != "" {
 		lines = append(lines, Text{
-			Content: item.toast.Title,
+			Content: toast.Title,
 			Wrap:    WrapSoft,
 			Style:   Style{ForegroundColor: accent, Bold: true},
 		})
 	}
-	if item.toast.Message != "" {
-		lines = append(lines, Text{Content: item.toast.Message, Wrap: WrapSoft})
+	if toast.Message != "" {
+		lines = append(lines, Text{Content: toast.Message, Wrap: WrapSoft})
 	}
-
-	state, id := t.State, item.id
 	return Row{
-		ID:      fmt.Sprintf("%s-toast-%d", prefix, id),
 		Spacing: 1,
 		Style: Style{
-			Width:           Cells(max(width-4, 1)),
+			Width:           Cells(max(c.width-4, 1)),
 			BackgroundColor: background,
 			ForegroundColor: theme.Text,
 			Border:          RoundedBorder(accent),
 			Padding:         EdgeInsetsXY(1, 0),
 		},
-		Click: func(MouseEvent) { state.Dismiss(id) },
-		Hover: func(event HoverEvent) { state.setPaused(id, event.Type == HoverEnter) },
 		Children: []Widget{
-			Text{Content: item.toast.Severity.icon(), Style: Style{ForegroundColor: accent, Bold: true}},
+			Text{Content: toast.Severity.icon(), Style: Style{ForegroundColor: accent, Bold: true}},
 			Column{Style: Style{Width: Flex(1)}, Children: lines},
 		},
 	}
