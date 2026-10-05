@@ -230,21 +230,22 @@ func TestFormProbeInvalidOffscreenFieldIsRevealed(t *testing.T) {
 		Field{State: lastField, Child: TextInput{State: last}},
 	}}}
 	root := Scrollable{State: scroll, Style: Style{Width: Cells(40), Height: Cells(1)}, Child: form}
-	router, renderer, key := formInputHarness(t, root)
-	require.Equal(t, "scroll-first", router.focusManager.FocusedID())
-	key(makeKeyEvent('s', uv.ModCtrl))
-	require.Equal(t, "scroll-last", router.focusManager.FocusedID())
-	input := renderer.WidgetByID("scroll-last")
+	p := NewPilot(t, root, 50, 24)
+	require.Equal(t, "scroll-first", p.FocusedID())
+	p.Press("ctrl+s")
+	require.Equal(t, "scroll-last", p.FocusedID())
+	input := p.session.renderer.WidgetByID("scroll-last")
 	require.NotNil(t, input)
 	require.Greater(t, input.Visible.Height, 0, "the first invalid input should be visible after submission focuses it")
 
 	// Manual scrolling stays free until another submit requests the invalid input.
 	scroll.SetOffset(0)
-	renderer.Render(root)
-	require.Equal(t, "scroll-last", router.focusManager.FocusedID())
-	require.Nil(t, renderer.WidgetByID("scroll-last"))
-	key(makeKeyEvent('s', uv.ModCtrl))
-	require.NotNil(t, renderer.WidgetByID("scroll-last"), "retry reveals the already-focused invalid input")
+	require.Equal(t, "scroll-last", p.FocusedID())
+	_, drawn := p.Bounds("scroll-last")
+	require.False(t, drawn)
+	p.Press("ctrl+s")
+	_, drawn = p.Bounds("scroll-last")
+	require.True(t, drawn, "retry reveals the already-focused invalid input")
 }
 
 func TestFormProbeInvalidRevealAfterErrorGrowth(t *testing.T) {
@@ -257,14 +258,33 @@ func TestFormProbeInvalidRevealAfterErrorGrowth(t *testing.T) {
 		Field{State: lastField, Child: TextInput{State: last}},
 	}}}
 	root := Scrollable{State: scroll, Style: Style{Width: Cells(40), Height: Cells(1)}, Child: form}
-	router, renderer, key := formInputHarness(t, root)
-	require.Equal(t, "scroll-first", router.focusManager.FocusedID())
-	key(makeKeyEvent('s', uv.ModCtrl))
-	require.Equal(t, "scroll-last", router.focusManager.FocusedID())
-	input := renderer.WidgetByID("scroll-last")
+	p := NewPilot(t, root, 50, 24)
+	require.Equal(t, "scroll-first", p.FocusedID())
+	p.Press("ctrl+s")
+	require.Equal(t, "scroll-last", p.FocusedID())
+	input := p.session.renderer.WidgetByID("scroll-last")
 	require.NotNil(t, input)
 	require.Greater(t, input.Visible.Height, 0, "the first invalid input should be visible after submission focuses it")
 
+}
+
+// formInputHarness drives the actual renderer, focus manager and key dispatcher.
+func formInputHarness(t *testing.T, root Widget) (*mouseRouter, *Renderer, func(KeyEvent)) {
+	t.Helper()
+	previous := pendingFocusID
+	t.Cleanup(func() { pendingFocusID = previous })
+	pendingFocusID = ""
+	router, renderer := renderForMouse(root, 50, 24)
+	return router, renderer, func(event KeyEvent) {
+		dispatchKey(renderer, router.focusManager, root, event)
+		requested := pendingFocusID
+		pendingFocusID = ""
+		router.focusManager.SetFocusables(renderer.Render(root))
+		if requested != "" {
+			router.focusManager.FocusByID(requested)
+		}
+		renderer.Render(root)
+	}
 }
 
 func TestFormProbeNestedRevealAndUnmount(t *testing.T) {
