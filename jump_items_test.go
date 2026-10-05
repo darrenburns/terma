@@ -146,3 +146,51 @@ func TestJumpItemsSnapshot(t *testing.T) {
 	AssertSnapshot(t, scene, 60, 8,
 		"Dynamic hints on data: a letter on each tab (One, Two, Three), on each of the four list rows in view, on each tree node (alpha, beta, gamma) and on each table row. The list also shows its static key '1' at its top-left, next to its first row's hint.")
 }
+
+// customJumpRow is a list row that decides for itself what jumping to it does.
+type customJumpRow struct {
+	Text
+	onJump func()
+}
+
+func (r customJumpRow) Build(BuildContext) Widget { return r }
+func (r customJumpRow) Jump()                     { r.onJump() }
+
+type customJumpScene struct {
+	jump   *JumpState
+	list   *ListState[string]
+	jumped []string
+}
+
+func (s *customJumpScene) Build(ctx BuildContext) Widget {
+	return Jumper{
+		State:   s.jump,
+		Dynamic: true,
+		Child: Column{Children: []Widget{
+			List[string]{ID: "list", State: s.list, RenderItem: func(item string, _, _ bool) Widget {
+				return customJumpRow{Text: Text{Content: item}, onJump: func() {
+					s.jumped = append(s.jumped, item)
+					RequestFocus("elsewhere")
+				}}
+			}},
+			Button{ID: "elsewhere", Label: "Elsewhere"},
+		}},
+	}
+}
+
+func TestJumpCustomItemReplacesItsRow(t *testing.T) {
+	sequence := newReactivitySequence(t, 40, 6, func() *customJumpScene {
+		return &customJumpScene{jump: NewJumpState(), list: NewListState([]string{"a", "b", "c"})}
+	})
+	scene := sequence.actual.root
+	sequence.frame("Initial", nil)
+	sequence.press("Jump mode", "ctrl+o")
+
+	// One hint per row: the row's own Jumpable stands in for the List's.
+	require.Len(t, jumpItemKeys(scene.jump, "list"), 3)
+
+	sequence.typeKey("Jump to the second row", jumpItemKeys(scene.jump, "list")[1])
+	require.Equal(t, []string{"b"}, scene.jumped)
+	// The row moved focus itself, so the list holding it doesn't take it back.
+	require.Equal(t, "elsewhere", sequence.actual.focus.FocusedID())
+}
