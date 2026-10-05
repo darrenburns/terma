@@ -453,7 +453,6 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		return // BorderNone or unknown style
 	}
 	tl, tr, bl, br := chars.TopLeft, chars.TopRight, chars.BottomLeft, chars.BottomRight
-	h, v := chars.Top, chars.Left
 
 	// Check if border color is a ColorProvider (for gradient borders)
 	borderColorProvider := border.Color
@@ -516,7 +515,7 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 	}
 
 	// Draw horizontal edge with decorations
-	drawHorizontalEdge := func(edgeY int, decorations []BorderDecoration) {
+	drawHorizontalEdge := func(edgeY int, h string, decorations []BorderDecoration) {
 		// Create a slice to track which positions are occupied by decoration text
 		// true = occupied by decoration, false = draw border character
 		occupied := make([]bool, edgeWidth)
@@ -715,15 +714,15 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 	}
 
 	// Draw top edge with decorations
-	drawHorizontalEdge(y, topDecorations)
+	drawHorizontalEdge(y, chars.Top, topDecorations)
 
 	// Draw bottom edge with decorations
-	drawHorizontalEdge(y+height-1, bottomDecorations)
+	drawHorizontalEdge(y+height-1, chars.Bottom, bottomDecorations)
 
 	// Draw left and right edges
 	for row := 1; row < height-1; row++ {
-		setCell(x, y+row, v)
-		setCell(x+width-1, y+row, v)
+		setCell(x, y+row, chars.Left)
+		setCell(x+width-1, y+row, chars.Right)
 	}
 }
 

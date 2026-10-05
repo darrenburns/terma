@@ -298,6 +298,7 @@ func TestGetBorderCharSet_ReturnsCorrectCharacters(t *testing.T) {
 		{BorderHeavy, "┏", "━", "┃"},
 		{BorderDashed, "┏", "╍", "╏"},
 		{BorderAscii, "+", "-", "|"},
+		{BorderOuter, "▛", "▀", "▌"},
 	}
 
 	for _, tt := range tests {
@@ -340,6 +341,7 @@ func TestBorder_Constructors_SetCorrectStyle(t *testing.T) {
 		{"Heavy", HeavyBorder(white), BorderHeavy},
 		{"Dashed", DashedBorder(white), BorderDashed},
 		{"Ascii", AsciiBorder(white), BorderAscii},
+		{"Outer", OuterBorder(white), BorderOuter},
 	}
 
 	for _, tt := range tests {
@@ -369,5 +371,18 @@ func TestBorder_Constructors_AcceptDecorations(t *testing.T) {
 
 	if len(border.Decorations) != 2 {
 		t.Errorf("expected 2 decorations, got %d", len(border.Decorations))
+	}
+}
+
+func TestDrawBorder_UsesEachEdgesOwnCharacter(t *testing.T) {
+	widget := Column{Width: Cells(4), Height: Cells(3), Style: Style{Border: OuterBorder(RGB(255, 255, 255))}}
+	buf := renderToBufferWithFocus(widget, 4, 3, "")
+	want := []string{"▛▀▀▜", "▌  ▐", "▙▄▄▟"}
+	for y, row := range want {
+		for x, ch := range []rune(row) {
+			if got := buf.CellAt(x, y).Content; got != string(ch) {
+				t.Errorf("cell %d,%d = %q, want %q", x, y, got, string(ch))
+			}
+		}
 	}
 }

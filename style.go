@@ -42,6 +42,7 @@ const (
 	BorderHeavy
 	BorderDashed
 	BorderAscii
+	BorderOuter
 )
 
 // BorderCharSet contains the characters used to render a border.
@@ -89,6 +90,11 @@ func GetBorderCharSet(style BorderStyle) BorderCharSet {
 		return BorderCharSet{
 			TopLeft: "+", TopRight: "+", BottomLeft: "+", BottomRight: "+",
 			Top: "-", Bottom: "-", Left: "|", Right: "|",
+		}
+	case BorderOuter:
+		return BorderCharSet{
+			TopLeft: "▛", TopRight: "▜", BottomLeft: "▙", BottomRight: "▟",
+			Top: "▀", Bottom: "▄", Left: "▌", Right: "▐",
 		}
 	default:
 		return BorderCharSet{}
@@ -233,6 +239,17 @@ func DashedBorder(color ColorProvider, decorations ...BorderDecoration) Border {
 //	+---+
 func AsciiBorder(color ColorProvider, decorations ...BorderDecoration) Border {
 	return Border{Style: BorderAscii, Color: color, Decorations: decorations}
+}
+
+// OuterBorder creates a half-block border that fills the outer half of each
+// edge cell, so the border sits flush with the widget's edge and none of the
+// widget's background shows outside it.
+//
+//	▛▀▀▀▜
+//	▌   ▐
+//	▙▄▄▄▟
+func OuterBorder(color ColorProvider, decorations ...BorderDecoration) Border {
+	return Border{Style: BorderOuter, Color: color, Decorations: decorations}
 }
 
 // IsZero returns true if no border is set.
