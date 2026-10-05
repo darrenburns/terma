@@ -419,10 +419,12 @@ Stack{
 
 ### Terminal Integration
 
-- **Clipboard**: `SetClipboard(SystemClipboard, text)` copies via OSC 52; the sequence is queued and written
-  between frames (`WriteTerminal(seq)` does the same for any raw sequence). `ReadClipboard(sel, func(string))`
-  asks the terminal for its clipboard; the callback runs on the event loop, and may never run if the terminal
-  doesn't allow OSC 52 reads.
+- **Clipboard**: `SetClipboard(SystemClipboard, text)` copies through the system tool (pbcopy, wl-copy, xclip/xsel,
+  clip.exe) when the session is local, else `tmux load-buffer -w`, then OSC 52 (wrapped for tmux/screen). Tools run
+  on one background worker, in call order; OSC 52 is queued and written between frames (`WriteTerminal(seq)` does the
+  same for any raw sequence). `ReadClipboard(sel, func(string))` uses the paste tool or an OSC 52 query; the callback
+  runs on the event loop, and may never run if the terminal doesn't allow OSC 52 reads. `SetClipboardMethod` forces
+  native-only or terminal-only. Tests run with an isolated clipboard system (`isolateClipboard` in TestMain).
 - **Paste**: bracketed paste is on. A paste goes to the focused widget's `HandlePaste` (`PasteHandler`), then
   bubbles to ancestors and the root; unhandled pastes are dropped. `TextInput`/`TextArea` insert it as one edit,
   and their `OnPaste func(string) bool` hook can consume it first.
