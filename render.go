@@ -965,6 +965,7 @@ func (ctx *RenderContext) drawSpan(x, y int, span Span, baseStyle Style, spanWid
 
 // Renderer handles the widget tree rendering pipeline.
 type Renderer struct {
+	signals                         signalDirtyQueue
 	drag                            *dragSession
 	dragDirty                       bool
 	dragDamage                      []Rect
