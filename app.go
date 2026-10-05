@@ -46,7 +46,7 @@ func swapRenderTrigger(next chan struct{}) chan struct{} {
 
 const defaultFPS = 60
 
-var terminalEnableSequences = []string{
+var mouseEnableSequences = []string{
 	ansi.SetModeMouseNormal,
 	ansi.SetModeMouseButtonEvent,
 	// Some terminals treat 1002/1003 as mutually exclusive tracking modes.
@@ -54,6 +54,9 @@ var terminalEnableSequences = []string{
 	// is reported even when no mouse button is pressed.
 	ansi.SetModeMouseAnyEvent,
 	ansi.SetModeMouseExtSgr,
+}
+
+var terminalEnableSequences = []string{
 	// Pastes arrive as one PasteEvent instead of a burst of key presses.
 	ansi.SetModeBracketedPaste,
 }
@@ -106,7 +109,10 @@ func resolveKittyKeyboardMode() (enableKittyKeyboard bool, forceDisableKittyKeyb
 	return
 }
 
-func enableTerminalInputModes(writeString func(string) (int, error), enableKittyKeyboard bool, forceDisableKittyKeyboard bool) {
+func enableTerminalInputModes(writeString func(string) (int, error), mouse bool, enableKittyKeyboard bool, forceDisableKittyKeyboard bool) {
+	if mouse {
+		writeTerminalSequences(writeString, mouseEnableSequences)
+	}
 	writeTerminalSequences(writeString, terminalEnableSequences)
 	if enableKittyKeyboard {
 		// Preserve any pre-existing Kitty keyboard state by using stack push.
@@ -230,7 +236,7 @@ func Run(root Widget) (runErr error) {
 	t.EnterAltScreen()
 
 	// Enable input reporting modes used by Terma (mouse + Kitty keyboard).
-	enableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard)
+	enableTerminalInputModes(t.WriteString, true, enableKittyKeyboard, forceDisableKittyKeyboard)
 	// Ask whether the mouse can be reported in pixels; see pixelPointer.
 	pointer := newPixelPointer()
 	windowSize := uv.NewSizeNotifier(os.Stdout)
@@ -607,7 +613,7 @@ func Run(root Widget) (runErr error) {
 
 		_ = t.Resume()
 		t.EnterAltScreen()
-		enableTerminalInputModes(t.WriteString, enableKittyKeyboard, forceDisableKittyKeyboard)
+		enableTerminalInputModes(t.WriteString, true, enableKittyKeyboard, forceDisableKittyKeyboard)
 		_, _ = t.WriteString(pointer.resume())
 		// The screen was used by something else meanwhile; repaint it all.
 		// Schedule the frame rather than drawing it here: fn may have been
