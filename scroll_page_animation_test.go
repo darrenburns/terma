@@ -290,16 +290,14 @@ func TestCollectionStartAndEndGlide(t *testing.T) {
 	}
 	for name, build := range cases {
 		t.Run(name, func(t *testing.T) {
-			advance := installScrollAnimationClock(t)
 			scroll := NewScrollState()
 			c := build(scroll)
-			scene := newWheelScene(t, Scrollable{ID: "scroll", State: scroll, Height: Cells(5), Child: c.widget}, 24, 5)
+			p := NewPilot(t, Scrollable{ID: "scroll", State: scroll, Height: Cells(5), Child: c.widget}, 24, 5)
 			frames := func() []int {
 				var offsets []int
 				for i := 0; scroll.animation != nil; i++ {
 					require.Less(t, i, 100)
-					advance(testFrame)
-					scene.draw()
+					p.Advance(testFrame)
 					offsets = append(offsets, scroll.GetOffset())
 				}
 				return offsets
@@ -309,13 +307,13 @@ func TestCollectionStartAndEndGlide(t *testing.T) {
 
 			c.last()
 			require.True(t, c.cursorAtLast(), "the cursor moves at once")
-			scene.draw()
+			p.settle()
 			require.Equal(t, 0, scroll.GetOffset(), "the viewport hasn't moved yet")
 			requireGlide(t, frames(), 0, maxOffset)
 
 			c.first()
 			require.True(t, c.cursorAtFirst())
-			scene.draw()
+			p.settle()
 			requireGlide(t, frames(), maxOffset, 0)
 		})
 	}
@@ -383,7 +381,6 @@ func TestReactivityListPageDownGlides(t *testing.T) {
 }
 
 func TestTextAreaPageDownGlides(t *testing.T) {
-	advance := installScrollAnimationClock(t)
 	scroll := NewScrollState()
 	lines := make([]string, 40)
 	for i := range lines {
@@ -392,23 +389,22 @@ func TestTextAreaPageDownGlides(t *testing.T) {
 	state := NewTextAreaState(strings.Join(lines, "\n"))
 	state.CursorIndex.Set(0)
 	area := TextArea{ID: "area", State: state, ScrollState: scroll}
-	scene := newWheelScene(t, Scrollable{ID: "scroll", State: scroll, Height: Cells(5), Child: area}, 24, 5)
+	p := NewPilot(t, Scrollable{ID: "scroll", State: scroll, Height: Cells(5), Child: area}, 24, 5)
 
 	// The first page moves the cursor to the bottom row; the next scrolls.
 	area.cursorPageDown()
-	scene.draw()
+	p.settle()
 	require.Equal(t, 0, scroll.GetOffset())
 	area.cursorPageDown()
-	scene.draw()
+	p.settle()
 	require.Equal(t, 0, scroll.GetOffset(), "the viewport hasn't moved yet")
 
 	var offsets []int
 	for i := 0; scroll.animation != nil; i++ {
 		require.Less(t, i, 100)
-		advance(testFrame)
-		scene.draw()
+		p.Advance(testFrame)
 		offsets = append(offsets, scroll.GetOffset())
 	}
 	requireGlide(t, offsets, 0, 4)
-	require.Contains(t, scene.renderer.ScreenText(), "Line 08")
+	require.Contains(t, p.ScreenText(), "Line 08")
 }
