@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/stretchr/testify/require"
 )
 
@@ -110,27 +109,15 @@ func (s *jumpScene) Build(ctx BuildContext) Widget {
 	}
 }
 
-func jumpKey(key string) KeyEvent {
-	switch key {
-	case "ctrl+o":
-		return makeKeyEvent('o', uv.ModCtrl)
-	case "escape":
-		return makeKeyEvent(uv.KeyEscape, 0)
-	case "backspace":
-		return makeKeyEvent(uv.KeyBackspace, 0)
-	case "down":
-		return makeKeyEvent(uv.KeyDown, 0)
-	}
-	return makeCharEvent([]rune(key)[0])
-}
-
 // press sends keys to both sides as the app would, checking the frame drawn
 // after each.
 func (s *reactivitySequence[T]) press(name string, keys ...string) {
 	s.t.Helper()
 	for _, key := range keys {
+		ev, err := keyPress(key)
+		require.NoError(s.t, err)
 		for _, side := range []*reactivitySurface[T]{s.actual, s.expected} {
-			dispatchKey(side.renderer, side.focus, side.root, jumpKey(key))
+			dispatchKey(side.renderer, side.focus, side.root, KeyEvent{event: ev})
 			// The app applies focus requests after its next render; the sides
 			// share the request, so apply it to each as it's made.
 			if pendingFocusID != "" {
