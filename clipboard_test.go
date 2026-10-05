@@ -528,3 +528,25 @@ func TestReadClipboard_NativeMethodNeverQueriesTheTerminal(t *testing.T) {
 	assert.Empty(t, takeTerminalWrites())
 	assert.False(t, deliverClipboard("x"))
 }
+
+func TestDefaultClipboardSystem_AutoUnderTestPlansOnlyOSC52(t *testing.T) {
+	t.Setenv("TMUX", "/tmp/tmux-501/default,1,0")
+	for _, name := range []string{"SSH_CONNECTION", "SSH_CLIENT", "SSH_TTY"} {
+		t.Setenv(name, "")
+	}
+	sys := *defaultClipboardSystem()
+	require.True(t, sys.testing)
+
+	write := planClipboardWrite(sys, ClipboardAuto, SystemClipboard, "hello")
+	assert.Nil(t, write.native)
+	assert.Nil(t, write.tmux)
+	assert.Equal(t, ansi.TmuxPassthrough(ansi.SetClipboard(SystemClipboard, "hello")), write.terminal)
+
+	read := planClipboardRead(sys, ClipboardAuto, SystemClipboard)
+	assert.Nil(t, read.native)
+	assert.Equal(t, ansi.TmuxPassthrough(ansi.RequestClipboard(SystemClipboard)), read.terminal)
+
+	native := planClipboardWrite(sys, ClipboardNative, SystemClipboard, "hello")
+	assert.NotNil(t, native.tmux, "an explicit native method still plans tools")
+	assert.Empty(t, native.terminal)
+}

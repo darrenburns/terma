@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"testing"
 	"time"
 	"unicode/utf16"
 
@@ -34,7 +35,9 @@ type ClipboardMethod int32
 
 const (
 	// ClipboardAuto uses the system clipboard tool in a local session, then
-	// the tmux buffer, then OSC 52. It is the default.
+	// the tmux buffer, then OSC 52. It is the default. In a Go test binary it
+	// acts as [ClipboardTerminal], so tests never overwrite the developer's
+	// clipboard.
 	ClipboardAuto ClipboardMethod = iota
 	// ClipboardNative uses only the system clipboard tool and the tmux
 	// buffer, and never OSC 52.
@@ -68,6 +71,9 @@ func SetClipboardMethod(m ClipboardMethod) {
 // macOS and Windows have no primary selection, so [PrimaryClipboard] goes
 // straight to the terminal there. [SetClipboardMethod] can restrict the
 // order to the tool or to the terminal. Failures are logged with [Log].
+//
+// In a Go test binary, [ClipboardAuto] runs no tool and only queues OSC 52.
+// Call SetClipboardMethod([ClipboardNative]) to run tools in a test.
 func SetClipboard(selection ClipboardSelection, content string) {
 	sys := clipboardSys()
 	plan := planClipboardWrite(sys, ClipboardMethod(clipboardMethod.Load()), selection, content)
@@ -260,6 +266,7 @@ func (h clipboardHost) wrap(seq string) string {
 }
 
 func planClipboardWrite(sys clipboardSystem, method ClipboardMethod, selection ClipboardSelection, content string) clipboardWritePlan {
+	method = sys.method(method)
 	host := detectClipboardHost(sys.getenv)
 	var plan clipboardWritePlan
 	if method != ClipboardTerminal {
@@ -288,6 +295,7 @@ func planClipboardWrite(sys clipboardSystem, method ClipboardMethod, selection C
 }
 
 func planClipboardRead(sys clipboardSystem, method ClipboardMethod, selection ClipboardSelection) clipboardReadPlan {
+	method = sys.method(method)
 	host := detectClipboardHost(sys.getenv)
 	var plan clipboardReadPlan
 	if method != ClipboardTerminal && !host.remote {
@@ -323,6 +331,8 @@ type clipboardRunner func(cmd clipboardCommand, capture bool) ([]byte, error)
 // clipboardSystem is the outside world the clipboard depends on. Tests
 // replace it so they never touch the real clipboard.
 type clipboardSystem struct {
+	// testing makes ClipboardAuto act as ClipboardTerminal.
+	testing  bool
 	goos     string
 	getenv   func(string) string
 	lookPath func(string) (string, error)
@@ -332,12 +342,25 @@ type clipboardSystem struct {
 var currentClipboardSystem atomic.Pointer[clipboardSystem]
 
 func init() {
-	currentClipboardSystem.Store(&clipboardSystem{
+	currentClipboardSystem.Store(defaultClipboardSystem())
+}
+
+func defaultClipboardSystem() *clipboardSystem {
+	return &clipboardSystem{
+		testing:  testing.Testing(),
 		goos:     runtime.GOOS,
 		getenv:   os.Getenv,
 		lookPath: exec.LookPath,
 		run:      runClipboardCommand,
-	})
+	}
+}
+
+// method resolves m for this system.
+func (sys clipboardSystem) method(m ClipboardMethod) ClipboardMethod {
+	if m == ClipboardAuto && sys.testing {
+		return ClipboardTerminal
+	}
+	return m
 }
 
 func clipboardSys() clipboardSystem { return *currentClipboardSystem.Load() }
