@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/stretchr/testify/assert"
@@ -268,53 +267,30 @@ func (f *formFixture) Build(ctx BuildContext) Widget {
 	return form
 }
 
-// formInputHarness drives the actual renderer, focus manager and key dispatcher.
-func formInputHarness(t *testing.T, root Widget) (*mouseRouter, *Renderer, func(KeyEvent)) {
-	t.Helper()
-	previous := pendingFocusID
-	t.Cleanup(func() { pendingFocusID = previous })
-	pendingFocusID = ""
-	router, renderer := renderForMouse(root, 50, 24)
-	return router, renderer, func(event KeyEvent) {
-		dispatchKey(renderer, router.focusManager, root, event)
-		requested := pendingFocusID
-		pendingFocusID = ""
-		router.focusManager.SetFocusables(renderer.Render(root))
-		if requested != "" {
-			router.focusManager.FocusByID(requested)
-		}
-		renderer.Render(root)
-	}
-}
-
 func TestFormKeyboardRoutingAndFocus(t *testing.T) {
 	f := newFormFixture()
-	router, _, key := formInputHarness(t, f)
-	assert.Equal(t, "name", router.focusManager.FocusedID())
-	key(makeKeyEvent(uv.KeyEnter, 0))
+	p := NewPilot(t, f, 50, 24)
+	assert.Equal(t, "name", p.FocusedID())
+	p.Press("enter")
 	assert.Zero(t, f.submits)
-	assert.Equal(t, "name", router.focusManager.FocusedID())
+	assert.Equal(t, "name", p.FocusedID())
 	assert.NotEmpty(t, f.nameField.Errors())
 	assert.NotEmpty(t, f.confirmField.Errors())
-	for _, r := range "日本語" {
-		key(makeCharEvent(r))
-	}
-	key(makeKeyEvent(uv.KeyEnter, 0))
-	assert.Equal(t, "confirm", router.focusManager.FocusedID())
+	p.Type("日本語")
+	p.Press("enter")
+	assert.Equal(t, "confirm", p.FocusedID())
 	assert.True(t, f.nameField.Touched())
-	for _, r := range "日本語" {
-		key(makeCharEvent(r))
-	}
-	key(makeKeyEvent(uv.KeyEnter, 0))
+	p.Type("日本語")
+	p.Press("enter")
 	assert.Equal(t, 1, f.submits)
-	key(makeKeyEvent(uv.KeyTab, 0))
-	assert.Equal(t, "area", router.focusManager.FocusedID())
-	key(makeCharEvent('x'))
-	key(makeKeyEvent(uv.KeyEnter, 0))
-	key(makeCharEvent('y'))
+	p.Press("tab")
+	assert.Equal(t, "area", p.FocusedID())
+	p.Type("x")
+	p.Press("enter")
+	p.Type("y")
 	assert.Equal(t, "x\ny", f.area.GetText())
 	assert.Equal(t, 1, f.submits, "multiline Enter never submits")
-	key(makeKeyEvent('s', uv.ModCtrl))
+	p.Press("ctrl+s")
 	assert.Equal(t, 2, f.submits)
 }
 
@@ -330,8 +306,8 @@ func TestFormExplicitEnterHooksTakePrecedence(t *testing.T) {
 			} else {
 				f.extra = []Keybind{{Key: "enter", Action: func() { calls++ }}}
 			}
-			_, _, key := formInputHarness(t, f)
-			key(makeKeyEvent(uv.KeyEnter, 0))
+			p := NewPilot(t, f, 50, 24)
+			p.Press("enter")
 			assert.Equal(t, 1, calls)
 			assert.Zero(t, f.submits)
 		})
@@ -340,22 +316,14 @@ func TestFormExplicitEnterHooksTakePrecedence(t *testing.T) {
 
 func TestFormMouseSubmitFocusAndBlur(t *testing.T) {
 	f := newFormFixture()
-	router, renderer, _ := formInputHarness(t, f)
-	button := renderer.WidgetByID("save")
-	require.NotNil(t, button)
-	x, y := button.Bounds.X, button.Bounds.Y
-	router.press(uv.MouseClickEvent{X: x, Y: y, Button: uv.MouseLeft}, .5, .5, time.Now())
-	router.release(uv.MouseReleaseEvent{X: x, Y: y, Button: uv.MouseLeft}, .5, .5)
+	p := NewPilot(t, f, 50, 24)
+	p.Click("save")
 	assert.True(t, f.nameField.Touched(), "mouse focus change validates blur")
-	assert.Equal(t, "name", pendingFocusID, "failed mouse submit requests first invalid")
+	assert.Equal(t, "name", p.FocusedID(), "failed mouse submit focuses first invalid")
 	assert.Zero(t, f.submits)
 	f.name.SetText("ok")
 	f.confirm.SetText("ok")
-	renderer.Render(f)
-	button = renderer.WidgetByID("save")
-	x, y = button.Bounds.X, button.Bounds.Y
-	router.press(uv.MouseClickEvent{X: x, Y: y, Button: uv.MouseLeft}, .5, .5, time.Now())
-	router.release(uv.MouseReleaseEvent{X: x, Y: y, Button: uv.MouseLeft}, .5, .5)
+	p.Click("save")
 	assert.Equal(t, 1, f.submits)
 }
 
@@ -463,40 +431,42 @@ func TestFieldDisabledAndCheckboxFocusRouting(t *testing.T) {
 		Field{State: state, Child: &Checkbox{State: checked, Label: "Accept"}},
 		Button{ID: "next", Label: "Next"},
 	}}
-	router, _, key := formInputHarness(t, root)
-	assert.Equal(t, "consent", router.focusManager.FocusedID())
-	key(makeKeyEvent(uv.KeyTab, 0))
-	assert.True(t, state.Touched(), "real focus traversal reaches the checkbox adapter's blur handler")
-	assert.Equal(t, []string{"Consent required"}, state.Errors())
+	t.Run("enabled", func(t *testing.T) {
+		p := NewPilot(t, root, 50, 24)
+		assert.Equal(t, "consent", p.FocusedID())
+		p.Press("tab")
+		assert.True(t, state.Touched(), "real focus traversal reaches the checkbox adapter's blur handler")
+		assert.Equal(t, []string{"Consent required"}, state.Errors())
+	})
 	state.SetEnabled(false)
-	router, _, _ = formInputHarness(t, root)
-	assert.Equal(t, "next", router.focusManager.FocusedID(), "disabled field subtree leaves the focus order")
+	t.Run("disabled", func(t *testing.T) {
+		p := NewPilot(t, root, 50, 24)
+		assert.Equal(t, "next", p.FocusedID(), "disabled field subtree leaves the focus order")
+	})
 }
 
 func TestFormDialogSubmissionAndFocus(t *testing.T) {
 	fixture := newFormFixture()
 	root := Dialog{ID: "form-test-dialog", Visible: true, Title: "Edit profile", Content: fixture, Style: Style{Width: Cells(46)}}
-	router, _, key := formInputHarness(t, root)
-	assert.Equal(t, "name", router.focusManager.FocusedID())
-	key(makeKeyEvent('s', uv.ModCtrl))
+	p := NewPilot(t, root, 50, 24)
+	assert.Equal(t, "name", p.FocusedID())
+	p.Press("ctrl+s")
 	assert.Zero(t, fixture.submits)
-	assert.Equal(t, "name", router.focusManager.FocusedID(), "invalid modal submit focuses the first field")
+	assert.Equal(t, "name", p.FocusedID(), "invalid modal submit focuses the first field")
 	assert.Equal(t, []string{"Enter a name"}, fixture.nameField.Errors())
 	fixture.name.SetText("Alice")
-	key(makeKeyEvent('s', uv.ModCtrl))
-	assert.Equal(t, "confirm", router.focusManager.FocusedID())
-	for _, r := range "Alice" {
-		key(makeCharEvent(r))
-	}
-	key(makeKeyEvent(uv.KeyEnter, 0))
+	p.Press("ctrl+s")
+	assert.Equal(t, "confirm", p.FocusedID())
+	p.Type("Alice")
+	p.Press("enter")
 	assert.Equal(t, 1, fixture.submits, "Enter submits the nested form exactly once")
-	key(makeKeyEvent(uv.KeyTab, 0))
-	assert.Equal(t, "area", router.focusManager.FocusedID())
-	key(makeCharEvent('x'))
-	key(makeKeyEvent(uv.KeyEnter, 0))
-	key(makeCharEvent('y'))
+	p.Press("tab")
+	assert.Equal(t, "area", p.FocusedID())
+	p.Type("x")
+	p.Press("enter")
+	p.Type("y")
 	assert.Equal(t, "x\ny", fixture.area.GetText())
 	assert.Equal(t, 1, fixture.submits, "multiline Enter remains local inside a modal")
-	key(makeKeyEvent('s', uv.ModCtrl))
+	p.Press("ctrl+s")
 	assert.Equal(t, 2, fixture.submits)
 }

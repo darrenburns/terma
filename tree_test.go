@@ -205,35 +205,21 @@ func TestTreeOnMouseDownShiftExtendsSelection(t *testing.T) {
 	}
 }
 
-func pressTreeKey(t *testing.T, tree Tree[string], key string) {
-	t.Helper()
-	for _, keybind := range tree.Keybinds() {
-		if keybind.Key == key {
-			keybind.Action()
-			return
-		}
-	}
-	t.Fatalf("no tree keybind for %q", key)
-}
-
 func TestTreeClearAnchorRestartsShiftSelectionAtCursor(t *testing.T) {
 	roots := make([]TreeNode[string], 6)
-	view := make([][]int, len(roots))
 	for i := range roots {
 		roots[i] = TreeNode[string]{Data: string(rune('A' + i)), Children: []TreeNode[string]{}}
-		view[i] = []int{i}
 	}
 	state := NewTreeState(roots)
-	state.setViewPaths(view)
-	tree := Tree[string]{State: state, MultiSelect: true}
+	p := NewPilot(t, Tree[string]{ID: "tree", State: state, MultiSelect: true}, 20, 8)
+	require.Equal(t, "tree", p.FocusedID())
 
-	pressTreeKey(t, tree, "shift+down")
-	pressTreeKey(t, tree, "shift+down")
+	p.Press("shift+down", "shift+down")
 	require.Equal(t, [][]int{{0}, {1}, {2}}, state.SelectedPaths())
 
 	state.ClearSelection()
 	state.ClearAnchor()
-	pressTreeKey(t, tree, "shift+down")
+	p.Press("shift+down")
 
 	require.Equal(t, [][]int{{2}, {3}}, state.SelectedPaths())
 }

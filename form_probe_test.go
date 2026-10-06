@@ -230,21 +230,22 @@ func TestFormProbeInvalidOffscreenFieldIsRevealed(t *testing.T) {
 		Field{State: lastField, Child: TextInput{State: last}},
 	}}}
 	root := Scrollable{State: scroll, Style: Style{Width: Cells(40), Height: Cells(1)}, Child: form}
-	router, renderer, key := formInputHarness(t, root)
-	require.Equal(t, "scroll-first", router.focusManager.FocusedID())
-	key(makeKeyEvent('s', uv.ModCtrl))
-	require.Equal(t, "scroll-last", router.focusManager.FocusedID())
-	input := renderer.WidgetByID("scroll-last")
+	p := NewPilot(t, root, 50, 24)
+	require.Equal(t, "scroll-first", p.FocusedID())
+	p.Press("ctrl+s")
+	require.Equal(t, "scroll-last", p.FocusedID())
+	input := p.session.renderer.WidgetByID("scroll-last")
 	require.NotNil(t, input)
 	require.Greater(t, input.Visible.Height, 0, "the first invalid input should be visible after submission focuses it")
 
 	// Manual scrolling stays free until another submit requests the invalid input.
 	scroll.SetOffset(0)
-	renderer.Render(root)
-	require.Equal(t, "scroll-last", router.focusManager.FocusedID())
-	require.Nil(t, renderer.WidgetByID("scroll-last"))
-	key(makeKeyEvent('s', uv.ModCtrl))
-	require.NotNil(t, renderer.WidgetByID("scroll-last"), "retry reveals the already-focused invalid input")
+	require.Equal(t, "scroll-last", p.FocusedID())
+	_, drawn := p.Bounds("scroll-last")
+	require.False(t, drawn)
+	p.Press("ctrl+s")
+	_, drawn = p.Bounds("scroll-last")
+	require.True(t, drawn, "retry reveals the already-focused invalid input")
 }
 
 func TestFormProbeInvalidRevealAfterErrorGrowth(t *testing.T) {
@@ -257,11 +258,11 @@ func TestFormProbeInvalidRevealAfterErrorGrowth(t *testing.T) {
 		Field{State: lastField, Child: TextInput{State: last}},
 	}}}
 	root := Scrollable{State: scroll, Style: Style{Width: Cells(40), Height: Cells(1)}, Child: form}
-	router, renderer, key := formInputHarness(t, root)
-	require.Equal(t, "scroll-first", router.focusManager.FocusedID())
-	key(makeKeyEvent('s', uv.ModCtrl))
-	require.Equal(t, "scroll-last", router.focusManager.FocusedID())
-	input := renderer.WidgetByID("scroll-last")
+	p := NewPilot(t, root, 50, 24)
+	require.Equal(t, "scroll-first", p.FocusedID())
+	p.Press("ctrl+s")
+	require.Equal(t, "scroll-last", p.FocusedID())
+	input := p.session.renderer.WidgetByID("scroll-last")
 	require.NotNil(t, input)
 	require.Greater(t, input.Visible.Height, 0, "the first invalid input should be visible after submission focuses it")
 
@@ -275,21 +276,24 @@ func TestFormProbeNestedRevealAndUnmount(t *testing.T) {
 	form := Form{State: state}
 	content := Column{Style: Style{Padding: EdgeInsetsAll(1)}, Children: []Widget{Text{Content: "one\ntwo\nthree\nfour"}, Field{Label: "Detail", State: field, Child: TextInput{State: value}}}}
 	form.Child = Column{Children: []Widget{Button{ID: "nested-submit", Label: "Submit", OnPress: func() { form.Submit() }}, Scrollable{State: inner, Style: Style{Width: Cells(32), Height: Cells(3)}, Child: content}}}
-	root := Dialog{ID: "probe-nested-dialog", Visible: true, Style: Style{Width: Cells(42)}, Content: FocusTrap{ID: "nested-trap", Active: true, Child: Scrollable{State: outer, Style: Style{Width: Cells(36), Height: Cells(4)}, Child: Column{Children: []Widget{Text{Content: "above\nabove"}, form}}}}}
-	router, renderer, key := formInputHarness(t, root)
-	assertBufferSnapshot(t, "FormProbe_nested_before", renderer.terminal.(*uv.Buffer), 50, 24, DefaultSVGOptions(), "Padded nested scroll areas before an invalid submission")
-	key(makeKeyEvent(uv.KeyEnter, 0))
-	require.Equal(t, "nested-invalid", router.focusManager.FocusedID())
-	input := renderer.WidgetByID("nested-invalid")
+	dialogContent := NewAnySignal[Widget](FocusTrap{ID: "nested-trap", Active: true, Child: Scrollable{State: outer, Style: Style{Width: Cells(36), Height: Cells(4)}, Child: Column{Children: []Widget{Text{Content: "above\nabove"}, form}}}})
+	root := pilotBuilder(func(BuildContext) Widget {
+		return Dialog{ID: "probe-nested-dialog", Visible: true, Style: Style{Width: Cells(42)}, Content: dialogContent.Get()}
+	})
+	p := NewPilot(t, root, 50, 24)
+	p.AssertSnapshot("before", "Padded nested scroll areas before an invalid submission, with the auto-focused Submit button drawn focused")
+	p.Press("enter")
+	require.Equal(t, "nested-invalid", p.FocusedID())
+	input := p.session.renderer.WidgetByID("nested-invalid")
 	require.NotNil(t, input)
 	require.Greater(t, input.Visible.Height, 0)
-	assertBufferSnapshot(t, "FormProbe_nested_invalid", renderer.terminal.(*uv.Buffer), 50, 24, DefaultSVGOptions(), "First-invalid input is visible through both scroll viewports after submission")
+	p.AssertSnapshot("invalid", "First-invalid input is visible through both scroll viewports after submission")
 	// A removed invalid input still blocks submit, without scrolling its old tree.
-	root.Content = Button{ID: "replacement", Label: "Replacement"}
-	renderer.Render(root)
+	dialogContent.Set(Button{ID: "replacement", Label: "Replacement"})
+	p.settle()
 	oldInner, oldOuter := inner.GetOffset(), outer.GetOffset()
 	require.False(t, form.Submit())
-	renderer.Render(root)
+	p.settle()
 	require.Equal(t, oldInner, inner.GetOffset())
 	require.Equal(t, oldOuter, outer.GetOffset())
 }

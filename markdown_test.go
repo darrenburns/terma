@@ -212,14 +212,14 @@ func TestMarkdownMouseRoutingAndSourceReplacement(t *testing.T) {
 	var got []string
 	state := NewMarkdownState("prefix [link](https://one.test)")
 	widget := Markdown{ID: "md", State: state, Style: Style{Padding: EdgeInsetsAll(1)}, OnLink: func(s string) { got = append(got, s) }}
-	scene := newClickScene(t, widget, 20, 8)
-	scene.click(9, 1, 0)
+	p := NewPilot(t, widget, 20, 8)
+	p.ClickAt(9, 1)
 	require.Equal(t, []string{"https://one.test"}, got)
 	state.SetSource("[new](https://two.test)")
-	scene.draw()
-	scene.click(2, 1, 0)
+	p.settle()
+	p.ClickAt(2, 1)
 	require.Equal(t, []string{"https://one.test", "https://two.test"}, got)
-	scene.click(9, 1, 0)
+	p.ClickAt(9, 1)
 	require.Len(t, got, 2, "the old link target disappeared")
 }
 
@@ -227,15 +227,12 @@ func TestMarkdownKeyboardRevealsLinks(t *testing.T) {
 	state := NewMarkdownState("[first](https://one.test)\n\n" + strings.Repeat("paragraph\n\n", 20) + "[last](https://two.test)")
 	scroll := NewScrollState()
 	widget := Scrollable{State: scroll, Height: Cells(6), Child: Markdown{ID: "md", State: state, ScrollState: scroll, OnLink: func(string) {}}}
-	scene := newClickScene(t, widget, 30, 6)
-	require.True(t, scene.focus.HandleKey(markdownKey(uv.KeyRight, 0)))
-	scene.draw()
+	p := NewPilot(t, widget, 30, 6)
+	p.Press("right")
 	assert.Zero(t, scroll.GetOffset())
-	require.True(t, scene.focus.HandleKey(markdownKey(uv.KeyRight, 0)))
-	scene.draw()
+	p.Press("right")
 	assert.Positive(t, scroll.GetOffset(), "keyboard selection reveals an off-screen link")
-	require.True(t, scene.focus.HandleKey(markdownKey(uv.KeyLeft, 0)))
-	scene.draw()
+	p.Press("left")
 	assert.Zero(t, scroll.GetOffset(), "previous link reveals the top again")
 }
 

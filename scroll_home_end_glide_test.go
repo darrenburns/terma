@@ -74,22 +74,20 @@ func TestReactivityFrozenTableStartAndEndGlide(t *testing.T) {
 // Moving the cursor during a frozen table's glide retargets it rather than
 // cutting it short, as it does for a table in a Scrollable.
 func TestFrozenTableCursorMoveDuringGlideRetargets(t *testing.T) {
-	advance := installScrollAnimationClock(t)
 	rows := make([][]string, 60)
 	for i := range rows {
 		rows[i] = []string{fmt.Sprintf("item %d", i)}
 	}
 	scene := &frozenTableGlideScene{table: NewTableState(rows)}
-	wheel := newWheelScene(t, scene.widget(), 20, 6)
+	p := NewPilot(t, scene.widget(), 20, 6)
 	scroll := scene.table.viewport
 	maxOffset := scroll.maxOffset()
 
 	scene.widget().keyCursorToLast()
-	advance(testFrame)
-	wheel.draw()
+	p.Advance(testFrame)
 	require.NotNil(t, scroll.animation)
 	scene.widget().keyCursorUp()
-	wheel.draw()
+	p.settle()
 	require.NotNil(t, scroll.animation, "the glide keeps going")
 	require.Equal(t, maxOffset, scroll.scrollTarget(), "the row above the last is still in view at the end")
 }
@@ -97,7 +95,6 @@ func TestFrozenTableCursorMoveDuringGlideRetargets(t *testing.T) {
 // The palette's input keeps focus, so its home and end move the list cursor.
 // The list glides to it, as a focused List does.
 func TestCommandPaletteStartAndEndGlide(t *testing.T) {
-	advance := installScrollAnimationClock(t)
 	items := make([]CommandPaletteItem, 30)
 	for i := range items {
 		items[i] = CommandPaletteItem{Label: fmt.Sprintf("Item %d", i+1)}
@@ -105,7 +102,7 @@ func TestCommandPaletteStartAndEndGlide(t *testing.T) {
 	state := NewCommandPaletteState("Commands", items)
 	state.Open()
 	palette := CommandPalette{ID: "palette", State: state}
-	scene := newWheelScene(t, Stack{Children: []Widget{Text{Content: "app"}, palette}}, 60, 20)
+	p := NewPilot(t, Stack{Children: []Widget{Text{Content: "app"}, palette}}, 60, 20)
 	level := state.CurrentLevel()
 	scroll := level.ScrollState
 	maxOffset := scroll.maxOffset()
@@ -114,8 +111,7 @@ func TestCommandPaletteStartAndEndGlide(t *testing.T) {
 		var offsets []int
 		for i := 0; scroll.animation != nil; i++ {
 			require.Less(t, i, 100)
-			advance(testFrame)
-			scene.draw()
+			p.Advance(testFrame)
 			offsets = append(offsets, scroll.GetOffset())
 		}
 		return offsets
@@ -123,12 +119,12 @@ func TestCommandPaletteStartAndEndGlide(t *testing.T) {
 
 	palette.moveCursorToEnd()
 	require.Equal(t, len(items)-1, level.ListState.CursorIndex.Peek(), "the cursor moves at once")
-	scene.draw()
+	p.settle()
 	require.Equal(t, 0, scroll.GetOffset(), "the viewport hasn't moved yet")
 	requireGlide(t, frames(), 0, maxOffset)
 
 	palette.moveCursorToStart()
 	require.Equal(t, 0, level.ListState.CursorIndex.Peek())
-	scene.draw()
+	p.settle()
 	requireGlide(t, frames(), maxOffset, 0)
 }

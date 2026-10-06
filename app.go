@@ -375,32 +375,12 @@ func run(root Widget, mode screenMode) (runErr error) {
 		EnableDebugRenderCause()
 	}
 
-	// Create focus manager and focused signal
-	focusManager := NewFocusManager()
-	focusManager.SetRootWidget(root)
-	focusedSignal := NewAnySignal[Focusable](nil)
-	lastFocusedID := ""
-
-	// Create hovered widget signal (tracks the currently hovered widget)
-	hoveredSignal := NewAnySignal[Widget](nil)
-
-	// Create renderer with focus manager and signal
 	canvas, canvasWidth, canvasHeight := mode.canvas(t, width, height)
-	renderer := NewRenderer(canvas, canvasWidth, canvasHeight, focusManager, focusedSignal, hoveredSignal)
+	session := newAppSession(root, canvas, canvasWidth, canvasHeight, time.Now)
+	renderer := session.renderer
 	pointer.setWindow(windowGeometry{cols: width, rows: height})
 	images.geometry(renderer)
 	appRenderer = renderer
-
-	updateFocusedSignal := func() bool {
-		keybindsChanged := focusManager.syncKeybinds()
-		focusedID := focusManager.FocusedID()
-		if focusedID == lastFocusedID {
-			return keybindsChanged
-		}
-		lastFocusedID = focusedID
-		focusedSignal.Set(focusManager.Focused())
-		return true
-	}
 
 	var (
 		coalescedRenderRequests int
@@ -513,66 +493,12 @@ func run(root Widget, mode screenMode) (runErr error) {
 	}
 
 	renderInterval := time.Second / time.Duration(defaultFPS)
-	lastModalCount := 0
-	mouse := newMouseRouter(renderer, focusManager, hoveredSignal)
 
 	// Render and update focusables
 	display := func() {
 		startTime := time.Now()
-		drainPendingDispatches()
-		// Update the focused signal BEFORE render so widgets can read it
-		updateFocusedSignal()
-
-		focusables := renderer.Update(root)
-		focusManager.SetFocusables(focusables)
-
-		// If focus changed after render (auto-focus or focus removal), re-render
-		if updateFocusedSignal() {
-			renderer.Update(root)
-		}
-
-		// Manage modal focus transitions (open/close) and keep focus inside topmost modal.
-		modalCount := renderer.ModalCount()
-		openedModals := 0
-		closedModals := 0
-		if modalCount != lastModalCount {
-			if modalCount > lastModalCount {
-				openedModals = modalCount - lastModalCount
-			} else {
-				closedModals = lastModalCount - modalCount
-			}
-		}
-		for i := 0; i < openedModals; i++ {
-			focusManager.SaveFocus()
-		}
-
-		for i := 0; i < closedModals; i++ {
-			focusManager.RestoreFocus()
-		}
-
-		// Apply pending focus request from ctx.RequestFocus() after modal
-		// restore logic so explicit focus requests win.
-		if pendingFocusID != "" {
-			focusManager.FocusByID(pendingFocusID)
-			pendingFocusID = ""
-			// Update the signal and re-render so the focused widget shows focus style
-			if updateFocusedSignal() {
-				renderer.Update(root)
-			}
-		}
-
-		lastModalCount = modalCount
-		// Update the signal and re-render so the focused widget shows focus style
-		if updateFocusedSignal() {
-			renderer.Update(root)
-		}
-
-		// Reconcile hover after render so enter/leave transitions still fire when
-		// layout changes under a stationary pointer.
-		if mouse.reconcileHover() {
-			renderer.Update(root)
-		}
-		positionCursor(t, renderer.WidgetByID(focusManager.FocusedID()))
+		session.frame()
+		positionCursor(t, renderer.WidgetByID(session.focus.FocusedID()))
 
 		// Sequences queued with WriteTerminal (clipboard writes and reads)
 		// go out with this frame.
@@ -637,7 +563,7 @@ func run(root Widget, mode screenMode) (runErr error) {
 	// restarts it so the cursor stays shown while someone types.
 	blinkTicker := time.NewTicker(cursorBlinkInterval)
 	defer blinkTicker.Stop()
-	restartCursorBlink := func() {
+	session.onInput = func() {
 		showCursorForInput()
 		blinkTicker.Reset(cursorBlinkInterval)
 	}
@@ -687,7 +613,7 @@ func run(root Widget, mode screenMode) (runErr error) {
 					sgrRepair.reset()
 					latest, next := coalesceMouseMotion(motion, termEvents)
 					located, subX, subY := pointer.locateMotion(latest)
-					if placed, ok := mode.locate(located); ok && mouse.motion(placed.(uv.MouseMotionEvent), subX, subY) {
+					if placed, ok := mode.locate(located); ok && session.mouse.motion(placed.(uv.MouseMotionEvent), subX, subY) {
 						requestRender()
 					}
 					if next == nil {
@@ -732,77 +658,44 @@ func run(root Widget, mode screenMode) (runErr error) {
 				case uv.WindowPixelSizeEvent, uv.CellSizeEvent, uv.ModeReportEvent:
 					// Shared mouse/image geometry and capability replies (above).
 				case uv.KeyPressEvent:
+					// Input goes to what's on screen, so draw a pending frame first.
 					if scheduler.pending {
 						renderNow()
 					}
-					keyEvent := KeyEvent{event: ev}
-					captured := focusManager.capturesKey(keyEvent)
-					// Check for app-level quit keys
-					if !captured && ev.MatchString("ctrl+c") {
-						cancel()
-						return
+					if !session.focus.capturesKey(KeyEvent{event: ev}) {
+						// Screen export keybind
+						if ev.MatchString("ctrl+shift+s") {
+							exportScreenToFile()
+							continue
+						}
+						// Suspend on Ctrl+Z
+						if ev.MatchString("ctrl+z") {
+							_ = suspend(func() error {
+								return uv.Suspend() // Blocks until resumed via `fg`
+							})
+							continue
+						}
 					}
-
-					// Screen export keybind
-					if !captured && ev.MatchString("ctrl+shift+s") {
-						exportScreenToFile()
-						continue
-					}
-
-					// Suspend on Ctrl+Z
-					if !captured && ev.MatchString("ctrl+z") {
-						_ = suspend(func() error {
-							return uv.Suspend() // Blocks until resumed via `fg`
-						})
-						continue
-					}
-
-					restartCursorBlink()
-					dispatchKey(renderer, focusManager, root, keyEvent)
-
-					// Re-render after key press (for signal updates and focus changes)
-					requestRender()
-
 				case uv.PasteEvent:
-					// Like a key, a paste goes to what's on screen.
 					if scheduler.pending {
 						renderNow()
 					}
-					restartCursorBlink()
-					if !dispatchPaste(focusManager, root, ev.Content) {
-						Log("Paste not handled (%d bytes)", len(ev.Content))
-					}
-					requestRender()
-
 				case uv.PasteStartEvent, uv.PasteEndEvent:
 					// The terminal reader assembles the paste into a PasteEvent.
-
-				case uv.ClipboardEvent:
-					deliverClipboard(ev.Content)
+					continue
+				}
+				switch session.handle(ev, subX, subY) {
+				case inputQuit:
+					cancel()
+					return
+				case inputRender:
 					requestRender()
-
-				case uv.MouseClickEvent:
-					restartCursorBlink()
-					mouse.press(ev, subX, subY, time.Now())
-					requestRender()
-
-				case uv.MouseReleaseEvent:
-					mouse.release(ev, subX, subY)
-					requestRender()
-
-				case uv.MouseMotionEvent:
-					if mouse.motion(ev, subX, subY) {
-						requestRender()
+				case inputIgnored:
+					switch ev.(type) {
+					case uv.WindowSizeEvent, uv.WindowPixelSizeEvent, uv.CellSizeEvent, uv.ModeReportEvent:
+					default:
+						Log("Unhandled event: %T %v", ev, ev)
 					}
-
-				case uv.MouseWheelEvent:
-					if mouse.wheelAt(ev, subX, subY) {
-						requestRender()
-					}
-
-				default:
-					// Log other event types for debugging
-					Log("Unhandled event: %T %v", ev, ev)
 				}
 			}
 		}

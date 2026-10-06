@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,13 +24,12 @@ func TestFilePickerProbeRejectsReplacedOverwriteTarget(t *testing.T) {
 	selections := 0
 	picker := FilePicker{ID: "identity-picker", State: state, Mode: FilePickerSave, OnSelect: func([]string) { selections++ }}
 	require.False(t, picker.Submit(), "existing target requires confirmation")
-	scene := newClickScene(t, picker, 80, 28)
-	require.Contains(t, scene.renderer.ScreenText(), "Confirm overwrite")
+	p := NewPilot(t, picker, 80, 28)
+	require.Contains(t, p.ScreenText(), "Confirm overwrite")
 	require.NoError(t, os.Rename(replacement, path), "different inode, same size, mode and mtime")
-	scene.focus.FocusByID("identity-picker-overwrite-btn-1")
-	require.Equal(t, "identity-picker-overwrite-btn-1", scene.focus.FocusedID())
-	dispatchKey(scene.renderer, scene.focus, picker, makeKeyEvent(uv.KeyEnter, 0))
-	scene.draw()
+	p.session.focus.FocusByID("identity-picker-overwrite-btn-1")
+	require.Equal(t, "identity-picker-overwrite-btn-1", p.FocusedID())
+	p.Press("enter")
 	require.Zero(t, selections, "an overwrite decision for the previous file must not approve its replacement")
 	require.Contains(t, state.Error.Get(), "changed")
 	content, err := os.ReadFile(path)
@@ -58,59 +56,33 @@ func (s *filePickerModalProbe) Build(BuildContext) Widget {
 	}}
 }
 
-// Use the live retained render path, preserving focus requests from handlers.
-// The separate retained/full comparison also verifies nested backdrop output.
-func filePickerProbeDraw(scene *clickScene) {
-	for pass := 0; pass < 4; pass++ {
-		before := scene.focus.FocusedID()
-		scene.focused.Set(scene.focus.Focused())
-		scene.focus.SetFocusables(scene.renderer.Update(scene.root))
-		if pendingFocusID != "" {
-			scene.focus.FocusByID(pendingFocusID)
-			pendingFocusID = ""
-		}
-		if before == scene.focus.FocusedID() {
-			return
-		}
-	}
-	scene.t.Fatal("FilePicker focus did not settle after four frames")
-}
 func TestFilePickerProbeNestedOverwriteCancellation(t *testing.T) {
-	previous := pendingFocusID
-	t.Cleanup(func() { pendingFocusID = previous })
 	root := newFilePickerModalProbe()
-	scene := newClickScene(t, root, 110, 36)
-	filePickerProbeDraw(scene)
-	scene.focus.FocusByID("modal-picker-filename")
-	filePickerProbeDraw(scene)
+	p := NewPilot(t, root, 110, 36)
+	p.session.focus.FocusByID("modal-picker-filename")
+	p.settle()
 	root.state.FilenameInput.SetText("alpha.go")
 	require.False(t, root.picker().Submit())
-	filePickerProbeDraw(scene)
-	require.Equal(t, "modal-picker-overwrite-btn-0", scene.focus.FocusedID(), "safe Keep existing action gets focus")
-	scene.snapshot("FilePicker_Probe_NestedConfirmation", "Nested overwrite confirmation keeps keyboard focus on Keep existing")
-	key := func(event KeyEvent) {
-		dispatchKey(scene.renderer, scene.focus, root, event)
-		filePickerProbeDraw(scene)
-	}
-	key(makeKeyEvent(uv.KeyEscape, 0))
-	require.Contains(t, scene.renderer.ScreenText(), "Parent picker")
-	require.NotContains(t, scene.renderer.ScreenText(), "Confirm overwrite")
-	require.Equal(t, "modal-picker-filename", scene.focus.FocusedID())
+	require.Equal(t, "modal-picker-overwrite-btn-0", p.FocusedID(), "safe Keep existing action gets focus")
+	p.AssertSnapshot("NestedConfirmation", "Nested overwrite confirmation keeps keyboard focus on Keep existing")
+	p.Press("escape")
+	require.Contains(t, p.ScreenText(), "Parent picker")
+	require.NotContains(t, p.ScreenText(), "Confirm overwrite")
+	require.Equal(t, "modal-picker-filename", p.FocusedID())
 	require.Zero(t, root.cancels)
 	require.Zero(t, root.selections)
 	require.False(t, root.picker().Submit())
-	filePickerProbeDraw(scene)
-	require.Equal(t, "modal-picker-overwrite-btn-0", scene.focus.FocusedID())
-	key(makeKeyEvent(uv.KeyEnter, 0))
-	require.NotContains(t, scene.renderer.ScreenText(), "Confirm overwrite")
-	require.Equal(t, "modal-picker-filename", scene.focus.FocusedID())
+	require.Equal(t, "modal-picker-overwrite-btn-0", p.FocusedID())
+	p.Press("enter")
+	require.NotContains(t, p.ScreenText(), "Confirm overwrite")
+	require.Equal(t, "modal-picker-filename", p.FocusedID())
 	require.Zero(t, root.cancels)
 	require.Zero(t, root.selections)
 	require.False(t, root.picker().Submit())
-	filePickerProbeDraw(scene)
-	key(makeKeyEvent(uv.KeyTab, 0))
-	require.Equal(t, "modal-picker-overwrite-btn-1", scene.focus.FocusedID())
-	key(makeKeyEvent(uv.KeyEnter, 0))
+	p.settle()
+	p.Press("tab")
+	require.Equal(t, "modal-picker-overwrite-btn-1", p.FocusedID())
+	p.Press("enter")
 	require.Equal(t, 1, root.selections)
 	require.False(t, root.picker().Submit())
 	root.picker().Cancel()
@@ -133,11 +105,11 @@ func TestFilePickerProbeRejectsRetargetedSymlink(t *testing.T) {
 	selections := 0
 	picker := FilePicker{ID: "symlink-picker", State: state, Mode: FilePickerSave, OnSelect: func([]string) { selections++ }}
 	require.False(t, picker.Submit())
-	scene := newClickScene(t, picker, 80, 28)
+	p := NewPilot(t, picker, 80, 28)
 	require.NoError(t, os.Remove(link))
 	require.NoError(t, os.Symlink("second.txt", link))
-	scene.focus.FocusByID("symlink-picker-overwrite-btn-1")
-	dispatchKey(scene.renderer, scene.focus, picker, makeKeyEvent(uv.KeyEnter, 0))
+	p.session.focus.FocusByID("symlink-picker-overwrite-btn-1")
+	p.Press("enter")
 	require.Zero(t, selections)
 	require.Contains(t, state.Error.Get(), "changed")
 	for _, name := range []string{"first.txt", "second.txt"} {
@@ -261,22 +233,22 @@ func TestFilePickerProbePaddedClippedInstancesStayIndependent(t *testing.T) {
 	root.right.MultiSelect = true
 	root.left.State.SelectPaths("/fixture/alpha.go")
 	root.right.State.SelectPaths("/fixture/beta.txt")
-	scene := newClickScene(t, root, 128, 36)
-	button := scene.renderer.WidgetByID("right-picker-hidden")
+	p := NewPilot(t, root, 128, 36)
+	button := p.session.renderer.WidgetByID("right-picker-hidden")
 	require.NotNil(t, button)
 	x, y := button.Visible.X, button.Visible.Y
 	require.False(t, button.Visible.IsEmpty())
-	scene.click(x, y, 0)
+	p.ClickAt(x, y)
 	require.True(t, root.right.State.ShowHidden.Get())
 	require.False(t, root.left.State.ShowHidden.Get())
 	require.Empty(t, root.right.State.SelectedPaths())
-	scene.snapshot("FilePicker_Probe_IndependentPickers", "Two FilePickers in a padded Row and clipped Scrollable keep visibility and selections independent")
+	p.AssertSnapshot("IndependentPickers", "Two FilePickers in a padded Row and clipped Scrollable keep visibility and selections independent")
 	require.Equal(t, []string{"/fixture/alpha.go"}, root.left.State.SelectedPaths())
 	root.scroll.SetOffset(20)
-	scene.draw()
-	clipped := scene.renderer.WidgetByID("right-picker-hidden")
+	p.settle()
+	clipped := p.session.renderer.WidgetByID("right-picker-hidden")
 	require.True(t, clipped == nil || clipped.Visible.IsEmpty())
-	scene.click(x, y, 0)
+	p.ClickAt(x, y)
 	require.True(t, root.right.State.ShowHidden.Get(), "old coordinates cannot toggle a clipped control")
 	require.Equal(t, []string{"/fixture/alpha.go"}, root.left.State.SelectedPaths())
 }
