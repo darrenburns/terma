@@ -89,6 +89,7 @@ nav:
   - Performance: performance.md
   - Async Tasks: async.md
   - Opening URLs: open-url.md
+  - Inline Mode: inline.md
   - Styling: styling.md
   - Focus & Keyboard: focus-keyboard.md
   - Conditional Rendering: conditional.md
