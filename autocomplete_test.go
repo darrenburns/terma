@@ -770,3 +770,15 @@ func TestSnapshot_Autocomplete_CustomRender(t *testing.T) {
 
 	AssertSnapshot(t, ac, 45, 12, "Autocomplete with custom icon and shortcut rendering")
 }
+
+func TestAutocompleteAcceptIsUndoable(t *testing.T) {
+	state := NewTextInputState("")
+	a := Autocomplete{Child: TextInput{State: state}}
+	state.Insert("ap")
+	a.setChildTextAndCursor("apple", 5)
+	assert.Equal(t, "apple", state.GetText())
+
+	require.True(t, state.Undo())
+	assert.Equal(t, "ap", state.GetText())
+	assert.Equal(t, 2, state.CursorIndex.Peek())
+}
