@@ -33,6 +33,7 @@ The [getting started guide](../getting-started.md) walks through a complete appl
 - [ProgressBar](progressbar.md)
 - [Sparkline](sparkline.md)
 - [Spinner](spinner.md)
+- [Toasts](toast.md)
 
 ## Input and actions
 

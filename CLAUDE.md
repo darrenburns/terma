@@ -145,6 +145,7 @@ Golden files are stored in `testdata/<TestName>.svg`. The test framework generat
 | `shimmer.go` | `Shimmer` color: an animated highlight for text, borders or backgrounds |
 | `menu.go` | Dropdown/context menu widget |
 | `dialog.go` | Modal `Dialog` widget (wraps `Floating`) |
+| `toast.go` | `ToastState` queue and `Toasts` corner overlay for notifications |
 | `filter.go` | Text filtering/matching utilities |
 | `hyperlink.go` | OSC 8 link sanitizing for `SpanStyle.Link` |
 | `open_url.go` | `OpenURL`: open an HTTP(S) URL in the default browser |
@@ -233,6 +234,7 @@ func main() {
 |--------|---------|------------|
 | `ProgressBar` | Horizontal progress indicator | `Progress` (0.0-1.0), `FilledColor`, `UnfilledColor` |
 | `Spinner` | Animated loading indicator | `State` (required), `Style` |
+| `Toasts` | Stacked, auto-dismissing notifications in a screen corner; click dismisses, hover holds the timeout | `State` (required, `NewToastState`), `Position`, `Width` |
 
 ### Utility Widgets
 
@@ -435,6 +437,8 @@ Stack{
 - **Shimmer**: `Shimmer{State: NewShimmerState(period), Base: ..., Highlight: ...}` is a `ColorProvider` whose
   highlight band moves while the state runs (`Start`/`Stop`). Use it for any text, border or background color.
   `Path: ShimmerSweep` (default) crosses left to right; `ShimmerPerimeter` circles a border. Ticks repaint only.
+- **Toasts**: `toasts := NewToastState(ToastOptions{})`, put `Toasts{State: toasts}` anywhere in the tree, then call
+  `toasts.Success("Saved")` or `toasts.Notify(Toast{Title, Message, Severity, Timeout})` from any goroutine.
 - **Cursor blink**: text cursors don't blink unless `SetCursorBlink(true)`.
 - **Hyperlinks**: `SpanStyle.Link` (or `LinkSpan(text, url, fg...)`, or markup `[link=URL]text[/]`) writes the
   text as an OSC 8 hyperlink that the terminal opens on its own gesture (Cmd/Ctrl-click). Markdown links absolute

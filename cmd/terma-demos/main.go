@@ -25,6 +25,7 @@ import (
 	"github.com/darrenburns/terma/cmd/internal/demos/tabsdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/textareademo"
 	"github.com/darrenburns/terma/cmd/internal/demos/textinputdemo"
+	"github.com/darrenburns/terma/cmd/internal/demos/toastdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/treedemo"
 )
 
@@ -49,6 +50,7 @@ var demos = []Entry{
 	{Info: menudemo.Info, Command: "./cmd/menu-example", New: menudemo.New},
 	{Info: palettedemo.Info, Command: "./cmd/command-palette-example", New: palettedemo.New},
 	{Info: dialogdemo.Info, Command: "./cmd/dialog-example", New: dialogdemo.New},
+	{Info: toastdemo.Info, Command: "./cmd/toast-example", New: toastdemo.New},
 	{Info: progressdemo.Info, Command: "./cmd/progressbar-example", New: progressdemo.New},
 	{Info: shimmerdemo.Info, Command: "./cmd/shimmer-example", New: shimmerdemo.New},
 	{Info: hyperlinkdemo.Info, Command: "./cmd/hyperlink-demo", New: hyperlinkdemo.New},

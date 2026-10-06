@@ -70,6 +70,7 @@ nav:
     - Spinner: widgets/spinner.md
     - Switcher: widgets/switcher.md
     - Tabs: widgets/tabs.md
+    - Toasts: widgets/toast.md
     - Table: widgets/table.md
     - Text: widgets/text.md
     - TextArea: widgets/textarea.md

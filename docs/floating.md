@@ -73,4 +73,5 @@ FloatConfig{
 ## Related
 
 - [Tooltip](widgets/tooltip.md)
+- [Toasts](widgets/toast.md)
 - [FocusTrap](widgets/focustrap.md)
