@@ -928,8 +928,9 @@ func (p CommandPalette) moveCursorToStart() {
 	}
 	view := commandPaletteFilteredView(level.Items, level.FilterState)
 	if first, ok := firstSelectableIndex(level.Items, view.Indices); ok {
-		level.ListState.SelectIndex(first)
-		p.scrollCursorIntoView(level)
+		// Not SelectIndex, which jumps to the cursor: this glides to it.
+		level.ListState.CursorIndex.Set(first)
+		p.levelList(level).glideCursorIntoView()
 		p.notifyCursorChange()
 	}
 }
@@ -941,21 +942,24 @@ func (p CommandPalette) moveCursorToEnd() {
 	}
 	view := commandPaletteFilteredView(level.Items, level.FilterState)
 	if last, ok := lastSelectableIndex(level.Items, view.Indices); ok {
-		level.ListState.SelectIndex(last)
-		p.scrollCursorIntoView(level)
+		// Not SelectIndex, which jumps to the cursor: this glides to it.
+		level.ListState.CursorIndex.Set(last)
+		p.levelList(level).glideCursorIntoView()
 		p.notifyCursorChange()
 	}
 }
 
 func (p CommandPalette) scrollCursorIntoView(level *CommandPaletteLevel) {
-	if level == nil || level.ListState == nil || level.ScrollState == nil {
-		return
-	}
+	p.levelList(level).scrollCursorIntoView()
+}
 
-	List[CommandPaletteItem]{
-		State:       level.ListState,
-		ScrollState: level.ScrollState,
-	}.scrollCursorIntoView()
+// levelList is the list a level's items are shown in, for scrolling its
+// cursor into view.
+func (p CommandPalette) levelList(level *CommandPaletteLevel) List[CommandPaletteItem] {
+	if level == nil {
+		return List[CommandPaletteItem]{}
+	}
+	return List[CommandPaletteItem]{State: level.ListState, ScrollState: level.ScrollState}
 }
 
 func (p CommandPalette) scrollList(level *CommandPaletteLevel, delta int) {

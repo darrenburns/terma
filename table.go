@@ -1474,10 +1474,8 @@ func (t Table[T]) keyCursorDown() {
 func (t Table[T]) keyCursorToFirst() {
 	mode := t.selectionMode()
 	if mode == TableSelectionColumn {
-		if t.ownsViewport() {
-			t.viewportState().SetOffset(0)
-		} else if t.ScrollState != nil {
-			t.ScrollState.animateOffset(0)
+		if t.ownsViewport() || t.ScrollState != nil {
+			t.viewportState().animateOffset(0)
 		}
 		return
 	}
@@ -1493,10 +1491,8 @@ func (t Table[T]) keyCursorToFirst() {
 func (t Table[T]) keyCursorToLast() {
 	mode := t.selectionMode()
 	if mode == TableSelectionColumn {
-		if t.ownsViewport() {
-			t.viewportState().SetOffset(maxTableInt())
-		} else if t.ScrollState != nil {
-			t.ScrollState.animateOffset(maxTableInt())
+		if t.ownsViewport() || t.ScrollState != nil {
+			t.viewportState().animateOffset(maxTableInt())
 		}
 		return
 	}
@@ -1845,8 +1841,8 @@ func (t Table[T]) scrollBy(lines int, animate bool) bool {
 
 // jumpCursorIntoView interrupts a glide for range selection and pointer moves.
 func (t Table[T]) jumpCursorIntoView() {
-	if t.ScrollState != nil {
-		t.ScrollState.stopAnimation()
+	if t.ownsViewport() || t.ScrollState != nil {
+		t.viewportState().stopAnimation()
 	}
 	t.scrollCursorIntoView()
 }
@@ -1866,7 +1862,7 @@ func (t Table[T]) glideCursorIntoView() {
 
 func (t Table[T]) revealCursor(animate bool) {
 	if t.ownsViewport() {
-		t.revealViewportCursor(true)
+		t.revealViewportCursor(true, animate)
 		return
 	}
 	if t.ScrollState == nil || t.State == nil {
@@ -1890,7 +1886,7 @@ func (t Table[T]) revealCursor(animate bool) {
 // the viewport, so it must not be undone by the next layout.
 func (t Table[T]) revealMovedCursor() {
 	if t.ownsViewport() {
-		t.revealViewportCursor(false)
+		t.revealViewportCursor(false, false)
 		return
 	}
 	if t.ScrollState == nil || t.State == nil {

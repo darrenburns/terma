@@ -260,14 +260,20 @@ func (t Table[T]) layoutViewport() {
 	scroll.viewportHeight = m.height
 	scroll.contentWidth = m.contentWidth
 	scroll.contentHeight = m.contentHeight
-	scroll.SetOffset(scroll.GetOffset())
+	// Clamp to the new bounds, leaving a running glide alone.
+	if offset := scroll.GetOffset(); offset > scroll.maxOffset() {
+		scroll.SetOffset(offset)
+	}
 	scroll.SetOffsetX(scroll.GetOffsetX())
 	t.State.columnLayouts = m.columns
 	t.State.rowLayouts = m.rows
 	t.State.headerHeight = m.headerHeight
-	t.revealViewportCursor(false)
+	t.revealViewportCursor(false, false)
 }
-func (t Table[T]) revealViewportCursor(force bool) {
+
+// revealViewportCursor scrolls the table's own viewport to the cursor. A glide
+// (animate) is for long moves; any other move during a glide retargets it.
+func (t Table[T]) revealViewportCursor(force, animate bool) {
 	if t.State == nil {
 		return
 	}
@@ -282,7 +288,7 @@ func (t Table[T]) revealViewportCursor(force bool) {
 		return
 	}
 	t.State.revealed.record(row, y, height, scroll)
-	offset := scroll.GetOffset()
+	offset := scroll.scrollTarget()
 	if m.height > m.frozenHeight {
 		if height > m.height-m.frozenHeight {
 			// Oversized cells cannot fit: reveal their useful leading edge.
@@ -292,7 +298,11 @@ func (t Table[T]) revealViewportCursor(force bool) {
 		} else if y+height > offset+m.height {
 			offset = y + height - m.height
 		}
-		scroll.SetOffset(offset)
+		if animate || scroll.animation != nil {
+			scroll.animateOffset(offset)
+		} else {
+			scroll.SetOffset(offset)
+		}
 	}
 	col := t.State.CursorColumn.Peek()
 	if col >= max(0, t.FrozenColumns) && col < len(m.columns) && m.width > m.frozenWidth {
