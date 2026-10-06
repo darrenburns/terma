@@ -56,7 +56,10 @@ func SetClipboardMethod(m ClipboardMethod) {
 }
 
 // SetClipboard copies content to the selected clipboard. It is safe to call
-// from any goroutine and returns without waiting; copies apply in call order.
+// from any goroutine, and copies apply in call order. While an app runs it
+// returns without waiting, and Run lets queued copies finish (for up to two
+// seconds) before it returns. With no app running it returns once the copy is
+// done, so a program can exit straight after.
 //
 // In a local session (not over SSH) with a clipboard tool for the platform,
 // the tool gets the content: pbcopy on macOS, clip.exe on Windows and WSL,
@@ -98,7 +101,7 @@ var clipboardReads struct {
 // support, which many terminals leave off or ask the user to allow, so fn may
 // never be called. Don't block on it.
 func ReadClipboard(selection ClipboardSelection, fn func(content string)) {
-	if fn == nil || currentAppContext() == nil {
+	if fn == nil || currentAppContext() == nil || appShuttingDown() {
 		return
 	}
 	sys := clipboardSys()
@@ -182,7 +185,8 @@ func (p clipboardReadPlan) apply(run clipboardRunner, fn func(string)) {
 		}
 		Log("Clipboard: %s failed: %v", p.native.argv[0], err)
 	}
-	if p.terminal == "" || currentAppContext() == nil {
+	// A query sent while the app exits would be answered at the shell prompt.
+	if p.terminal == "" || currentAppContext() == nil || appShuttingDown() {
 		return
 	}
 	clipboardReads.mu.Lock()
@@ -371,9 +375,14 @@ func runClipboardCommand(c clipboardCommand, capture bool) ([]byte, error) {
 	if capture {
 		timeout = 5 * time.Second
 	}
+	return runClipboardCommandWithin(c, capture, timeout)
+}
+
+func runClipboardCommandWithin(c clipboardCommand, capture bool, timeout time.Duration) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, c.argv[0], c.argv[1:]...)
+	killProcessGroupOnCancel(cmd)
 	cmd.Stdin = bytes.NewReader(c.stdin)
 	cmd.WaitDelay = 500 * time.Millisecond
 	if capture {
@@ -390,10 +399,13 @@ var clipboardJobs struct {
 	mu      sync.Mutex
 	queue   []func()
 	running bool
+	idle    chan struct{} // closed when the running worker empties the queue
 }
 
 // queueClipboardJob runs job after every earlier job. A cheap job (no command
 // to run) runs on the caller's goroutine when nothing is queued ahead of it.
+// With no app running, or one shutting down, it returns once job has run:
+// the process may exit next, cutting off a tool mid-copy.
 func queueClipboardJob(cheap bool, job func()) {
 	clipboardJobs.mu.Lock()
 	if cheap && !clipboardJobs.running {
@@ -401,12 +413,20 @@ func queueClipboardJob(cheap bool, job func()) {
 		job()
 		return
 	}
-	clipboardJobs.queue = append(clipboardJobs.queue, job)
+	done := make(chan struct{})
+	clipboardJobs.queue = append(clipboardJobs.queue, func() {
+		defer close(done)
+		job()
+	})
 	if !clipboardJobs.running {
 		clipboardJobs.running = true
+		clipboardJobs.idle = make(chan struct{})
 		go drainClipboardJobs()
 	}
 	clipboardJobs.mu.Unlock()
+	if currentAppContext() == nil || appShuttingDown() {
+		<-done
+	}
 }
 
 func drainClipboardJobs() {
@@ -414,6 +434,7 @@ func drainClipboardJobs() {
 		clipboardJobs.mu.Lock()
 		if len(clipboardJobs.queue) == 0 {
 			clipboardJobs.running = false
+			close(clipboardJobs.idle)
 			clipboardJobs.mu.Unlock()
 			return
 		}
@@ -421,5 +442,41 @@ func drainClipboardJobs() {
 		clipboardJobs.queue = clipboardJobs.queue[1:]
 		clipboardJobs.mu.Unlock()
 		job()
+	}
+}
+
+// waitClipboardJobs waits up to timeout for queued clipboard work to finish.
+// It reports whether the queue emptied.
+func waitClipboardJobs(timeout time.Duration) bool {
+	clipboardJobs.mu.Lock()
+	if !clipboardJobs.running {
+		clipboardJobs.mu.Unlock()
+		return true
+	}
+	idle := clipboardJobs.idle
+	clipboardJobs.mu.Unlock()
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	select {
+	case <-idle:
+		return true
+	case <-timer.C:
+		return false
+	}
+}
+
+// clipboardShutdownTimeout bounds how long Run waits for copies on exit, so a
+// hung tool can't stop the app quitting.
+const clipboardShutdownTimeout = 2 * time.Second
+
+// finishClipboardWork runs while an app shuts down, before the terminal is
+// restored. It lets queued copies finish, waiting at most timeout, then writes
+// every sequence still queued, including the OSC 52 fallbacks of those copies.
+func finishClipboardWork(timeout time.Duration, write func(string) (int, error)) {
+	if !waitClipboardJobs(timeout) {
+		Log("Clipboard: copies still running after %v; exiting without them", timeout)
+	}
+	for _, seq := range takeTerminalWrites() {
+		_, _ = write(seq)
 	}
 }

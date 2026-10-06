@@ -345,7 +345,7 @@ func Run(root Widget) (runErr error) {
 		appCancel = nil
 		appRenderer = nil
 		setSuspender(nil)
-		takeTerminalWrites()
+		finishClipboardWork(clipboardShutdownTimeout, t.WriteString)
 		resetClipboardReads()
 		swapRenderTrigger(nil)
 		currentController = nil
