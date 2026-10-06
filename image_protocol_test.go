@@ -207,7 +207,7 @@ func TestImageSixelOcclusion(t *testing.T) {
 	ctx.DrawImage(0, 0, 8, 5, testImage(t, 8, 10), ImageStretch)
 	b.SetCell(3, 2, &uv.Cell{Content: "x", Width: 1})
 	out := uv.NewBuffer(8, 5)
-	copyImageCells(out, b, 8, 5)
+	copyCells(out, b, 8, 5)
 	regions := sixelRegions(b, out, 1)
 	for _, r := range regions {
 		require.False(t, r.rect.Contains(3, 2))

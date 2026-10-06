@@ -18,8 +18,8 @@ func indexOfString(values []string, target string) int {
 }
 
 func TestTerminalEnableSequences_PreferAnyEventAfterButtonEvent(t *testing.T) {
-	buttonIdx := indexOfString(terminalEnableSequences, ansi.SetModeMouseButtonEvent)
-	anyIdx := indexOfString(terminalEnableSequences, ansi.SetModeMouseAnyEvent)
+	buttonIdx := indexOfString(mouseEnableSequences, ansi.SetModeMouseButtonEvent)
+	anyIdx := indexOfString(mouseEnableSequences, ansi.SetModeMouseAnyEvent)
 
 	require.NotEqual(t, -1, buttonIdx)
 	require.NotEqual(t, -1, anyIdx)
@@ -41,30 +41,38 @@ func captureTerminalSequences(t *testing.T, fn func(writeString func(string) (in
 func TestEnableTerminalInputModes(t *testing.T) {
 	t.Run("enables Kitty keyboard when requested", func(t *testing.T) {
 		got := captureTerminalSequences(t, func(writeString func(string) (int, error)) {
-			enableTerminalInputModes(writeString, true, false)
+			enableTerminalInputModes(writeString, true, true, false)
 		})
 
-		expected := strings.Join(terminalEnableSequences, "") + ansi.PushKittyKeyboard(ansi.KittyAllFlags)
+		expected := strings.Join(mouseEnableSequences, "") + strings.Join(terminalEnableSequences, "") + ansi.PushKittyKeyboard(ansi.KittyAllFlags)
 		require.Equal(t, expected, got)
 	})
 
 	t.Run("forces Kitty keyboard off when explicitly disabled", func(t *testing.T) {
 		got := captureTerminalSequences(t, func(writeString func(string) (int, error)) {
-			enableTerminalInputModes(writeString, false, true)
+			enableTerminalInputModes(writeString, true, false, true)
 		})
 
-		expected := strings.Join(terminalEnableSequences, "") + ansi.PushKittyKeyboard(0)
+		expected := strings.Join(mouseEnableSequences, "") + strings.Join(terminalEnableSequences, "") + ansi.PushKittyKeyboard(0)
 		require.Equal(t, expected, got)
 	})
 
 	t.Run("leaves Kitty keyboard unchanged when neither enabled nor forced off", func(t *testing.T) {
 		got := captureTerminalSequences(t, func(writeString func(string) (int, error)) {
-			enableTerminalInputModes(writeString, false, false)
+			enableTerminalInputModes(writeString, true, false, false)
 		})
 
-		expected := strings.Join(terminalEnableSequences, "")
+		expected := strings.Join(mouseEnableSequences, "") + strings.Join(terminalEnableSequences, "")
 		require.Equal(t, expected, got)
 	})
+}
+
+func TestEnableTerminalInputModes_WithoutMouseLeavesMouseReportingOff(t *testing.T) {
+	got := captureTerminalSequences(t, func(writeString func(string) (int, error)) {
+		enableTerminalInputModes(writeString, false, false, false)
+	})
+
+	require.Equal(t, ansi.SetModeBracketedPaste, got)
 }
 
 func TestDisableTerminalInputModes(t *testing.T) {

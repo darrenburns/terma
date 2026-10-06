@@ -181,7 +181,7 @@ func TestImageSixelAvoidsLastRow(t *testing.T) {
 	ctx := NewRenderContext(b, 6, 4, nil, nil, BuildContext{}, nil)
 	ctx.DrawImage(0, 0, 6, 4, testImage(t, 6, 8), ImageStretch)
 	out := uv.NewBuffer(6, 4)
-	copyImageCells(out, b, 6, 4)
+	copyCells(out, b, 6, 4)
 	regions := sixelRegions(b, out, 0)
 	require.NotEmpty(t, regions)
 	for _, region := range regions {

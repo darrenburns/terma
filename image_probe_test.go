@@ -218,7 +218,7 @@ func TestImageProbeMovingOverlappingRetained(t *testing.T) {
 		}
 		native := func(b *imageBuffer) []nativeRegion {
 			out := uv.NewBuffer(22, 8)
-			copyImageCells(out, b, 22, 8)
+			copyCells(out, b, 22, 8)
 			sx := newSixelImages()
 			payload, _ := sx.output(sx.draws(b, out, 2, 3, 0))
 			var regions []nativeRegion

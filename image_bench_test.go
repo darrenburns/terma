@@ -13,7 +13,7 @@ func BenchmarkImagePresentation(b *testing.B) {
 			ctx := NewRenderContext(buffer, 100, 30, nil, nil, BuildContext{}, nil)
 			ctx.DrawImage(0, 0, 40, 15, testImage(b, 320, 240), ImageStretch)
 			out := uv.NewBuffer(100, 30)
-			copyImageCells(out, buffer, 100, 30)
+			copyCells(out, buffer, 100, 30)
 			kitty := newKittyImages()
 			sixel := newSixelImages()
 			kitty.paint(out, buffer, 8, 16)
@@ -23,12 +23,12 @@ func BenchmarkImagePresentation(b *testing.B) {
 					p.ready = true
 				}
 			}
-			copyImageCells(out, buffer, 100, 30)
+			copyCells(out, buffer, 100, 30)
 			sixel.output(sixel.draws(buffer, out, 8, 16, 0))
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				copyImageCells(out, buffer, 100, 30)
+				copyCells(out, buffer, 100, 30)
 				switch protocol {
 				case "kitty":
 					kitty.paint(out, buffer, 8, 16)

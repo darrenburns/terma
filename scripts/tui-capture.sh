@@ -3,19 +3,24 @@
 # screen after startup and after each key as ANSI, SVG and (if rsvg-convert is
 # installed) PNG.
 #
-#   scripts/tui-capture.sh [-s WxH] [-o DIR] [-d DELAY] <binary> [key...]
+#   scripts/tui-capture.sh [-s WxH] [-o DIR] [-d DELAY] [-b] <binary> [key...]
+#
+# -b captures the scrollback above the screen too, as a separate
+# NN.scrollback.ansi/.svg/.png per step (for inline apps, see RunInline).
+# The binary may be a shell command line, e.g. "sh -c 'seq 5; exec ./demo'".
 #
 # Keys use tmux send-keys syntax: Tab, Enter, Up, C-b, M-x, or literal text.
 # Extra environment for the program can be passed with TUI_ENV, e.g.
 #   TUI_ENV=TERMA_DEBUG_OVERLAY=1 scripts/tui-capture.sh ./demo C-b
 set -euo pipefail
 
-size=100x30 out=snapshot-output/tui delay=0.6
-while getopts "s:o:d:" opt; do
+size=100x30 out=snapshot-output/tui delay=0.6 scrollback=0
+while getopts "s:o:d:b" opt; do
 	case $opt in
 	s) size=$OPTARG ;;
 	o) out=$OPTARG ;;
 	d) delay=$OPTARG ;;
+	b) scrollback=1 ;;
 	*) exit 2 ;;
 	esac
 done
@@ -53,7 +58,16 @@ capture() {
 	if command -v rsvg-convert >/dev/null; then
 		rsvg-convert -z 1.5 "$name.svg" -o "$name.png"
 	fi
-	echo "$name: ${2:-startup}"
+	if [ "$scrollback" = 1 ]; then
+		tmux -L "$socket" capture-pane -p -e -N -S - -t "$session" >"$name.scrollback.ansi"
+		local rows
+		rows=$(wc -l <"$name.scrollback.ansi" | tr -d ' ')
+		"$converter" -w "$width" -h "$rows" <"$name.scrollback.ansi" >"$name.scrollback.svg"
+		if command -v rsvg-convert >/dev/null; then
+			rsvg-convert -z 1.5 "$name.scrollback.svg" -o "$name.scrollback.png"
+		fi
+	fi
+	echo "$name: ${2:-startup} (cursor at $(tmux -L "$socket" display -p -t "$session" '#{cursor_x},#{cursor_y}'))"
 }
 
 sleep 1.5
