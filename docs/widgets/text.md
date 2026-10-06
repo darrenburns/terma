@@ -19,6 +19,7 @@
 - `TextAlignLeft`, `TextAlignCenter`, and `TextAlignRight` position each line within the available width.
 - `Style` sets dimensions, colors, padding, borders, and text decoration.
 - Span styles can override the base text style.
+- A span with `Style.Link` set is a [terminal hyperlink](../hyperlinks.md).
 
 ## Related
 

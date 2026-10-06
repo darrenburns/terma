@@ -362,6 +362,11 @@ type SpanStyle struct {
 	Reverse        bool
 	Conceal        bool
 	Strikethrough  bool
+	// Link makes the span an OSC 8 terminal hyperlink to this URL. Terminals
+	// that support OSC 8 open it on their own link gesture (often Cmd or Ctrl
+	// and click); others show the text unchanged. A URL containing control
+	// characters is dropped.
+	Link string
 }
 
 // Span represents a segment of text with its own styling.
@@ -419,6 +424,16 @@ func FaintSpan(text string, fg ...Color) Span {
 // StrikethroughSpan creates a strikethrough span with optional foreground color.
 func StrikethroughSpan(text string, fg ...Color) Span {
 	s := SpanStyle{Strikethrough: true}
+	if len(fg) > 0 {
+		s.Foreground = fg[0]
+	}
+	return Span{Text: text, Style: s}
+}
+
+// LinkSpan creates an underlined span that links to url, with optional
+// foreground color.
+func LinkSpan(text, url string, fg ...Color) Span {
+	s := SpanStyle{Underline: UnderlineSingle, Link: url}
 	if len(fg) > 0 {
 		s.Foreground = fg[0]
 	}

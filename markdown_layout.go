@@ -65,9 +65,16 @@ func (v *markdownView) blockGlyphs(block markdownBlock) []markdownGlyph {
 			style.Foreground = v.theme.Accent
 			style.Background = v.theme.Surface
 		}
-		if run.link >= 0 && v.owner.OnLink != nil {
-			style.Foreground = v.theme.Link
-			style.Underline = UnderlineSingle
+		if run.link >= 0 {
+			// Only absolute links mean anything to the terminal; relative ones
+			// stay plain text unless OnLink can resolve them.
+			if dest := v.document.links[run.link]; markdownAbsoluteLink(dest) {
+				style.Link = dest
+			}
+			if style.Link != "" || v.owner.OnLink != nil {
+				style.Foreground = v.theme.Link
+				style.Underline = UnderlineSingle
+			}
 		}
 		glyphs = append(glyphs, markdownGlyph{text: cluster, width: width, style: style, link: run.link})
 	}

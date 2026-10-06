@@ -15,6 +15,13 @@ import (
 //	ParseMarkup("Press [b $Accent]Enter[/] to continue", theme)
 //	ParseMarkup("[bold $Error on $Background]Warning![/]", theme)
 //
+// [link=URL] makes the text an OSC 8 terminal hyperlink, underlined in the
+// theme's Link color unless the same tag names a foreground color:
+//
+//	ParseMarkup("See [link=https://example.com]the docs[/]", theme)
+//
+// The URL ends at the first space or ], so percent-encode those characters.
+//
 // Style nesting is supported: [bold]Hello [italic]World[/][/]
 // Use [[ to insert a literal [ character.
 // Invalid markup is returned as literal text (graceful fallback).
@@ -147,8 +154,19 @@ func (p *markupParser) parseTagContent(content string) SpanStyle {
 	tokens := tokenizeTagContent(content)
 
 	expectingBackground := false
+	linked, colored := false, false
 	for _, token := range tokens {
 		lower := strings.ToLower(token)
+
+		if strings.HasPrefix(lower, "link=") {
+			if len(token) == len("link=") {
+				continue
+			}
+			style.Link = token[len("link="):]
+			style.Underline = UnderlineSingle
+			linked = true
+			continue
+		}
 
 		// Check for "on" keyword
 		if lower == "on" {
@@ -176,8 +194,12 @@ func (p *markupParser) parseTagContent(content string) SpanStyle {
 				expectingBackground = false
 			} else {
 				style.Foreground = color
+				colored = true
 			}
 		}
+	}
+	if linked && !colored {
+		style.Foreground = p.theme.Link
 	}
 
 	return style
@@ -256,6 +278,8 @@ func (p *markupParser) resolveThemeColor(name string) (Color, bool) {
 		return p.theme.Success, true
 	case "info":
 		return p.theme.Info, true
+	case "link":
+		return p.theme.Link, true
 	default:
 		return Color{}, false
 	}

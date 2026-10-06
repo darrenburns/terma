@@ -51,8 +51,11 @@ func (s *MarkdownState) Append(fragment string) { s.SetSource(s.document.Peek().
 func (s *MarkdownState) PlainText() string { return s.document.Get().plainText() }
 
 // Markdown displays CommonMark headings, paragraphs, lists, quotes, code and links.
-// Compose with Scrollable for viewport scrolling. Link activation never opens a URL
-// automatically. Ctrl+A selects all text; Y copies it, and Escape clears selection.
+// Compose with Scrollable for viewport scrolling. Absolute http, https and mailto
+// links are written as OSC 8 terminal hyperlinks, which the terminal opens on its
+// own link gesture. Keyboard and click activation never opens a URL itself; it
+// calls OnLink, which can pass the destination to OpenURL. Ctrl+A selects all
+// text; Y copies it, and Escape clears selection.
 type Markdown struct {
 	ID           string
 	State        *MarkdownState
@@ -165,6 +168,13 @@ func markdownSafeLink(destination string) bool {
 	default:
 		return false
 	}
+}
+
+// markdownAbsoluteLink reports whether a destination accepted by
+// markdownSafeLink is absolute, so a terminal can open it as an OSC 8 link.
+func markdownAbsoluteLink(destination string) bool {
+	parsed, err := url.Parse(destination)
+	return err == nil && parsed.Scheme != ""
 }
 
 func parseMarkdown(source string) *markdownDocument {
@@ -525,6 +535,7 @@ func (v *markdownView) Render(ctx *RenderContext) {
 			}
 			if v.disabled {
 				style.Foreground = v.theme.TextDisabled
+				style.Link = ""
 			}
 			ctx.DrawSpan(x, y, Span{Text: g.text, Style: style}, base)
 			x += g.width

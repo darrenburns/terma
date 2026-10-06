@@ -209,7 +209,7 @@ func describeCell(c *uv.Cell) string {
 	if c == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("%q fg=%v bg=%v attrs=%v", c.Content, c.Style.Fg, c.Style.Bg, c.Style.Attrs)
+	return fmt.Sprintf("%q fg=%v bg=%v attrs=%v link=%q", c.Content, c.Style.Fg, c.Style.Bg, c.Style.Attrs, c.Link.URL)
 }
 
 func (s *reactivitySequence[T]) resize(width, height int) {

@@ -79,7 +79,7 @@
   <rect x="176.0" y="47.2" width="8.4" height="19.6" fill="#6C5434"/>
   <rect x="184.4" y="47.2" width="8.4" height="19.6" fill="#3E301E"/>
   <rect x="192.8" y="47.2" width="8.4" height="19.6" fill="#3E301E"/>
-  <text x="8.0" y="57.0" class="underline" fill="#191724">first long link label</text>
+  <a href="https://first.test"><text x="8.0" y="57.0" class="underline" fill="#191724">first long link label</text></a>
   <rect x="8.0" y="66.8" width="8.4" height="19.6" fill="#6C5434"/>
   <rect x="16.4" y="66.8" width="8.4" height="19.6" fill="#6C5434"/>
   <rect x="24.8" y="66.8" width="8.4" height="19.6" fill="#6C5434"/>
@@ -103,9 +103,9 @@
   <rect x="176.0" y="66.8" width="8.4" height="19.6" fill="#6C5434"/>
   <rect x="184.4" y="66.8" width="8.4" height="19.6" fill="#6C5434"/>
   <rect x="192.8" y="66.8" width="8.4" height="19.6" fill="#6C5434"/>
-  <text x="8.0" y="76.6" class="underline" fill="#191724">across lines</text>
+  <a href="https://first.test"><text x="8.0" y="76.6" class="underline" fill="#191724">across lines</text></a>
   <text x="117.2" y="76.6" fill="#191724">and</text>
-  <text x="150.8" y="76.6" class="underline" fill="#191724">second</text>
+  <a href="https://second.test"><text x="150.8" y="76.6" class="underline" fill="#191724">second</text></a>
   <rect x="8.0" y="86.4" width="8.4" height="19.6" fill="#3E301E"/>
   <rect x="16.4" y="86.4" width="8.4" height="19.6" fill="#3E301E"/>
   <rect x="24.8" y="86.4" width="8.4" height="19.6" fill="#3E301E"/>

@@ -273,7 +273,7 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 				nextFg := FromANSI(nextCell.Style.Fg)
 				nextBg := FromANSI(nextCell.Style.Bg)
 				// Break if foreground, background, or attributes differ
-				if !sameStyle(baseStyle, nextCell.Style) || baseFg.Hex() != nextFg.Hex() || baseBg.Hex() != nextBg.Hex() {
+				if !sameStyle(baseStyle, nextCell.Style) || baseFg.Hex() != nextFg.Hex() || baseBg.Hex() != nextBg.Hex() || nextCell.Link != cell.Link {
 					break
 				}
 				// For spaces, only include if they have text-span styling
@@ -349,9 +349,12 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 			}
 
 			glyphX, anchorAttr := svgGlyphPosition(textX, cell.Width, opts.CellWidth)
-			sb.WriteString(fmt.Sprintf(`  <text x="%.1f" y="%.1f"%s%s%s>%s</text>`,
-				glyphX, textY, classAttr, fillAttr, anchorAttr, html.EscapeString(textContent.String())))
-			sb.WriteString("\n")
+			textElement := fmt.Sprintf(`<text x="%.1f" y="%.1f"%s%s%s>%s</text>`,
+				glyphX, textY, classAttr, fillAttr, anchorAttr, html.EscapeString(textContent.String()))
+			if cell.Link.URL != "" {
+				textElement = fmt.Sprintf(`<a href="%s">%s</a>`, html.EscapeString(cell.Link.URL), textElement)
+			}
+			sb.WriteString("  " + textElement + "\n")
 		}
 	}
 
@@ -480,7 +483,7 @@ func cellsEqual(a, b *uv.Cell) bool {
 	if a.Style.Attrs != b.Style.Attrs {
 		return false
 	}
-	return true
+	return a.Link == b.Link
 }
 
 // colorsEqual compares two ANSI colors for equality.
@@ -604,6 +607,7 @@ type SerializedCell struct {
 	Fg      string `json:"f,omitempty"` // Foreground color as hex
 	Bg      string `json:"b,omitempty"` // Background color as hex
 	Attrs   uint8  `json:"a,omitempty"` // Style attributes
+	Link    string `json:"l,omitempty"` // OSC 8 hyperlink URL
 }
 
 // SerializedBuffer represents a buffer that can be JSON serialized.
@@ -631,6 +635,7 @@ func SerializeBuffer(buf *uv.Buffer, width, height int) SerializedBuffer {
 					Fg:      colorToHex(cell.Style.Fg),
 					Bg:      colorToHex(cell.Style.Bg),
 					Attrs:   uint8(cell.Style.Attrs),
+					Link:    cell.Link.URL,
 				}
 			}
 		}
@@ -648,9 +653,10 @@ func (sb *SerializedBuffer) ToBuffer() *uv.Buffer {
 			idx := y*sb.Width + x
 			if idx < len(sb.Cells) {
 				cell := sb.Cells[idx]
-				if cell.Content != "" || cell.Fg != "" || cell.Bg != "" || cell.Attrs != 0 {
+				if cell.Content != "" || cell.Fg != "" || cell.Bg != "" || cell.Attrs != 0 || cell.Link != "" {
 					buf.SetCell(x, y, &uv.Cell{
 						Content: cell.Content,
+						Link:    uv.Link{URL: cell.Link},
 						Style: uv.Style{
 							Fg:    hexToColor(cell.Fg),
 							Bg:    hexToColor(cell.Bg),
