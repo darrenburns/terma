@@ -104,6 +104,23 @@ func TestTabDragClippedHeadersAndExternalChanges(t *testing.T) {
 	assert.Equal(t, []string{"a", "c"}, tabKeys(state.TabsPeek()), "cancellation must not roll back external changes")
 }
 
+func TestTabDragSurvivesUnchangedLabelWrites(t *testing.T) {
+	state := NewTabState([]Tab{{Key: "a", Label: "A"}, {Key: "b", Label: "B"}, {Key: "c", Label: "C"}})
+	bar := TabBar{ID: "tabs", State: state, AllowReorder: true}
+	m, r := renderForMouse(bar, 60, 4)
+	x := r.WidgetByID(bar.TabID("a")).Bounds.X
+	m.press(uv.MouseClickEvent{X: x, Button: uv.MouseLeft}, .5, .5, time.Now())
+	m.motion(uv.MouseMotionEvent{X: x + 20, Button: uv.MouseLeft}, .5, .5)
+	r.Update(bar)
+	for _, tab := range state.TabsPeek() {
+		state.SetLabel(tab.Key, tab.Label)
+	}
+	state.SetLabel("missing", "Label")
+	m.release(uv.MouseReleaseEvent{X: x + 20, Button: uv.MouseLeft}, .5, .5)
+	r.Update(bar)
+	assert.Equal(t, []string{"b", "c", "a"}, tabKeys(state.TabsPeek()))
+}
+
 type toggledTabDrag struct {
 	state   *TabState
 	enabled Signal[bool]
