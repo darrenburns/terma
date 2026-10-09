@@ -1,6 +1,9 @@
 package terma
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 // Tab represents a single tab with its key, label, and optional content.
 type Tab struct {
@@ -253,17 +256,17 @@ func (s *TabState) MoveTabRight(key string) bool {
 	return true
 }
 
-// SetLabel updates the label of a tab by key.
+// SetLabel updates the label of a tab by key. Setting an unknown key or the
+// current label changes nothing, so it does not cancel an in-progress tab drag.
 func (s *TabState) SetLabel(key, label string) {
-	s.tabs.Update(func(tabs []Tab) []Tab {
-		for i := range tabs {
-			if tabs[i].Key == key {
-				tabs[i].Label = label
-				break
-			}
-		}
-		return tabs
-	})
+	tabs := s.tabs.Peek()
+	i := slices.IndexFunc(tabs, func(tab Tab) bool { return tab.Key == key })
+	if i < 0 || tabs[i].Label == label {
+		return
+	}
+	result := slices.Clone(tabs)
+	result[i].Label = label
+	s.tabs.Set(result)
 }
 
 // StartEditing begins editing mode for a tab's label.

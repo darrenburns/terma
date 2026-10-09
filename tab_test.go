@@ -295,6 +295,16 @@ func TestTabState_SetLabel(t *testing.T) {
 	assert.Equal(t, "Dashboard", result[0].Label)
 }
 
+func TestTabState_SetLabelLeavesEarlierSnapshotsAlone(t *testing.T) {
+	state := NewTabState([]Tab{{Key: "home", Label: "Home"}})
+	before := state.TabsPeek()
+
+	state.SetLabel("home", "Dashboard")
+
+	assert.Equal(t, "Home", before[0].Label)
+	assert.Equal(t, "Dashboard", state.TabsPeek()[0].Label)
+}
+
 func TestTabState_Editing(t *testing.T) {
 	tabs := []Tab{
 		{Key: "home", Label: "Home"},
