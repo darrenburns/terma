@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Toolchains, module/build caches, and the docs environment survive in the
+# snapshot. Terma needs no authentication, backing services, or wake-up repairs.

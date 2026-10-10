@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+step() {
+	local label="$1"
+	shift
+	printf '\n==> %s\n' "$label"
+	time "$@"
+}
+
+# Avoid apt traffic on restored snapshots. The compiler enables Go's race
+# detector; librsvg and fonts enable the SVG raster tests instead of skipping them.
+packages=()
+for package in build-essential ca-certificates curl librsvg2-bin fonts-firacode fonts-noto-cjk; do
+	if [[ "$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null || true)" != "install ok installed" ]]; then
+		packages+=("$package")
+	fi
+done
+if ((${#packages[@]})); then
+	step "Refresh package index" sudo apt-get update -qq
+	step "Install missing system dependencies" sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${packages[@]}"
+fi
+
+install_go() (
+	local version arch archive destination temporary checksum
+	version="$(awk '$1 == "go" {print $2; exit}' go.mod)"
+	case "$(uname -m)" in
+		x86_64) arch=amd64 ;;
+		aarch64) arch=arm64 ;;
+		*) echo "Unsupported Go architecture: $(uname -m)" >&2; return 1 ;;
+	esac
+	destination="/usr/local/lib/go-$version"
+	if [[ ! -x "$destination/bin/go" ]]; then
+		archive="go$version.linux-$arch.tar.gz"
+		temporary="$(mktemp -d)"
+		trap 'rm -rf -- "$temporary"' EXIT
+		curl -fsSL --retry 3 'https://go.dev/dl/?mode=json&include=all' -o "$temporary/releases.json"
+		checksum="$(python3 -c 'import json, sys; print(next(f["sha256"] for r in json.load(open(sys.argv[1])) for f in r["files"] if f["filename"] == sys.argv[2]))' "$temporary/releases.json" "$archive")"
+		curl -fsSL --retry 3 "https://go.dev/dl/$archive" -o "$temporary/$archive"
+		printf '%s  %s\n' "$checksum" "$temporary/$archive" | sha256sum -c -
+		tar -xzf "$temporary/$archive" -C "$temporary"
+		sudo mkdir -p /usr/local/lib
+		sudo mv "$temporary/go" "$destination"
+	fi
+	# Use the standard PATH, including in new non-interactive login shells.
+	sudo ln -sfn "$destination/bin/go" /usr/local/bin/go
+	sudo ln -sfn "$destination/bin/gofmt" /usr/local/bin/gofmt
+	go version
+)
+
+step "Install Go from go.mod" install_go
+step "Download Go modules" go mod download
+# Unlike go build ./..., install retains binaries in GOPATH/bin, so warm runs
+# do not relink every demo. Go handles invalidation when source or tools change.
+step "Warm Go caches and install demos and browser launcher" go install ./...
+
+# uv is provided by the orb base image. It installs the Python version from
+# docs/.python-version and reuses the locked environment on warm runs.
+step "Install documentation Python and dependencies" uv sync --project docs --locked
+
+echo "Orb setup ready. Run go test -race ./... or uv run --project docs mkdocs build --strict."
