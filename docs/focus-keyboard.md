@@ -18,6 +18,79 @@ type Focusable interface {
 When focus moves away from a widget, Terma calls `OnBlur()` for widgets that
 implement `Blurrable`.
 
+## Keybindings
+
+Widgets declare keybindings by implementing `KeybindProvider`. A key press goes
+to the focused widget first, then bubbles up through its ancestors to the root;
+the first widget with a matching binding handles it.
+
+```go
+func (e *Editor) Keybinds() []Keybind {
+    return []Keybind{
+        {Key: "ctrl+s", Name: "Save", Action: e.save},
+        {Key: "d", Name: "Delete", Action: e.delete},
+        {Key: "D", Name: "Delete all", Action: e.deleteAll}, // shift+d
+    }
+}
+```
+
+A character key matches its case: `"D"` is shift+d and `"d"` is d. The
+keybind bar shows each one as written.
+
+### Chords
+
+A chord is several key presses, one after the other. Write its keys separated
+by spaces. Inside a chord, the space key is written `space`:
+
+```go
+{Key: "ctrl+k ctrl+s", Name: "Save all", Action: e.saveAll},
+{Key: "ctrl+k w", Name: "Close all", Action: e.closeAll},
+{Key: "g g", Name: "Top", Action: e.top},
+{Key: "space f", Name: "Find file", Action: e.find},
+```
+
+When a key press starts a chord, Terma waits for the next key, with no timeout.
+That key goes only to the bindings that can continue the chord, even if a text
+input is focused. `escape` cancels the chord. So does a key that continues no
+chord, and that key is then dropped. A mouse click also cancels it.
+
+A chord wins over a binding to its own start: if one widget binds both `g` and
+`g g`, pressing g waits for the next key, and `g` never runs. Precedence across
+widgets is unchanged. If the focused widget binds `ctrl+k` (as `TextInput`
+does), an ancestor's `ctrl+k …` chords can't start while it's focused.
+
+### Group labels
+
+A binding with no `Action` whose key starts other chords labels them as a
+group. The keybind bar shows the group as one hint instead of every chord in it:
+
+```go
+{Key: "ctrl+k", Name: "Window"}, // shown as "ctrl+k Window…"
+{Key: "ctrl+k ctrl+s", Name: "Save all", Action: e.saveAll},
+{Key: "ctrl+k w", Name: "Close all", Action: e.closeAll},
+```
+
+Making the label `Hidden` hides the whole group.
+
+### Keybind bar
+
+`KeybindBar` lists the bindings the focused widget can reach. Bindings that can
+never run are left out: those shadowed by an earlier widget, those whose key
+the focused widget types as text, and those whose key starts a chord in the
+same widget. While a chord is in progress, the bar shows it, then the keys that
+can come next, then how to cancel:
+
+```
+ctrl+k … ctrl+s Save all w Close all escape Cancel
+```
+
+`FormatKey` changes how keys are written. The presets keep a character's case
+and handle chords: `FormatKeyVerbose` (`Ctrl+k Ctrl+s`), `FormatKeyCaret`
+(`^k ^s`, and `^D` only for an uppercase D), `FormatKeyEmacs` (`C-k C-s`) and
+`FormatKeyVim` (`<C-k><C-s>`, `gg`). A custom `FormatKey` receives the whole
+key, chords included. Widgets other than the bar can read the same information
+with `ctx.ActiveKeybinds()` and `ctx.PendingChord()`.
+
 ## Focus in snapshots
 
 Outside a running app, call `RequestFocus` with a stable widget ID immediately

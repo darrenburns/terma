@@ -3265,9 +3265,6 @@
   <text x="75.2" y="586.2" fill="#908CAA">Theme</text>
   <text x="125.6" y="586.2" fill="#F6C177">escape</text>
   <text x="184.4" y="586.2" fill="#908CAA">Table</text>
-  <text x="234.8" y="586.2" fill="#F6C177">space</text>
-  <text x="285.2" y="586.2" fill="#908CAA">Select</text>
-  <text x="344.0" y="586.2" fill="#908CAA">cell</text>
-  <text x="386.0" y="586.2" fill="#F6C177">ctrl+g</text>
-  <text x="444.8" y="586.2" fill="#908CAA">Demos</text>
+  <text x="234.8" y="586.2" fill="#F6C177">ctrl+g</text>
+  <text x="293.6" y="586.2" fill="#908CAA">Demos</text>
 </svg>

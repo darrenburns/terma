@@ -1,6 +1,7 @@
 package terma
 
 import (
+	"reflect"
 	"slices"
 
 	uv "github.com/charmbracelet/ultraviolet"
@@ -225,6 +226,9 @@ type FocusManager struct {
 	// keybindsVersion changes with it, so widgets showing keybinds rebuild.
 	keybindLabels   []keybindLabel
 	keybindsVersion Signal[int]
+
+	// chord is the chord in progress, if a key press started one.
+	chord keyChord
 }
 
 // keybindLabel is the part of a Keybind that a footer or help screen shows.
@@ -331,68 +335,70 @@ func (fm *FocusManager) capturesKey(event KeyEvent) bool {
 	return ok && capturer.CapturesKey(event.Key())
 }
 
-// ActiveKeybinds returns all declarative keybindings currently active
-// based on the focused widget and its ancestors, plus root widget keybinds.
-// Keybindings are returned in order from focused widget to root,
-// matching the order they would be checked when handling key events.
+// ActiveKeybinds returns the declarative keybindings a key press can reach
+// now: the focused widget's, its ancestors', then the root widget's, in the
+// order key handling checks them.
 //
-// If the focused widget implements KeyCapturer, ancestor keybinds are filtered
-// to exclude keys that the focused widget captures (since those keys won't
-// bubble up to trigger the ancestor keybinds).
+// A keybind is left out when key handling would never get to it:
+//   - an earlier widget binds its first key press, or, for an ancestor's
+//     keybind, the focused widget captures that key (KeyCapturer), so it
+//     doesn't bubble up;
+//   - it runs an action on a key press that also starts a chord in the same
+//     widget, where the chord wins. A group label (no Action) stays.
+//
+// While a chord is in progress, only the keybinds that continue it are
+// returned, keyed by the key presses still to come.
 func (fm *FocusManager) ActiveKeybinds() []Keybind {
-	// Find the focused entry
-	var focusedEntry *FocusableEntry
-	for i := range fm.focusables {
-		if fm.focusables[i].ID == fm.focusedID {
-			focusedEntry = &fm.focusables[i]
-			break
+	entry := fm.focusedEntry()
+	var capturer KeyCapturer
+	focusedLists := 0
+	if entry != nil {
+		if _, ok := entry.Focusable.(KeybindProvider); ok {
+			focusedLists = 1
+		}
+		// The next key of a chord isn't captured: it goes to the chord.
+		if !fm.chordPending() {
+			capturer, _ = entry.Focusable.(KeyCapturer)
 		}
 	}
 
 	var keybinds []Keybind
-
-	// Check if the focused widget captures certain keys
-	var capturer KeyCapturer
-	if focusedEntry != nil {
-		capturer, _ = focusedEntry.Focusable.(KeyCapturer)
-	}
-
-	if focusedEntry != nil {
-		// Collect from focused widget first (unfiltered)
-		if provider, ok := focusedEntry.Focusable.(KeybindProvider); ok {
-			keybinds = append(keybinds, provider.Keybinds()...)
-		}
-
-		// Collect from ancestors (innermost to outermost/root), filtering if needed
-		for i := len(focusedEntry.Ancestors) - 1; i >= 0; i-- {
-			if provider, ok := focusedEntry.Ancestors[i].(KeybindProvider); ok {
-				keybinds = appendFilteredKeybinds(keybinds, provider.Keybinds(), capturer)
+	claimed := make(map[string]bool) // first key presses an earlier widget handles
+	for i, list := range fm.keybindChain(nil) {
+		var firsts []string
+		for _, kb := range list {
+			steps := keySteps(kb.Key)
+			if len(steps) == 0 || claimed[steps[0]] {
+				continue
 			}
+			if i >= focusedLists && capturer != nil && capturer.CapturesKey(steps[0]) {
+				continue
+			}
+			firsts = append(firsts, steps[0])
+			if kb.Action != nil && startsChord(kb.Key, list) {
+				continue
+			}
+			keybinds = append(keybinds, kb)
+		}
+		for _, first := range firsts {
+			claimed[first] = true
 		}
 	}
 
-	// Include root widget keybinds (they're the fallback), filtering if needed
-	if fm.rootWidget != nil {
-		if provider, ok := fm.rootWidget.(KeybindProvider); ok {
-			keybinds = appendFilteredKeybinds(keybinds, provider.Keybinds(), capturer)
-		}
+	if fm.chordPending() {
+		return fm.chordContinuations(keybinds)
 	}
-
 	return keybinds
 }
 
-// appendFilteredKeybinds appends keybinds to the slice, filtering out any
-// that would be captured by the given KeyCapturer (if non-nil).
-func appendFilteredKeybinds(dest []Keybind, src []Keybind, capturer KeyCapturer) []Keybind {
-	if capturer == nil {
-		return append(dest, src...)
+// isRootWidget reports whether widget is the root widget, which is often
+// also the outermost ancestor of the focused widget. Only a pointer root is
+// recognised: comparing widgets of other types could panic.
+func (fm *FocusManager) isRootWidget(widget Widget) bool {
+	if fm.rootWidget == nil || reflect.ValueOf(widget).Kind() != reflect.Pointer {
+		return false
 	}
-	for _, kb := range src {
-		if !capturer.CapturesKey(kb.Key) {
-			dest = append(dest, kb)
-		}
-	}
-	return dest
+	return widget == fm.rootWidget
 }
 
 // notifyBlur calls OnBlur on the currently focused widget if it implements Blurrable.
@@ -597,7 +603,7 @@ func (fm *FocusManager) HandleKey(event KeyEvent) bool {
 	// Check declarative keybindings first
 	if provider, ok := focusedEntry.Focusable.(KeybindProvider); ok {
 		Log("HandleKey: checking keybindings on focused widget %q", focusedEntry.ID)
-		if matchKeybind(event, provider.Keybinds()) {
+		if fm.matchKeybinds(event, provider.Keybinds()) {
 			Log("HandleKey: key %q handled by keybinding on focused widget %q", event.Key(), focusedEntry.ID)
 			return true
 		}
@@ -624,7 +630,7 @@ func (fm *FocusManager) HandleKey(event KeyEvent) bool {
 		// Check declarative keybindings first
 		if provider, ok := ancestor.(KeybindProvider); ok {
 			Log("HandleKey: checking keybindings on ancestor %q (%T)", ancestorID, ancestor)
-			if matchKeybind(event, provider.Keybinds()) {
+			if fm.matchKeybinds(event, provider.Keybinds()) {
 				Log("HandleKey: key %q handled by keybinding on ancestor %q", event.Key(), ancestorID)
 				return true
 			}

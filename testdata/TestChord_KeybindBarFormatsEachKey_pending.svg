@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="604" height="75" viewBox="0 0 604 75">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
+    text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
+    rect { shape-rendering: crispEdges; }
+    .bold { font-weight: bold; }
+    .italic { font-style: italic; }
+    .underline { text-decoration: underline; }
+    .strikethrough { text-decoration: line-through; }
+  </style>
+  <rect width="100%" height="100%" fill="#000000"/>
+  <text x="8.0" y="17.8" fill="#E0DEF4">panel</text>
+  <text x="8.0" y="37.4" fill="#F6C177">C-k</text>
+  <text x="41.6" y="37.4" fill="#F6C177">…</text>
+  <text x="58.4" y="37.4" fill="#F6C177">C-s</text>
+  <text x="92.0" y="37.4" fill="#908CAA">Save</text>
+  <text x="134.0" y="37.4" fill="#908CAA">all</text>
+  <text x="167.6" y="37.4" fill="#F6C177">w</text>
+  <text x="184.4" y="37.4" fill="#908CAA">Close</text>
+  <text x="234.8" y="37.4" fill="#908CAA">all</text>
+  <text x="268.4" y="37.4" fill="#F6C177">C-c</text>
+  <text x="302.0" y="37.4" fill="#908CAA">Comment</text>
+  <text x="369.2" y="37.4" fill="#F6C177">ESC</text>
+  <text x="402.8" y="37.4" fill="#908CAA">Cancel</text>
+</svg>

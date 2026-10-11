@@ -119,7 +119,8 @@ func (s *appSession) handle(ev uv.Event, subX, subY float64) inputResult {
 	switch ev := ev.(type) {
 	case uv.KeyPressEvent:
 		key := KeyEvent{event: ev}
-		if !s.focus.capturesKey(key) && ev.MatchString("ctrl+c") {
+		// A chord in progress may continue with ctrl+c ("ctrl+k ctrl+c").
+		if !s.focus.capturesKey(key) && !s.focus.chordPending() && ev.MatchString("ctrl+c") {
 			return inputQuit
 		}
 		s.resetCursorPulse()
@@ -140,6 +141,7 @@ func (s *appSession) handle(ev uv.Event, subX, subY float64) inputResult {
 
 	case uv.MouseClickEvent:
 		s.resetCursorPulse()
+		s.focus.cancelChord()
 		s.mouse.press(ev, subX, subY, s.now())
 		return inputRender
 

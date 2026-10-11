@@ -918,6 +918,9 @@ func (t TextArea) CapturesKey(key string) bool {
 	if slices.Contains(undoKeysOr(t.UndoKeys), key) || slices.Contains(redoKeysOr(t.RedoKeys), key) {
 		return true
 	}
+	if key == "space" { // How a key event names " ".
+		return true
+	}
 	if strings.Contains(key, "+") {
 		return false
 	}

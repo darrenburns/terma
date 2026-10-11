@@ -529,6 +529,9 @@ func (t TextInput) CapturesKey(key string) bool {
 		return true
 	}
 
+	if key == "space" { // How a key event names " ".
+		return true
+	}
 	// Keys with modifiers are not captured (they may have special handling)
 	if strings.Contains(key, "+") {
 		return false

@@ -729,13 +729,18 @@ func run(root Widget, mode screenMode) (runErr error) {
 	return runErr
 }
 
-// dispatchKey routes a key press. An overlay capturing keys (jump mode) takes
-// it first; then Escape dismisses the top overlay if it allows that; then it
-// goes to the focused widget, bubbling up through its ancestors; then to
-// global keybinds (Jumper's toggle key), which work even with focus in an
-// overlay; and finally to the root widget, which handles keys when nothing is
-// focused.
+// dispatchKey routes a key press. The next key of a chord in progress goes
+// only to the keybinds that can continue it. Otherwise an overlay capturing
+// keys (jump mode) takes it first; then Escape dismisses the top overlay if
+// it allows that; then it goes to the focused widget, bubbling up through its
+// ancestors; then to global keybinds (Jumper's toggle key), which work even
+// with focus in an overlay; and finally to the root widget, which handles
+// keys when nothing is focused.
 func dispatchKey(renderer *Renderer, focusManager *FocusManager, root Widget, event KeyEvent) {
+	if focusManager.chordPending() {
+		focusManager.continueChord(event, renderer.focusCollector.globalKeybinds)
+		return
+	}
 	if event.MatchString("escape") && renderer.cancelDrag() {
 		return
 	}
@@ -755,10 +760,10 @@ func dispatchKey(renderer *Renderer, focusManager *FocusManager, root Widget, ev
 	if focusManager.HandleKey(event) {
 		return
 	}
-	if matchKeybind(event, renderer.focusCollector.globalKeybinds) {
+	if focusManager.matchKeybinds(event, renderer.focusCollector.globalKeybinds) {
 		return
 	}
-	if provider, ok := root.(KeybindProvider); ok && matchKeybind(event, provider.Keybinds()) {
+	if provider, ok := root.(KeybindProvider); ok && focusManager.matchKeybinds(event, provider.Keybinds()) {
 		return
 	}
 	if handler, ok := root.(KeyHandler); ok {

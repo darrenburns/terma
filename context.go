@@ -1,6 +1,7 @@
 package terma
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -184,12 +185,26 @@ func (ctx BuildContext) FocusedSignal() AnySignal[Focusable] {
 // the widget to rebuild when a keybind's key, name or visibility changes,
 // whether from a focus change or from state the focused widget's Keybinds()
 // reads, such as its selection.
+//
+// While a chord is in progress (see PendingChord), only the keybinds that
+// continue it are returned, keyed by the key presses still to come.
 func (ctx BuildContext) ActiveKeybinds() []Keybind {
 	if ctx.focusManager == nil {
 		return nil
 	}
 	ctx.focusManager.keybindsVersion.Get()
 	return ctx.focusManager.ActiveKeybinds()
+}
+
+// PendingChord returns the key presses of the chord in progress, spelled as
+// the keybind that started it writes them ("ctrl+k"), or nil when no chord
+// is waiting for its next key. Like ActiveKeybinds, it is reactive.
+func (ctx BuildContext) PendingChord() []string {
+	if ctx.focusManager == nil {
+		return nil
+	}
+	ctx.focusManager.keybindsVersion.Get()
+	return slices.Clone(ctx.focusManager.chord.steps)
 }
 
 // IsHovered returns true if the given widget is currently being hovered.

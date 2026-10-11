@@ -547,6 +547,12 @@ func (m *MyWidget) OnKey(event KeyEvent) bool {
 }
 ```
 
+Keys match case-sensitively (`"D"` is shift+d). A chord is space-separated key presses in `Key`
+(`"ctrl+k ctrl+s"`, `"g g"`, `"space f"`). A chord wins over a binding to its own start in the same
+widget. A keybind with no `Action` whose key starts other chords is a group label, which `KeybindBar`
+shows as one hint (`ctrl+k Window…`). While a chord is pending, the bar lists its continuations.
+See `docs/focus-keyboard.md`.
+
 `OnKey()` should only be used for:
 - Complex key sequences not expressible as simple bindings
 - Keys that need access to the KeyEvent details (modifiers, raw key data)

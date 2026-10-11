@@ -17,6 +17,12 @@ import (
 // Consecutive keybinds with the same Name are grouped together, displaying
 // their keys joined with "/" (e.g., "enter/space Press").
 //
+// Chords show their key presses in order ("ctrl+k ctrl+s Save all"). A
+// group label (a keybind with no Action whose Key starts other chords)
+// stands in for its chords as one hint, "ctrl+k Window…". While a chord is in
+// progress the bar shows it, then the keys that can come next, then how to
+// cancel: "ctrl+k … s Save all  w Close all  escape Cancel".
+//
 // Hints that don't fit in the bar's width are left out, from the end, so the
 // bar never draws past its box.
 type KeybindBar struct {
@@ -27,7 +33,8 @@ type KeybindBar struct {
 	// FormatKey transforms key strings for display. If nil, uses minimal
 	// normalization (e.g., " " → "space"). Use preset formatters like
 	// FormatKeyCaret, FormatKeyEmacs, FormatKeyVim, or FormatKeyVerbose,
-	// or provide a custom function.
+	// or provide a custom function. The key may be a chord: key presses
+	// separated by spaces, such as "ctrl+k ctrl+s".
 	FormatKey func(string) string
 }
 
@@ -59,19 +66,29 @@ type keybindGroup struct {
 // Build constructs the keybind bar by collecting active keybinds from context.
 func (f KeybindBar) Build(ctx BuildContext) Widget {
 	keybinds := ctx.ActiveKeybinds()
+	chord := ctx.PendingChord()
 	theme := ctx.Theme()
 	width, height := f.GetContentDimensions()
 
-	if len(keybinds) == 0 {
+	if len(keybinds) == 0 && len(chord) == 0 {
 		return Text{Width: width, Height: height, Style: f.Style}
 	}
 
-	// Filter out hidden keybinds and deduplicate by key
+	// A keybind with no action that starts other chords labels their group.
+	groupLabels := make(map[string]bool)
+	for _, kb := range keybinds {
+		if kb.Action == nil && startsChord(kb.Key, keybinds) {
+			groupLabels[kb.Key] = true
+		}
+	}
+
+	// Filter out hidden keybinds, chords inside a labelled group, and
+	// duplicate keys.
 	var visible []Keybind
 	seenKeys := make(map[string]bool)
 
 	for _, kb := range keybinds {
-		if kb.Hidden || seenKeys[kb.Key] {
+		if kb.Hidden || seenKeys[kb.Key] || inLabelledGroup(kb.Key, groupLabels) {
 			continue
 		}
 		seenKeys[kb.Key] = true
@@ -83,29 +100,39 @@ func (f KeybindBar) Build(ctx BuildContext) Widget {
 
 	for _, kb := range visible {
 		key := f.formatKey(kb.Key)
+		name := kb.Name
+		if groupLabels[kb.Key] {
+			name += "…"
+		}
 
 		// Check if we can add to the last group (same Name)
-		if len(groups) > 0 && groups[len(groups)-1].name == kb.Name {
+		if len(groups) > 0 && groups[len(groups)-1].name == name {
 			groups[len(groups)-1].keys = append(groups[len(groups)-1].keys, key)
 		} else {
-			groups = append(groups, keybindGroup{keys: []string{key}, name: kb.Name})
+			groups = append(groups, keybindGroup{keys: []string{key}, name: name})
 		}
 	}
 
 	// Build spans from groups
-	var spans []Span
-	hints := make([][]Span, 0, len(groups))
-
+	var hints [][]Span
+	if len(chord) > 0 {
+		hints = append(hints, []Span{ColorSpan(f.formatKey(strings.Join(chord, " "))+" …", theme.Accent)})
+	}
 	for _, g := range groups {
+		// Join keys with /
+		keyStr := strings.Join(g.keys, "/")
+		hints = append(hints, []Span{ColorSpan(keyStr, theme.Accent), ColorSpan(" "+g.name, theme.TextMuted)})
+	}
+	if len(chord) > 0 {
+		hints = append(hints, []Span{ColorSpan(f.formatKey("escape"), theme.Accent), ColorSpan(" Cancel", theme.TextMuted)})
+	}
+
+	var spans []Span
+	for _, hint := range hints {
 		if len(spans) > 0 {
 			spans = append(spans, PlainSpan(" "))
 		}
-
-		// Join keys with /
-		keyStr := strings.Join(g.keys, "/")
-		hint := []Span{ColorSpan(keyStr, theme.Accent), ColorSpan(" "+g.name, theme.TextMuted)}
 		spans = append(spans, hint...)
-		hints = append(hints, hint)
 	}
 
 	return keybindBarLine{
@@ -117,6 +144,18 @@ func (f KeybindBar) Build(ctx BuildContext) Widget {
 		},
 		hints: hints,
 	}
+}
+
+// inLabelledGroup reports whether key is a chord that starts with one of
+// groupLabels, so the label shows in its place.
+func inLabelledGroup(key string, groupLabels map[string]bool) bool {
+	steps := keySteps(key)
+	for i := 1; i < len(steps); i++ {
+		if groupLabels[strings.Join(steps[:i], " ")] {
+			return true
+		}
+	}
+	return false
 }
 
 // keybindBarLine is the text of a KeybindBar. It lays out like the Text it
@@ -162,8 +201,10 @@ func (f KeybindBar) formatKey(key string) string {
 		return f.FormatKey(key)
 	}
 	// Default: minimal normalization
-	if key == " " {
-		return "space"
-	}
-	return key
+	return formatChord(key, " ", func(step string) string {
+		if step == " " {
+			return "space"
+		}
+		return step
+	})
 }
