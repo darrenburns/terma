@@ -1,6 +1,11 @@
 package terma
 
-import "testing"
+import (
+	"testing"
+
+	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/stretchr/testify/require"
+)
 
 // EdgeInsets Tests
 
@@ -299,6 +304,7 @@ func TestGetBorderCharSet_ReturnsCorrectCharacters(t *testing.T) {
 		{BorderDashed, "┏", "╍", "╏"},
 		{BorderAscii, "+", "-", "|"},
 		{BorderOuter, "▛", "▀", "▌"},
+		{BorderTall, "▊", "▔", "▊"},
 	}
 
 	for _, tt := range tests {
@@ -342,6 +348,7 @@ func TestBorder_Constructors_SetCorrectStyle(t *testing.T) {
 		{"Dashed", DashedBorder(white), BorderDashed},
 		{"Ascii", AsciiBorder(white), BorderAscii},
 		{"Outer", OuterBorder(white), BorderOuter},
+		{"Tall", TallBorder(white), BorderTall},
 	}
 
 	for _, tt := range tests {
@@ -384,5 +391,50 @@ func TestDrawBorder_UsesEachEdgesOwnCharacter(t *testing.T) {
 				t.Errorf("cell %d,%d = %q, want %q", x, y, got, string(ch))
 			}
 		}
+	}
+}
+
+func TestTallBorder_Rendering(t *testing.T) {
+	inner, border := RGB(30, 50, 70), RGB(210, 160, 90)
+	for _, tt := range []struct {
+		name  string
+		outer ColorProvider
+	}{
+		{"terminal background", nil},
+		{"solid parent", RGB(90, 20, 40)},
+		{"gradient parent", NewGradient(RGB(100, 0, 0), RGB(0, 0, 200)).WithAngle(90)},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			widget := Column{
+				Width: Cells(14), Height: Cells(4),
+				Style: Style{BackgroundColor: tt.outer, Padding: EdgeInsetsAll(1)},
+				Children: []Widget{Column{
+					Width: Cells(10), Height: Cells(2),
+					Style: Style{BackgroundColor: inner, Border: TallBorder(border,
+						BorderTitle("T"), BorderSubtitleRight("S"))},
+					Children: []Widget{Text{Content: "x"}},
+				}},
+			}
+			buf := renderToBufferWithFocus(widget, 16, 6, "")
+			want := []string{"▊ T ▔▔▔▔▔▔▔▎", "▊x         ▎", "▊          ▎", "▊▁▁▁▁▁▁▁ S ▎"}
+			for y, row := range want {
+				for x, ch := range []rune(row) {
+					cell := buf.CellAt(x+1, y+1)
+					require.Equal(t, string(ch), cell.Content, "glyph at %d,%d", x, y)
+					bg := inner
+					if x == 0 || x == 11 {
+						bg = Color{}
+						if tt.outer != nil {
+							bg = tt.outer.ColorAt(16, 6, x+1, y+1)
+						}
+					}
+					require.Equal(t, bg, FromANSI(cell.Style.Bg), "background at %d,%d", x, y)
+					require.Equal(t, x == 0, cell.Style.Attrs&uv.AttrReverse != 0, "reverse at %d,%d", x, y)
+					if x == 0 || x == 11 || y == 0 || y == 3 {
+						require.Equal(t, border, FromANSI(cell.Style.Fg), "border color at %d,%d", x, y)
+					}
+				}
+			}
+		})
 	}
 }

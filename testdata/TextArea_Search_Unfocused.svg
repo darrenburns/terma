@@ -35,10 +35,12 @@
   <rect x="176.0" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="184.4" y="27.6" width="8.4" height="19.6" fill="#1F1D2E"/>
   <text x="8.0" y="37.4" fill="#E0DEF4">The</text>
-  <text x="41.6" y="37.4" class="underline" fill="#E0DEF4">fox</text>
+  <text x="41.6" y="37.4" fill="#E0DEF4">fox</text>
+  <path d="M 41.60 45.70 H 66.80" fill="none" stroke="#C4A7E7" stroke-width="1.00"/>
   <text x="75.2" y="37.4" fill="#E0DEF4">saw</text>
   <text x="108.8" y="37.4" fill="#E0DEF4">a</text>
-  <text x="125.6" y="37.4" class="underline" fill="#E0DEF4">fox</text>
+  <text x="125.6" y="37.4" fill="#E0DEF4">fox</text>
+  <path d="M 125.60 45.70 H 150.80" fill="none" stroke="#C4A7E7" stroke-width="1.00"/>
   <text x="150.8" y="37.4" fill="#E0DEF4">.</text>
   <rect x="8.0" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="16.4" y="47.2" width="8.4" height="19.6" fill="#1F1D2E"/>
@@ -89,10 +91,12 @@
   <rect x="167.6" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="176.0" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="184.4" y="66.8" width="8.4" height="19.6" fill="#1F1D2E"/>
-  <text x="8.0" y="76.6" class="underline" fill="#E0DEF4">fox</text>
+  <text x="8.0" y="76.6" fill="#E0DEF4">fox</text>
+  <path d="M 8.00 84.90 H 33.20" fill="none" stroke="#C4A7E7" stroke-width="1.00"/>
   <text x="33.2" y="76.6" fill="#E0DEF4">glove</text>
   <text x="83.6" y="76.6" fill="#E0DEF4">by</text>
   <text x="108.8" y="76.6" fill="#E0DEF4">the</text>
-  <text x="142.4" y="76.6" class="underline" fill="#E0DEF4">fox</text>
+  <text x="142.4" y="76.6" fill="#E0DEF4">fox</text>
+  <path d="M 142.40 84.90 H 167.60" fill="none" stroke="#C4A7E7" stroke-width="1.00"/>
   <text x="167.6" y="76.6" fill="#E0DEF4">.</text>
 </svg>

@@ -28,7 +28,8 @@
   <rect x="142.4" y="8.0" width="8.4" height="19.6" fill="#3E301E"/>
   <rect x="150.8" y="8.0" width="8.4" height="19.6" fill="#3E301E"/>
   <text x="8.0" y="17.8" fill="#191724">Alice</text>
-  <text x="92.0" y="17.8" class="underline" fill="#E0DEF4">Engineer</text>
+  <text x="92.0" y="17.8" fill="#E0DEF4">Engineer</text>
+  <path d="M 92.00 26.10 H 159.20" fill="none" stroke="#F6C177" stroke-width="1.00"/>
   <rect x="92.0" y="27.6" width="8.4" height="19.6" fill="#3E301E"/>
   <rect x="100.4" y="27.6" width="8.4" height="19.6" fill="#3E301E"/>
   <rect x="108.8" y="27.6" width="8.4" height="19.6" fill="#3E301E"/>
@@ -38,5 +39,6 @@
   <rect x="142.4" y="27.6" width="8.4" height="19.6" fill="#3E301E"/>
   <rect x="150.8" y="27.6" width="8.4" height="19.6" fill="#3E301E"/>
   <text x="8.0" y="37.4" fill="#E0DEF4">Charlie</text>
-  <text x="92.0" y="37.4" class="underline" fill="#E0DEF4">Engineer</text>
+  <text x="92.0" y="37.4" fill="#E0DEF4">Engineer</text>
+  <path d="M 92.00 45.70 H 159.20" fill="none" stroke="#F6C177" stroke-width="1.00"/>
 </svg>

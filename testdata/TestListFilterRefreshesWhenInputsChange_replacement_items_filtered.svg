@@ -14,6 +14,7 @@
   <rect x="24.8" y="8.0" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="33.2" y="8.0" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="41.6" y="8.0" width="8.4" height="19.6" fill="#F6C177"/>
-  <text x="8.0" y="17.8" class="underline" fill="#191724">app</text>
+  <text x="8.0" y="17.8" fill="#191724">app</text>
+  <path d="M 8.00 26.10 H 33.20" fill="none" stroke="#F6C177" stroke-width="1.00"/>
   <text x="33.2" y="17.8" fill="#191724">le</text>
 </svg>

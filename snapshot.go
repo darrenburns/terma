@@ -220,10 +220,12 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 			}
 
 			if writeBlockElement(&sb, cell, float64(opts.Padding)+float64(x)*opts.CellWidth, rowY, opts.CellWidth, cellHeight, opts.Background) {
+				writeColoredUnderline(&sb, cell.Style, float64(opts.Padding)+float64(x)*opts.CellWidth, rowY, opts.CellWidth, cellHeight, opts.FontSize)
 				x++
 				continue
 			}
 			if writeBoxDrawing(&sb, cell, float64(opts.Padding)+float64(x)*opts.CellWidth, rowY, opts.CellWidth, cellHeight, opts.Background) {
+				writeColoredUnderline(&sb, cell.Style, float64(opts.Padding)+float64(x)*opts.CellWidth, rowY, opts.CellWidth, cellHeight, opts.FontSize)
 				x++
 				continue
 			}
@@ -329,7 +331,7 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 			if baseStyle.Attrs&uv.AttrItalic != 0 {
 				classes = append(classes, "italic")
 			}
-			if baseStyle.Underline != uv.UnderlineNone {
+			if baseStyle.Underline != uv.UnderlineNone && baseStyle.UnderlineColor == nil {
 				classes = append(classes, "underline")
 			}
 			if baseStyle.Attrs&uv.AttrStrikethrough != 0 {
@@ -355,11 +357,49 @@ func BufferToSVG(buf CellBuffer, width, height int, opts SVGOptions) string {
 				textElement = fmt.Sprintf(`<a href="%s">%s</a>`, html.EscapeString(cell.Link.URL), textElement)
 			}
 			sb.WriteString("  " + textElement + "\n")
+			writeColoredUnderline(&sb, baseStyle, textX, rowY, float64(cellsWidth)*opts.CellWidth, cellHeight, opts.FontSize)
 		}
 	}
 
 	sb.WriteString("</svg>\n")
 	return sb.String()
+}
+
+// Draw colored underlines separately from the glyphs: SVG text-decoration-color
+// is not consistently supported by browsers and rasterizers. Cell geometry also
+// preserves underlined spaces and the full width of wide graphemes.
+func writeColoredUnderline(sb *strings.Builder, style uv.Style, x, y, width, height float64, fontSize int) {
+	if style.Underline == uv.UnderlineNone || style.UnderlineColor == nil {
+		return
+	}
+	thickness := max(1.0, float64(fontSize)/14)
+	y += height - 1.5*thickness
+	var path strings.Builder
+	fmt.Fprintf(&path, "M %.2f %.2f", x, y)
+	dashAttr := ""
+	switch style.Underline {
+	case uv.UnderlineCurly:
+		for offset, direction := 0.0, -1.0; offset < width; direction = -direction {
+			end := min(offset+3*thickness, width)
+			nextY := y + direction*1.5*thickness
+			// Horizontal tangents keep the stroke inside the run at both ends.
+			midX := x + (offset+end)/2
+			fmt.Fprintf(&path, " C %.2f %.2f %.2f %.2f %.2f %.2f", midX, y, midX, nextY, x+end, nextY)
+			offset = end
+			y = nextY
+		}
+	case uv.UnderlineDouble:
+		fmt.Fprintf(&path, " H %.2f M %.2f %.2f H %.2f", x+width, x, y-2*thickness, x+width)
+	default:
+		fmt.Fprintf(&path, " H %.2f", x+width)
+		if style.Underline == uv.UnderlineDotted {
+			dashAttr = fmt.Sprintf(` stroke-dasharray="%.2f %.2f"`, thickness, thickness)
+		} else if style.Underline == uv.UnderlineDashed {
+			dashAttr = fmt.Sprintf(` stroke-dasharray="%.2f %.2f"`, 3*thickness, 2*thickness)
+		}
+	}
+	fmt.Fprintf(sb, "  <path d=\"%s\" fill=\"none\" stroke=\"%s\" stroke-width=\"%.2f\"%s/>\n",
+		path.String(), FromANSI(style.UnderlineColor).Hex(), thickness, dashAttr)
 }
 
 // Center a wide grapheme in its reserved cells without stretching the glyph.
@@ -385,6 +425,8 @@ func blockElementBox(content string) (x, y, width, height float64, ok bool) {
 		return 0, 1 - height, 1, height, true
 	case r >= '▉' && r <= '▏': // Left seven eighths down to left one eighth
 		return 0, 0, float64('▏'-r+1) / 8, 1, true
+	case r == '▔': // Upper one eighth
+		return 0, 0, 1, 1.0 / 8, true
 	}
 	return 0, 0, 0, 0, false
 }
@@ -418,9 +460,10 @@ func writeBlockElement(sb *strings.Builder, cell *uv.Cell, cellX, cellY, cellWid
 	return true
 }
 
-// sameStyle checks if two uv.Style values have the same attributes (ignoring colors).
+// sameStyle compares text-run attributes; foreground and background are checked separately.
 func sameStyle(a, b uv.Style) bool {
-	return a.Attrs == b.Attrs && a.Underline == b.Underline
+	return a.Attrs == b.Attrs && a.Underline == b.Underline &&
+		(a.Underline == uv.UnderlineNone || colorsEqual(a.UnderlineColor, b.UnderlineColor))
 }
 
 // SnapshotStats contains comparison statistics between two snapshots.

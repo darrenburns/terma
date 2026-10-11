@@ -43,6 +43,7 @@ const (
 	BorderDashed
 	BorderAscii
 	BorderOuter
+	BorderTall
 )
 
 // BorderCharSet contains the characters used to render a border.
@@ -95,6 +96,11 @@ func GetBorderCharSet(style BorderStyle) BorderCharSet {
 		return BorderCharSet{
 			TopLeft: "▛", TopRight: "▜", BottomLeft: "▙", BottomRight: "▟",
 			Top: "▀", Bottom: "▄", Left: "▌", Right: "▐",
+		}
+	case BorderTall:
+		return BorderCharSet{
+			TopLeft: "▊", TopRight: "▎", BottomLeft: "▊", BottomRight: "▎",
+			Top: "▔", Bottom: "▁", Left: "▊", Right: "▎",
 		}
 	default:
 		return BorderCharSet{}
@@ -250,6 +256,13 @@ func AsciiBorder(color ColorProvider, decorations ...BorderDecoration) Border {
 //	▙▄▄▄▟
 func OuterBorder(color ColorProvider, decorations ...BorderDecoration) Border {
 	return Border{Style: BorderOuter, Color: color, Decorations: decorations}
+}
+
+// TallBorder creates a Textual-style tall border with thin strokes at the top
+// and bottom of each cell, leaving extra visual space above and below content.
+// The fractional-block sides use the parent background; the left side is reversed.
+func TallBorder(color ColorProvider, decorations ...BorderDecoration) Border {
+	return Border{Style: BorderTall, Color: color, Decorations: decorations}
 }
 
 // IsZero returns true if no border is set.

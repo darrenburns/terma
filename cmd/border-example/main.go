@@ -90,12 +90,23 @@ func (b *BorderDemo) Build(ctx t.BuildContext) t.Widget {
 				},
 			},
 
-			// Row 2: More line-based borders
+			// Row 2: More border styles, including Textual's tall border
 			t.Row{
 				Spacing: 2,
 				Children: []t.Widget{
 					borderBox("Dashed", t.DashedBorder(theme.Secondary)),
 					borderBox("Ascii", t.AsciiBorder(theme.Secondary)),
+					borderBox("Tall", t.TallBorder(theme.Secondary)),
+					t.Text{
+						Content: "Distinct inner background",
+						Style: t.Style{
+							BackgroundColor: theme.Surface2,
+							Padding:         t.EdgeInsetsXY(1, 0),
+							Border: t.TallBorder(theme.Secondary,
+								t.BorderTitle("Tall with title"),
+								t.BorderSubtitleRight("and subtitle")),
+						},
+					},
 				},
 			},
 

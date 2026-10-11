@@ -26,15 +26,18 @@
   <rect x="226.4" y="8.0" width="8.4" height="19.6" fill="#3E301E"/>
   <text x="8.0" y="17.8" fill="#191724">Alice</text>
   <text x="108.8" y="17.8" fill="#E0DEF4">Engineer</text>
-  <text x="209.6" y="17.8" class="underline" fill="#E0DEF4">NYC</text>
+  <text x="209.6" y="17.8" fill="#E0DEF4">NYC</text>
+  <path d="M 209.60 26.10 H 234.80" fill="none" stroke="#F6C177" stroke-width="1.00"/>
   <rect x="8.0" y="27.6" width="8.4" height="19.6" fill="#3E301E"/>
   <rect x="16.4" y="27.6" width="8.4" height="19.6" fill="#3E301E"/>
   <rect x="24.8" y="27.6" width="8.4" height="19.6" fill="#3E301E"/>
   <rect x="209.6" y="27.6" width="8.4" height="19.6" fill="#3E301E"/>
   <rect x="218.0" y="27.6" width="8.4" height="19.6" fill="#3E301E"/>
   <rect x="226.4" y="27.6" width="8.4" height="19.6" fill="#3E301E"/>
-  <text x="8.0" y="37.4" class="underline" fill="#E0DEF4">NYC</text>
+  <text x="8.0" y="37.4" fill="#E0DEF4">NYC</text>
+  <path d="M 8.00 45.70 H 33.20" fill="none" stroke="#F6C177" stroke-width="1.00"/>
   <text x="41.6" y="37.4" fill="#E0DEF4">Admin</text>
   <text x="108.8" y="37.4" fill="#E0DEF4">Manager</text>
-  <text x="209.6" y="37.4" class="underline" fill="#E0DEF4">NYC</text>
+  <text x="209.6" y="37.4" fill="#E0DEF4">NYC</text>
+  <path d="M 209.60 45.70 H 234.80" fill="none" stroke="#F6C177" stroke-width="1.00"/>
 </svg>

@@ -1,6 +1,7 @@
 package terma
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -81,6 +82,23 @@ func TestSnapshot_Style_BorderAscii(t *testing.T) {
 	}
 	AssertSnapshot(t, widget, 15, 5,
 		"15x5 column with gray ASCII border (+-+|+-+ characters). 'ASCII' text inside.")
+}
+
+func TestSnapshot_Style_BorderTall(t *testing.T) {
+	widget := Column{
+		Style: Style{BackgroundColor: RGB(25, 20, 40), Padding: EdgeInsetsAll(1)},
+		Children: []Widget{Column{
+			Width: Cells(22), Height: Cells(2),
+			Style: Style{
+				BackgroundColor: RGB(40, 65, 85),
+				Border: TallBorder(RGB(230, 180, 100),
+					BorderTitle("Tall"), BorderSubtitleRight("Subtitle")),
+			},
+			Children: []Widget{Text{Content: "Content"}},
+		}},
+	}
+	AssertSnapshot(t, widget, 26, 6,
+		"Tall border with one-eighth top/bottom strokes, reversed left edge, parent-background sides, and title/subtitle on the inner background.")
 }
 
 func TestSnapshot_Style_BorderWithTitle(t *testing.T) {
@@ -376,12 +394,32 @@ func TestSnapshot_Style_Italic(t *testing.T) {
 }
 
 func TestSnapshot_Style_Underline(t *testing.T) {
-	widget := Text{
-		Content: "Underlined Text",
-		Style:   Style{Underline: UnderlineSingle},
+	widget := Column{Children: []Widget{
+		Text{Content: "Default underline", Style: Style{Underline: UnderlineSingle}},
+	}}
+	for _, tt := range []struct {
+		name  string
+		style UnderlineStyle
+	}{
+		{"Single", UnderlineSingle}, {"Double", UnderlineDouble},
+		{"Curly", UnderlineCurly}, {"Dotted", UnderlineDotted}, {"Dashed", UnderlineDashed},
+	} {
+		widget.Children = append(widget.Children, Text{Spans: []Span{
+			PlainSpan(fmt.Sprintf("%-8s", tt.name)),
+			{Text: "Red ", Style: SpanStyle{Underline: tt.style, UnderlineColor: RGB(255, 80, 80)}},
+			{Text: "Green 中", Style: SpanStyle{Underline: tt.style, UnderlineColor: RGB(80, 255, 120)}},
+		}})
 	}
-	AssertSnapshot(t, widget, 20, 3,
-		"White 'Underlined Text' with single underline at top-left on black background.")
+	widget.Children = append(widget.Children,
+		Text{Content: "Reversed underline", Style: Style{
+			Reverse: true, Underline: UnderlineSingle, UnderlineColor: RGB(255, 80, 80),
+		}},
+		Text{Content: "With strikethrough", Style: Style{
+			Strikethrough: true, Underline: UnderlineSingle, UnderlineColor: RGB(80, 255, 120),
+		}},
+	)
+	AssertSnapshot(t, widget, 22, 8,
+		"Default underline plus five colored underline styles. Adjacent red/green strokes retain their colors through spaces, wide text, reverse video, and strikethrough.")
 }
 
 func TestSnapshot_Style_Strikethrough(t *testing.T) {

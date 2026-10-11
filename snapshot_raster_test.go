@@ -97,6 +97,50 @@ func TestSVGRasterLatinAfterCJKStaysInItsCell(t *testing.T) {
 	}
 }
 
+func TestSVGRasterColoredUnderlines(t *testing.T) {
+	for _, underline := range []UnderlineStyle{UnderlineSingle, UnderlineDouble, UnderlineCurly, UnderlineDotted, UnderlineDashed} {
+		t.Run(fmt.Sprint(underline), func(t *testing.T) {
+			widget := Text{Spans: []Span{
+				{Text: "A ", Style: SpanStyle{Underline: underline, UnderlineColor: RGB(255, 0, 0)}},
+				{Text: "B中", Style: SpanStyle{Underline: underline, UnderlineColor: RGB(0, 255, 0)}},
+				{Text: "B", Style: SpanStyle{Underline: underline}},
+				{Text: "C", Style: SpanStyle{UnderlineColor: RGB(0, 0, 255)}},
+			}, Style: Style{ForegroundColor: White}}
+			opts := DefaultSVGOptions()
+			opts.FontSize, opts.CellWidth, opts.LineHeight, opts.Padding = 20, 12, 1.5, 0
+			im := rasterizeSnapshot(t, SnapshotWithOptions(widget, 7, 1, opts), "2")
+			for column := 0; column < 7; column++ {
+				red, green, blue := 0, 0, 0
+				for y := 0; y < im.Bounds().Dy(); y++ {
+					for x := column * 24; x < (column+1)*24; x++ {
+						r, g, b, _ := im.At(x, y).RGBA()
+						if r > 0x8000 && g == 0 && b == 0 {
+							red++
+						}
+						if g > 0x8000 && r == 0 && b == 0 {
+							green++
+						}
+						if b > 0x8000 && r == 0 && g == 0 {
+							blue++
+						}
+					}
+				}
+				if column < 2 {
+					require.Positive(t, red, "red underline must cover text and spaces, column %d", column)
+				} else {
+					require.Zero(t, red, "red underline must not leak into column %d", column)
+				}
+				if column >= 2 && column <= 4 {
+					require.Positive(t, green, "green underline must cover both wide-glyph cells, column %d", column)
+				} else {
+					require.Zero(t, green, "green underline must not leak into column %d", column)
+				}
+				require.Zero(t, blue, "setting a color alone must not create an underline")
+			}
+		})
+	}
+}
+
 func TestSVGRasterDiffDoesNotCoverWideGlyph(t *testing.T) {
 	buf := RenderToBuffer(Text{Content: "中", Style: Style{ForegroundColor: RGB(255, 255, 255)}}, 2, 1)
 	opts := DefaultSVGOptions()

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="184" height="75" viewBox="0 0 184 75">
+<svg xmlns="http://www.w3.org/2000/svg" width="201" height="173" viewBox="0 0 201 173">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&amp;display=swap');
     text { font-family: Fira Code, Menlo, Monaco, Consolas, monospace; font-size: 14px; dominant-baseline: central; }
@@ -9,5 +9,45 @@
     .strikethrough { text-decoration: line-through; }
   </style>
   <rect width="100%" height="100%" fill="#000000"/>
-  <text x="8.0" y="17.8" class="underline" fill="#E0DEF4">Underlined Text</text>
+  <text x="8.0" y="17.8" class="underline" fill="#E0DEF4">Default underline</text>
+  <text x="8.0" y="37.4" fill="#E0DEF4">Single</text>
+  <text x="75.2" y="37.4" fill="#E0DEF4">Red </text>
+  <path d="M 75.20 45.70 H 108.80" fill="none" stroke="#FF5050" stroke-width="1.00"/>
+  <text x="108.8" y="37.4" fill="#E0DEF4">Green </text>
+  <path d="M 108.80 45.70 H 159.20" fill="none" stroke="#50FF78" stroke-width="1.00"/>
+  <text x="167.6" y="37.4" fill="#E0DEF4" text-anchor="middle">中</text>
+  <path d="M 159.20 45.70 H 176.00" fill="none" stroke="#50FF78" stroke-width="1.00"/>
+  <text x="8.0" y="57.0" fill="#E0DEF4">Double</text>
+  <text x="75.2" y="57.0" fill="#E0DEF4">Red </text>
+  <path d="M 75.20 65.30 H 108.80 M 75.20 63.30 H 108.80" fill="none" stroke="#FF5050" stroke-width="1.00"/>
+  <text x="108.8" y="57.0" fill="#E0DEF4">Green </text>
+  <path d="M 108.80 65.30 H 159.20 M 108.80 63.30 H 159.20" fill="none" stroke="#50FF78" stroke-width="1.00"/>
+  <text x="167.6" y="57.0" fill="#E0DEF4" text-anchor="middle">中</text>
+  <path d="M 159.20 65.30 H 176.00 M 159.20 63.30 H 176.00" fill="none" stroke="#50FF78" stroke-width="1.00"/>
+  <text x="8.0" y="76.6" fill="#E0DEF4">Curly</text>
+  <text x="75.2" y="76.6" fill="#E0DEF4">Red </text>
+  <path d="M 75.20 84.90 C 76.70 84.90 76.70 83.40 78.20 83.40 C 79.70 83.40 79.70 84.90 81.20 84.90 C 82.70 84.90 82.70 83.40 84.20 83.40 C 85.70 83.40 85.70 84.90 87.20 84.90 C 88.70 84.90 88.70 83.40 90.20 83.40 C 91.70 83.40 91.70 84.90 93.20 84.90 C 94.70 84.90 94.70 83.40 96.20 83.40 C 97.70 83.40 97.70 84.90 99.20 84.90 C 100.70 84.90 100.70 83.40 102.20 83.40 C 103.70 83.40 103.70 84.90 105.20 84.90 C 106.70 84.90 106.70 83.40 108.20 83.40 C 108.50 83.40 108.50 84.90 108.80 84.90" fill="none" stroke="#FF5050" stroke-width="1.00"/>
+  <text x="108.8" y="76.6" fill="#E0DEF4">Green </text>
+  <path d="M 108.80 84.90 C 110.30 84.90 110.30 83.40 111.80 83.40 C 113.30 83.40 113.30 84.90 114.80 84.90 C 116.30 84.90 116.30 83.40 117.80 83.40 C 119.30 83.40 119.30 84.90 120.80 84.90 C 122.30 84.90 122.30 83.40 123.80 83.40 C 125.30 83.40 125.30 84.90 126.80 84.90 C 128.30 84.90 128.30 83.40 129.80 83.40 C 131.30 83.40 131.30 84.90 132.80 84.90 C 134.30 84.90 134.30 83.40 135.80 83.40 C 137.30 83.40 137.30 84.90 138.80 84.90 C 140.30 84.90 140.30 83.40 141.80 83.40 C 143.30 83.40 143.30 84.90 144.80 84.90 C 146.30 84.90 146.30 83.40 147.80 83.40 C 149.30 83.40 149.30 84.90 150.80 84.90 C 152.30 84.90 152.30 83.40 153.80 83.40 C 155.30 83.40 155.30 84.90 156.80 84.90 C 158.00 84.90 158.00 83.40 159.20 83.40" fill="none" stroke="#50FF78" stroke-width="1.00"/>
+  <text x="167.6" y="76.6" fill="#E0DEF4" text-anchor="middle">中</text>
+  <path d="M 159.20 84.90 C 160.70 84.90 160.70 83.40 162.20 83.40 C 163.70 83.40 163.70 84.90 165.20 84.90 C 166.70 84.90 166.70 83.40 168.20 83.40 C 169.70 83.40 169.70 84.90 171.20 84.90 C 172.70 84.90 172.70 83.40 174.20 83.40 C 175.10 83.40 175.10 84.90 176.00 84.90" fill="none" stroke="#50FF78" stroke-width="1.00"/>
+  <text x="8.0" y="96.2" fill="#E0DEF4">Dotted</text>
+  <text x="75.2" y="96.2" fill="#E0DEF4">Red </text>
+  <path d="M 75.20 104.50 H 108.80" fill="none" stroke="#FF5050" stroke-width="1.00" stroke-dasharray="1.00 1.00"/>
+  <text x="108.8" y="96.2" fill="#E0DEF4">Green </text>
+  <path d="M 108.80 104.50 H 159.20" fill="none" stroke="#50FF78" stroke-width="1.00" stroke-dasharray="1.00 1.00"/>
+  <text x="167.6" y="96.2" fill="#E0DEF4" text-anchor="middle">中</text>
+  <path d="M 159.20 104.50 H 176.00" fill="none" stroke="#50FF78" stroke-width="1.00" stroke-dasharray="1.00 1.00"/>
+  <text x="8.0" y="115.8" fill="#E0DEF4">Dashed</text>
+  <text x="75.2" y="115.8" fill="#E0DEF4">Red </text>
+  <path d="M 75.20 124.10 H 108.80" fill="none" stroke="#FF5050" stroke-width="1.00" stroke-dasharray="3.00 2.00"/>
+  <text x="108.8" y="115.8" fill="#E0DEF4">Green </text>
+  <path d="M 108.80 124.10 H 159.20" fill="none" stroke="#50FF78" stroke-width="1.00" stroke-dasharray="3.00 2.00"/>
+  <text x="167.6" y="115.8" fill="#E0DEF4" text-anchor="middle">中</text>
+  <path d="M 159.20 124.10 H 176.00" fill="none" stroke="#50FF78" stroke-width="1.00" stroke-dasharray="3.00 2.00"/>
+  <rect x="8.0" y="125.6" width="151.2" height="19.6" fill="#E0DEF4"/>
+  <text x="8.0" y="135.4" fill="#000000">Reversed underline</text>
+  <path d="M 8.00 143.70 H 159.20" fill="none" stroke="#FF5050" stroke-width="1.00"/>
+  <text x="8.0" y="155.0" class="strikethrough" fill="#E0DEF4">With strikethrough</text>
+  <path d="M 8.00 163.30 H 159.20" fill="none" stroke="#50FF78" stroke-width="1.00"/>
 </svg>

@@ -923,7 +923,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 					return cellColor
 				}
 			}
-			borderCtx.DrawBorder(0, 0, box.Width, box.Height, style.Border)
+			borderCtx.drawBorder(0, 0, box.Width, box.Height, style.Border, ctx.inheritedBgAt)
 		}
 		return struct{}{}
 	})

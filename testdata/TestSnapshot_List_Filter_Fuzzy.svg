@@ -19,8 +19,10 @@
   <rect x="66.8" y="8.0" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="75.2" y="8.0" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="83.6" y="8.0" width="8.4" height="19.6" fill="#F6C177"/>
-  <text x="8.0" y="17.8" class="underline" fill="#191724">J</text>
+  <text x="8.0" y="17.8" fill="#191724">J</text>
+  <path d="M 8.00 26.10 H 16.40" fill="none" stroke="#F6C177" stroke-width="1.00"/>
   <text x="16.4" y="17.8" fill="#191724">ava</text>
-  <text x="41.6" y="17.8" class="underline" fill="#191724">Sc</text>
+  <text x="41.6" y="17.8" fill="#191724">Sc</text>
+  <path d="M 41.60 26.10 H 58.40" fill="none" stroke="#F6C177" stroke-width="1.00"/>
   <text x="58.4" y="17.8" fill="#191724">ript</text>
 </svg>

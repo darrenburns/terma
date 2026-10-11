@@ -443,6 +443,11 @@ func (ctx *RenderContext) DrawBackdrop(x, y, width, height int, backdrop ColorPr
 // DrawBorder draws a border around a rectangular region.
 // The border is drawn at the edges of the specified rectangle.
 func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
+	ctx.drawBorder(x, y, width, height, border, ctx.inheritedBgAt)
+}
+
+// outerBgAt samples the parent background before the widget's own background.
+func (ctx *RenderContext) drawBorder(x, y, width, height int, border Border, outerBgAt func(int, int) Color) {
 	if border.Style == BorderNone || width < 2 || height < 2 {
 		return
 	}
@@ -474,11 +479,22 @@ func (ctx *RenderContext) DrawBorder(x, y, width, height int, border Border) {
 		if !bg.IsSet() && ctx.inheritedBgAt != nil {
 			bg = ctx.inheritedBgAt(absX, absY)
 		}
+		tallSide := border.Style == BorderTall && (cx == x || cx == x+width-1)
+		if tallSide {
+			bg = Color{}
+			if outerBgAt != nil {
+				bg = outerBgAt(absX, absY)
+			}
+		}
 		// Blend foreground if semi-transparent
 		effectiveFg := blendForeground(fgColor, bg)
 		style := uv.Style{
 			Fg: effectiveFg.toANSI(),
 			Bg: bg.toANSI(),
+		}
+		if tallSide && cx == x {
+			// Reversing ▊ leaves a right-hand quarter stroke, matching ▎ on the right.
+			style.Attrs |= uv.AttrReverse
 		}
 		cell := &uv.Cell{Content: content, Width: 1, Style: style}
 		ctx.terminal.SetCell(absX, absY, cell)
@@ -1292,7 +1308,7 @@ func (r *Renderer) renderTreeWithParent(ctx *RenderContext, tree RenderTree, scr
 				return cellColor
 			}
 		}
-		borderCtx.DrawBorder(0, 0, box.Width, box.Height, style.Border)
+		borderCtx.drawBorder(0, 0, box.Width, box.Height, style.Border, ctx.inheritedBgAt)
 	}
 
 	// 3. Render widget content at content origin
