@@ -438,3 +438,71 @@ func TestTallBorder_Rendering(t *testing.T) {
 		})
 	}
 }
+
+func TestTallBorder_FloatingBackground(t *testing.T) {
+	for _, mode := range []string{"floating", "modal", "overlapping floats"} {
+		t.Run(mode, func(t *testing.T) {
+			const width, height = 24, 10
+			outer := NewGradient(RGB(100, 20, 40), RGB(20, 60, 200)).WithAngle(35)
+			inner := NewSignal(RGB(30, 50, 70))
+			border := RGB(210, 160, 90)
+			lower := RGB(60, 100, 80)
+			widget := Stack{
+				Width: Cells(width), Height: Cells(height),
+				Style: Style{BackgroundColor: Magenta},
+				Children: []Widget{
+					Text{Width: Cells(width), Height: Cells(height), Style: Style{BackgroundColor: outer}},
+					Floating{
+						Visible: mode == "overlapping floats",
+						Config:  FloatConfig{Offset: Offset{X: 1, Y: 1}},
+						Child:   Text{Width: Cells(8), Height: Cells(8), Style: Style{BackgroundColor: lower}},
+					},
+					Floating{
+						Visible: true,
+						Config:  FloatConfig{Offset: Offset{X: 3, Y: 2}, Modal: mode == "modal", BackdropColor: Black.WithAlpha(.5)},
+						BuildChild: func(BuildContext, FloatGeometry) Widget {
+							return Text{
+								ID: "popup", Content: "Content", Width: Cells(12), Height: Cells(3),
+								Style: Style{BackgroundColor: inner.Get(), Border: TallBorder(border,
+									BorderTitle("T"), BorderSubtitleRight("S"))},
+							}
+						},
+					},
+				},
+			}
+			renderer, buf := geometryRenderer(t, width, height)
+			renderer.Render(widget)
+			check := func() {
+				t.Helper()
+				bounds := renderer.WidgetByID("popup").Bounds
+				for y := bounds.Y; y < bounds.Y+bounds.Height; y++ {
+					for _, x := range []int{bounds.X, bounds.X + bounds.Width - 1} {
+						cell := buf.CellAt(x, y)
+						bg := outer.ColorAt(width, height, x, y)
+						if mode == "modal" {
+							bg = Black.WithAlpha(.5).BlendOver(bg)
+						} else if mode == "overlapping floats" && x < 9 {
+							bg = lower
+						}
+						require.Equal(t, bg, FromANSI(cell.Style.Bg), "outside background at %d,%d", x, y)
+						require.Equal(t, border, FromANSI(cell.Style.Fg))
+						require.Equal(t, x == bounds.X, cell.Style.Attrs&uv.AttrReverse != 0)
+						if x == bounds.X {
+							require.Equal(t, "▊", cell.Content)
+						} else {
+							require.Equal(t, "▎", cell.Content)
+						}
+					}
+				}
+				// Titles, horizontal strokes and content retain the popup's fill.
+				for _, pos := range []Offset{{4, 2}, {5, 2}, {10, 2}, {4, 3}, {10, 6}, {15, 6}} {
+					require.Equal(t, inner.Peek(), FromANSI(buf.CellAt(pos.X, pos.Y).Style.Bg), "inside background at %+v", pos)
+				}
+			}
+			check()
+			inner.Set(RGB(80, 35, 65))
+			renderer.Update(widget)
+			check()
+		})
+	}
+}

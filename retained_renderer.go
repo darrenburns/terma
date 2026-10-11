@@ -872,6 +872,36 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 	// Colors may read signals as they are sampled (an animated ColorProvider),
 	// so the decoration repaints when they change.
 	withSignalRead(node, readPhasePaint, func() struct{} {
+		outerBgAt := ctx.inheritedBgAt
+		if style.Border.Style == BorderTall && box.Width >= 2 && box.Height >= 2 {
+			// Preserve the outside of the fractional side cells before filling
+			// the box. The painted background includes siblings, lower floats
+			// and modal backdrops that the inherited callback cannot describe.
+			top := max(trueAbsBorderY, ctx.clip.Y)
+			bottom := min(trueAbsBorderY+box.Height, ctx.clip.Y+ctx.clip.Height)
+			sides := make([][2]Color, max(0, bottom-top))
+			for y := top; y < bottom; y++ {
+				for side, x := range [2]int{trueAbsBorderX, trueAbsBorderX + box.Width - 1} {
+					if !ctx.clip.Contains(x, y) {
+						continue
+					}
+					if cell := ctx.terminal.CellAt(x, y); cell != nil {
+						sides[y-top][side] = FromANSI(cell.Style.Bg)
+					}
+					if !sides[y-top][side].IsSet() && outerBgAt != nil {
+						sides[y-top][side] = outerBgAt(x, y)
+					}
+				}
+			}
+			outerBgAt = func(x, y int) Color {
+				side := 0
+				if x != trueAbsBorderX {
+					side = 1
+				}
+				return sides[y-top][side]
+			}
+		}
+
 		if style.BackgroundColor != nil && style.BackgroundColor.IsSet() {
 			sampleColor := style.BackgroundColor.ColorAt(box.Width, box.Height, 0, 0)
 			useBackdrop := !sampleColor.IsOpaque()
@@ -923,7 +953,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 					return cellColor
 				}
 			}
-			borderCtx.drawBorder(0, 0, box.Width, box.Height, style.Border, ctx.inheritedBgAt)
+			borderCtx.drawBorder(0, 0, box.Width, box.Height, style.Border, outerBgAt)
 		}
 		return struct{}{}
 	})
