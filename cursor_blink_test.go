@@ -17,14 +17,115 @@ func enableCursorBlinkForTest(t testing.TB) {
 	t.Cleanup(func() { SetCursorBlink(false) })
 }
 
+func enableCursorPulseForTest(t testing.TB) {
+	t.Helper()
+	style := CurrentCursorBlinkStyle()
+	SetCursorBlinkStyle(CursorBlinkPulse)
+	t.Cleanup(func() { SetCursorBlinkStyle(style) })
+	enableCursorBlinkForTest(t)
+}
+
 func TestCursorBlink_OffByDefault(t *testing.T) {
 	assert.False(t, CursorBlink())
+	assert.Equal(t, CursorBlinkClassic, CurrentCursorBlinkStyle())
 }
 
 func TestSnapshot_TextInput_CursorBlinkShown(t *testing.T) {
 	enableCursorBlinkForTest(t)
 	widget := TextInput{ID: "input", State: NewTextInputState("hello"), Style: Style{Width: Cells(10)}}
 	AssertSnapshot(t, widget, 10, 1, "Focused input at full pulse brightness: reverse-video cursor after 'hello'.")
+}
+
+func TestCursorBlink_ClassicRestoresUnderlyingCells(t *testing.T) {
+	for _, kind := range []string{"input", "area"} {
+		for _, scenario := range []string{"end", "wide", "selection", "placeholder"} {
+			t.Run(kind+"/"+scenario, func(t *testing.T) {
+				enableCursorBlinkForTest(t)
+				text := "ab界d"
+				if scenario == "placeholder" {
+					text = ""
+				}
+				style := Style{Width: Cells(12), Height: Cells(1), ForegroundColor: RGB(220, 170, 90), BackgroundColor: RGB(20, 40, 60)}
+				highlighter := HighlighterFunc(func(string, []string) []TextHighlight {
+					return []TextHighlight{{Start: 2, End: 3, Style: SpanStyle{
+						Foreground: RGB(40, 200, 100), Background: RGB(100, 20, 180).WithAlpha(0.5),
+					}}}
+				})
+				var widget Widget = TextInput{ID: "editor", State: NewTextInputState(text), Placeholder: "Hint", Style: style, Highlighter: highlighter}
+				if kind == "area" {
+					widget = TextArea{ID: "editor", State: NewTextAreaState(text), Placeholder: "Hint", Style: style, Highlighter: highlighter}
+				}
+				p := NewPilot(t, Column{Children: []Widget{widget, Button{ID: "button", Label: "OK"}}}, 12, 3)
+				if scenario == "wide" {
+					p.Press("left", "left")
+				} else if scenario == "selection" {
+					p.Press("shift+left", "shift+left")
+				}
+				row := func() []uv.Cell {
+					cells := make([]uv.Cell, 12)
+					for x := range cells {
+						cells[x] = *p.Buffer().CellAt(x, 0)
+					}
+					return cells
+				}
+				shown := row()
+				if scenario == "wide" || scenario == "selection" {
+					assert.Equal(t, RGB(60, 30, 120), FromANSI(shown[2].Style.Bg), "shown cursor resolves the highlight once, without the selection background")
+				}
+				p.Press("tab")
+				hidden := row() // The same widget with no cursor provides the expected text and styles.
+				require.NotEqual(t, shown, hidden)
+				p.Press("shift+tab")
+				p.Advance(529 * time.Millisecond)
+				assert.Equal(t, shown, row())
+				p.Advance(time.Millisecond)
+				assert.Equal(t, hidden, row(), "classic blink removes only the cursor, retaining highlighting and selection")
+				assert.Zero(t, p.session.renderer.Stats().PaintCount)
+				p.Advance(530 * time.Millisecond)
+				assert.Equal(t, shown, row())
+				p.Advance(530 * time.Millisecond)
+				SetCursorBlink(false)
+				p.ScreenText()
+				assert.Equal(t, shown, row(), "disabling while hidden restores the steady cursor")
+				p.Advance(2 * time.Second)
+				assert.Equal(t, shown, row())
+			})
+		}
+	}
+}
+
+func TestCursorBlink_StyleAndEnabledAreIndependent(t *testing.T) {
+	t.Cleanup(func() {
+		SetCursorBlink(false)
+		SetCursorBlinkStyle(CursorBlinkClassic)
+	})
+	p := NewPilot(t, TextInput{ID: "editor", State: NewTextInputState("hi"), Width: Cells(10)}, 10, 1)
+	cell := func() uv.Cell { return *p.Buffer().CellAt(2, 0) }
+	shown := cell()
+	SetCursorBlinkStyle(CursorBlinkPulse)
+	assert.False(t, CursorBlink(), "selecting a style must not enable blinking")
+	p.Advance(1200 * time.Millisecond)
+	assert.Equal(t, shown, cell())
+	SetCursorBlink(true)
+	p.Advance(1200 * time.Millisecond)
+	dim := cell()
+	assert.NotEqual(t, shown, dim)
+	SetCursorBlinkStyle(CursorBlinkClassic)
+	p.ScreenText()
+	assert.True(t, CursorBlink(), "changing style must not disable blinking")
+	assert.Equal(t, shown, cell(), "changing style restarts the visible phase")
+	p.Advance(530 * time.Millisecond)
+	assert.NotEqual(t, shown, cell())
+	assert.NotEqual(t, dim, cell(), "classic hidden phase is not the pulse trough")
+	SetCursorBlinkStyle(CursorBlinkPulse)
+	p.ScreenText()
+	assert.Equal(t, shown, cell())
+	p.Advance(1200 * time.Millisecond)
+	assert.Equal(t, dim, cell())
+	SetCursorBlink(false)
+	p.Advance(2 * time.Second)
+	assert.Equal(t, shown, cell())
+	assert.Equal(t, CursorBlinkPulse, CurrentCursorBlinkStyle(), "disabling preserves the chosen style")
 }
 
 // Test through the public widgets and clock: only the cursor's cell may change,
@@ -41,7 +142,7 @@ func TestCursorPulse_CellOnly(t *testing.T) {
 		for _, sizing := range []string{"fixed", "auto"} {
 			for _, text := range []string{"", "ab界d"} {
 				t.Run(kind+"/"+sizing+"/"+text, func(t *testing.T) {
-					enableCursorBlinkForTest(t)
+					enableCursorPulseForTest(t)
 					style := Style{ForegroundColor: RGB(220, 200, 160), BackgroundColor: RGB(20, 40, 60)}
 					if sizing == "fixed" {
 						style.Width = Cells(12)
@@ -110,7 +211,7 @@ func TestCursorPulse_CellOnly(t *testing.T) {
 }
 
 func TestCursorPulse_ScrollingAndOverlays(t *testing.T) {
-	enableCursorBlinkForTest(t)
+	enableCursorPulseForTest(t)
 	state := NewTextAreaState(strings.Repeat("row of text\n", 1000))
 	state.CursorIndex.Set(0)
 	scroll := NewScrollState()
@@ -171,7 +272,7 @@ func TestCursorPulse_ScrollingAndOverlays(t *testing.T) {
 }
 
 func TestCursorPulse_ImageCanvas(t *testing.T) {
-	enableCursorBlinkForTest(t)
+	enableCursorPulseForTest(t)
 	p := NewPilot(t, Row{Children: []Widget{
 		TextInput{ID: "input", State: NewTextInputState("hi"), Width: Cells(10)},
 		Image{Source: testImage(t, 2, 2), Style: Style{Width: Cells(2), Height: Cells(2)}},
@@ -197,7 +298,7 @@ func TestCursorPulse_ThemeChanges(t *testing.T) {
 			}
 			p := NewPilot(t, widget, 10, 2)
 			assert.Equal(t, Hex("#45FFB3"), FromANSI(p.Buffer().CellAt(2, 0).Style.Fg), "steady cursor uses Aurora's caret color")
-			enableCursorBlinkForTest(t)
+			enableCursorPulseForTest(t)
 			p.Advance(1200 * time.Millisecond)
 			SetTheme(ThemeNameMidnightEmber)
 			p.ScreenText()  // Repaint after the theme changes, refreshing the palette.
@@ -213,7 +314,7 @@ func TestCursorPulse_ThemeChanges(t *testing.T) {
 func BenchmarkCursorPulse(b *testing.B) {
 	for _, lines := range []int{10, 10000} {
 		b.Run(fmt.Sprintf("%d_lines", lines), func(b *testing.B) {
-			enableCursorBlinkForTest(b)
+			enableCursorPulseForTest(b)
 			state := NewTextAreaState(strings.Repeat("a line of text\n", lines))
 			state.CursorIndex.Set(0)
 			scroll := NewScrollState()

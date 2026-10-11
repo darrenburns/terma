@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+	terma.SetCursorBlinkStyle(terma.CursorBlinkPulse)
 	terma.SetCursorBlink(true)
 	demokit.Run(textareademo.New())
 }

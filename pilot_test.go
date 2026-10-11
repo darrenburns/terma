@@ -146,8 +146,7 @@ func TestPilot_AdvanceDrivesAnimations(t *testing.T) {
 }
 
 func TestPilot_AdvancePulsesCursor(t *testing.T) {
-	SetCursorBlink(true)
-	t.Cleanup(func() { SetCursorBlink(false) })
+	enableCursorPulseForTest(t)
 	p := NewPilot(t, Column{Children: []Widget{
 		TextInput{ID: "in", State: NewTextInputState(""), Style: Style{Width: Cells(10)}},
 		Button{ID: "button", Label: "OK"},

@@ -225,7 +225,7 @@ func (p *Pilot) Send(events ...uv.Event) {
 }
 
 // Advance moves the clock on by d. Running animations step a frame at a time
-// at the app's frame rate, and the cursor pulses if blinking is on.
+// at the app's frame rate, and the cursor uses its selected style if blinking is on.
 func (p *Pilot) Advance(d time.Duration) {
 	p.t.Helper()
 	p.settle()

@@ -22,7 +22,8 @@
 - `OnChange` receives the text after edits handled by the widget.
 
 The cursor is steady by default. `terma.SetCursorBlink(true)` enables the same
-[gentle, cell-only cursor pulse](textinput.md#cursor-animation) as `TextInput`.
+[classic on/off blink](textinput.md#cursor-animation) as `TextInput`. Select
+`terma.SetCursorBlinkStyle(terma.CursorBlinkPulse)` separately for a gentle pulse.
 Run `go run ./cmd/text-area-demo` to try it in the editor and its search input.
 
 ## Navigation and selection

@@ -20,6 +20,7 @@ type appSession struct {
 
 	cursorStarted  time.Time
 	cursorPulsing  bool
+	cursorStyle    CursorBlinkStyle
 	lastFocusedID  string
 	lastModalCount int
 }
@@ -104,12 +105,15 @@ func (s *appSession) frame() {
 	if s.mouse.reconcileHover() {
 		s.renderer.Update(s.root)
 	}
-	if active := s.cursorPulseActive(); active != s.cursorPulsing {
+	if active := s.cursorPulseActive(); active != s.cursorPulsing || s.cursorStyle != CurrentCursorBlinkStyle() {
 		s.cursorPulsing = active
+		s.cursorStyle = CurrentCursorBlinkStyle()
 		s.resetCursorPulse()
 	}
 	if s.cursorPulsing {
 		s.renderer.paintTextCursor(s.cursorPulseLevel())
+	} else {
+		s.renderer.paintTextCursor(cursorPulseSteps)
 	}
 }
 

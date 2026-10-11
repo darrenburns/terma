@@ -1587,7 +1587,7 @@ func (t TextArea) Render(ctx *RenderContext) {
 				}
 			}
 
-			drawTextCursor(ctx, 0, 0, cursorChar, baseStyle)
+			drawTextCursor(ctx, 0, 0, cursorChar, baseStyle, nil)
 		}
 		return
 	}
@@ -1744,17 +1744,18 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 			isSelected := hasSelection && i >= selStart && i < selEnd
 			isCursor := cursorShown && i == cursorIdx
 
-			// Cursor style takes precedence over selection.
+			cursorStyle := style
+			if isSelected {
+				// Match List/Table selection styling - just background, no foreground change
+				style.BackgroundColor = theme.Selection
+			}
+			if isCurrentMatch {
+				style = applySpanStyle(style, search.currentStyle)
+			}
+			// Cache the underlying text/selection before drawing the cursor over it.
 			if isCursor {
-				drawTextCursor(ctx, visibleX, row, grapheme, style)
+				drawTextCursor(ctx, visibleX, row, grapheme, cursorStyle, &style)
 			} else {
-				if isSelected {
-					// Match List/Table selection styling - just background, no foreground change
-					style.BackgroundColor = theme.Selection
-				}
-				if isCurrentMatch {
-					style = applySpanStyle(style, search.currentStyle)
-				}
 				ctx.DrawStyledText(visibleX, row, grapheme, style)
 			}
 
@@ -1764,7 +1765,7 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 		if cursorShown && cursorIdx == line.end && layout.cursorLine == lineIdx {
 			cursorX := layout.cursorCol - scrollX
 			if cursorX >= 0 && cursorX < ctx.Width {
-				drawTextCursor(ctx, cursorX, row, " ", baseStyle)
+				drawTextCursor(ctx, cursorX, row, " ", baseStyle, nil)
 			}
 		}
 	}

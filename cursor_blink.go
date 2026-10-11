@@ -9,13 +9,26 @@ import (
 )
 
 const (
+	cursorBlinkInterval = 530 * time.Millisecond
 	cursorPulseInterval = time.Second / 30
 	cursorPulseHold     = 400 * time.Millisecond
 	cursorPulsePeriod   = 1600 * time.Millisecond
 	cursorPulseSteps    = 32
+	cursorHiddenLevel   = cursorPulseSteps + 1
+)
+
+// CursorBlinkStyle controls how an enabled text cursor blinks.
+type CursorBlinkStyle int32
+
+const (
+	// CursorBlinkClassic alternates between a shown and hidden cursor (the default).
+	CursorBlinkClassic CursorBlinkStyle = iota
+	// CursorBlinkPulse smoothly dims the cursor without hiding it completely.
+	CursorBlinkPulse
 )
 
 var cursorBlinkEnabled atomic.Bool
+var cursorBlinkStyle atomic.Int32
 
 // textCursor caches the fully resolved cursor glyph during normal painting.
 // The palette makes pulse ticks allocation-free and independent of document
@@ -26,12 +39,13 @@ type textCursor struct {
 	x, y     int
 	focusID  string
 	level    int
-	frames   [cursorPulseSteps + 1]uv.Cell
+	frames   [cursorPulseSteps + 2]uv.Cell
 }
 
-// SetCursorBlink turns gentle pulsing of the text cursor in TextInput and
+// SetCursorBlink turns blinking of the text cursor in TextInput and
 // TextArea on or off for the whole app. It is off by default (a steady cursor).
-// The cursor fades between full and reduced brightness without disappearing.
+// The default style is classic on/off blinking; use [SetCursorBlinkStyle] to
+// select a smooth pulse instead.
 // Typing, pasting, clicking and changing focus restore full brightness briefly.
 // Animation updates only the cached cursor cell, without building, measuring,
 // painting widgets or running text highlighters.
@@ -41,9 +55,23 @@ func SetCursorBlink(enabled bool) {
 	}
 }
 
-// CursorBlink reports whether the text cursor pulses. See [SetCursorBlink].
+// CursorBlink reports whether the text cursor blinks. See [SetCursorBlink].
 func CursorBlink() bool {
 	return cursorBlinkEnabled.Load()
+}
+
+// SetCursorBlinkStyle selects classic blinking or smooth pulsing for the whole
+// app. It does not enable blinking; use [SetCursorBlink] for that. Changing the
+// style while blinking restarts the cursor at full brightness.
+func SetCursorBlinkStyle(style CursorBlinkStyle) {
+	if cursorBlinkStyle.Swap(int32(style)) != int32(style) {
+		scheduleRender()
+	}
+}
+
+// CurrentCursorBlinkStyle returns the selected style, even if blinking is off.
+func CurrentCursorBlinkStyle() CursorBlinkStyle {
+	return CursorBlinkStyle(cursorBlinkStyle.Load())
 }
 
 func (s *appSession) resetCursorPulse() {
@@ -56,6 +84,12 @@ func (s *appSession) cursorPulseActive() bool {
 }
 
 func (s *appSession) cursorPulseLevel() int {
+	if CurrentCursorBlinkStyle() != CursorBlinkPulse {
+		if s.now().Sub(s.cursorStarted)/cursorBlinkInterval%2 != 0 {
+			return cursorHiddenLevel
+		}
+		return cursorPulseSteps
+	}
 	elapsed := s.now().Sub(s.cursorStarted) - cursorPulseHold
 	if elapsed <= 0 {
 		return cursorPulseSteps
@@ -82,7 +116,21 @@ func (s *appSession) advanceCursorPulse() bool {
 // drawTextCursor uses the theme's caret color, resolving alpha against the
 // widget background. Keeping the glyph color fixed avoids losing it halfway
 // through a foreground/background swap.
-func drawTextCursor(ctx *RenderContext, x, y int, text string, style Style) {
+// underlying optionally supplies the text style to restore when hidden; nil
+// preserves the existing cell (a placeholder or the space after the text).
+func drawTextCursor(ctx *RenderContext, x, y int, text string, style Style, underlying *Style) {
+	var hidden uv.Cell
+	if cell := ctx.terminal.CellAt(ctx.X+x, ctx.Y+y); cell != nil {
+		hidden = *cell
+		if underlying != nil {
+			background := hidden
+			ctx.DrawStyledText(x, y, text, *underlying)
+			hidden = *ctx.terminal.CellAt(ctx.X+x, ctx.Y+y)
+			// Resolve both styles against the original background, so translucent
+			// highlights aren't blended twice or inherited by the shown cursor.
+			ctx.terminal.SetCell(ctx.X+x, ctx.Y+y, &background)
+		}
+	}
 	style.ForegroundColor = ctx.buildContext.Theme().Cursor
 	style.Reverse = true
 	ctx.DrawStyledText(x, y, text, style)
@@ -100,7 +148,8 @@ func drawTextCursor(ctx *RenderContext, x, y int, text string, style Style) {
 	cursor.focusID, cursor.level = ctx.currentEventID, cursorPulseSteps
 	cursor.prepared = cursor.prepared && cell.Equal(&cursor.frames[cursorPulseSteps])
 	cursor.frames[cursorPulseSteps] = *cell
-	if CursorBlink() {
+	cursor.frames[cursorHiddenLevel] = hidden
+	if CursorBlink() && CurrentCursorBlinkStyle() == CursorBlinkPulse {
 		cursor.prepare()
 	}
 }
@@ -146,7 +195,9 @@ func (r *Renderer) paintTextCursor(level int) bool {
 	}
 	// Usually prepared by drawTextCursor; enabling animation at runtime can
 	// reuse an already-painted steady cursor without repainting its widget.
-	cursor.prepare()
+	if level < cursorPulseSteps {
+		cursor.prepare()
+	}
 	cursor.level = level
 	r.terminal.SetCell(cursor.x, cursor.y, &cursor.frames[level])
 	if r.presentation != nil {
