@@ -2,6 +2,20 @@ package terma
 
 import "testing"
 
+func TestThemePalettes_CursorMatchesSelection(t *testing.T) {
+	for _, name := range ThemeNames() {
+		t.Run(name, func(t *testing.T) {
+			theme, _ := GetTheme(name)
+			if !theme.Cursor.IsOpaque() {
+				t.Error("cursor color must be opaque, regardless of selection opacity")
+			}
+			if theme.Cursor != theme.Selection.WithAlpha(1) {
+				t.Errorf("cursor %s must match selection shade %s", theme.Cursor.Hex(), theme.Selection.Hex())
+			}
+		})
+	}
+}
+
 var jewelToneThemeNames = []string{
 	ThemeNameMoonstone,
 	ThemeNameBonsai,

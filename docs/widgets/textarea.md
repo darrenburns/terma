@@ -21,6 +21,10 @@
 - Ctrl+Enter calls `OnSubmit` when that callback is set.
 - `OnChange` receives the text after edits handled by the widget.
 
+The cursor is steady by default. `terma.SetCursorBlink(true)` enables the same
+[gentle, cell-only cursor pulse](textinput.md#cursor-animation) as `TextInput`.
+Run `go run ./cmd/text-area-demo` to try it in the editor and its search input.
+
 ## Navigation and selection
 
 - Arrow keys move the cursor, and Shift with an arrow key extends the selection.

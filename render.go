@@ -982,6 +982,7 @@ type Renderer struct {
 	imageUsed                       bool
 	imageCellWidth, imageCellHeight int
 	terminal                        CellBuffer
+	textCursor                      textCursor
 	width                           int
 	height                          int
 	focusCollector                  *FocusCollector
@@ -1092,6 +1093,7 @@ func (r *Renderer) Stats() RenderStats {
 // other buffers must be resized by the caller. Negative dimensions become zero.
 func (r *Renderer) Resize(width, height int) {
 	r.cancelDrag()
+	r.textCursor.valid = false
 	width, height = max(0, width), max(0, height)
 	if buffer, ok := r.terminal.(ResizableCellBuffer); ok {
 		buffer.Resize(width, height)

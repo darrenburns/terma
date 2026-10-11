@@ -35,7 +35,6 @@ type Pilot struct {
 	height  int
 
 	now       time.Time
-	nextBlink time.Time
 	animation *AnimationController
 	trigger   chan struct{}
 	cancel    context.CancelFunc
@@ -74,12 +73,7 @@ func NewPilot(t testing.TB, root Widget, width, height int) *Pilot {
 		trigger:   make(chan struct{}, 1),
 		clipboard: map[ClipboardSelection]string{},
 	}
-	p.nextBlink = p.now.Add(cursorBlinkInterval)
 	p.session = newAppSession(root, p.buf, width, height, p.Now)
-	p.session.onInput = func() {
-		showCursorForInput()
-		p.nextBlink = p.now.Add(cursorBlinkInterval)
-	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	p.cancel = cancel
@@ -231,25 +225,27 @@ func (p *Pilot) Send(events ...uv.Event) {
 }
 
 // Advance moves the clock on by d. Running animations step a frame at a time
-// at the app's frame rate, and the cursor blinks if blinking is on.
+// at the app's frame rate, and the cursor pulses if blinking is on.
 func (p *Pilot) Advance(d time.Duration) {
 	p.t.Helper()
+	p.settle()
 	end := p.now.Add(d)
 	for p.now.Before(end) {
 		step := end.Sub(p.now)
 		if p.animation.HasActiveAnimations() {
 			step = min(step, pilotFrameInterval)
 		}
-		if blink := p.nextBlink.Sub(p.now); CursorBlink() && blink > 0 {
-			step = min(step, blink)
+		if p.session.cursorPulseActive() {
+			step = min(step, cursorPulseInterval)
 		}
 		p.now = p.now.Add(step)
 		p.animation.Update()
-		for !p.nextBlink.After(p.now) {
-			toggleCursorBlink()
-			p.nextBlink = p.nextBlink.Add(cursorBlinkInterval)
+		select {
+		case <-p.trigger:
+			p.settle()
+		default:
 		}
-		p.settle()
+		p.session.advanceCursorPulse()
 	}
 }
 

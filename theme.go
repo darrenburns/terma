@@ -112,7 +112,7 @@ type ThemeData struct {
 
 	// Input-specific
 	Placeholder Color // Placeholder text
-	Cursor      Color // Text cursor/caret
+	Cursor      Color // Text cursor/caret; built-in themes use Selection's shade at full opacity
 
 	// Link
 	Link Color // Clickable text links
@@ -221,7 +221,7 @@ var rosePineThemeData = ThemeData{
 	Overlay: Hex("#191724").WithAlpha(0.8), // Base with transparency
 
 	Placeholder: Hex("#6e6a86"), // Subtle
-	Cursor:      Hex("#e0def4"), // Text
+	Cursor:      Hex("#f6c177"), // Gold
 
 	Link: Hex("#c4a7e7"), // Iris
 }
@@ -271,7 +271,7 @@ var draculaThemeData = ThemeData{
 	Overlay: Hex("#282a36").WithAlpha(0.8), // Background with transparency
 
 	Placeholder: Hex("#6272a4"), // Comment
-	Cursor:      Hex("#f8f8f2"), // Foreground
+	Cursor:      Hex("#8be9fd"), // Cyan
 
 	Link: Hex("#8be9fd"), // Cyan
 }
@@ -321,7 +321,7 @@ var tokyoNightThemeData = ThemeData{
 	Overlay: Hex("#1a1b26").WithAlpha(0.8), // Background with transparency
 
 	Placeholder: Hex("#565f89"), // Comment
-	Cursor:      Hex("#c0caf5"), // Foreground
+	Cursor:      Hex("#7dcfff"), // Cyan
 
 	Link: Hex("#7dcfff"), // Cyan
 }
@@ -371,7 +371,7 @@ var catppuccinThemeData = ThemeData{
 	Overlay: Hex("#1e1e2e").WithAlpha(0.8), // Base with transparency
 
 	Placeholder: Hex("#6c7086"), // Overlay0
-	Cursor:      Hex("#cdd6f4"), // Text
+	Cursor:      Hex("#94e2d5"), // Teal
 
 	Link: Hex("#89b4fa"), // Blue
 }
@@ -421,7 +421,7 @@ var gruvboxThemeData = ThemeData{
 	Overlay: Hex("#282828").WithAlpha(0.8), // bg0 with transparency
 
 	Placeholder: Hex("#7c6f64"), // bg4
-	Cursor:      Hex("#ebdbb2"), // fg1
+	Cursor:      Hex("#8ec07c"), // Aqua
 
 	Link: Hex("#83a598"), // blue
 }
@@ -471,7 +471,7 @@ var nordThemeData = ThemeData{
 	Overlay: Hex("#2e3440").WithAlpha(0.8), // Nord0 with transparency
 
 	Placeholder: Hex("#4c566a"), // Nord3
-	Cursor:      Hex("#eceff4"), // Nord6
+	Cursor:      Hex("#8fbcbb"), // Nord7
 
 	Link: Hex("#88c0d0"), // Nord8
 }
@@ -521,7 +521,7 @@ var solarizedThemeData = ThemeData{
 	Overlay: Hex("#002b36").WithAlpha(0.8), // base03 with transparency
 
 	Placeholder: Hex("#586e75"), // base01
-	Cursor:      Hex("#839496"), // base0
+	Cursor:      Hex("#2aa198"), // Cyan
 
 	Link: Hex("#268bd2"), // blue
 }
@@ -571,7 +571,7 @@ var kanagawaThemeData = ThemeData{
 	Overlay: Hex("#1f1f28").WithAlpha(0.8), // sumiInk1 with transparency
 
 	Placeholder: Hex("#727169"), // fujiGray
-	Cursor:      Hex("#dcd7ba"), // fujiWhite
+	Cursor:      Hex("#7aa89f"), // waveAqua2
 
 	Link: Hex("#7fb4ca"), // springBlue
 }
@@ -621,7 +621,7 @@ var monokaiThemeData = ThemeData{
 	Overlay: Hex("#272822").WithAlpha(0.8), // Background with transparency
 
 	Placeholder: Hex("#75715e"), // Comment
-	Cursor:      Hex("#f8f8f2"), // Foreground
+	Cursor:      Hex("#66d9ef"), // Cyan
 
 	Link: Hex("#66d9ef"), // Cyan
 }
@@ -670,7 +670,7 @@ var galaxyThemeData = ThemeData{
 	Overlay: Hex("#0F0F1F").WithAlpha(0.8),
 
 	Placeholder: Hex("#706B91"),
-	Cursor:      Hex("#0F0F1F").AutoText(),
+	Cursor:      Hex("#FF69B4"),
 
 	Link: Hex("#C45AFF"),
 }
@@ -1062,7 +1062,7 @@ var dwarvenThemeData = ThemeData{
 	Overlay: Hex("#121416").WithAlpha(0.8),
 
 	Placeholder: Hex("#585e66"),
-	Cursor:      Hex("#d0d4d8"),
+	Cursor:      Hex("#c87840"),
 
 	Link: Hex("#6e8898"),
 }
@@ -1111,7 +1111,7 @@ var abyssThemeData = ThemeData{
 	Overlay: Hex("#080e18").WithAlpha(0.8),
 
 	Placeholder: Hex("#506878"),
-	Cursor:      Hex("#c8d8e8"),
+	Cursor:      Hex("#e87060"),
 
 	Link: Hex("#60c8b8"),
 }
@@ -1160,7 +1160,7 @@ var amberThemeData = ThemeData{
 	Overlay: Hex("#141008").WithAlpha(0.8),
 
 	Placeholder: Hex("#706048"),
-	Cursor:      Hex("#e8dcc8"),
+	Cursor:      Hex("#e0a030"),
 
 	Link: Hex("#d8c090"),
 }
@@ -1209,7 +1209,7 @@ var velvetThemeData = ThemeData{
 	Overlay: Hex("#140e16").WithAlpha(0.8),
 
 	Placeholder: Hex("#685c70"),
-	Cursor:      Hex("#dcd0e0"),
+	Cursor:      Hex("#d8b060"),
 
 	Link: Hex("#c060b0"),
 }
@@ -1607,7 +1607,7 @@ var rosePineDawnThemeData = ThemeData{
 	Overlay: Hex("#575279").WithAlpha(0.5), // Text with transparency
 
 	Placeholder: Hex("#b4aeb8"), // Subtle
-	Cursor:      Hex("#575279"), // Text
+	Cursor:      Hex("#ea9d34"), // Gold
 
 	Link: Hex("#907aa9"), // Iris
 }
@@ -1657,7 +1657,7 @@ var draculaLightThemeData = ThemeData{
 	Overlay: Hex("#282a36").WithAlpha(0.5), // Dark with transparency
 
 	Placeholder: Hex("#8b91a8"), // Muted
-	Cursor:      Hex("#282a36"), // Dark text
+	Cursor:      Hex("#80ffea"), // Cyan
 
 	Link: Hex("#9580ff"), // Purple
 }
@@ -1708,7 +1708,7 @@ var tokyoNightDayThemeData = ThemeData{
 	Overlay: Hex("#3760bf").WithAlpha(0.5), // Foreground with transparency
 
 	Placeholder: Hex("#9699a3"), // Muted
-	Cursor:      Hex("#3760bf"), // Foreground
+	Cursor:      Hex("#007197"), // Cyan
 
 	Link: Hex("#007197"), // Cyan
 }
@@ -1759,7 +1759,7 @@ var catppuccinLatteThemeData = ThemeData{
 	Overlay: Hex("#4c4f69").WithAlpha(0.5), // Text with transparency
 
 	Placeholder: Hex("#9ca0b0"), // Overlay1
-	Cursor:      Hex("#4c4f69"), // Text
+	Cursor:      Hex("#179299"), // Teal
 
 	Link: Hex("#1e66f5"), // Blue
 }
@@ -1810,7 +1810,7 @@ var gruvboxLightThemeData = ThemeData{
 	Overlay: Hex("#3c3836").WithAlpha(0.5), // fg1 with transparency
 
 	Placeholder: Hex("#928374"), // gray
-	Cursor:      Hex("#3c3836"), // fg1
+	Cursor:      Hex("#689d6a"), // Aqua
 
 	Link: Hex("#458588"), // blue
 }
@@ -1861,7 +1861,7 @@ var nordLightThemeData = ThemeData{
 	Overlay: Hex("#2e3440").WithAlpha(0.5), // Nord0 with transparency
 
 	Placeholder: Hex("#7b88a1"), // Muted
-	Cursor:      Hex("#2e3440"), // Nord0
+	Cursor:      Hex("#88c0d0"), // Nord8
 
 	Link: Hex("#5e81ac"), // Nord10
 }
@@ -1912,7 +1912,7 @@ var solarizedLightThemeData = ThemeData{
 	Overlay: Hex("#002b36").WithAlpha(0.5), // base03 with transparency
 
 	Placeholder: Hex("#93a1a1"), // base1
-	Cursor:      Hex("#657b83"), // base00
+	Cursor:      Hex("#2aa198"), // Cyan
 
 	Link: Hex("#268bd2"), // blue
 }
@@ -1963,7 +1963,7 @@ var kanagawaLotusThemeData = ThemeData{
 	Overlay: Hex("#545464").WithAlpha(0.5), // lotusInk1 with transparency
 
 	Placeholder: Hex("#a09f95"), // Muted
-	Cursor:      Hex("#545464"), // lotusInk1
+	Cursor:      Hex("#597b75"), // lotusAqua
 
 	Link: Hex("#4d699b"), // lotusBlue
 }
@@ -2013,7 +2013,7 @@ var monokaiLightThemeData = ThemeData{
 	Overlay: Hex("#272822").WithAlpha(0.5), // Dark with transparency
 
 	Placeholder: Hex("#a59f85"), // Muted comment
-	Cursor:      Hex("#272822"), // Dark text
+	Cursor:      Hex("#0f9fbf"), // Cyan
 
 	Link: Hex("#0f9fbf"), // Cyan
 }

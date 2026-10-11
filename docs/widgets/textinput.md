@@ -21,6 +21,29 @@
 - `Placeholder` appears when the text is empty.
 - The content height is always one cell, with border and padding added outside it.
 
+## Cursor animation
+
+The cursor is steady by default. Call `terma.SetCursorBlink(true)` during setup
+to enable a gentle pulse in both `TextInput` and `TextArea`. This replaces the
+hard on/off blink: the cursor dims without disappearing, and input or a focus
+change briefly restores full brightness. `terma.SetCursorBlink(false)` restores
+the steady cursor.
+
+Both steady and pulsing cursors use `ThemeData.Cursor`, independent of the text
+or syntax-highlighting color. Built-in themes match the selection shade but use
+full opacity for the cursor; selection retains its translucent background.
+Customize the cursor with `WithCursor(color)` when extending a theme. Switching
+themes also refreshes the pulse colors.
+
+Each pulse updates a cached cursor cell, without rebuilding, running layout,
+painting widgets, or rerunning highlighting. Regular edits and scrolling refresh
+the cache. A double-width character updates its two-column cell as one unit.
+The timer stops when the cursor is off-screen or covered by another widget.
+
+Pulse frames also bypass full-buffer copies for inline and image-enabled apps.
+The terminal backend still performs its normal dirty-row diff and flush; it is
+not a direct ANSI write that could leave the terminal's diff buffer out of sync.
+
 ## Keyboard and selection
 
 - Left and Right move by one grapheme, while Home and End move to the beginning and end.

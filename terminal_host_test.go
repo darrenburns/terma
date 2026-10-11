@@ -218,10 +218,10 @@ func TestTextWidgetsIMEAnchorFollowsPaintedCursor(t *testing.T) {
 			checkAnchor()
 			terminal := &cursorRecorder{}
 			positionCursor(terminal, p.session.renderer.WidgetByID(p.FocusedID()))
-			beforeBlink := *terminal
-			p.Advance(cursorBlinkInterval)
+			beforePulse := *terminal
+			p.Advance(cursorPulseHold + cursorPulsePeriod/2)
 			positionCursor(terminal, p.session.renderer.WidgetByID(p.FocusedID()))
-			require.Equal(t, beforeBlink, *terminal, "IME anchor stays put while the logical cursor blinks off")
+			require.Equal(t, beforePulse, *terminal, "IME anchor stays put while the logical cursor dims")
 		})
 	}
 }

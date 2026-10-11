@@ -5,6 +5,9 @@ const maxHeadlessRenderFrames = 16
 // renderHeadlessFrames supplies a frame boundary for standalone renderers. An
 // app already owns its boundary, so its queue must be left to the event loop.
 func (r *Renderer) renderHeadlessFrames(root Widget, incremental bool) (focusables []FocusableEntry, layoutWidth, layoutHeight int) {
+	// Normal painting must sample the unanimated cell when compositing alpha
+	// backgrounds. The session reapplies the current pulse after the frame.
+	r.paintTextCursor(cursorPulseSteps)
 	queue, release := beginHeadlessDispatch()
 	if queue == nil {
 		if incremental {

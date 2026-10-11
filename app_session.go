@@ -17,10 +17,9 @@ type appSession struct {
 	focused  AnySignal[Focusable]
 	mouse    *mouseRouter
 	now      func() time.Time
-	// onInput runs before a key press, paste or click is routed (Run uses it
-	// to restart the cursor blink).
-	onInput func()
 
+	cursorStarted  time.Time
+	cursorPulsing  bool
 	lastFocusedID  string
 	lastModalCount int
 }
@@ -47,7 +46,6 @@ func newAppSession(root Widget, screen CellBuffer, width, height int, now func()
 		focused:  focused,
 		mouse:    newMouseRouter(renderer, focus, hovered),
 		now:      now,
-		onInput:  func() {},
 	}
 }
 
@@ -60,6 +58,7 @@ func (s *appSession) syncFocus() bool {
 		return keybindsChanged
 	}
 	s.lastFocusedID = focusedID
+	s.resetCursorPulse()
 	s.focused.Set(s.focus.Focused())
 	return true
 }
@@ -105,6 +104,13 @@ func (s *appSession) frame() {
 	if s.mouse.reconcileHover() {
 		s.renderer.Update(s.root)
 	}
+	if active := s.cursorPulseActive(); active != s.cursorPulsing {
+		s.cursorPulsing = active
+		s.resetCursorPulse()
+	}
+	if s.cursorPulsing {
+		s.renderer.paintTextCursor(s.cursorPulseLevel())
+	}
 }
 
 // handle routes one input event to the widgets on screen. subX and subY place
@@ -116,13 +122,13 @@ func (s *appSession) handle(ev uv.Event, subX, subY float64) inputResult {
 		if !s.focus.capturesKey(key) && ev.MatchString("ctrl+c") {
 			return inputQuit
 		}
-		s.onInput()
+		s.resetCursorPulse()
 		dispatchKey(s.renderer, s.focus, s.root, key)
 		return inputRender
 
 	case uv.PasteEvent:
 		// Like a key, a paste goes to what's on screen.
-		s.onInput()
+		s.resetCursorPulse()
 		if !dispatchPaste(s.focus, s.root, ev.Content) {
 			Log("Paste not handled (%d bytes)", len(ev.Content))
 		}
@@ -133,7 +139,7 @@ func (s *appSession) handle(ev uv.Event, subX, subY float64) inputResult {
 		return inputRender
 
 	case uv.MouseClickEvent:
-		s.onInput()
+		s.resetCursorPulse()
 		s.mouse.press(ev, subX, subY, s.now())
 		return inputRender
 

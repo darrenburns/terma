@@ -145,23 +145,56 @@ func TestPilot_AdvanceDrivesAnimations(t *testing.T) {
 	assert.Equal(t, "1", frame(), "the spinner loops")
 }
 
-func TestPilot_AdvanceBlinksCursor(t *testing.T) {
+func TestPilot_AdvancePulsesCursor(t *testing.T) {
 	SetCursorBlink(true)
 	t.Cleanup(func() { SetCursorBlink(false) })
-	p := NewPilot(t, TextInput{ID: "in", State: NewTextInputState(""), Style: Style{Width: Cells(10)}}, 10, 1)
+	p := NewPilot(t, Column{Children: []Widget{
+		TextInput{ID: "in", State: NewTextInputState(""), Style: Style{Width: Cells(10)}},
+		Button{ID: "button", Label: "OK"},
+	}}, 10, 3)
 
 	cursorCell := func() uv.Style { return p.Buffer().CellAt(0, 0).Style }
 	shown := cursorCell()
-	p.Advance(cursorBlinkInterval - time.Millisecond)
-	assert.Equal(t, shown, cursorCell(), "the cursor stays until the blink interval ends")
-	p.Advance(time.Millisecond)
-	assert.NotEqual(t, shown, cursorCell(), "the cursor blinks off after the blink interval")
-	p.Advance(cursorBlinkInterval)
-	assert.Equal(t, shown, cursorCell(), "and back on after another")
-	p.Advance(cursorBlinkInterval)
+	p.Advance(400 * time.Millisecond)
+	assert.Equal(t, shown, cursorCell(), "the cursor holds full brightness after input")
+	p.Advance(400 * time.Millisecond)
+	mid := cursorCell()
+	assert.NotEqual(t, shown, mid, "the cursor fades rather than toggling on/off")
+	p.Advance(400 * time.Millisecond)
+	dim := cursorCell()
+	assert.NotEqual(t, mid, dim)
+	assert.NotEqual(t, dim.Fg, dim.Bg, "the cursor remains visible at its dimmest")
+	p.Advance(400 * time.Millisecond)
+	assert.Equal(t, mid, cursorCell(), "the pulse eases back toward full brightness")
+	p.Advance(400 * time.Millisecond)
+	assert.Equal(t, shown, cursorCell(), "one complete pulse")
+	p.Advance(800 * time.Millisecond)
 	p.Type("x")
-	assert.Equal(t, "x", strings.TrimSpace(p.ScreenText()))
+	assert.Equal(t, "x", p.TextOf("in"))
 	assert.Equal(t, shown, p.Buffer().CellAt(1, 0).Style, "typing shows the cursor again, after the new character")
+	p.Advance(400 * time.Millisecond)
+	assert.Equal(t, shown, p.Buffer().CellAt(1, 0).Style)
+
+	p.Press("tab")
+	assert.Equal(t, "button", p.FocusedID())
+	frames := p.session.renderer.Stats()
+	p.Advance(5 * time.Second)
+	assert.Equal(t, frames, p.session.renderer.Stats(), "no cursor frames while a button has focus")
+	p.Press("shift+tab")
+	assert.Equal(t, shown, p.Buffer().CellAt(1, 0).Style)
+	p.Advance(1200 * time.Millisecond)
+	SetCursorBlink(false)
+	p.ScreenText() // Settle the setting change.
+	assert.Equal(t, shown, p.Buffer().CellAt(1, 0).Style, "disabling restores a steady cursor")
+	frames = p.session.renderer.Stats()
+	p.Advance(5 * time.Second)
+	assert.Equal(t, frames, p.session.renderer.Stats())
+	SetCursorBlink(true)
+	p.ScreenText()
+	p.Advance(400 * time.Millisecond)
+	assert.Equal(t, shown, p.Buffer().CellAt(1, 0).Style, "enabling at runtime restarts the hold")
+	p.Advance(800 * time.Millisecond)
+	assert.Equal(t, dim, p.Buffer().CellAt(1, 0).Style)
 }
 
 func TestPilot_WaitUntilSeesBackgroundWork(t *testing.T) {

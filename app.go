@@ -431,6 +431,8 @@ func run(root Widget, mode screenMode) (runErr error) {
 			modeLabel = "full render"
 		case string(rendererFrameReflow):
 			modeLabel = "relayout + partial repaint"
+		case string(rendererFrameCursor):
+			modeLabel = "cursor cell only"
 		}
 		statsText := fmt.Sprintf(
 			"last frame: %s | rebuilt %d | relaid out %d | repainted %d",
@@ -559,15 +561,6 @@ func run(root Widget, mode screenMode) (runErr error) {
 	}
 	setSuspender(suspend)
 
-	// The text cursor blinks on this ticker when SetCursorBlink is on. Input
-	// restarts it so the cursor stays shown while someone types.
-	blinkTicker := time.NewTicker(cursorBlinkInterval)
-	defer blinkTicker.Stop()
-	session.onInput = func() {
-		showCursorForInput()
-		blinkTicker.Reset(cursorBlinkInterval)
-	}
-
 	// Initial render
 	renderNow()
 
@@ -586,7 +579,24 @@ func run(root Widget, mode screenMode) (runErr error) {
 			}
 		}()
 		termEvents := t.Events()
+		var cursorTicker *time.Ticker
+		defer func() {
+			if cursorTicker != nil {
+				cursorTicker.Stop()
+			}
+		}()
 		for {
+			// No cursor timer (or idle wakeups) without a visible focused editor.
+			var cursorTick <-chan time.Time
+			if session.cursorPulseActive() {
+				if cursorTicker == nil {
+					cursorTicker = time.NewTicker(cursorPulseInterval)
+				}
+				cursorTick = cursorTicker.C
+			} else if cursorTicker != nil {
+				cursorTicker.Stop()
+				cursorTicker = nil
+			}
 			select {
 			case <-ctx.Done():
 				return
@@ -599,8 +609,22 @@ func run(root Widget, mode screenMode) (runErr error) {
 				if scheduler.pending {
 					renderNow()
 				}
-			case <-blinkTicker.C:
-				toggleCursorBlink()
+			case <-cursorTick:
+				startTime := time.Now()
+				if !scheduler.pending && session.advanceCursorPulse() {
+					// Bypass session.frame and mode/image presentation: those
+					// may traverse the tree or copy the entire screen. Inline
+					// and image canvases need only this one cell copied out.
+					cursor := &renderer.textCursor
+					if renderer.terminal != t && renderer.presentation != t {
+						t.SetCell(cursor.x, cursor.y, &cursor.frames[cursor.level])
+					}
+					drawDebugOverlay()
+					if err := t.Display(); err != nil {
+						Log("Cursor presentation: %v", err)
+					}
+					lastFrameDuration = time.Since(startTime)
+				}
 			case ev, ok := <-termEvents:
 				if !ok {
 					return

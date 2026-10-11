@@ -931,7 +931,7 @@ func (t TextInput) Render(ctx *RenderContext) {
 	}
 
 	focused := ctx.IsFocused(t)
-	cursorShown := focused && cursorVisible()
+	cursorShown := focused
 	theme := ctx.buildContext.Theme()
 
 	// Subscribe to state changes by calling Get()
@@ -965,8 +965,6 @@ func (t TextInput) Render(ctx *RenderContext) {
 		ctx.DrawStyledText(0, 0, text, placeholderStyle)
 		// Draw cursor at position 0 if focused
 		if cursorShown {
-			cursorStyle := baseStyle
-			cursorStyle.Reverse = true
 			// Show the first placeholder character under the cursor, or space if no placeholder
 			cursorChar := " "
 			if len(text) > 0 {
@@ -975,7 +973,7 @@ func (t TextInput) Render(ctx *RenderContext) {
 					cursorChar = firstGrapheme
 				}
 			}
-			ctx.DrawStyledText(0, 0, cursorChar, cursorStyle)
+			drawTextCursor(ctx, 0, 0, cursorChar, baseStyle)
 		}
 		return
 	}
@@ -1067,15 +1065,17 @@ func (t TextInput) renderContent(ctx *RenderContext, graphemes []string, cursorI
 		isSelected := hasSelection && i >= selStart && i < selEnd
 		isCursor := cursorShown && i == cursorIdx
 
-		// Cursor style (reverse) takes precedence over selection
+		// Cursor style takes precedence over selection.
 		if isCursor {
-			style.Reverse = true
-		} else if isSelected {
-			// Match List/Table selection styling - just background, no foreground change
-			style.BackgroundColor = theme.Selection
+			drawTextCursor(ctx, visibleX, 0, grapheme, style)
+		} else {
+			if isSelected {
+				// Match List/Table selection styling - just background, no foreground change
+				style.BackgroundColor = theme.Selection
+			}
+			ctx.DrawStyledText(visibleX, 0, grapheme, style)
 		}
 
-		ctx.DrawStyledText(visibleX, 0, grapheme, style)
 		displayX += gWidth
 	}
 
@@ -1083,9 +1083,7 @@ func (t TextInput) renderContent(ctx *RenderContext, graphemes []string, cursorI
 	if cursorShown && cursorIdx >= len(graphemes) {
 		cursorX := t.State.cursorDisplayX() - scrollOffset
 		if cursorX >= 0 && cursorX < viewportWidth {
-			cursorStyle := baseStyle
-			cursorStyle.Reverse = true
-			ctx.DrawStyledText(cursorX, 0, " ", cursorStyle)
+			drawTextCursor(ctx, cursorX, 0, " ", baseStyle)
 		}
 	}
 }

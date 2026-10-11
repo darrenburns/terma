@@ -772,7 +772,7 @@
   <rect x="411.2" y="262.8" width="8.4" height="19.6" fill="#1F1D2E"/>
   <rect x="419.6" y="262.8" width="8.4" height="19.6" fill="#14121D"/>
   <path d="M 20.6000 262.8000 L 20.6000 282.4000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <rect x="50.0" y="262.8" width="8.4" height="19.6" fill="#E0DEF4"/>
+  <rect x="50.0" y="262.8" width="8.4" height="19.6" fill="#F6C177"/>
   <text x="50.0" y="272.6" fill="#1F1D2E"> </text>
   <rect x="302.00" y="270.15" width="8.40" height="12.25" fill="#26233A"/>
   <path d="M 415.4000 262.8000 L 415.4000 282.4000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>

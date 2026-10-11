@@ -27,6 +27,7 @@ const (
 	rendererFrameNone    rendererFrameMode = ""
 	rendererFrameFull    rendererFrameMode = "full"
 	rendererFramePartial rendererFrameMode = "partial"
+	rendererFrameCursor  rendererFrameMode = "cursor"
 	// rendererFrameReflow rebuilds and lays out, then repaints only damage.
 	rendererFrameReflow rendererFrameMode = "reflow"
 )
@@ -322,6 +323,7 @@ func (r *Renderer) renderFrame(root Widget, rebuildAll bool) (focusables []Focus
 	// covers the whole screen. Otherwise repaint only what changed.
 	fullPaint := rebuildAll || !r.floatSetMatches()
 	if fullPaint && r.drag == nil {
+		r.textCursor.valid = false
 		if scr, ok := r.terminal.(uv.Screen); ok {
 			screen.Clear(scr)
 		}
@@ -850,6 +852,7 @@ func (r *Renderer) paintRetainedNode(ctx *RenderContext, node *widgetNode, scree
 
 	r.lastPaintCount++
 	node.clearDependenciesForPhase(readPhasePaint)
+	r.invalidateTextCursor(nodeBounds.Intersect(ctx.clip))
 
 	// A node out of view has nothing to show, and paints (and subscribes)
 	// again once it comes into view.
@@ -1547,6 +1550,7 @@ func (r *Renderer) clearRect(rect Rect) {
 	if rect.IsEmpty() {
 		return
 	}
+	r.invalidateTextCursor(rect)
 	if scr, ok := r.terminal.(uv.Screen); ok {
 		screen.ClearArea(scr, uv.Rect(rect.X, rect.Y, rect.Width, rect.Height))
 		return

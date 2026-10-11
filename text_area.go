@@ -1495,7 +1495,7 @@ func (t TextArea) Render(ctx *RenderContext) {
 		}
 	}
 	t.State.lastFocused = focused
-	cursorShown := focused && cursorVisible()
+	cursorShown := focused
 	t.State.lastWidth = ctx.Width
 	t.State.lastHeight = ctx.Height
 
@@ -1528,9 +1528,6 @@ func (t TextArea) Render(ctx *RenderContext) {
 			ctx.DrawStyledText(0, i, line, placeholderStyle)
 		}
 		if cursorShown && ctx.Width > 0 && ctx.Height > 0 {
-			cursorStyle := baseStyle
-			cursorStyle.Reverse = true
-
 			cursorChar := " "
 			if len(lines) > 0 && lines[0] != "" {
 				firstGrapheme, _ := ansi.FirstGraphemeCluster(lines[0], ansi.GraphemeWidth)
@@ -1539,7 +1536,7 @@ func (t TextArea) Render(ctx *RenderContext) {
 				}
 			}
 
-			ctx.DrawStyledText(0, 0, cursorChar, cursorStyle)
+			drawTextCursor(ctx, 0, 0, cursorChar, baseStyle)
 		}
 		return
 	}
@@ -1683,9 +1680,9 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 			isSelected := hasSelection && i >= selStart && i < selEnd
 			isCursor := cursorShown && i == cursorIdx
 
-			// Cursor style (reverse) takes precedence over selection
+			// Cursor style takes precedence over selection.
 			if isCursor {
-				style.Reverse = true
+				drawTextCursor(ctx, visibleX, row, grapheme, style)
 			} else {
 				if isSelected {
 					// Match List/Table selection styling - just background, no foreground change
@@ -1694,18 +1691,16 @@ func (t TextArea) renderContent(ctx *RenderContext, graphemes []string, layout t
 				if isCurrentMatch {
 					style = applySpanStyle(style, search.currentStyle)
 				}
+				ctx.DrawStyledText(visibleX, row, grapheme, style)
 			}
 
-			ctx.DrawStyledText(visibleX, row, grapheme, style)
 			displayX += gWidth
 		}
 
 		if cursorShown && cursorIdx == line.end && layout.cursorLine == lineIdx {
 			cursorX := layout.cursorCol - scrollX
 			if cursorX >= 0 && cursorX < ctx.Width {
-				cursorStyle := baseStyle
-				cursorStyle.Reverse = true
-				ctx.DrawStyledText(cursorX, row, " ", cursorStyle)
+				drawTextCursor(ctx, cursorX, row, " ", baseStyle)
 			}
 		}
 	}
