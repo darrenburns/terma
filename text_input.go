@@ -1182,7 +1182,7 @@ func (t TextInput) OnBlur() {
 // CursorScreenPosition returns the screen X position of the cursor
 // given the widget's screen X position. Used for IME positioning.
 func (t TextInput) CursorScreenPosition(widgetX int) int {
-	if t.State == nil {
+	if t.State == nil || len(t.State.Content.Peek()) == 0 {
 		return widgetX
 	}
 	cursorX := t.State.cursorDisplayX()
@@ -1192,5 +1192,6 @@ func (t TextInput) CursorScreenPosition(widgetX int) int {
 
 // CursorPosition locates the hidden IME cursor. Render draws the text cursor.
 func (t TextInput) CursorPosition() (x, y int, visible bool) {
-	return t.CursorScreenPosition(0), 0, false
+	border := t.Style.Border.Width()
+	return t.CursorScreenPosition(border + t.Style.Padding.Left), border + t.Style.Padding.Top, false
 }

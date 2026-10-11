@@ -519,6 +519,18 @@ func (s *TextAreaState) CursorScreenPosition(widgetX, widgetY int) (screenX, scr
 	return widgetX + layout.cursorCol - s.scrollOffsetX, widgetY + layout.cursorLine - s.scrollOffsetY
 }
 
+// CursorPosition locates the hidden IME cursor. Render draws the text cursor.
+func (t TextArea) CursorPosition() (x, y int, visible bool) {
+	border := t.Style.Border.Width()
+	x, y = border+t.Style.Padding.Left, border+t.Style.Padding.Top
+	// Empty content paints the cursor at the origin, even if scroll offsets
+	// remain from the previous content.
+	if t.State != nil && len(t.State.Content.Peek()) > 0 {
+		x, y = t.State.CursorScreenPosition(x, y)
+	}
+	return x, y, false
+}
+
 type textAreaLine struct {
 	start int
 	end   int

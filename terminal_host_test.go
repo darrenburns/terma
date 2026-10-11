@@ -163,6 +163,69 @@ func TestTextInputKeepsHiddenIMECursor(t *testing.T) {
 	require.Equal(t, cursorRecorder{x: 9, y: 2}, *terminal)
 }
 
+func TestTextWidgetsIMEAnchorFollowsPaintedCursor(t *testing.T) {
+	style := Style{
+		Width: Cells(14), Border: RoundedBorder(White),
+		Padding: EdgeInsets{Top: 1, Left: 2, Right: 1},
+	}
+	for _, kind := range []string{"input", "area-wrapped", "area-unwrapped", "area-scrollable"} {
+		t.Run(kind, func(t *testing.T) {
+			enableCursorBlinkForTest(t)
+			var widget Widget
+			if kind == "input" {
+				widget = TextInput{ID: "editor", State: NewTextInputState("abcdef界éghijkl"), Style: style}
+			} else {
+				state := NewTextAreaState("first\nabcdef界éghijkl\nlast line\nend")
+				if kind == "area-unwrapped" {
+					state.WrapMode.Set(WrapNone)
+				}
+				areaStyle := style
+				areaStyle.Height = Cells(2)
+				area := TextArea{ID: "editor", State: state, Style: areaStyle}
+				widget = area
+				if kind == "area-scrollable" {
+					area.Style = Style{Width: Cells(14)}
+					area.ScrollState = NewScrollState()
+					widget = Scrollable{State: area.ScrollState, Width: Cells(16), Height: Cells(2), Child: area}
+				}
+			}
+			root := Column{Style: Style{Padding: EdgeInsets{Top: 2, Left: 4}}, Children: []Widget{widget}}
+			p := NewPilot(t, root, 30, 14)
+			checkAnchor := func() {
+				t.Helper()
+				var painted []cursorRecorder
+				for y := 0; y < p.height; y++ {
+					for x := 0; x < p.width; x++ {
+						cell := p.buf.CellAt(x, y)
+						if cell != nil && cell.Width > 0 && cell.Style.Attrs&uv.AttrReverse != 0 {
+							painted = append(painted, cursorRecorder{x: x, y: y})
+						}
+					}
+				}
+				require.Len(t, painted, 1, "one logical cursor must be painted")
+				terminal := &cursorRecorder{x: -1, y: -1, visible: true}
+				positionCursor(terminal, p.session.renderer.WidgetByID(p.FocusedID()))
+				require.Equal(t, painted[0], *terminal, "hidden IME anchor must match the painted cursor")
+			}
+			checkAnchor()
+			for _, key := range []string{"left", "home", "up", "up", "end", "left"} {
+				p.Press(key)
+				checkAnchor()
+			}
+			p.Press("ctrl+a", "backspace")
+			checkAnchor()
+			p.Type("界é")
+			checkAnchor()
+			terminal := &cursorRecorder{}
+			positionCursor(terminal, p.session.renderer.WidgetByID(p.FocusedID()))
+			beforeBlink := *terminal
+			p.Advance(cursorBlinkInterval)
+			positionCursor(terminal, p.session.renderer.WidgetByID(p.FocusedID()))
+			require.Equal(t, beforeBlink, *terminal, "IME anchor stays put while the logical cursor blinks off")
+		})
+	}
+}
+
 type compositeCursorWidget struct {
 	terminalHostWidget
 }
