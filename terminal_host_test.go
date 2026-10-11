@@ -168,7 +168,7 @@ func TestTextWidgetsIMEAnchorFollowsPaintedCursor(t *testing.T) {
 		Width: Cells(14), Border: RoundedBorder(White),
 		Padding: EdgeInsets{Top: 1, Left: 2, Right: 1},
 	}
-	for _, kind := range []string{"input", "area-wrapped", "area-unwrapped", "area-scrollable"} {
+	for _, kind := range []string{"input", "area-wrapped", "area-unwrapped", "area-scrollable", "area-numbered"} {
 		t.Run(kind, func(t *testing.T) {
 			enableCursorBlinkForTest(t)
 			var widget Widget
@@ -181,7 +181,7 @@ func TestTextWidgetsIMEAnchorFollowsPaintedCursor(t *testing.T) {
 				}
 				areaStyle := style
 				areaStyle.Height = Cells(2)
-				area := TextArea{ID: "editor", State: state, Style: areaStyle}
+				area := TextArea{ID: "editor", State: state, Style: areaStyle, ShowLineNumbers: kind == "area-numbered"}
 				widget = area
 				if kind == "area-scrollable" {
 					area.Style = Style{Width: Cells(14)}

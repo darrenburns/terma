@@ -3,6 +3,7 @@ package terma
 import (
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -31,6 +32,7 @@ type TextAreaState struct {
 	scrollOffsetX        int
 	scrollOffsetY        int
 	lastWidth            int
+	lastGutterWidth      int
 	lastHeight           int
 	lastFocused          bool
 	revealViewportHeight int
@@ -458,7 +460,7 @@ func (s *TextAreaState) cursorVerticalMove(delta int) {
 	if len(graphemes) == 0 {
 		return
 	}
-	contentWidth := reservedContentWidth(s.lastWidth)
+	contentWidth := reservedContentWidth(s.lastWidth - s.lastGutterWidth)
 	layout := s.layoutFor(graphemes, revision, s.WrapMode.Peek(), contentWidth, s.CursorIndex.Peek())
 	if len(layout.lines) == 0 {
 		return
@@ -475,7 +477,7 @@ func (s *TextAreaState) cursorVerticalMove(delta int) {
 
 func (s *TextAreaState) updatePreferredColumn() {
 	graphemes, revision := s.Content.peekWithRevision()
-	contentWidth := reservedContentWidth(s.lastWidth)
+	contentWidth := reservedContentWidth(s.lastWidth - s.lastGutterWidth)
 	layout := s.layoutFor(graphemes, revision, s.WrapMode.Peek(), contentWidth, s.CursorIndex.Peek())
 	s.preferredColumn = layout.cursorCol
 }
@@ -484,9 +486,9 @@ func (s *TextAreaState) resetPreferredColumn() {
 	s.preferredColumn = -1
 }
 
-// SetCursorFromLocalPosition moves the cursor to the given local position within the widget.
+// SetCursorFromLocalPosition moves the cursor to the given local position within the text viewport.
 // It accounts for scroll offset internally. contentWidth is the width available for text
-// content (excluding scrollbar space).
+// content (excluding the line-number gutter and scrollbar space).
 func (s *TextAreaState) SetCursorFromLocalPosition(localX, localY int, contentWidth int) {
 	displayLine := localY + s.scrollOffsetY
 	displayCol := localX + s.scrollOffsetX
@@ -513,20 +515,22 @@ func (s *TextAreaState) clampCursor() {
 // widget's top-left corner. Used for positioning popups (like autocomplete) at
 // the cursor location.
 func (s *TextAreaState) CursorScreenPosition(widgetX, widgetY int) (screenX, screenY int) {
-	contentWidth := reservedContentWidth(s.lastWidth)
+	contentWidth := reservedContentWidth(s.lastWidth - s.lastGutterWidth)
 	graphemes, revision := s.Content.peekWithRevision()
 	layout := s.layoutFor(graphemes, revision, s.WrapMode.Peek(), contentWidth, s.CursorIndex.Peek())
-	return widgetX + layout.cursorCol - s.scrollOffsetX, widgetY + layout.cursorLine - s.scrollOffsetY
+	return widgetX + s.lastGutterWidth + layout.cursorCol - s.scrollOffsetX, widgetY + layout.cursorLine - s.scrollOffsetY
 }
 
 // CursorPosition locates the hidden IME cursor. Render draws the text cursor.
 func (t TextArea) CursorPosition() (x, y int, visible bool) {
 	border := t.Style.Border.Width()
 	x, y = border+t.Style.Padding.Left, border+t.Style.Padding.Top
-	// Empty content paints the cursor at the origin, even if scroll offsets
+	// Empty content paints the cursor after the gutter, even if scroll offsets
 	// remain from the previous content.
 	if t.State != nil && len(t.State.Content.Peek()) > 0 {
 		x, y = t.State.CursorScreenPosition(x, y)
+	} else if t.State != nil {
+		x += t.State.lastGutterWidth
 	}
 	return x, y, false
 }
@@ -553,6 +557,7 @@ type textAreaGeometry struct {
 	width        int
 	wrap         WrapMode
 	columns      []int // cumulative grapheme widths; newlines contribute zero
+	lineStarts   []int // grapheme indices of newline-delimited lines, including empty lines
 	layout       textAreaLayout
 	measured     [3]textAreaMeasuredLayout
 	nextMeasured int
@@ -564,10 +569,11 @@ type textAreaMeasuredLayout struct {
 	layout textAreaLayout
 }
 
-func (s *TextAreaState) layoutFor(graphemes []string, revision uint64, wrap WrapMode, width, cursor int) textAreaLayout {
+func (s *TextAreaState) contentGeometry(graphemes []string, revision uint64) *textAreaGeometry {
 	cache := &s.geometry
 	contentChanged := cache.core != s.Content.core || cache.revision != revision || cache.columns == nil
 	if contentChanged {
+		cache.layout = textAreaLayout{}
 		cache.measured = [3]textAreaMeasuredLayout{}
 		cache.nextMeasured = 0
 		cache.core = s.Content.core
@@ -578,14 +584,22 @@ func (s *TextAreaState) layoutFor(graphemes []string, revision uint64, wrap Wrap
 			cache.columns = cache.columns[:len(graphemes)+1]
 			cache.columns[0] = 0
 		}
+		cache.lineStarts = append(cache.lineStarts[:0], 0)
 		for i, grapheme := range graphemes {
 			cache.columns[i+1] = cache.columns[i]
 			if grapheme != "\n" {
 				cache.columns[i+1] += graphemeWidth(grapheme)
+			} else {
+				cache.lineStarts = append(cache.lineStarts, i+1)
 			}
 		}
 	}
-	if contentChanged || cache.width != width || cache.wrap != wrap {
+	return cache
+}
+
+func (s *TextAreaState) layoutFor(graphemes []string, revision uint64, wrap WrapMode, width, cursor int) textAreaLayout {
+	cache := s.contentGeometry(graphemes, revision)
+	if cache.layout.lines == nil || cache.width != width || cache.wrap != wrap {
 		cache.width = width
 		cache.wrap = wrap
 		cache.layout = textAreaLayout{}
@@ -848,6 +862,13 @@ type TextArea struct {
 	Width          Dimension       // Deprecated: use Style.Width
 	Height         Dimension       // Deprecated: use Style.Height
 	Style          Style           // Optional styling
+
+	// ShowLineNumbers adds a fixed left gutter with 1-based, newline-delimited
+	// line numbers. Wrapped continuation rows are blank. The gutter stays put
+	// when unwrapped text scrolls horizontally.
+	ShowLineNumbers bool
+	// LineNumberStyle overrides the gutter's muted foreground and editor background.
+	LineNumberStyle SpanStyle
 
 	// SearchMatchStyle styles matches of State.SearchQuery. Zero uses a
 	// theme-derived default.
@@ -1391,6 +1412,21 @@ func (t TextArea) GetStyle() Style {
 	return t.Style
 }
 
+func (t TextArea) gutterWidth(viewportWidth int) int {
+	if !t.ShowLineNumbers || t.State == nil {
+		return 0
+	}
+	graphemes, revision := t.State.Content.getWithRevision()
+	geometry := t.State.contentGeometry(graphemes, revision)
+	width := len(strconv.Itoa(len(geometry.lineStarts))) + 1
+	// Keep at least one text cell and the trailing cursor cell. In very narrow
+	// widgets, editing takes priority over showing a partial line number.
+	if viewportWidth < width+2 {
+		return 0
+	}
+	return width
+}
+
 func (t TextArea) ContentWidthHint() int {
 	contentWidth := 1
 	if t.State != nil {
@@ -1398,23 +1434,24 @@ func (t TextArea) ContentWidthHint() int {
 	}
 	placeholderWidth := maxLineWidthString(t.Placeholder)
 	width := max(contentWidth, placeholderWidth, 1)
-	if width > 1 {
+	gutterWidth := t.gutterWidth(layout.Unbounded().MaxWidth)
+	if width > 1 || gutterWidth > 0 {
 		width++
 	}
-	return width
+	return width + gutterWidth
 }
 
 func (t TextArea) ContentHeightHint(width int) int {
+	contentWidth := reservedContentWidth(width - t.gutterWidth(width))
 	contentLines := 1
 	wrapMode := WrapSoft
 	if t.State != nil {
 		graphemes, revision := t.State.Content.getWithRevision()
 		wrapMode = t.State.WrapMode.Get()
-		contentWidth := reservedContentWidth(width)
 		layout := t.State.layoutFor(graphemes, revision, wrapMode, contentWidth, 0)
 		contentLines = max(1, len(layout.lines))
 	}
-	placeholderLines := wrapLineCount(t.Placeholder, reservedContentWidth(width), wrapMode)
+	placeholderLines := wrapLineCount(t.Placeholder, contentWidth, wrapMode)
 	return max(contentLines, placeholderLines, 1)
 }
 
@@ -1462,7 +1499,8 @@ func (t TextArea) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 	graphemes, revision := t.State.Content.getWithRevision()
 	cursor := t.State.CursorIndex.Peek()
 	wrap := t.State.WrapMode.Get()
-	contentWidth := reservedContentWidth(metrics.Box().ContentWidth())
+	width := metrics.Box().ContentWidth()
+	contentWidth := reservedContentWidth(width - t.gutterWidth(width))
 	layout := t.State.layoutFor(graphemes, revision, wrap, contentWidth, cursor)
 	previousHeight := t.State.revealViewportHeight
 	viewportHeight := t.ScrollState.viewportHeight
@@ -1503,7 +1541,9 @@ func (t TextArea) Render(ctx *RenderContext) {
 	graphemes, revision := t.State.Content.getWithRevision()
 	cursorIdx := t.State.CursorIndex.Get()
 	wrapMode := t.State.WrapMode.Get()
-	contentWidth := reservedContentWidth(ctx.Width)
+	gutterWidth := t.gutterWidth(ctx.Width)
+	t.State.lastGutterWidth = gutterWidth
+	contentWidth := reservedContentWidth(ctx.Width - gutterWidth)
 
 	baseStyle := t.Style
 	if baseStyle.ForegroundColor == nil || !baseStyle.ForegroundColor.IsSet() {
@@ -1515,6 +1555,14 @@ func (t TextArea) Render(ctx *RenderContext) {
 
 	bgColor := baseStyle.BackgroundColor.ColorAt(ctx.Width, ctx.Height, 0, 0)
 	ctx.FillRect(0, 0, ctx.Width, ctx.Height, bgColor)
+
+	layout := t.State.layoutFor(graphemes, revision, wrapMode, contentWidth, cursorIdx)
+	t.updateScrollOffsets(layout, contentWidth, ctx.Height)
+	t.revealMovedCursor(layout)
+	if gutterWidth > 0 {
+		t.renderLineNumbers(ctx, layout, gutterWidth, baseStyle, theme)
+		ctx = ctx.SubContext(gutterWidth, 0, ctx.Width-gutterWidth, ctx.Height)
+	}
 
 	if len(graphemes) == 0 {
 		placeholderStyle := baseStyle
@@ -1541,10 +1589,6 @@ func (t TextArea) Render(ctx *RenderContext) {
 		return
 	}
 
-	layout := t.State.layoutFor(graphemes, revision, wrapMode, contentWidth, cursorIdx)
-	t.updateScrollOffsets(layout, contentWidth, ctx.Height)
-	t.revealMovedCursor(layout)
-
 	// Build highlight maps
 	var highlightMap map[int]SpanStyle
 	if t.Highlighter != nil && len(graphemes) > 0 {
@@ -1570,6 +1614,23 @@ func (t TextArea) Render(ctx *RenderContext) {
 		search.currentStyle = SpanStyle{Background: theme.Accent, Foreground: theme.TextOnAccent}
 	}
 	t.renderContent(ctx, graphemes, layout, cursorIdx, cursorShown, baseStyle, contentWidth, selStart, selEnd, theme, highlightMap, lineHighlightMap, search)
+}
+
+func (t TextArea) renderLineNumbers(ctx *RenderContext, layout textAreaLayout, width int, baseStyle Style, theme ThemeData) {
+	style := baseStyle
+	style.ForegroundColor = theme.TextMuted
+	style = applySpanStyle(style, t.LineNumberStyle)
+	ctx.FillRect(0, 0, width, ctx.Height, style.BackgroundColor.ColorAt(width, ctx.Height, 0, 0))
+	starts := t.State.geometry.lineStarts
+	for row := 0; row < ctx.Height && row+t.State.scrollOffsetY < len(layout.lines); row++ {
+		start := layout.lines[row+t.State.scrollOffsetY].start
+		number, found := slices.BinarySearch(starts, start)
+		if !found {
+			continue // A wrapped continuation, not a new logical line.
+		}
+		label := strconv.Itoa(number + 1)
+		ctx.DrawStyledText(width-1-len(label), row, label, style)
+	}
 }
 
 type textAreaSearchPaint struct {
@@ -1720,7 +1781,7 @@ func (t TextArea) revealCursor(animate bool) {
 	if t.ScrollState == nil || t.State == nil || t.State.lastWidth <= 0 {
 		return
 	}
-	contentWidth := reservedContentWidth(t.State.lastWidth)
+	contentWidth := reservedContentWidth(t.State.lastWidth - t.gutterWidth(t.State.lastWidth))
 	graphemes, revision := t.State.Content.peekWithRevision()
 	layout := t.State.layoutFor(graphemes, revision, t.State.WrapMode.Peek(), contentWidth, t.State.CursorIndex.Peek())
 	t.State.revealed.record(t.State.CursorIndex.Peek(), layout.cursorLine, 1, t.ScrollState)
@@ -1760,11 +1821,11 @@ func (t TextArea) OnMouseDown(event MouseEvent) {
 		t.ScrollState.stopAnimation()
 	}
 
-	contentWidth := reservedContentWidth(t.State.lastWidth)
+	contentWidth := reservedContentWidth(t.State.lastWidth - t.State.lastGutterWidth)
 
 	// Adjust local coordinates for border and padding
 	// LocalX/LocalY are relative to border-box, but content is inside padding/border
-	localX := event.LocalX - t.Style.Border.Width() - t.Style.Padding.Left
+	localX := event.LocalX - t.Style.Border.Width() - t.Style.Padding.Left - t.State.lastGutterWidth
 	localY := event.LocalY - t.Style.Border.Width() - t.Style.Padding.Top
 
 	// Shift+click: extend selection from current position
@@ -1813,11 +1874,11 @@ func (t TextArea) OnMouseMove(event MouseEvent) {
 	}
 
 	// Adjust local coordinates for border and padding
-	localX := event.LocalX - t.Style.Border.Width() - t.Style.Padding.Left
+	localX := event.LocalX - t.Style.Border.Width() - t.Style.Padding.Left - t.State.lastGutterWidth
 	localY := event.LocalY - t.Style.Border.Width() - t.Style.Padding.Top
 
 	// Update cursor position; selection extends from anchor
-	contentWidth := reservedContentWidth(t.State.lastWidth)
+	contentWidth := reservedContentWidth(t.State.lastWidth - t.State.lastGutterWidth)
 	t.State.SetCursorFromLocalPosition(localX, localY, contentWidth)
 }
 

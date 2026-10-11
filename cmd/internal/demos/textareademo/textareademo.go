@@ -208,11 +208,12 @@ func (p editorPanel) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
 	d := p.demo
 	editor := t.TextArea{
-		ID:          editorID,
-		State:       d.editorState,
-		ScrollState: d.scrollState,
-		Placeholder: "Start typing…",
-		Highlighter: markdownHighlighter(theme),
+		ID:              editorID,
+		State:           d.editorState,
+		ScrollState:     d.scrollState,
+		ShowLineNumbers: true,
+		Placeholder:     "Start typing…",
+		Highlighter:     markdownHighlighter(theme),
 		Style: t.Style{
 			Width:           t.Flex(1),
 			BackgroundColor: theme.Background,
