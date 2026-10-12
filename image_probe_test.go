@@ -14,10 +14,10 @@ import (
 	"time"
 
 	"github.com/charmbracelet/colorprofile"
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi/kitty"
 	"github.com/charmbracelet/x/ansi/sixel"
 	"github.com/darrenburns/terma/layout"
+	uv "github.com/darrenburns/ultraviolet"
 	"github.com/stretchr/testify/require"
 )
 

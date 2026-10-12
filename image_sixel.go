@@ -7,9 +7,9 @@ import (
 	"image/color"
 	"strings"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi/sixel"
 	"github.com/darrenburns/terma/internal/imagequant"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // maxSixelPrepared bounds the images kept quantized, on screen or not.

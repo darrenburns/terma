@@ -3,7 +3,7 @@ package terma
 import (
 	"strings"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // terminalLink converts a span's URL into the cell link written as OSC 8.

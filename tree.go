@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // TreeNode represents a node in a tree.

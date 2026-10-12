@@ -4,8 +4,8 @@ import (
 	"math"
 	"reflect"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/darrenburns/terma/layout"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // Draggable lifts Child under the pointer after a left-button movement of one

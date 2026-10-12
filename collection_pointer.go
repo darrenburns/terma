@@ -1,6 +1,6 @@
 package terma
 
-import uv "github.com/charmbracelet/ultraviolet"
+import uv "github.com/darrenburns/ultraviolet"
 
 // clickActivates reports whether a press on an item of a list, table or tree
 // activates it (calls OnSelect): a double-click, or with activateOnClick a

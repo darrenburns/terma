@@ -3,7 +3,7 @@ package terma
 import (
 	"time"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 const clickChainTimeout = 500 * time.Millisecond

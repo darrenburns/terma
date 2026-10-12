@@ -3,7 +3,7 @@ package terma
 import (
 	"fmt"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 	"github.com/stretchr/testify/require"
 )
 

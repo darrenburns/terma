@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // PrintOptions configures widget printing behavior.
@@ -24,9 +24,9 @@ type PrintOptions struct {
 // DefaultPrintOptions returns sensible defaults for printing.
 func DefaultPrintOptions() PrintOptions {
 	return PrintOptions{
-		Width:           0,    // Auto-detect
-		Height:          0,    // Auto-detect
-		Writer:          nil,  // os.Stdout
+		Width:           0,   // Auto-detect
+		Height:          0,   // Auto-detect
+		Writer:          nil, // os.Stdout
 		NoColor:         false,
 		TrailingNewline: true,
 		AutoHeight:      true, // Use computed layout height

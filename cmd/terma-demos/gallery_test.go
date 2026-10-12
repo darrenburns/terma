@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	t "github.com/darrenburns/terma"
 	"github.com/darrenburns/terma/cmd/internal/demokit"
+	uv "github.com/darrenburns/ultraviolet"
 	"github.com/stretchr/testify/require"
 )
 

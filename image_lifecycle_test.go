@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi/kitty"
+	uv "github.com/darrenburns/ultraviolet"
 	"github.com/stretchr/testify/require"
 )
 

@@ -3,7 +3,7 @@ package terma
 import (
 	"time"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // appSession turns input events into frames: it owns the retained renderer,

@@ -3,8 +3,8 @@ package terma
 import (
 	"image/color"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 type imageRecordKey struct {

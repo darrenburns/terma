@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"sort"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 
 	"github.com/darrenburns/terma/layout"
 )

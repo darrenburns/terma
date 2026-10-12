@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/colorprofile"
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	uv "github.com/darrenburns/ultraviolet"
 	"github.com/stretchr/testify/require"
 )
 

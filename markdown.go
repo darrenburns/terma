@@ -7,9 +7,9 @@ import (
 	"strings"
 	"unicode"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/darrenburns/terma/layout"
+	uv "github.com/darrenburns/ultraviolet"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	gmtext "github.com/yuin/goldmark/text"

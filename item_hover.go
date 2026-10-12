@@ -3,7 +3,7 @@ package terma
 import (
 	"math"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // hoverItem is implemented by the widget that shows one item of a collection:

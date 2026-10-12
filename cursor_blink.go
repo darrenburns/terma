@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 const (

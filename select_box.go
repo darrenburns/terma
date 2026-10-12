@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // SelectOption is a labelled value in a SelectBox. Values should be stable,

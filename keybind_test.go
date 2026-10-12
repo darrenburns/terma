@@ -3,7 +3,7 @@ package terma
 import (
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // Helper to create KeyEvent for testing

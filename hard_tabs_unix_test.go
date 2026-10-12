@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/creack/pty"
+	uv "github.com/darrenburns/ultraviolet"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sys/unix"
 )

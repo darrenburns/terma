@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 const (

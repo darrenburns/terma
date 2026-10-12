@@ -11,7 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // SVGOptions configures SVG output generation.

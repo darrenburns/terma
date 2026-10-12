@@ -11,9 +11,9 @@ import (
 	"os"
 	"strings"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 	t "github.com/darrenburns/terma"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 type screen struct{ *uv.Buffer }

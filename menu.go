@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // MenuItem represents a menu item with optional submenu.

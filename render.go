@@ -6,8 +6,8 @@ import (
 
 	"github.com/darrenburns/terma/layout"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // CellBuffer is the interface for cell-based rendering.

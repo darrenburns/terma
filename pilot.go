@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // Pilot drives an app in a test the way a user would: it presses keys, types,

@@ -7,7 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 var keyNames sync.Map // name -> rune

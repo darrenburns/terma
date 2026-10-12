@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // pixelPointer locates the mouse to a fraction of a cell, as Textual does for

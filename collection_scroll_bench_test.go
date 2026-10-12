@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // Large collections inside a Scrollable, as apps use them. Each step moves the

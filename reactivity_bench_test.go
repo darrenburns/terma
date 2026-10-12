@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // Keep the viewport constant as the retained tree grows. Leaves after the first

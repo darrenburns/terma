@@ -5,8 +5,8 @@ import (
 	"log"
 	"strings"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	t "github.com/darrenburns/terma"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 type HoverEventsDemo struct {

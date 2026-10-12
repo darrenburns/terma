@@ -1,6 +1,6 @@
 package terma
 
-import uv "github.com/charmbracelet/ultraviolet"
+import uv "github.com/darrenburns/ultraviolet"
 
 // ButtonVariant represents the semantic color variant for a Button.
 type ButtonVariant int

@@ -8,8 +8,8 @@ import (
 	"math"
 	"reflect"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/darrenburns/terma/layout"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // ImageResource is an immutable, decoded image. Construct it once and share it

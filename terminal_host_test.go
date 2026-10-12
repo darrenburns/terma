@@ -4,7 +4,7 @@ import (
 	"image/color"
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 	"github.com/stretchr/testify/require"
 )
 

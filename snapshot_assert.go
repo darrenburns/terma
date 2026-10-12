@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // snapshotRegistry collects all snapshot comparisons during a test run.

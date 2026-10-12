@@ -3,7 +3,7 @@ package terma
 import (
 	"math"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // FloatShadow tints the cells behind a floating widget without changing its size

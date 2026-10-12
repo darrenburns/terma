@@ -7,7 +7,7 @@ import (
 
 	t "github.com/darrenburns/terma"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 type MouseDemo struct {

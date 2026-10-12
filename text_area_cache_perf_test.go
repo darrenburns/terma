@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // Each navigation operation moves left and right, ending at the same position.

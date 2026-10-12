@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/charmbracelet/colorprofile"
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
-// Replacements are not transitive in Go modules. Check the actual linked
-// Ultraviolet implementation so consumers missing the fork get safe fallback.
+// Kitty placeholders encode IDs in palette indices, not RGB colours. Keep a
+// safe fallback if the linked renderer stops preserving that distinction.
 var kittyColorEncodingSafe = func() bool {
 	a := uv.Style{Fg: ansi.IndexedColor(0), UnderlineColor: ansi.IndexedColor(0)}
 	b := uv.Style{Fg: ansi.IndexedColor(16), UnderlineColor: ansi.IndexedColor(16)}

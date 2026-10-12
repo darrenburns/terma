@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/stretchr/testify/assert"
 	"github.com/darrenburns/terma/layout"
+	uv "github.com/darrenburns/ultraviolet"
+	"github.com/stretchr/testify/assert"
 )
 
 // renderToBufferWithFocus renders a widget with the given widget ID focused.

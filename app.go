@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // ErrPanicked is returned by Run when the application panicked.

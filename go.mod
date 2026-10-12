@@ -5,11 +5,12 @@ go 1.25.5
 require (
 	github.com/alecthomas/chroma/v2 v2.23.1
 	github.com/charmbracelet/colorprofile v0.4.1
-	github.com/charmbracelet/ultraviolet v0.0.0-20251217160852-6b0c0e26fad9
 	github.com/charmbracelet/x/ansi v0.11.3
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/creack/pty v1.1.24
+	github.com/darrenburns/ultraviolet v0.0.0-20261012170537-2684fdbe5bed
 	github.com/gorilla/websocket v1.5.3
+	github.com/petermattis/goid v0.0.0-20260918085751-abfca077860b
 	github.com/stretchr/testify v1.11.1
 	github.com/yuin/goldmark v1.8.6
 	golang.org/x/sys v0.39.0
@@ -27,12 +28,9 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
-	github.com/petermattis/goid v0.0.0-20260918085751-abfca077860b // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/charmbracelet/ultraviolet => github.com/darrenburns/ultraviolet v0.0.0-20260930153435-8cafcd59bdf3

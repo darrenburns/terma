@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 type signalRaceApp struct {

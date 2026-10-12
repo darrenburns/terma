@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"slices"
 
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // KeyEvent wraps a key press event from ultraviolet.

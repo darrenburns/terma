@@ -4,8 +4,8 @@ import (
 	"os"
 	"strings"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // InlineOptions configures RunInline.

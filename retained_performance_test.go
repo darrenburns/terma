@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/darrenburns/terma/layout"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // Alternate flex rows and columns as in an application shell with a header,

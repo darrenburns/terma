@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	t "github.com/darrenburns/terma"
+	uv "github.com/darrenburns/ultraviolet"
 	"github.com/stretchr/testify/require"
 )
 

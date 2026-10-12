@@ -5,9 +5,9 @@ import (
 	"strings"
 	"unicode"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/darrenburns/terma/layout"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // --- Grapheme Helper Functions (reusable for multi-line) ---

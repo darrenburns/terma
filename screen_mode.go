@@ -3,8 +3,8 @@ package terma
 import (
 	"os"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // screenMode is what differs between running in the alternate screen and

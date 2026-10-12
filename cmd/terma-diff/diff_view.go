@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"strings"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 	t "github.com/darrenburns/terma"
 	"github.com/darrenburns/terma/layout"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 // DiffView is a purpose-built diff renderer with fixed gutter and scroll support.

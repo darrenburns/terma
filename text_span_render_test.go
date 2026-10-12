@@ -1,7 +1,7 @@
 package terma
 
 import (
-	uv "github.com/charmbracelet/ultraviolet"
+	uv "github.com/darrenburns/ultraviolet"
 	"reflect"
 	"strings"
 	"testing"

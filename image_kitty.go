@@ -10,8 +10,8 @@ import (
 	"time"
 	"weak"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	uv "github.com/darrenburns/ultraviolet"
 )
 
 const maxNativeImagePixels = 4 * 1024 * 1024

@@ -1,6 +1,6 @@
 package terma
 
-import uv "github.com/charmbracelet/ultraviolet"
+import uv "github.com/darrenburns/ultraviolet"
 
 // hoverTargetResolver resolves the event target at the given screen coordinates.
 type hoverTargetResolver func(x, y int) *WidgetEntry
