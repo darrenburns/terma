@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"math"
 	"testing"
+	"time"
+
+	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewScrollState_IsPinnedTrue(t *testing.T) {
@@ -600,5 +604,158 @@ func TestSnapshot_Scrollbar_ThumbPositions(t *testing.T) {
 	} {
 		state.setPosition(tc.position)
 		AssertSnapshotNamed(t, "scrollbar_thumb_"+tc.name, widget, 14, 8, tc.desc)
+	}
+}
+
+func TestScrollbarFadeReservesSpaceAndOnlyRepaintsScrollbar(t *testing.T) {
+	state := NewScrollState()
+	p := NewPilot(t, Scrollable{
+		ID: "scroll", State: state, Width: Cells(10), Height: Cells(5),
+		Child:               scrollbarRows{count: 10},
+		Style:               Style{BackgroundColor: RGB(20, 40, 60)},
+		ScrollbarThumbColor: RGB(220, 160, 100), ScrollbarTrackColor: RGB(80, 100, 120),
+		ScrollbarFadeDelay: time.Second, ScrollbarFadeDuration: 400 * time.Millisecond,
+	}, 10, 5)
+	before := make([]uv.Cell, 0, 45)
+	for y := 0; y < 5; y++ {
+		for x := 0; x < 9; x++ {
+			before = append(before, *p.buf.CellAt(x, y))
+		}
+	}
+	bg := func(y int) Color { return FromANSI(p.buf.CellAt(9, y).Style.Bg) }
+	require.Equal(t, RGB(220, 160, 100), bg(0))
+	p.Advance(time.Second)
+	require.Equal(t, RGB(220, 160, 100), bg(0), "no fading before the idle delay")
+	p.Advance(200 * time.Millisecond)
+	require.Equal(t, RGB(120, 100, 80), bg(0), "thumb is halfway to the background")
+	require.Equal(t, RGB(50, 70, 90), bg(4), "track fades too")
+	// The thumb ends halfway through row 2. Both halves must fade against
+	// the viewport, not against each other.
+	require.Equal(t, RGB(120, 100, 80), bg(2))
+	require.Equal(t, RGB(50, 70, 90), FromANSI(p.buf.CellAt(9, 2).Style.Fg))
+	stats := CurrentRenderStats()
+	require.Zero(t, stats.BuildCount)
+	require.Zero(t, stats.LayoutCount)
+	require.Equal(t, []Rect{{X: 9, Width: 1, Height: 5}}, stats.DamagedRects)
+
+	p.Advance(200 * time.Millisecond)
+	for y := 0; y < 5; y++ {
+		require.Equal(t, RGB(20, 40, 60), bg(y), "hidden scrollbar leaves the background")
+		require.Equal(t, " ", p.buf.CellAt(9, y).Content)
+		for x := 0; x < 9; x++ {
+			require.Equal(t, before[y*9+x], *p.buf.CellAt(x, y), "content never shifts or repaints differently")
+		}
+	}
+	require.Equal(t, 9, state.viewportWidth, "the scrollbar column stays reserved")
+	require.False(t, p.animation.HasActiveAnimations(), "a hidden scrollbar does not keep ticking")
+}
+
+func TestScrollbarFadeActivityAndDragging(t *testing.T) {
+	state := NewScrollState()
+	p := NewPilot(t, Scrollable{
+		ID: "scroll", State: state, Focusable: true, Width: Cells(10), Height: Cells(5),
+		Child: scrollbarRows{count: 20}, Style: Style{BackgroundColor: Black},
+		ScrollbarThumbColor: White, ScrollbarTrackColor: Blue,
+		ScrollbarFadeDelay: time.Second,
+	}, 10, 5)
+	visible := func() bool {
+		for y := 0; y < 5; y++ {
+			if FromANSI(p.buf.CellAt(9, y).Style.Bg) != Black {
+				return true
+			}
+		}
+		return false
+	}
+	p.Press("tab")
+	p.Advance(1100 * time.Millisecond)
+	p.Press("up") // At the boundary: no offset change, but still activity.
+	require.Equal(t, 0, state.GetOffset())
+	require.Equal(t, White, FromANSI(p.buf.CellAt(9, 0).Style.Bg), "activity interrupts a fade immediately")
+	p.Advance(time.Second)
+	require.Equal(t, White, FromANSI(p.buf.CellAt(9, 0).Style.Bg), "activity restarts the entire delay")
+	p.Advance(250 * time.Millisecond)
+	require.False(t, visible())
+
+	// The invisible column still accepts a grab, including a stationary hold.
+	p.MouseDown(9, 0, uv.MouseLeft, 0)
+	p.Advance(3 * time.Second)
+	require.True(t, visible())
+	p.MouseMove(9, 4)
+	require.Positive(t, state.GetOffset())
+	p.MouseUp(9, 4, uv.MouseLeft, 0)
+	p.Advance(1250 * time.Millisecond)
+	require.False(t, visible())
+
+	for _, activity := range []struct {
+		name string
+		run  func()
+	}{
+		{"wheel", func() { p.Scroll(2, 2, -1) }},
+		{"keyboard page", func() { p.Press("pgup") }},
+		{"programmatic reveal", func() { state.ScrollToView(19, 1) }},
+		{"direct signal write", func() { state.Offset.Set(4) }},
+	} {
+		activity.run()
+		p.Advance(0)
+		require.True(t, visible(), activity.name)
+		p.Advance(2 * time.Second)
+		require.False(t, visible(), activity.name)
+	}
+}
+
+func TestScrollbarTransparentTrackOverGradient(t *testing.T) {
+	for _, inherited := range []bool{false, true} {
+		t.Run(fmt.Sprintf("inherited=%v", inherited), func(t *testing.T) {
+			state := NewScrollState()
+			gradient := NewGradient(RGB(20, 40, 60), RGB(60, 80, 100))
+			scrollable := Scrollable{
+				ID: "scroll", State: state, Width: Cells(10), Height: Cells(5),
+				Child:               scrollbarRows{count: 10},
+				ScrollbarThumbColor: RGB(220, 160, 100),
+				ScrollbarTrackColor: RGBA(0, 0, 0, 0),
+			}
+			delay := NewSignal(time.Duration(0))
+			root := reactivityBuilder{build: func(BuildContext) Widget {
+				scrollable.ScrollbarFadeDelay = delay.Get()
+				scrollable.ScrollbarFadeDuration = 400 * time.Millisecond
+				if inherited {
+					return Column{Width: Flex(1), Height: Flex(1), Style: Style{BackgroundColor: gradient}, Children: []Widget{scrollable}}
+				}
+				scrollable.Style.BackgroundColor = gradient
+				return scrollable
+			}}
+			p := NewPilot(t, root, 10, 5)
+			bg := func(y int) Color { return FromANSI(p.buf.CellAt(9, y).Style.Bg) }
+			fg := func(y int) Color { return FromANSI(p.buf.CellAt(9, y).Style.Fg) }
+			require.Equal(t, RGB(220, 160, 100), bg(0))
+			require.Equal(t, "▄", p.buf.CellAt(9, 2).Content)
+			require.Equal(t, RGB(220, 160, 100), bg(2), "top half is the thumb")
+			require.Equal(t, RGB(40, 60, 80), fg(2), "bottom half is the gradient, not the thumb")
+			require.Equal(t, RGB(50, 70, 90), bg(3))
+			require.Equal(t, RGB(60, 80, 100), bg(4))
+
+			// Move the thumb half a cell down: the upper half of row 0 must
+			// now reveal a different part of the gradient.
+			state.SetOffset(1)
+			p.Advance(2 * time.Second)
+			require.Equal(t, "▄", p.buf.CellAt(9, 0).Content)
+			require.Equal(t, RGB(20, 40, 60), bg(0))
+			require.Equal(t, RGB(220, 160, 100), fg(0), "without a fade delay the thumb stays visible")
+			require.False(t, p.animation.HasActiveAnimations())
+
+			delay.Set(time.Second)
+			p.Advance(1200 * time.Millisecond)
+			require.Equal(t, RGB(20, 40, 60), bg(0), "track remains transparent while fading")
+			require.Equal(t, RGB(120, 100, 80), fg(0), "partial thumb fades into this row's background")
+			require.Equal(t, RGB(125, 105, 85), bg(1), "next row uses a different background")
+			p.Advance(200 * time.Millisecond)
+			for y := 0; y < 5; y++ {
+				require.Equal(t, RGB(uint8(20+10*y), uint8(40+10*y), uint8(60+10*y)), bg(y))
+			}
+			delay.Set(0)
+			p.Advance(2 * time.Second)
+			require.Equal(t, RGB(220, 160, 100), fg(0), "disabling fading restores the thumb")
+			require.False(t, p.animation.HasActiveAnimations())
+		})
 	}
 }

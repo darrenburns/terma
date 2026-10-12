@@ -181,7 +181,7 @@ func (d *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 		ID:    "scroll-demo-root",
 		Style: t.Style{BackgroundColor: theme.Background},
 		Top: []t.Widget{
-			demokit.Header{Title: "Scroll Playground", Tagline: "Scrollables inside a scrollable"},
+			demokit.Header{Title: "Scroll Playground", Tagline: "Idle scrollbars fade; space stays reserved"},
 		},
 		Bottom: []t.Widget{demokit.Footer(theme)},
 		Body: t.Row{
@@ -209,10 +209,11 @@ func (d *ScrollDemo) Build(ctx t.BuildContext) t.Widget {
 // while it has focus.
 func scrollPanel(ctx t.BuildContext, id, title string, state *t.ScrollState, width, height t.Dimension, child t.Widget) t.Scrollable {
 	s := t.Scrollable{
-		ID:        id,
-		State:     state,
-		Focusable: true,
-		Child:     child,
+		ID:                 id,
+		State:              state,
+		Focusable:          true,
+		Child:              child,
+		ScrollbarFadeDelay: time.Second,
 	}
 	s.Style = demokit.PanelStyle(ctx.Theme(), title, ctx.IsFocused(s))
 	s.Style.Width = width
@@ -229,6 +230,10 @@ type pagePanel struct {
 func (p pagePanel) Build(ctx t.BuildContext) t.Widget {
 	theme := ctx.Theme()
 	d := p.demo
+	list := scrollPanel(ctx, "scroll-list", "List · no track", d.listState, t.Flex(3), t.Cells(topRowHeight), listContent{})
+	// The partial-cell thumb reveals the gradient too, not a solid track.
+	list.ScrollbarTrackColor = t.RGBA(0, 0, 0, 0)
+	list.Style.BackgroundColor = t.NewGradient(theme.Surface, theme.Surface.Blend(theme.Primary, 0.2))
 	page := scrollPanel(ctx, "page", "Page", d.pageState, t.Flex(1), t.Flex(1), t.Column{
 		Width:   t.Flex(1),
 		Spacing: 1,
@@ -237,7 +242,7 @@ func (p pagePanel) Build(ctx t.BuildContext) t.Widget {
 				Width:   t.Flex(1),
 				Spacing: 1,
 				Children: []t.Widget{
-					scrollPanel(ctx, "scroll-list", "List · 50 rows", d.listState, t.Flex(3), t.Cells(topRowHeight), listContent{}),
+					list,
 					scrollPanel(ctx, "scroll-text", "Wrapped text", d.textState, t.Flex(2), t.Cells(topRowHeight), t.Text{
 						Content: loremText,
 						Wrap:    t.WrapSoft,

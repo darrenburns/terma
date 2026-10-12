@@ -54,6 +54,11 @@ type ScrollState struct {
 	scrollbarDragOffset float64
 	layoutCache         scrollableLayoutCache
 
+	// The fade value is read only while painting the scrollbar. Remember the
+	// last offset too, so direct writes to Offset reveal it during layout.
+	scrollbarFade       *Animation[float64]
+	scrollbarFadeOffset int
+
 	// animation glides the offset to animationTarget after a page scroll.
 	// animationOffset is the offset it last drew, so a change made directly
 	// to the Offset signal can be noticed and left in place.
@@ -123,7 +128,11 @@ func (s *ScrollState) SetOffsetX(offset int) {
 	} else if offset > max {
 		offset = max
 	}
+	changed := s.scrollbarFade != nil && offset != s.OffsetX.Peek()
 	s.OffsetX.Set(offset)
+	if changed {
+		s.revealScrollbar()
+	}
 }
 
 // SetOffset sets the scroll offset directly, clamping to valid bounds.
@@ -136,8 +145,12 @@ func (s *ScrollState) SetOffset(offset int) {
 	} else if offset > max {
 		offset = max
 	}
+	changed := s.scrollbarFade != nil && (offset != s.Offset.Peek() || float64(offset) != s.position.Peek())
 	s.Offset.Set(offset)
 	s.position.Set(float64(offset))
+	if changed {
+		s.revealScrollbar()
+	}
 }
 
 // setPosition scrolls to an exact position in lines, clamped to valid bounds.
@@ -152,8 +165,12 @@ func (s *ScrollState) setPosition(position float64) {
 // leaving any animation running.
 func (s *ScrollState) drawPosition(position float64) {
 	position = clampFloat(position, 0, float64(s.maxOffset()))
+	changed := s.scrollbarFade != nil && position != s.exactPosition()
 	s.Offset.Set(int(math.Round(position)))
 	s.position.Set(position)
+	if changed {
+		s.revealScrollbar()
+	}
 }
 
 // exactPosition returns the exact scroll position without subscribing.
@@ -360,6 +377,7 @@ func (s *ScrollState) PageDown() bool {
 
 func (s *ScrollState) scrollUp(lines int, animate bool) bool {
 	s.userScrolls++
+	s.revealScrollbar()
 	if s.OnScrollUp != nil && s.OnScrollUp(lines) {
 		return true // Callback handled scrolling
 	}
@@ -372,6 +390,7 @@ func (s *ScrollState) scrollUp(lines int, animate bool) bool {
 
 func (s *ScrollState) scrollDown(lines int, animate bool) bool {
 	s.userScrolls++
+	s.revealScrollbar()
 	if s.OnScrollDown != nil && s.OnScrollDown(lines) {
 		return true // Callback handled scrolling
 	}
@@ -401,6 +420,7 @@ func (s *ScrollState) scrollBy(lines int, animate bool) bool {
 // Returns true if scrolling was handled (callback handled it or offset changed).
 // Returns false if already at the left edge and no callback handled it.
 func (s *ScrollState) ScrollLeft(cols int) bool {
+	s.revealScrollbar()
 	if s.OnScrollLeft != nil && s.OnScrollLeft(cols) {
 		return true
 	}
@@ -413,6 +433,7 @@ func (s *ScrollState) ScrollLeft(cols int) bool {
 // Returns true if scrolling was handled (callback handled it or offset changed).
 // Returns false if already at the right edge and no callback handled it.
 func (s *ScrollState) ScrollRight(cols int) bool {
+	s.revealScrollbar()
 	if s.OnScrollRight != nil && s.OnScrollRight(cols) {
 		return true
 	}
@@ -474,6 +495,7 @@ func (s *ScrollState) ScrollToBottom() {
 // glideToTop glides to the top, as the home key does, breaking the pin.
 func (s *ScrollState) glideToTop() {
 	s.userScrolls++
+	s.revealScrollbar()
 	if s.PinToBottom {
 		s.isPinned = false
 	}
@@ -484,6 +506,7 @@ func (s *ScrollState) glideToTop() {
 // pin if PinToBottom is enabled.
 func (s *ScrollState) glideToBottom() {
 	s.userScrolls++
+	s.revealScrollbar()
 	s.animateOffset(s.maxOffset())
 	if s.PinToBottom {
 		s.isPinned = true
@@ -526,6 +549,46 @@ func (s *ScrollState) updateHorizontalLayout(viewportWidth, contentWidth int) {
 	s.contentWidth = contentWidth
 }
 
+// updateScrollbarFade runs after layout, never during Build. A nonpositive
+// delay keeps the existing always-visible behavior, without an animation.
+func (s *ScrollState) updateScrollbarFade(delay, duration time.Duration) {
+	if delay <= 0 || !s.layoutCache.scrollableY {
+		if s.scrollbarFade != nil {
+			s.scrollbarFade.Stop()
+			s.scrollbarFade = nil
+		}
+		return
+	}
+	if duration <= 0 {
+		duration = 250 * time.Millisecond
+	}
+	if s.scrollbarFade == nil || s.scrollbarFade.delay != delay || s.scrollbarFade.duration != duration {
+		if s.scrollbarFade != nil {
+			s.scrollbarFade.Stop()
+		}
+		s.scrollbarFade = NewAnimation(AnimationConfig[float64]{
+			From: 1, To: 0, Delay: delay, Duration: duration,
+		})
+		s.revealScrollbar()
+	} else if s.scrollbarFadeOffset != s.Offset.Peek() {
+		s.revealScrollbar()
+	}
+}
+
+// revealScrollbar restores full opacity immediately and restarts the idle
+// delay. A held drag stays visible even when the pointer stops moving.
+func (s *ScrollState) revealScrollbar() {
+	if s.scrollbarFade == nil {
+		return
+	}
+	s.scrollbarFadeOffset = s.Offset.Peek()
+	s.scrollbarFade.Stop()
+	s.scrollbarFade.Reset()
+	if !s.scrollbarDragging {
+		s.scrollbarFade.Start()
+	}
+}
+
 // Scrollable is a container widget that enables vertical scrolling of its child
 // when the child's content exceeds the available viewport height.
 // A scrollbar is displayed on the right side when scrolling is active.
@@ -557,7 +620,15 @@ type Scrollable struct {
 
 	// Scrollbar appearance customization
 	ScrollbarThumbColor Color // Custom thumb color (default: White unfocused, BrightCyan focused)
-	ScrollbarTrackColor Color // Custom track color (default: BrightBlack)
+	ScrollbarTrackColor Color // Custom track color; alpha 0 hides the track (default: theme.ScrollbarTrack)
+
+	// ScrollbarFadeDelay enables idle fading when positive. The scrollbar is
+	// initially visible, then fades after this much inactivity. Scrolling or
+	// dragging reveals it immediately; its column always stays reserved.
+	// Zero (the default) or a negative delay leaves it always visible.
+	ScrollbarFadeDelay time.Duration
+	// ScrollbarFadeDuration is the fade-out time (default: 250ms).
+	ScrollbarFadeDuration time.Duration
 }
 
 // WidgetID returns the widget's unique identifier.
@@ -626,6 +697,7 @@ func (s Scrollable) OnMouseDown(event MouseEvent) {
 
 	pointerY := float64(localY) + event.SubCellY
 	s.State.scrollbarDragging = true
+	s.State.revealScrollbar()
 	if thumb.contains(pointerY) {
 		// Preserve the grab position within the thumb so drag feels natural.
 		s.State.scrollbarDragOffset = pointerY - thumb.startCells()
@@ -643,8 +715,9 @@ func (s Scrollable) OnMouseUp(event MouseEvent) {
 	if s.MouseUp != nil {
 		s.MouseUp(event)
 	}
-	if s.State != nil {
+	if s.State != nil && s.State.scrollbarDragging {
 		s.State.scrollbarDragging = false
+		s.State.revealScrollbar()
 	}
 }
 
@@ -689,6 +762,7 @@ func (s Scrollable) OnLayout(ctx BuildContext, metrics LayoutMetrics) {
 	if !cache.scrollableY {
 		s.State.scrollbarDragging = false
 	}
+	s.State.updateScrollbarFade(s.ScrollbarFadeDelay, s.ScrollbarFadeDuration)
 }
 
 // resolvedScrollBox applies reveals made by child layout observers before paint.
@@ -1001,6 +1075,14 @@ func (s Scrollable) renderScrollbar(ctx *RenderContext, scrollOffset int, focuse
 		return
 	}
 
+	opacity := 1.0
+	if s.State.scrollbarFade != nil {
+		opacity = s.State.scrollbarFade.Value().Get()
+	}
+	if opacity == 0 {
+		return
+	}
+
 	// Determine scrollbar colors based on focus state and custom settings
 	theme := getTheme()
 	var trackColor, thumbColor Color
@@ -1022,19 +1104,34 @@ func (s Scrollable) renderScrollbar(ctx *RenderContext, scrollOffset int, focuse
 	x := ctx.Width - 1
 	for y := 0; y < trackHeight; y++ {
 		top, bottom := thumb.cover(y)
+		track, thumb := trackColor, thumbColor
+		if opacity < 1 || !track.IsOpaque() || !thumb.IsOpaque() {
+			// Resolve both colours against the same underlying cell, not the
+			// track against the thumb (or vice versa) in partial block cells.
+			// A transparent track then reveals the gradient beneath each row.
+			var bg Color
+			if cell := ctx.terminal.CellAt(ctx.X+x, ctx.Y+y); cell != nil {
+				bg = FromANSI(cell.Style.Bg)
+			}
+			if !bg.IsSet() && ctx.inheritedBgAt != nil {
+				bg = ctx.inheritedBgAt(ctx.X+x, ctx.Y+y)
+			}
+			track = track.WithAlpha(track.Alpha() * opacity).BlendOver(bg)
+			thumb = thumb.WithAlpha(thumb.Alpha() * opacity).BlendOver(bg)
+		}
 		switch {
 		case bottom <= top:
-			ctx.DrawStyledText(x, y, " ", Style{BackgroundColor: trackColor})
+			ctx.DrawStyledText(x, y, " ", Style{BackgroundColor: track})
 		case top == 0 && bottom == scrollbarSubCellCount:
-			ctx.DrawStyledText(x, y, " ", Style{BackgroundColor: thumbColor})
+			ctx.DrawStyledText(x, y, " ", Style{BackgroundColor: thumb})
 		case top > 0:
 			// The thumb starts partway down the cell and fills the rest.
 			char := verticalScrollbarChars[scrollbarSubCellCount-top-1]
-			ctx.DrawStyledText(x, y, char, Style{ForegroundColor: thumbColor, BackgroundColor: trackColor})
+			ctx.DrawStyledText(x, y, char, Style{ForegroundColor: thumb, BackgroundColor: track})
 		default:
 			// The thumb ends partway down the cell; the track fills the rest.
 			char := verticalScrollbarChars[scrollbarSubCellCount-bottom-1]
-			ctx.DrawStyledText(x, y, char, Style{ForegroundColor: trackColor, BackgroundColor: thumbColor})
+			ctx.DrawStyledText(x, y, char, Style{ForegroundColor: track, BackgroundColor: thumb})
 		}
 	}
 }
