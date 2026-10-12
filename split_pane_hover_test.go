@@ -3,6 +3,7 @@ package terma
 import (
 	"testing"
 
+	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -41,6 +42,11 @@ func TestSplitPaneHover_OnlyDivider(t *testing.T) {
 			base := bgAt(p, x, y)
 			baseForeground := FromANSI(p.Buffer().CellAt(x, y).Style.Fg)
 			p.MouseMove(x, y)
+			pointer := PointerEWResize
+			if orientation == SplitVertical {
+				pointer = PointerNSResize
+			}
+			assert.Equal(t, pointer, p.PointerShape())
 			assert.True(t, pane.State.hovered.Peek())
 			assert.Equal(t, base, bgAt(p, x, y), "hover leaves the background unchanged")
 			assert.Equal(t, getTheme().Hover.BlendOver(baseForeground), FromANSI(p.Buffer().CellAt(x, y).Style.Fg))
@@ -54,6 +60,7 @@ func TestSplitPaneHover_OnlyDivider(t *testing.T) {
 				paddingX, paddingY = bounds.X, y
 			}
 			p.MouseMove(paddingX, paddingY)
+			assert.Equal(t, PointerDefault, p.PointerShape())
 			assert.False(t, pane.State.hovered.Peek(), "padding along the divider's axis is not the divider")
 			assert.Equal(t, base, bgAt(p, x, y))
 			assert.Equal(t, baseForeground, FromANSI(p.Buffer().CellAt(x, y).Style.Fg))
@@ -64,6 +71,7 @@ func TestSplitPaneHover_OnlyDivider(t *testing.T) {
 			pane.State.SetPosition(0.8)
 			p.settle()
 			assert.False(t, pane.State.hovered.Peek(), "moving the divider away clears stationary-pointer hover")
+			assert.Equal(t, PointerDefault, p.PointerShape())
 
 			x, y = splitPaneHoverPoint(t, p, pane)
 			toX, toY := x+2, y
@@ -74,6 +82,13 @@ func TestSplitPaneHover_OnlyDivider(t *testing.T) {
 			drag(p, x, y, toX, toY)
 			assert.NotEqual(t, before, pane.State.GetPosition(), "existing mouse capture still resizes")
 			assert.False(t, pane.State.dragging.Peek(), "release ends dragging")
+
+			x, y = splitPaneHoverPoint(t, p, pane)
+			p.MouseDown(x, y, uv.MouseLeft, 0)
+			p.MouseMove(29, 11)
+			assert.Equal(t, pointer, p.PointerShape(), "resize pointer stays during capture outside the pane")
+			p.MouseUp(29, 11, uv.MouseLeft, 0)
+			assert.Equal(t, PointerDefault, p.PointerShape())
 		})
 	}
 }
@@ -117,6 +132,7 @@ func TestSplitPaneHover_DisabledDoesNotTint(t *testing.T) {
 	base := bgAt(p, x, y)
 	baseForeground := FromANSI(p.Buffer().CellAt(x, y).Style.Fg)
 	p.MouseMove(x, y)
+	assert.Equal(t, PointerDefault, p.PointerShape())
 	assert.False(t, pane.State.hovered.Peek())
 	assert.Equal(t, base, bgAt(p, x, y))
 	assert.Equal(t, baseForeground, FromANSI(p.Buffer().CellAt(x, y).Style.Fg))

@@ -105,6 +105,8 @@ func (s *appSession) frame() {
 	if s.mouse.reconcileHover() {
 		s.renderer.Update(s.root)
 	}
+	// Resolve after hover-driven builds too: styles can change without motion.
+	s.mouse.updatePointerShape()
 	if active := s.cursorPulseActive(); active != s.cursorPulsing || s.cursorStyle != CurrentCursorBlinkStyle() {
 		s.cursorPulsing = active
 		s.cursorStyle = CurrentCursorBlinkStyle()

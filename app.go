@@ -69,6 +69,8 @@ var terminalDisableSequences = []string{
 	ansi.ResetModeBracketedPaste,
 	// Switched on later if the terminal supports it (see pixelPointer).
 	ansi.ResetModeMouseExtSgrPixel,
+	// Do not leave a resize or other application pointer in the shell.
+	resetPointerShape,
 }
 
 func writeTerminalSequences(writeString func(string) (int, error), sequences []string) {
@@ -550,6 +552,8 @@ func run(root Widget, mode screenMode) (runErr error) {
 		_ = mode.resume(t)
 		enableTerminalInputModes(t.WriteString, mode.mouse(), enableKittyKeyboard, forceDisableKittyKeyboard)
 		_, _ = t.WriteString(pointer.resume())
+		// Cleanup reset the pointer; reapply it even if the mouse hasn't moved.
+		session.mouse.pointerSequence = ""
 		// The screen was used by something else meanwhile; repaint it all.
 		// Schedule the frame rather than drawing it here: fn may have been
 		// run from a Dispatch callback, inside a frame.

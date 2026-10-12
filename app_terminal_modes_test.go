@@ -101,6 +101,7 @@ func TestDisableTerminalInputModes(t *testing.T) {
 
 		expected := strings.Join(terminalDisableSequences, "")
 		require.Equal(t, expected, got)
+		require.Contains(t, got, "\x1b]22;default\x07", "exit and suspend restore the mouse pointer")
 	})
 }
 

@@ -44,6 +44,7 @@ type Pilot struct {
 	// MouseMove reports a drag.
 	heldButton uv.MouseButton
 	clipboard  map[ClipboardSelection]string
+	pointer    PointerShape
 }
 
 // pilotEpoch is where a Pilot's clock starts.
@@ -72,6 +73,7 @@ func NewPilot(t testing.TB, root Widget, width, height int) *Pilot {
 		now:       pilotEpoch,
 		trigger:   make(chan struct{}, 1),
 		clipboard: map[ClipboardSelection]string{},
+		pointer:   PointerDefault,
 	}
 	p.session = newAppSession(root, p.buf, width, height, p.Now)
 
@@ -408,12 +410,22 @@ func (p *Pilot) settle() {
 	p.t.Fatalf("terma: Pilot: the app was still changing after %d frames; something updates state on every frame", maxPilotSettleFrames)
 }
 
+// PointerShape returns the mouse pointer requested by the app, as a terminal
+// supporting OSC 22 would display it.
+func (p *Pilot) PointerShape() PointerShape {
+	return p.pointer
+}
+
 // terminalWrites plays the terminal's part for sequences the app wrote this
-// frame: it keeps OSC 52 clipboard writes and answers clipboard reads,
-// returning the replies.
+// frame: it keeps OSC 22 pointer and OSC 52 clipboard writes and answers
+// clipboard reads, returning the replies.
 func (p *Pilot) terminalWrites() []string {
 	var replies []string
 	for _, seq := range takeTerminalWrites() {
+		if shape, ok := strings.CutPrefix(seq, "\x1b]22;"); ok {
+			p.pointer = PointerShape(strings.TrimSuffix(strings.TrimSuffix(shape, "\x07"), "\x1b\\"))
+			continue
+		}
 		body, ok := strings.CutPrefix(seq, "\x1b]52;")
 		if !ok || len(body) < 2 {
 			continue

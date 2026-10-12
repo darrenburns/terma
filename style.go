@@ -297,6 +297,10 @@ type Style struct {
 	ForegroundColor ColorProvider // Can be Color or Gradient
 	BackgroundColor ColorProvider // Can be Color or Gradient
 
+	// Pointer sets the mouse pointer while hovering this widget or its children.
+	// The zero value inherits; PointerDefault explicitly stops inheritance.
+	Pointer PointerShape
+
 	// Text attributes
 	Bold           bool
 	Faint          bool
@@ -329,6 +333,7 @@ func (s Style) IsZero() bool {
 	bgSet := s.BackgroundColor != nil && s.BackgroundColor.IsSet()
 	return !fgSet &&
 		!bgSet &&
+		s.Pointer == PointerInherit &&
 		!s.Bold &&
 		!s.Faint &&
 		!s.Italic &&

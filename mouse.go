@@ -74,13 +74,19 @@ func buildMouseEvent(m uv.Mouse, subX, subY float64, entry *WidgetEntry, clickCo
 // keeps the widget that took a press receiving motion and the release until
 // the button comes up (implicit pointer capture), wherever the pointer goes.
 type mouseRouter struct {
-	renderer      *Renderer
-	focusManager  *FocusManager
-	hoveredSignal AnySignal[Widget]
-	clicks        mouseClickTracker
-	hover         hoverTracker
-	itemHover     itemHoverTracker
-	resolveHover  hoverTargetResolver
+	renderer        *Renderer
+	focusManager    *FocusManager
+	hoveredSignal   AnySignal[Widget]
+	clicks          mouseClickTracker
+	hover           hoverTracker
+	itemHover       itemHoverTracker
+	resolveHover    hoverTargetResolver
+	pointerSequence string // Last emitted OSC 22, to avoid redundant terminal writes.
+
+	// Shape tracking includes presses and releases without synthesizing hover
+	// transitions. Hover callbacks retain their existing motion-only behavior.
+	pointerX, pointerY int
+	pointerKnown       bool
 
 	// pressed is set from a press until its release. captureID is the widget
 	// that took it, if any: a press can also dismiss an overlay or land on a
@@ -95,9 +101,10 @@ type mouseRouter struct {
 
 func newMouseRouter(renderer *Renderer, focusManager *FocusManager, hoveredSignal AnySignal[Widget]) *mouseRouter {
 	m := &mouseRouter{
-		renderer:      renderer,
-		focusManager:  focusManager,
-		hoveredSignal: hoveredSignal,
+		renderer:        renderer,
+		focusManager:    focusManager,
+		hoveredSignal:   hoveredSignal,
+		pointerSequence: resetPointerShape,
 	}
 	m.resolveHover = m.hoverTarget
 	if renderer != nil {
@@ -162,6 +169,7 @@ func (m *mouseRouter) capturedOwner() *WidgetEntry {
 
 // subX and subY place the pointer within its cell (see MouseEvent.SubCellX).
 func (m *mouseRouter) press(ev uv.MouseClickEvent, subX, subY float64, now time.Time) {
+	m.pointerX, m.pointerY, m.pointerKnown = ev.X, ev.Y, true
 	m.renderer.cancelDrag()
 	m.pressed = true
 	m.captureID = ""
@@ -206,6 +214,7 @@ func (m *mouseRouter) press(ev uv.MouseClickEvent, subX, subY float64, now time.
 // release ends the press. It goes to the widget that took the press, so a
 // drag released over another widget still ends where it started.
 func (m *mouseRouter) release(ev uv.MouseReleaseEvent, subX, subY float64) {
+	m.pointerX, m.pointerY, m.pointerKnown = ev.X, ev.Y, true
 	if m.renderer.drag != nil {
 		if ev.Button != m.captureButton && ev.Button != uv.MouseNone {
 			return
@@ -252,6 +261,7 @@ func (m *mouseRouter) release(ev uv.MouseReleaseEvent, subX, subY float64) {
 
 // motion handles pointer movement, reporting whether a render is needed.
 func (m *mouseRouter) motion(ev uv.MouseMotionEvent, subX, subY float64) bool {
+	m.pointerX, m.pointerY, m.pointerKnown = ev.X, ev.Y, true
 	changed := false
 	if m.pressed {
 		if ev.Button == uv.MouseNone {
@@ -289,6 +299,8 @@ func (m *mouseRouter) motion(ev uv.MouseMotionEvent, subX, subY float64) bool {
 		if m.updateItemHover() {
 			changed = true
 		}
+		// A painted region's shape can change without changing hover identity.
+		m.updatePointerShape()
 	}
 	return changed
 }
@@ -313,6 +325,8 @@ func (m *mouseRouter) wheel(ev uv.MouseWheelEvent) bool {
 }
 
 func (m *mouseRouter) wheelAt(ev uv.MouseWheelEvent, subX, subY float64) bool {
+	m.pointerX, m.pointerY, m.pointerKnown = ev.X, ev.Y, true
+	m.updatePointerShape()
 	if m.blocked(ev.X, ev.Y) {
 		return false
 	}

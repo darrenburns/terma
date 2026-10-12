@@ -18,6 +18,8 @@
 - Initial positions outside the open interval from 0 to 1 fall back to 0.5.
 - `SplitHorizontal` places the panes side by side and is the default.
 - `SplitVertical` places the first pane above the second.
+- Hovering or dragging the divider uses a left–right or up–down resize pointer
+  in terminals supporting OSC 22. `Style.Pointer` overrides this; see [Mouse pointers](../styling.md#mouse-pointers).
 - With `SplitHorizontal`, Left and Right, or `h` and `l`, change the divider position in steps of 0.05.
 - With `SplitVertical`, Up and Down change the position by the same amount.
 - `DividerSize` and `MinPaneSize` both default to one cell.

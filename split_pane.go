@@ -68,6 +68,19 @@ func (s *SplitPaneState) isHovered() bool {
 	return s != nil && s.hovered.IsValid() && s.hovered.Get()
 }
 
+func (s SplitPane) pointerShapeAt(entry *WidgetEntry, x, y int) PointerShape {
+	if !s.State.isDragging() && s.hoverRegionAt(entry, x, y) == nil {
+		return PointerInherit
+	}
+	if s.Style.Pointer != PointerInherit {
+		return s.Style.Pointer
+	}
+	if s.Orientation == SplitVertical {
+		return PointerNSResize
+	}
+	return PointerEWResize
+}
+
 // hoverRegionAt distinguishes the divider from the pane's padding and content.
 // Mouse presses still target the SplitPane, retaining its existing capture.
 func (s SplitPane) hoverRegionAt(entry *WidgetEntry, x, y int) *WidgetEntry {

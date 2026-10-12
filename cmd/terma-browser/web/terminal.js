@@ -16,6 +16,15 @@ terminal.loadAddon(new ImageAddon.ImageAddon({
   showPlaceholder: false, storageLimit: 64
 }));
 terminal.open(container);
+// xterm.js 5.5 does not handle Kitty's OSC 22 pointer shapes. Support the
+// simple set/reset form Terma emits, without allowing CSS URLs from the PTY.
+terminal.parser.registerOscHandler(22, data => {
+  const shape = data === '' ? 'default' : data.replace(/^=/, '');
+  if (/^[a-z-]+$/.test(shape) && CSS.supports('cursor', shape)) {
+    container.querySelector('.xterm-screen').style.cursor = shape;
+  }
+  return true;
+});
 function fit() {
   if (fixedSize) return;
   const screen = container.querySelector('.xterm-screen');
