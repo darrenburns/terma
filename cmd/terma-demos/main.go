@@ -9,6 +9,7 @@ import (
 	"github.com/darrenburns/terma/cmd/internal/demos/filepickerdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/formdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/hyperlinkdemo"
+	"github.com/darrenburns/terma/cmd/internal/demos/jsonviewerdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/jumpdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/listdemo"
 	"github.com/darrenburns/terma/cmd/internal/demos/markdowndemo"
@@ -41,6 +42,7 @@ var demos = []Entry{
 	{Info: listdemo.Info, Command: "./cmd/list-demo", New: listdemo.New},
 	{Info: tabledemo.Info, Command: "./cmd/table-demo", New: tabledemo.New},
 	{Info: treedemo.Info, Command: "./cmd/tree-example", New: treedemo.New},
+	{Info: jsonviewerdemo.Info, Command: "./cmd/json-viewer-demo", New: jsonviewerdemo.New},
 	{Info: textinputdemo.Info, Command: "./cmd/text-input-example", New: textinputdemo.New},
 	{Info: textareademo.Info, Command: "./cmd/text-area-demo", New: textareademo.New},
 	{Info: checkboxdemo.Info, Command: "./cmd/checkbox-demo", New: checkboxdemo.New},

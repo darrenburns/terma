@@ -325,7 +325,7 @@
   <path d="M 24.8000 57.0000 L 24.8000 57.0000 Q 20.6000 57.0000 20.6000 61.2000 L 20.6000 66.8000" fill="none" stroke="#C4A7E7" stroke-width="1.0500"/>
   <text x="41.6" y="57.0" class="bold" fill="#C4A7E7">Demos</text>
   <text x="92.0" y="57.0" class="bold" fill="#C4A7E7">·</text>
-  <text x="108.8" y="57.0" class="bold" fill="#C4A7E7">24</text>
+  <text x="108.8" y="57.0" class="bold" fill="#C4A7E7">25</text>
   <path d="M 142.4000 57.0000 L 150.8000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 150.8000 57.0000 L 159.2000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 159.2000 57.0000 L 167.6000 57.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
@@ -461,7 +461,7 @@
   <rect x="495.2" y="66.8" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="503.6" y="66.8" width="8.4" height="19.6" fill="#F6C177"/>
   <rect x="512.0" y="66.8" width="8.4" height="19.6" fill="#F6C177"/>
-  <rect x="520.4" y="66.8" width="8.4" height="19.6" fill="#F6C177"/>
+  <rect x="520.4" y="66.8" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="66.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="66.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="66.8" width="8.4" height="19.6" fill="#191724"/>
@@ -506,7 +506,7 @@
   <text x="276.8" y="76.6" fill="#191724">choices,</text>
   <text x="352.4" y="76.6" fill="#191724">search,</text>
   <text x="419.6" y="76.6" fill="#191724">disabled</text>
-  <text x="495.2" y="76.6" fill="#191724">opt</text>
+  <text x="495.2" y="76.6" fill="#191724">op</text>
   <path d="M 541.4000 66.8000 L 541.4000 86.4000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 66.8000 L 558.2000 86.4000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <text x="570.8" y="76.6" class="bold" fill="#C4A7E7">SelectBox</text>
@@ -572,7 +572,7 @@
   <rect x="495.2" y="86.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="86.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="86.4" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="86.4" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="86.4" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="86.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="86.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="86.4" width="8.4" height="19.6" fill="#191724"/>
@@ -685,7 +685,7 @@
   <rect x="495.2" y="106.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="106.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="106.0" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="106.0" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="106.0" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="106.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="106.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="106.0" width="8.4" height="19.6" fill="#191724"/>
@@ -730,7 +730,7 @@
   <text x="318.8" y="115.8" fill="#908CAA">links,</text>
   <text x="377.6" y="115.8" fill="#908CAA">code,</text>
   <text x="428.0" y="115.8" fill="#908CAA">wrapping</text>
-  <text x="503.6" y="115.8" fill="#908CAA">an</text>
+  <text x="503.6" y="115.8" fill="#908CAA">a</text>
   <path d="M 541.4000 106.0000 L 541.4000 125.6000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 106.0000 L 558.2000 125.6000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <text x="570.8" y="115.8" fill="#E0DEF4">disabled</text>
@@ -798,7 +798,7 @@
   <rect x="495.2" y="125.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="125.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="125.6" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="125.6" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="125.6" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="125.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="125.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="125.6" width="8.4" height="19.6" fill="#191724"/>
@@ -844,7 +844,7 @@
   <text x="302.0" y="135.4" fill="#908CAA">column</text>
   <text x="360.8" y="135.4" fill="#908CAA">resizing,</text>
   <text x="444.8" y="135.4" fill="#908CAA">frozen</text>
-  <text x="503.6" y="135.4" fill="#908CAA">pa</text>
+  <text x="503.6" y="135.4" fill="#908CAA">p</text>
   <path d="M 541.4000 125.6000 L 541.4000 145.2000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 125.6000 L 558.2000 145.2000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <text x="570.8" y="135.4" fill="#E0DEF4">cancellation</text>
@@ -910,7 +910,7 @@
   <rect x="495.2" y="145.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="145.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="145.2" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="145.2" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="145.2" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="145.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="145.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="145.2" width="8.4" height="19.6" fill="#191724"/>
@@ -1025,7 +1025,7 @@
   <rect x="495.2" y="164.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="164.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="164.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="164.8" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="164.8" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="164.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="164.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="164.8" width="8.4" height="19.6" fill="#191724"/>
@@ -1140,7 +1140,7 @@
   <rect x="495.2" y="184.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="184.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="184.4" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="184.4" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="184.4" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="184.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="184.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="184.4" width="8.4" height="19.6" fill="#191724"/>
@@ -1186,7 +1186,7 @@
   <text x="310.4" y="194.2" fill="#908CAA">and</text>
   <text x="344.0" y="194.2" fill="#908CAA">column</text>
   <text x="402.8" y="194.2" fill="#908CAA">selection,</text>
-  <text x="495.2" y="194.2" fill="#908CAA">fil</text>
+  <text x="495.2" y="194.2" fill="#908CAA">fi</text>
   <path d="M 541.4000 184.4000 L 541.4000 204.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 184.4000 L 558.2000 204.0000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <text x="570.8" y="194.2" fill="#F6C177">go</text>
@@ -1254,7 +1254,7 @@
   <rect x="495.2" y="204.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="204.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="204.0" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="204.0" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="204.0" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="204.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="204.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="204.0" width="8.4" height="19.6" fill="#191724"/>
@@ -1363,7 +1363,7 @@
   <rect x="495.2" y="223.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="223.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="223.6" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="223.6" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="223.6" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="223.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="223.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="223.6" width="8.4" height="19.6" fill="#191724"/>
@@ -1403,14 +1403,15 @@
   <rect x="831.2" y="223.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="223.6" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 223.6000 L 20.6000 243.2000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="233.4" class="bold" fill="#E0DEF4">TextInput</text>
-  <text x="226.4" y="233.4" fill="#908CAA">A</text>
-  <text x="243.2" y="233.4" fill="#908CAA">form</text>
-  <text x="285.2" y="233.4" fill="#908CAA">of</text>
-  <text x="310.4" y="233.4" fill="#908CAA">single-line</text>
-  <text x="411.2" y="233.4" fill="#908CAA">inputs</text>
-  <text x="470.0" y="233.4" fill="#908CAA">with</text>
-  <text x="512.0" y="233.4" fill="#908CAA">h</text>
+  <text x="41.6" y="233.4" class="bold" fill="#E0DEF4">JSON</text>
+  <text x="83.6" y="233.4" class="bold" fill="#E0DEF4">Viewer</text>
+  <text x="226.4" y="233.4" fill="#908CAA">Explore</text>
+  <text x="293.6" y="233.4" fill="#908CAA">a</text>
+  <text x="310.4" y="233.4" fill="#908CAA">JSON</text>
+  <text x="352.4" y="233.4" fill="#908CAA">tree</text>
+  <text x="394.4" y="233.4" fill="#908CAA">and</text>
+  <text x="428.0" y="233.4" fill="#908CAA">filter</text>
+  <text x="486.8" y="233.4" fill="#908CAA">it</text>
   <path d="M 541.4000 223.6000 L 541.4000 243.2000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 223.6000 L 558.2000 243.2000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 835.4000 223.6000 L 835.4000 243.2000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
@@ -1475,7 +1476,7 @@
   <rect x="495.2" y="243.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="243.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="243.2" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="243.2" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="243.2" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="243.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="243.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="243.2" width="8.4" height="19.6" fill="#191724"/>
@@ -1515,13 +1516,13 @@
   <rect x="831.2" y="243.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="243.2" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 243.2000 L 20.6000 262.8000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="253.0" class="bold" fill="#E0DEF4">TextArea</text>
+  <text x="41.6" y="253.0" class="bold" fill="#E0DEF4">TextInput</text>
   <text x="226.4" y="253.0" fill="#908CAA">A</text>
-  <text x="243.2" y="253.0" fill="#908CAA">scrolling</text>
-  <text x="327.2" y="253.0" fill="#908CAA">multi-line</text>
-  <text x="419.6" y="253.0" fill="#908CAA">editor</text>
-  <text x="478.4" y="253.0" fill="#908CAA">and</text>
-  <text x="512.0" y="253.0" fill="#908CAA">a</text>
+  <text x="243.2" y="253.0" fill="#908CAA">form</text>
+  <text x="285.2" y="253.0" fill="#908CAA">of</text>
+  <text x="310.4" y="253.0" fill="#908CAA">single-line</text>
+  <text x="411.2" y="253.0" fill="#908CAA">inputs</text>
+  <text x="470.0" y="253.0" fill="#908CAA">with</text>
   <path d="M 541.4000 243.2000 L 541.4000 262.8000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 243.2000 L 558.2000 262.8000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 835.4000 243.2000 L 835.4000 262.8000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
@@ -1586,7 +1587,7 @@
   <rect x="495.2" y="262.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="262.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="262.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="262.8" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="262.8" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="262.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="262.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="262.8" width="8.4" height="19.6" fill="#191724"/>
@@ -1626,14 +1627,12 @@
   <rect x="831.2" y="262.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="262.8" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 262.8000 L 20.6000 282.4000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="272.6" class="bold" fill="#E0DEF4">Checkbox</text>
+  <text x="41.6" y="272.6" class="bold" fill="#E0DEF4">TextArea</text>
   <text x="226.4" y="272.6" fill="#908CAA">A</text>
-  <text x="243.2" y="272.6" fill="#908CAA">form,</text>
-  <text x="293.6" y="272.6" fill="#908CAA">an</text>
-  <text x="318.8" y="272.6" fill="#908CAA">in-sync</text>
-  <text x="386.0" y="272.6" fill="#908CAA">&#34;all&#34;</text>
-  <text x="436.4" y="272.6" fill="#908CAA">checkbox</text>
-  <text x="512.0" y="272.6" fill="#908CAA">a</text>
+  <text x="243.2" y="272.6" fill="#908CAA">scrolling</text>
+  <text x="327.2" y="272.6" fill="#908CAA">multi-line</text>
+  <text x="419.6" y="272.6" fill="#908CAA">editor</text>
+  <text x="478.4" y="272.6" fill="#908CAA">and</text>
   <path d="M 541.4000 262.8000 L 541.4000 282.4000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 262.8000 L 558.2000 282.4000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 835.4000 262.8000 L 835.4000 282.4000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
@@ -1698,7 +1697,7 @@
   <rect x="495.2" y="282.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="282.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="282.4" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="282.4" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="282.4" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="282.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="282.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="282.4" width="8.4" height="19.6" fill="#191724"/>
@@ -1738,13 +1737,13 @@
   <rect x="831.2" y="282.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="282.4" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 282.4000 L 20.6000 302.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="292.2" class="bold" fill="#E0DEF4">Tabs</text>
-  <text x="226.4" y="292.2" fill="#908CAA">Switch,</text>
-  <text x="293.6" y="292.2" fill="#908CAA">reorder,</text>
-  <text x="369.2" y="292.2" fill="#908CAA">close</text>
-  <text x="419.6" y="292.2" fill="#908CAA">and</text>
-  <text x="453.2" y="292.2" fill="#908CAA">reopen</text>
-  <text x="512.0" y="292.2" fill="#908CAA">t</text>
+  <text x="41.6" y="292.2" class="bold" fill="#E0DEF4">Checkbox</text>
+  <text x="226.4" y="292.2" fill="#908CAA">A</text>
+  <text x="243.2" y="292.2" fill="#908CAA">form,</text>
+  <text x="293.6" y="292.2" fill="#908CAA">an</text>
+  <text x="318.8" y="292.2" fill="#908CAA">in-sync</text>
+  <text x="386.0" y="292.2" fill="#908CAA">&#34;all&#34;</text>
+  <text x="436.4" y="292.2" fill="#908CAA">checkbox</text>
   <path d="M 541.4000 282.4000 L 541.4000 302.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 282.4000 L 558.2000 302.0000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 835.4000 282.4000 L 835.4000 302.0000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
@@ -1809,7 +1808,7 @@
   <rect x="495.2" y="302.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="302.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="302.0" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="302.0" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="302.0" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="302.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="302.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="302.0" width="8.4" height="19.6" fill="#191724"/>
@@ -1849,15 +1848,12 @@
   <rect x="831.2" y="302.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="302.0" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 302.0000 L 20.6000 321.6000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="311.8" class="bold" fill="#E0DEF4">Switcher</text>
-  <text x="226.4" y="311.8" fill="#908CAA">Keyed</text>
-  <text x="276.8" y="311.8" fill="#908CAA">pages</text>
-  <text x="327.2" y="311.8" fill="#908CAA">shown</text>
-  <text x="377.6" y="311.8" fill="#908CAA">one</text>
-  <text x="411.2" y="311.8" fill="#908CAA">at</text>
-  <text x="436.4" y="311.8" fill="#908CAA">a</text>
-  <text x="453.2" y="311.8" fill="#908CAA">time,</text>
-  <text x="503.6" y="311.8" fill="#908CAA">ea</text>
+  <text x="41.6" y="311.8" class="bold" fill="#E0DEF4">Tabs</text>
+  <text x="226.4" y="311.8" fill="#908CAA">Switch,</text>
+  <text x="293.6" y="311.8" fill="#908CAA">reorder,</text>
+  <text x="369.2" y="311.8" fill="#908CAA">close</text>
+  <text x="419.6" y="311.8" fill="#908CAA">and</text>
+  <text x="453.2" y="311.8" fill="#908CAA">reopen</text>
   <path d="M 541.4000 302.0000 L 541.4000 321.6000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 302.0000 L 558.2000 321.6000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 835.4000 302.0000 L 835.4000 321.6000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
@@ -1922,7 +1918,7 @@
   <rect x="495.2" y="321.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="321.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="321.6" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="321.6" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="321.6" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="321.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="321.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="321.6" width="8.4" height="19.6" fill="#191724"/>
@@ -1962,13 +1958,15 @@
   <rect x="831.2" y="321.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="321.6" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 321.6000 L 20.6000 341.2000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="331.4" class="bold" fill="#E0DEF4">Scroll</text>
-  <text x="226.4" y="331.4" fill="#908CAA">Nested</text>
-  <text x="285.2" y="331.4" fill="#908CAA">scrollables:</text>
-  <text x="394.4" y="331.4" fill="#908CAA">a</text>
-  <text x="411.2" y="331.4" fill="#908CAA">list,</text>
-  <text x="461.6" y="331.4" fill="#908CAA">text,</text>
-  <text x="512.0" y="331.4" fill="#908CAA">a</text>
+  <text x="41.6" y="331.4" class="bold" fill="#E0DEF4">Switcher</text>
+  <text x="226.4" y="331.4" fill="#908CAA">Keyed</text>
+  <text x="276.8" y="331.4" fill="#908CAA">pages</text>
+  <text x="327.2" y="331.4" fill="#908CAA">shown</text>
+  <text x="377.6" y="331.4" fill="#908CAA">one</text>
+  <text x="411.2" y="331.4" fill="#908CAA">at</text>
+  <text x="436.4" y="331.4" fill="#908CAA">a</text>
+  <text x="453.2" y="331.4" fill="#908CAA">time,</text>
+  <text x="503.6" y="331.4" fill="#908CAA">e</text>
   <path d="M 541.4000 321.6000 L 541.4000 341.2000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 321.6000 L 558.2000 341.2000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 835.4000 321.6000 L 835.4000 341.2000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
@@ -2033,7 +2031,7 @@
   <rect x="495.2" y="341.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="341.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="341.2" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="341.2" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="341.2" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="341.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="341.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="341.2" width="8.4" height="19.6" fill="#191724"/>
@@ -2073,12 +2071,12 @@
   <rect x="831.2" y="341.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="341.2" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 341.2000 L 20.6000 360.8000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="351.0" class="bold" fill="#E0DEF4">SplitPane</text>
+  <text x="41.6" y="351.0" class="bold" fill="#E0DEF4">Scroll</text>
   <text x="226.4" y="351.0" fill="#908CAA">Nested</text>
-  <text x="285.2" y="351.0" fill="#908CAA">split</text>
-  <text x="335.6" y="351.0" fill="#908CAA">panes</text>
-  <text x="386.0" y="351.0" fill="#908CAA">with</text>
-  <text x="428.0" y="351.0" fill="#908CAA">draggable,</text>
+  <text x="285.2" y="351.0" fill="#908CAA">scrollables:</text>
+  <text x="394.4" y="351.0" fill="#908CAA">a</text>
+  <text x="411.2" y="351.0" fill="#908CAA">list,</text>
+  <text x="461.6" y="351.0" fill="#908CAA">text,</text>
   <path d="M 541.4000 341.2000 L 541.4000 360.8000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 341.2000 L 558.2000 360.8000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 835.4000 341.2000 L 835.4000 360.8000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
@@ -2143,7 +2141,7 @@
   <rect x="495.2" y="360.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="360.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="360.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="360.8" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="360.8" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="360.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="360.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="360.8" width="8.4" height="19.6" fill="#191724"/>
@@ -2183,12 +2181,12 @@
   <rect x="831.2" y="360.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="360.8" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 360.8000 L 20.6000 380.4000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="370.6" class="bold" fill="#E0DEF4">Menu</text>
-  <text x="226.4" y="370.6" fill="#908CAA">Dropdown</text>
-  <text x="302.0" y="370.6" fill="#908CAA">menus,</text>
-  <text x="360.8" y="370.6" fill="#908CAA">nested</text>
-  <text x="419.6" y="370.6" fill="#908CAA">submenus</text>
-  <text x="495.2" y="370.6" fill="#908CAA">and</text>
+  <text x="41.6" y="370.6" class="bold" fill="#E0DEF4">SplitPane</text>
+  <text x="226.4" y="370.6" fill="#908CAA">Nested</text>
+  <text x="285.2" y="370.6" fill="#908CAA">split</text>
+  <text x="335.6" y="370.6" fill="#908CAA">panes</text>
+  <text x="386.0" y="370.6" fill="#908CAA">with</text>
+  <text x="428.0" y="370.6" fill="#908CAA">draggable,</text>
   <path d="M 541.4000 360.8000 L 541.4000 380.4000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 360.8000 L 558.2000 380.4000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 835.4000 360.8000 L 835.4000 380.4000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
@@ -2253,7 +2251,7 @@
   <rect x="495.2" y="380.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="380.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="380.4" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="380.4" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="380.4" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="380.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="380.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="380.4" width="8.4" height="19.6" fill="#191724"/>
@@ -2293,12 +2291,12 @@
   <rect x="831.2" y="380.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="380.4" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 380.4000 L 20.6000 400.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="390.2" class="bold" fill="#E0DEF4">Command</text>
-  <text x="108.8" y="390.2" class="bold" fill="#E0DEF4">Palette</text>
-  <text x="226.4" y="390.2" fill="#908CAA">Fuzzy-search</text>
-  <text x="335.6" y="390.2" fill="#908CAA">commands,</text>
-  <text x="419.6" y="390.2" fill="#908CAA">nested</text>
-  <text x="478.4" y="390.2" fill="#908CAA">level</text>
+  <text x="41.6" y="390.2" class="bold" fill="#E0DEF4">Menu</text>
+  <text x="226.4" y="390.2" fill="#908CAA">Dropdown</text>
+  <text x="302.0" y="390.2" fill="#908CAA">menus,</text>
+  <text x="360.8" y="390.2" fill="#908CAA">nested</text>
+  <text x="419.6" y="390.2" fill="#908CAA">submenus</text>
+  <text x="495.2" y="390.2" fill="#908CAA">an</text>
   <path d="M 541.4000 380.4000 L 541.4000 400.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 562.4000 390.2000 L 562.4000 390.2000 Q 558.2000 390.2000 558.2000 386.0000 L 558.2000 380.4000" fill="none" stroke="#403D52" stroke-width="1.0500"/>
   <path d="M 562.4000 390.2000 L 570.8000 390.2000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
@@ -2395,7 +2393,7 @@
   <rect x="495.2" y="400.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="400.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="400.0" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="400.0" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="400.0" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="400.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="400.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="400.0" width="8.4" height="19.6" fill="#191724"/>
@@ -2435,12 +2433,12 @@
   <rect x="831.2" y="400.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="400.0" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 400.0000 L 20.6000 419.6000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="409.8" class="bold" fill="#E0DEF4">Dialog</text>
-  <text x="226.4" y="409.8" fill="#908CAA">Modal</text>
-  <text x="276.8" y="409.8" fill="#908CAA">dialogs</text>
-  <text x="344.0" y="409.8" fill="#908CAA">with</text>
-  <text x="386.0" y="409.8" fill="#908CAA">button</text>
-  <text x="444.8" y="409.8" fill="#908CAA">variants,</text>
+  <text x="41.6" y="409.8" class="bold" fill="#E0DEF4">Command</text>
+  <text x="108.8" y="409.8" class="bold" fill="#E0DEF4">Palette</text>
+  <text x="226.4" y="409.8" fill="#908CAA">Fuzzy-search</text>
+  <text x="335.6" y="409.8" fill="#908CAA">commands,</text>
+  <text x="419.6" y="409.8" fill="#908CAA">nested</text>
+  <text x="478.4" y="409.8" fill="#908CAA">leve</text>
   <path d="M 541.4000 400.0000 L 541.4000 419.6000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <rect x="8.0" y="419.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="16.4" y="419.6" width="8.4" height="19.6" fill="#191724"/>
@@ -2503,7 +2501,7 @@
   <rect x="495.2" y="419.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="419.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="419.6" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="419.6" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="419.6" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="419.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="419.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="419.6" width="8.4" height="19.6" fill="#191724"/>
@@ -2543,10 +2541,12 @@
   <rect x="831.2" y="419.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="419.6" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 419.6000 L 20.6000 439.2000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="429.4" class="bold" fill="#E0DEF4">Toasts</text>
-  <text x="226.4" y="429.4" fill="#908CAA">Stacked,</text>
-  <text x="302.0" y="429.4" fill="#908CAA">auto-dismissing</text>
-  <text x="436.4" y="429.4" fill="#908CAA">notificati</text>
+  <text x="41.6" y="429.4" class="bold" fill="#E0DEF4">Dialog</text>
+  <text x="226.4" y="429.4" fill="#908CAA">Modal</text>
+  <text x="276.8" y="429.4" fill="#908CAA">dialogs</text>
+  <text x="344.0" y="429.4" fill="#908CAA">with</text>
+  <text x="386.0" y="429.4" fill="#908CAA">button</text>
+  <text x="444.8" y="429.4" fill="#908CAA">variants</text>
   <path d="M 541.4000 419.6000 L 541.4000 439.2000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 562.4000 429.4000 L 562.4000 429.4000 Q 558.2000 429.4000 558.2000 433.6000 L 558.2000 439.2000" fill="none" stroke="#403D52" stroke-width="1.0500"/>
   <text x="579.2" y="429.4" class="bold" fill="#908CAA">Keys</text>
@@ -2636,7 +2636,7 @@
   <rect x="495.2" y="439.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="439.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="439.2" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="439.2" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="439.2" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="439.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="439.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="439.2" width="8.4" height="19.6" fill="#191724"/>
@@ -2676,13 +2676,10 @@
   <rect x="831.2" y="439.2" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="439.2" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 439.2000 L 20.6000 458.8000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="449.0" class="bold" fill="#E0DEF4">Progress</text>
-  <text x="117.2" y="449.0" class="bold" fill="#E0DEF4">&amp;</text>
-  <text x="134.0" y="449.0" class="bold" fill="#E0DEF4">Spinners</text>
-  <text x="226.4" y="449.0" fill="#908CAA">Animated</text>
-  <text x="302.0" y="449.0" fill="#908CAA">progress</text>
-  <text x="377.6" y="449.0" fill="#908CAA">bars,</text>
-  <text x="428.0" y="449.0" fill="#908CAA">eighth-cell</text>
+  <text x="41.6" y="449.0" class="bold" fill="#E0DEF4">Toasts</text>
+  <text x="226.4" y="449.0" fill="#908CAA">Stacked,</text>
+  <text x="302.0" y="449.0" fill="#908CAA">auto-dismissing</text>
+  <text x="436.4" y="449.0" fill="#908CAA">notificat</text>
   <path d="M 541.4000 439.2000 L 541.4000 458.8000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 439.2000 L 558.2000 458.8000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <text x="570.8" y="449.0" class="bold" fill="#31748F">↑↓</text>
@@ -2752,7 +2749,7 @@
   <rect x="495.2" y="458.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="458.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="458.8" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="458.8" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="458.8" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="458.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="458.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="458.8" width="8.4" height="19.6" fill="#191724"/>
@@ -2792,12 +2789,13 @@
   <rect x="831.2" y="458.8" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="458.8" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 458.8000 L 20.6000 478.4000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="468.6" class="bold" fill="#E0DEF4">Shimmer</text>
-  <text x="226.4" y="468.6" fill="#908CAA">Twenty</text>
-  <text x="285.2" y="468.6" fill="#908CAA">animated</text>
-  <text x="360.8" y="468.6" fill="#908CAA">highlights</text>
-  <text x="453.2" y="468.6" fill="#908CAA">on</text>
-  <text x="478.4" y="468.6" fill="#908CAA">text,</text>
+  <text x="41.6" y="468.6" class="bold" fill="#E0DEF4">Progress</text>
+  <text x="117.2" y="468.6" class="bold" fill="#E0DEF4">&amp;</text>
+  <text x="134.0" y="468.6" class="bold" fill="#E0DEF4">Spinners</text>
+  <text x="226.4" y="468.6" fill="#908CAA">Animated</text>
+  <text x="302.0" y="468.6" fill="#908CAA">progress</text>
+  <text x="377.6" y="468.6" fill="#908CAA">bars,</text>
+  <text x="428.0" y="468.6" fill="#908CAA">eighth-cel</text>
   <path d="M 541.4000 458.8000 L 541.4000 478.4000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 458.8000 L 558.2000 478.4000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <text x="570.8" y="468.6" class="bold" fill="#9CCFD8">enter</text>
@@ -2865,7 +2863,7 @@
   <rect x="495.2" y="478.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="478.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="478.4" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="478.4" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="478.4" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="478.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="478.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="478.4" width="8.4" height="19.6" fill="#191724"/>
@@ -2905,14 +2903,12 @@
   <rect x="831.2" y="478.4" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="478.4" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 478.4000 L 20.6000 498.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="488.2" class="bold" fill="#E0DEF4">Hyperlinks</text>
-  <text x="226.4" y="488.2" fill="#908CAA">OSC</text>
-  <text x="260.0" y="488.2" fill="#908CAA">8</text>
-  <text x="276.8" y="488.2" fill="#908CAA">links</text>
-  <text x="327.2" y="488.2" fill="#908CAA">in</text>
-  <text x="352.4" y="488.2" fill="#908CAA">markup,</text>
-  <text x="419.6" y="488.2" fill="#908CAA">spans,</text>
-  <text x="478.4" y="488.2" fill="#908CAA">Markd</text>
+  <text x="41.6" y="488.2" class="bold" fill="#E0DEF4">Shimmer</text>
+  <text x="226.4" y="488.2" fill="#908CAA">Twenty</text>
+  <text x="285.2" y="488.2" fill="#908CAA">animated</text>
+  <text x="360.8" y="488.2" fill="#908CAA">highlights</text>
+  <text x="453.2" y="488.2" fill="#908CAA">on</text>
+  <text x="478.4" y="488.2" fill="#908CAA">text</text>
   <path d="M 541.4000 478.4000 L 541.4000 498.0000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 478.4000 L 558.2000 498.0000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <text x="570.8" y="488.2" class="bold" fill="#F6C177">ctrl+g</text>
@@ -2980,7 +2976,7 @@
   <rect x="495.2" y="498.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="498.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="498.0" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="498.0" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="498.0" width="8.4" height="19.6" fill="#6E6A86"/>
   <rect x="528.8" y="498.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="498.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="498.0" width="8.4" height="19.6" fill="#191724"/>
@@ -3020,15 +3016,14 @@
   <rect x="831.2" y="498.0" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="498.0" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 498.0000 L 20.6000 517.6000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="507.8" class="bold" fill="#E0DEF4">Jump</text>
-  <text x="83.6" y="507.8" class="bold" fill="#E0DEF4">mode</text>
-  <text x="226.4" y="507.8" fill="#908CAA">Overlay</text>
-  <text x="293.6" y="507.8" fill="#908CAA">keys</text>
-  <text x="335.6" y="507.8" fill="#908CAA">on</text>
-  <text x="360.8" y="507.8" fill="#908CAA">the</text>
-  <text x="394.4" y="507.8" fill="#908CAA">screen</text>
-  <text x="453.2" y="507.8" fill="#908CAA">and</text>
-  <text x="486.8" y="507.8" fill="#908CAA">jump</text>
+  <text x="41.6" y="507.8" class="bold" fill="#E0DEF4">Hyperlinks</text>
+  <text x="226.4" y="507.8" fill="#908CAA">OSC</text>
+  <text x="260.0" y="507.8" fill="#908CAA">8</text>
+  <text x="276.8" y="507.8" fill="#908CAA">links</text>
+  <text x="327.2" y="507.8" fill="#908CAA">in</text>
+  <text x="352.4" y="507.8" fill="#908CAA">markup,</text>
+  <text x="419.6" y="507.8" fill="#908CAA">spans,</text>
+  <text x="478.4" y="507.8" fill="#908CAA">Mark</text>
   <path d="M 541.4000 498.0000 L 541.4000 517.6000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 498.0000 L 558.2000 517.6000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <text x="570.8" y="507.8" class="bold" fill="#F6C177">t</text>
@@ -3098,7 +3093,7 @@
   <rect x="495.2" y="517.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="503.6" y="517.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="512.0" y="517.6" width="8.4" height="19.6" fill="#191724"/>
-  <rect x="520.4" y="517.6" width="8.4" height="19.6" fill="#191724"/>
+  <rect x="520.4" y="517.6" width="8.4" height="19.6" fill="#26233A"/>
   <rect x="528.8" y="517.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="537.2" y="517.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="545.6" y="517.6" width="8.4" height="19.6" fill="#191724"/>
@@ -3138,15 +3133,15 @@
   <rect x="831.2" y="517.6" width="8.4" height="19.6" fill="#191724"/>
   <rect x="839.6" y="517.6" width="8.4" height="19.6" fill="#191724"/>
   <path d="M 20.6000 517.6000 L 20.6000 537.2000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="41.6" y="527.4" class="bold" fill="#E0DEF4">Pilot</text>
-  <text x="226.4" y="527.4" fill="#908CAA">An</text>
-  <text x="251.6" y="527.4" fill="#908CAA">app</text>
-  <text x="285.2" y="527.4" fill="#908CAA">and</text>
-  <text x="318.8" y="527.4" fill="#908CAA">the</text>
-  <text x="352.4" y="527.4" fill="#908CAA">test</text>
-  <text x="394.4" y="527.4" fill="#908CAA">that</text>
-  <text x="436.4" y="527.4" fill="#908CAA">drives</text>
-  <text x="495.2" y="527.4" fill="#908CAA">it</text>
+  <text x="41.6" y="527.4" class="bold" fill="#E0DEF4">Jump</text>
+  <text x="83.6" y="527.4" class="bold" fill="#E0DEF4">mode</text>
+  <text x="226.4" y="527.4" fill="#908CAA">Overlay</text>
+  <text x="293.6" y="527.4" fill="#908CAA">keys</text>
+  <text x="335.6" y="527.4" fill="#908CAA">on</text>
+  <text x="360.8" y="527.4" fill="#908CAA">the</text>
+  <text x="394.4" y="527.4" fill="#908CAA">screen</text>
+  <text x="453.2" y="527.4" fill="#908CAA">and</text>
+  <text x="486.8" y="527.4" fill="#908CAA">jum</text>
   <path d="M 541.4000 517.6000 L 541.4000 537.2000" fill="none" stroke="#C4A7E7" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <path d="M 558.2000 517.6000 L 558.2000 537.2000" fill="none" stroke="#403D52" stroke-width="1.0500" shape-rendering="crispEdges"/>
   <text x="570.8" y="527.4" class="bold" fill="#EB6F92">ctrl+c</text>

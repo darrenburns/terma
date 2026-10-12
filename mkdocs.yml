@@ -59,6 +59,7 @@ nav:
     - Form and Field: widgets/form.md
     - FocusTrap: widgets/focustrap.md
     - Image: widgets/image.md
+    - JSONViewer: widgets/jsonviewer.md
     - Jumper: widgets/jumper.md
     - KeybindBar: widgets/keybindbar.md
     - List: widgets/list.md

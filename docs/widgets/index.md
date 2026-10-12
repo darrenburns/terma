@@ -55,6 +55,7 @@ The [getting started guide](../getting-started.md) walks through a complete appl
 - [Table](table.md)
 - [Tree](tree.md)
 - [DirectoryTree](directorytree.md)
+- [JSONViewer](jsonviewer.md)
 - [TabBar and TabView](tabs.md)
 - [Breadcrumbs](breadcrumbs.md)
 - [KeybindBar](keybindbar.md)

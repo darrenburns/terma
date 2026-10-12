@@ -35,3 +35,4 @@
 ## Related
 
 - [DirectoryTree](directorytree.md) adds filesystem defaults to `Tree`.
+- [JSONViewer](jsonviewer.md) adds JSON rendering and JSONPath filtering.

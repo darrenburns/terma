@@ -53,11 +53,11 @@ func TestGalleryNewWidgetSnapshots(test *testing.T) {
 	galleryTheme(test)
 	g := NewGallery(demos)
 	test.Cleanup(func() { require.NoError(test, g.Close()) })
-	for _, title := range []string{"SelectBox", "Forms", "Markdown", "Table controls", "File picker"} {
+	for _, title := range []string{"SelectBox", "Forms", "Markdown", "Table controls", "File picker", "JSON Viewer"} {
 		require.Contains(test, renderGallery(g).ScreenText(), title)
 	}
 	t.AssertSnapshotNamed(test, "GalleryNewWidgetsHome", g, 100, 30)
-	for _, title := range []string{"SelectBox", "Forms", "Markdown", "Table controls"} {
+	for _, title := range []string{"SelectBox", "Forms", "Markdown", "Table controls", "JSON Viewer"} {
 		test.Run(title, func(test *testing.T) {
 			openDemo(test, g, title)
 			require.Contains(test, renderGallery(g).ScreenText(), title)

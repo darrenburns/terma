@@ -11,7 +11,8 @@ require (
 	github.com/darrenburns/ultraviolet v0.0.0-20261012170537-2684fdbe5bed
 	github.com/gorilla/websocket v1.5.3
 	github.com/petermattis/goid v0.0.0-20260918085751-abfca077860b
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.1
+	github.com/theory/jsonpath v0.12.2
 	github.com/yuin/goldmark v1.8.6
 	golang.org/x/sys v0.39.0
 )
@@ -23,14 +24,12 @@ require (
 	github.com/clipperhouse/displaywidth v0.6.1 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
