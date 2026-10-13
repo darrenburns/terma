@@ -23,23 +23,41 @@ type CursorBlinkStyle int32
 const (
 	// CursorBlinkClassic alternates between a shown and hidden cursor (the default).
 	CursorBlinkClassic CursorBlinkStyle = iota
-	// CursorBlinkPulse smoothly dims the cursor without hiding it completely.
+	// CursorBlinkPulse smoothly dims the cursor using [CursorPulseConfig].
 	CursorBlinkPulse
 )
 
+// CursorPulseConfig controls [CursorBlinkPulse] for TextInput and TextArea.
+type CursorPulseConfig struct {
+	// MinOpacity is the cursor's minimum blend into its background, from 0 to 1.
+	// Zero allows it to fade completely; 1 keeps it at full brightness.
+	// The app default is 0.35. Values are clamped to [0, 1]; NaN uses the default.
+	MinOpacity float64
+	// Easing applies separately to each half-cycle: full to minimum brightness,
+	// then minimum to full. Nil uses EaseInOutSine, the app default.
+	// Overshooting curves are clamped to keep opacity within the configured range.
+	Easing EasingFunc
+	// Period is the duration of a complete full → minimum → full cycle.
+	// Zero or negative values use the default of 1600 ms. The 400 ms hold after
+	// input is separate and does not scale with Period.
+	Period time.Duration
+}
+
 var cursorBlinkEnabled atomic.Bool
 var cursorBlinkStyle atomic.Int32
+var cursorPulseConfig atomic.Pointer[CursorPulseConfig]
 
 // textCursor caches the fully resolved cursor glyph during normal painting.
 // The palette makes pulse ticks allocation-free and independent of document
 // size. A wide grapheme occupies two terminal columns but is still one uv.Cell.
 type textCursor struct {
-	valid    bool
-	prepared bool
-	x, y     int
-	focusID  string
-	level    int
-	frames   [cursorPulseSteps + 2]uv.Cell
+	valid      bool
+	prepared   bool
+	minOpacity float64
+	x, y       int
+	focusID    string
+	level      int
+	frames     [cursorPulseSteps + 2]uv.Cell
 }
 
 // SetCursorBlink turns blinking of the text cursor in TextInput and
@@ -74,6 +92,34 @@ func CurrentCursorBlinkStyle() CursorBlinkStyle {
 	return CursorBlinkStyle(cursorBlinkStyle.Load())
 }
 
+// SetCursorPulseConfig configures the pulse for the whole app without changing
+// the blink style or enabling blinking. It restarts the cursor at full brightness.
+// The 400 ms hold after input is unchanged.
+func SetCursorPulseConfig(config CursorPulseConfig) {
+	if math.IsNaN(config.MinOpacity) {
+		config.MinOpacity = 0.35
+	}
+	config.MinOpacity = clamp01(config.MinOpacity)
+	if config.Easing == nil {
+		config.Easing = EaseInOutSine
+	}
+	if config.Period <= 0 {
+		config.Period = cursorPulsePeriod
+	}
+	cursorPulseConfig.Store(&config)
+	scheduleRender()
+}
+
+// CurrentCursorPulseConfig returns the pulse settings, even if blinking is off.
+// Modify the returned copy and call [SetCursorPulseConfig] to update one setting
+// while preserving the others.
+func CurrentCursorPulseConfig() CursorPulseConfig {
+	if config := cursorPulseConfig.Load(); config != nil {
+		return *config
+	}
+	return CursorPulseConfig{MinOpacity: 0.35, Easing: EaseInOutSine, Period: cursorPulsePeriod}
+}
+
 func (s *appSession) resetCursorPulse() {
 	s.cursorStarted = s.now()
 }
@@ -94,9 +140,18 @@ func (s *appSession) cursorPulseLevel() int {
 	if elapsed <= 0 {
 		return cursorPulseSteps
 	}
-	phase := float64(elapsed%cursorPulsePeriod) / float64(cursorPulsePeriod)
-	// A cosine eases both turnarounds. Keep a visible block at the trough.
-	return int(math.Round(float64(cursorPulseSteps) * (0.5 + 0.5*math.Cos(2*math.Pi*phase))))
+	config := CurrentCursorPulseConfig()
+	phase := float64(elapsed%config.Period) / float64(config.Period)
+	var level float64
+	if phase < 0.5 {
+		level = 1 - config.Easing(phase*2)
+	} else {
+		level = config.Easing(phase*2 - 1)
+	}
+	if math.IsNaN(level) {
+		return cursorPulseSteps
+	}
+	return int(math.Round(float64(cursorPulseSteps) * clamp01(level)))
 }
 
 // advanceCursorPulse is the entire pulse frame: no signal notifications,
@@ -155,7 +210,8 @@ func drawTextCursor(ctx *RenderContext, x, y int, text string, style Style, unde
 }
 
 func (cursor *textCursor) prepare() {
-	if cursor.prepared {
+	minOpacity := CurrentCursorPulseConfig().MinOpacity
+	if cursor.prepared && cursor.minOpacity == minOpacity {
 		return
 	}
 	cell := &cursor.frames[cursorPulseSteps]
@@ -164,9 +220,10 @@ func (cursor *textCursor) prepare() {
 		painted := *cell
 		painted.Style.Attrs &^= uv.AttrReverse
 		painted.Style.Fg = bg.toANSI()
-		painted.Style.Bg = bg.Blend(fg, 0.35+0.65*float64(i)/cursorPulseSteps).toANSI()
+		painted.Style.Bg = bg.Blend(fg, minOpacity+(1-minOpacity)*float64(i)/cursorPulseSteps).toANSI()
 		cursor.frames[i] = painted
 	}
+	cursor.minOpacity = minOpacity
 	cursor.prepared = true
 }
 

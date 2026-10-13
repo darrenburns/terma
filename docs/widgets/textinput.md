@@ -33,10 +33,38 @@ terma.SetCursorBlink(true)
 ```
 
 `CursorBlinkClassic` is the default style. `CursorBlinkPulse` dims the cursor
-without disappearing. Selecting a style does not enable blinking, and
+to 35% opacity by default. Selecting a style does not enable blinking, and
 `terma.SetCursorBlink(false)` restores the steady cursor without changing the
 selected style. `terma.CurrentCursorBlinkStyle()` reports that selection.
 Input, a focus change, or changing styles briefly restores full brightness.
+
+Configure the pulse's minimum opacity, easing, and speed for both editors:
+
+```go
+terma.SetCursorPulseConfig(terma.CursorPulseConfig{
+	MinOpacity: 0.10,
+	Easing:     terma.EaseInOutSine,
+	Period:     800 * time.Millisecond,
+})
+```
+
+Opacity is a blend of the theme's cursor color into the widget background, not
+terminal transparency. `MinOpacity` is clamped to 0–1: zero fades completely and
+one stays at full brightness. Zero is an explicit minimum, not the 35% default;
+NaN uses the default. To change just one setting, modify the copy returned by
+`terma.CurrentCursorPulseConfig()` and pass it to `SetCursorPulseConfig`.
+
+`Easing` accepts any `terma.EasingFunc`; nil selects `EaseInOutSine`, preserving
+the original smooth cosine pulse. The curve runs from 0 to 1 separately for
+each half-cycle (full → minimum, then minimum → full). Overshoot is clamped to
+the configured opacity range.
+
+`Period` sets the duration of a complete full → minimum → full cycle. Shorter
+periods pulse faster: 800 ms is twice the default speed. Zero or negative values
+use the default of 1.6 seconds. The 400 ms hold after input stays the same and is
+not repeated between cycles. Setting the config at runtime restarts at full
+brightness without enabling blinking or selecting the pulse style. Classic
+on/off blink timing is unaffected.
 
 Steady, blinking, and pulsing cursors use `ThemeData.Cursor`, independent of the text
 or syntax-highlighting color. Built-in themes match the selection shade but use

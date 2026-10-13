@@ -21,6 +21,7 @@ type appSession struct {
 	cursorStarted  time.Time
 	cursorPulsing  bool
 	cursorStyle    CursorBlinkStyle
+	cursorConfig   *CursorPulseConfig
 	lastFocusedID  string
 	lastModalCount int
 }
@@ -107,9 +108,11 @@ func (s *appSession) frame() {
 	}
 	// Resolve after hover-driven builds too: styles can change without motion.
 	s.mouse.updatePointerShape()
-	if active := s.cursorPulseActive(); active != s.cursorPulsing || s.cursorStyle != CurrentCursorBlinkStyle() {
+	config := cursorPulseConfig.Load()
+	if active := s.cursorPulseActive(); active != s.cursorPulsing || s.cursorStyle != CurrentCursorBlinkStyle() || s.cursorConfig != config {
 		s.cursorPulsing = active
 		s.cursorStyle = CurrentCursorBlinkStyle()
+		s.cursorConfig = config
 		s.resetCursorPulse()
 	}
 	if s.cursorPulsing {

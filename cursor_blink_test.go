@@ -2,6 +2,7 @@ package terma
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -28,6 +29,8 @@ func enableCursorPulseForTest(t testing.TB) {
 func TestCursorBlink_OffByDefault(t *testing.T) {
 	assert.False(t, CursorBlink())
 	assert.Equal(t, CursorBlinkClassic, CurrentCursorBlinkStyle())
+	assert.Equal(t, 0.35, CurrentCursorPulseConfig().MinOpacity)
+	assert.Equal(t, 1600*time.Millisecond, CurrentCursorPulseConfig().Period)
 }
 
 func TestSnapshot_TextInput_CursorBlinkShown(t *testing.T) {
@@ -126,6 +129,126 @@ func TestCursorBlink_StyleAndEnabledAreIndependent(t *testing.T) {
 	p.Advance(2 * time.Second)
 	assert.Equal(t, shown, cell())
 	assert.Equal(t, CursorBlinkPulse, CurrentCursorBlinkStyle(), "disabling preserves the chosen style")
+}
+
+func TestCursorPulse_Config(t *testing.T) {
+	originalConfig := CurrentCursorPulseConfig()
+	originalTheme := CurrentThemeName()
+	RegisterTheme(t.Name(), ExtendTheme(ThemeNameRosePine, WithCursor(RGB(180, 120, 220))))
+	SetTheme(t.Name())
+	t.Cleanup(func() {
+		SetCursorPulseConfig(originalConfig)
+		SetTheme(originalTheme)
+		delete(themeRegistry, t.Name())
+	})
+	for _, kind := range []string{"input", "area"} {
+		t.Run(kind, func(t *testing.T) {
+			SetCursorPulseConfig(CursorPulseConfig{MinOpacity: 0.1, Easing: EaseInQuad})
+			assert.False(t, CursorBlink(), "configuring the pulse must not enable blinking")
+			assert.Equal(t, CursorBlinkClassic, CurrentCursorBlinkStyle())
+			enableCursorPulseForTest(t)
+			style := Style{Width: Cells(10), Height: Cells(1), BackgroundColor: RGB(20, 40, 60)}
+			var widget Widget = TextInput{ID: "editor", State: NewTextInputState("hi"), Style: style}
+			if kind == "area" {
+				widget = TextArea{ID: "editor", State: NewTextAreaState("hi"), Style: style}
+			}
+			p := NewPilot(t, widget, 10, 1)
+			cell := func() uv.Cell { return *p.Buffer().CellAt(2, 0) }
+			shown := cell()
+			p.Advance(400 * time.Millisecond)
+			assert.Equal(t, shown, cell(), "hold at full brightness")
+			p.Advance(400 * time.Millisecond)
+			assert.Equal(t, RGB(144, 102, 184), FromANSI(cell().Style.Bg), "halfway down: 77.5% opacity with quadratic easing")
+			p.Advance(400 * time.Millisecond)
+			assert.Equal(t, RGB(36, 48, 76), FromANSI(cell().Style.Bg), "10% trough")
+			p.Advance(400 * time.Millisecond)
+			assert.Equal(t, RGB(72, 66, 112), FromANSI(cell().Style.Bg), "halfway up: 32.5%, not the mirrored fade-out")
+			p.Advance(400 * time.Millisecond)
+			assert.Equal(t, shown, cell(), "full brightness at the end of the cycle")
+			p.Advance(800 * time.Millisecond)
+
+			config := CurrentCursorPulseConfig()
+			config.MinOpacity = 0.25
+			assert.Equal(t, 0.1, CurrentCursorPulseConfig().MinOpacity, "the getter returns a copy")
+			SetCursorPulseConfig(config)
+			p.ScreenText()
+			assert.Equal(t, shown, cell(), "a live config change restarts at full brightness")
+			p.Advance(400 * time.Millisecond)
+			assert.Equal(t, shown, cell(), "a live config change restarts the hold")
+			p.Advance(800 * time.Millisecond)
+			assert.Equal(t, RGB(60, 60, 100), FromANSI(cell().Style.Bg), "refresh the cached palette without changing the cursor cell")
+
+			config.Easing = EaseLinear
+			SetCursorPulseConfig(config)
+			p.ScreenText()
+			assert.Equal(t, shown, cell(), "an easing-only change also restarts the pulse")
+			p.Advance(600 * time.Millisecond)
+			assert.Equal(t, RGB(150, 105, 190), FromANSI(cell().Style.Bg), "one quarter down with linear easing: 81.25% opacity")
+			assert.Zero(t, p.session.renderer.Stats().PaintCount, "configured pulses still use the cell-only path")
+
+			for _, period := range []time.Duration{800 * time.Millisecond, 2400 * time.Millisecond} {
+				config.Period = period
+				SetCursorPulseConfig(config)
+				p.ScreenText()
+				assert.Equal(t, shown, cell(), "a period-only change restarts the pulse")
+				p.Advance(400 * time.Millisecond)
+				assert.Equal(t, shown, cell(), "the hold does not scale with the period")
+				p.Advance(period / 4)
+				assert.Equal(t, RGB(120, 90, 160), FromANSI(cell().Style.Bg), "halfway down at one quarter of the configured period")
+				p.Advance(period / 4)
+				assert.Equal(t, RGB(60, 60, 100), FromANSI(cell().Style.Bg), "minimum at half the configured period")
+				p.Advance(period / 2)
+				assert.Equal(t, shown, cell(), "full brightness after one complete period")
+				p.Advance(period / 2)
+				assert.Equal(t, RGB(60, 60, 100), FromANSI(cell().Style.Bg), "subsequent cycles have no hold")
+				assert.Zero(t, p.session.renderer.Stats().PaintCount)
+			}
+		})
+	}
+}
+
+func TestCursorPulse_ConfigBounds(t *testing.T) {
+	original := CurrentCursorPulseConfig()
+	t.Cleanup(func() { SetCursorPulseConfig(original) })
+	enableCursorPulseForTest(t)
+	for _, period := range []time.Duration{0, -time.Second} {
+		SetCursorPulseConfig(CursorPulseConfig{Period: period})
+		assert.Equal(t, 1600*time.Millisecond, CurrentCursorPulseConfig().Period, "non-positive periods restore the default")
+	}
+	for _, test := range []struct {
+		name    string
+		minimum float64
+		want    float64
+	}{
+		{"below zero", -0.5, 0},
+		{"zero", 0, 0},
+		{"one", 1, 1},
+		{"above one", 1.5, 1},
+		{"NaN", math.NaN(), 0.35},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			SetCursorPulseConfig(CursorPulseConfig{MinOpacity: test.minimum})
+			config := CurrentCursorPulseConfig()
+			assert.Equal(t, test.want, config.MinOpacity)
+			require.NotNil(t, config.Easing)
+			assert.InDelta(t, 0.1464466094, config.Easing(0.25), 1e-9, "nil easing restores sine easing")
+			p := NewPilot(t, TextInput{State: NewTextInputState(""), Width: Cells(2)}, 2, 1)
+			shown := *p.Buffer().CellAt(0, 0)
+			p.Advance(1200 * time.Millisecond)
+			cell := p.Buffer().CellAt(0, 0)
+			bg, fg := FromANSI(shown.Style.Bg), FromANSI(shown.Style.Fg)
+			assert.Equal(t, bg.Blend(fg, test.want), FromANSI(cell.Style.Bg))
+		})
+	}
+	SetCursorPulseConfig(CursorPulseConfig{MinOpacity: 0.1, Easing: EaseInBack})
+	p := NewPilot(t, TextInput{State: NewTextInputState(""), Width: Cells(2)}, 2, 1)
+	shown := *p.Buffer().CellAt(0, 0)
+	p.Advance(800 * time.Millisecond)
+	assert.Equal(t, shown, *p.Buffer().CellAt(0, 0), "fade-out overshoot clamps to full brightness")
+	p.Advance(800 * time.Millisecond)
+	cell := p.Buffer().CellAt(0, 0)
+	bg, fg := FromANSI(shown.Style.Bg), FromANSI(shown.Style.Fg)
+	assert.Equal(t, bg.Blend(fg, 0.1), FromANSI(cell.Style.Bg), "fade-in undershoot clamps to the minimum")
 }
 
 // Test through the public widgets and clock: only the cursor's cell may change,
