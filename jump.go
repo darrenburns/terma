@@ -326,7 +326,7 @@ func (o jumpOverlay) Render(ctx *RenderContext) {
 	typedStyle := style
 	typedStyle.Bold = false
 	if fg, ok := style.ForegroundColor.(Color); ok {
-		typedStyle.ForegroundColor = fg.WithAlpha(0.45)
+		typedStyle.ForegroundColor = fg.WithAlpha(0.2)
 	}
 
 	screen := Rect{Width: ctx.Width, Height: ctx.Height}

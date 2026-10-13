@@ -256,7 +256,7 @@
   <rect x="495.2" y="47.2" width="8.4" height="19.6" fill="#0A090E"/>
   <rect x="503.6" y="47.2" width="8.4" height="19.6" fill="#0A090E"/>
   <path d="M 12.2000 47.2000 L 12.2000 66.8000" fill="none" stroke="#302E40" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="33.2" y="57.0" fill="#937552">a</text>
+  <text x="33.2" y="57.0" fill="#CA9F66">a</text>
   <text x="41.6" y="57.0" fill="#191724">a</text>
   <text x="58.4" y="57.0" fill="#908EA1">fts</text>
   <text x="83.6" y="57.0" fill="#2E2C3C">]</text>
@@ -324,7 +324,7 @@
   <rect x="495.2" y="66.8" width="8.4" height="19.6" fill="#0A090E"/>
   <rect x="503.6" y="66.8" width="8.4" height="19.6" fill="#0A090E"/>
   <path d="M 12.2000 66.8000 L 12.2000 86.4000" fill="none" stroke="#302E40" stroke-width="1.0500" shape-rendering="crispEdges"/>
-  <text x="33.2" y="76.6" fill="#937552">a</text>
+  <text x="33.2" y="76.6" fill="#CA9F66">a</text>
   <text x="41.6" y="76.6" fill="#191724">s</text>
   <text x="58.4" y="76.6" fill="#908EA1">t</text>
   <text x="66.8" y="76.6" fill="#2E2C3C">]</text>
