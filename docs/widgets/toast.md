@@ -34,9 +34,45 @@
 - Place `Toasts{State: state}` anywhere in the tree. It takes no layout space and registers a [Floating](../floating.md) overlay while toasts are on screen.
 - `Position` selects the corner or edge: one of the top or bottom `FloatPosition` values. The default is `FloatPositionBottomRight`. The stack sits one cell in from the screen edges.
 - `Width` sets each toast's width in cells, including its border. The default is 40. Messages wrap to fit.
+- Default cards use `TallBorder` in the toast's severity color.
 - Clicking a toast dismisses it.
 - While the pointer is over a toast, its timeout is held and its background changes to `SurfaceHover`. The remaining time resumes when the pointer leaves.
 - The overlay is not modal and takes no keyboard focus.
+
+## Custom cards
+
+Set `Toasts.RenderCard` to replace the entire card, including its border and padding. Leave it nil to use the default card.
+
+The callback receives the build context, the `Toast`, the resolved width (40 when `Width` is unset), and whether the pointer is over the card. It runs during `Build()` and must be free of side effects. Use the context for theme or reactive reads, and size the returned widget to fit the supplied width.
+
+```go
+Toasts{
+    State: toasts,
+    RenderCard: func(ctx BuildContext, toast Toast, width int, hovered bool) Widget {
+        theme := ctx.Theme()
+        background := theme.Surface
+        if hovered {
+            background = theme.SurfaceHover
+        }
+        return Column{
+            Style: Style{
+                // Width is content width; subtract two border cells and two padding cells.
+                Width:           Cells(max(width-4, 1)),
+                Border:          RoundedBorder(theme.Accent),
+                Padding:         EdgeInsetsXY(1, 0),
+                BackgroundColor: background,
+                ForegroundColor: theme.Text,
+            },
+            Children: []Widget{
+                Text{Content: toast.Title, Wrap: WrapSoft, Style: Style{Bold: true}},
+                Text{Content: toast.Message, Wrap: WrapSoft},
+            },
+        }
+    },
+}
+```
+
+Custom cards keep the normal queue, timeouts, click-to-dismiss, and hover-to-pause behavior. Clicks anywhere in the card dismiss it, including clicks on descendants; the callback customizes presentation, not the card's pointer behavior. The `+N more` queue indicator is unchanged.
 
 ## Related
 

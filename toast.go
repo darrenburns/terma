@@ -261,6 +261,13 @@ type Toasts struct {
 	// are treated as the default.
 	Position FloatPosition
 	Width    int // Toast width in cells, including the border (default 40)
+	// RenderCard optionally replaces the entire card, including its border and
+	// padding. width is the resolved Width, including any border and padding;
+	// the callback is responsible for sizing its widget to fit. hovered reports
+	// whether the pointer is over the card. Nil uses the default tall-border card.
+	// It runs during Build and must be free of side effects. Custom cards retain
+	// click-to-dismiss and hover-to-pause behavior over their whole area.
+	RenderCard func(ctx BuildContext, toast Toast, width int, hovered bool) Widget
 }
 
 // WidgetID returns the widget's ID.
@@ -290,10 +297,11 @@ func (t Toasts) Build(ctx BuildContext) Widget {
 	cards := make([]Widget, 0, len(view.visible)+1)
 	for _, item := range view.visible {
 		cards = append(cards, toastCard{
-			id:    fmt.Sprintf("%s-toast-%d", prefix, item.id),
-			state: t.State,
-			item:  item,
-			width: width,
+			id:         fmt.Sprintf("%s-toast-%d", prefix, item.id),
+			state:      t.State,
+			item:       item,
+			width:      width,
+			renderCard: t.RenderCard,
 		})
 	}
 	if view.waiting > 0 {
@@ -317,10 +325,11 @@ func (t Toasts) Build(ctx BuildContext) Widget {
 // presses and hovers land on the innermost widget, which is usually the
 // message text rather than the card.
 type toastCard struct {
-	id    string
-	state *ToastState
-	item  toastItem
-	width int
+	id         string
+	state      *ToastState
+	item       toastItem
+	width      int
+	renderCard func(BuildContext, Toast, int, bool) Widget
 }
 
 func (c toastCard) WidgetID() string { return c.id }
@@ -337,6 +346,9 @@ func (c toastCard) Build(ctx BuildContext) Widget {
 	if hovered != c.item.paused {
 		state, id := c.state, c.item.id
 		Dispatch(func() { state.setPaused(id, hovered) })
+	}
+	if c.renderCard != nil {
+		return c.renderCard(ctx, c.item.toast, c.width, hovered)
 	}
 
 	theme := ctx.Theme()
@@ -363,7 +375,7 @@ func (c toastCard) Build(ctx BuildContext) Widget {
 			Width:           Cells(max(c.width-4, 1)),
 			BackgroundColor: background,
 			ForegroundColor: theme.Text,
-			Border:          RoundedBorder(accent),
+			Border:          TallBorder(accent),
 			Padding:         EdgeInsetsXY(1, 0),
 		},
 		Children: []Widget{

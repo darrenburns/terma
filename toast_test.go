@@ -248,6 +248,75 @@ func TestToastsPointerAnywhereOnCard(t *testing.T) {
 	assert.NotContains(t, renderer.ScreenText(), "second")
 }
 
+func TestToastsRenderCard(t *testing.T) {
+	for _, width := range []int{0, 26} {
+		t.Run(fmt.Sprintf("width=%d", width), func(t *testing.T) {
+			state, clock := newTestToastState(ToastOptions{MaxVisible: 1, Timeout: time.Second})
+			state.Notify(Toast{Title: "Custom", Message: "First message", Severity: ToastWarning})
+			state.Notify(Toast{Title: "Promoted", Message: "Second message", Timeout: -1})
+			root := Toasts{
+				State: state, Position: FloatPositionTopLeft, Width: width,
+				RenderCard: func(ctx BuildContext, toast Toast, width int, hovered bool) Widget {
+					status := "running"
+					if hovered {
+						status = "held"
+					}
+					return Column{
+						Style: Style{Width: Cells(width - 2), Border: DoubleBorder(ctx.Theme().Accent)},
+						Children: []Widget{
+							Text{Content: fmt.Sprintf("%s (%d)", toast.Title, toast.Severity)},
+							Text{Content: toast.Message},
+							Text{Content: status},
+						},
+					}
+				},
+			}
+			buffer := uv.NewBuffer(60, 14)
+			hovered := NewAnySignal[Widget](nil)
+			focus := NewFocusManager()
+			renderer := NewRenderer(reactivityScreen{buffer}, 60, 14, focus, NewAnySignal[Focusable](nil), hovered)
+			renderer.Render(root)
+			router := newMouseRouter(renderer, focus, hovered)
+			assert.Contains(t, renderer.ScreenText(), "Custom (2)")
+			assert.Contains(t, renderer.ScreenText(), "First message")
+			assert.Contains(t, renderer.ScreenText(), "running")
+			assert.Contains(t, renderer.ScreenText(), "+1 more")
+			assert.NotContains(t, renderer.ScreenText(), "Second message")
+			assert.NotContains(t, renderer.ScreenText(), "▊", "custom cards replace the default border")
+			right := width
+			if right == 0 {
+				right = 40
+			}
+			assert.Equal(t, "╗", buffer.CellAt(right, 1).Content, "the callback receives the resolved outer width")
+
+			clock.advance(250 * time.Millisecond)
+			router.motion(uv.MouseMotionEvent{X: 3, Y: 3}, 0.5, 0.5)
+			renderer.Update(root)
+			assert.Contains(t, renderer.ScreenText(), "held", "hover state reaches the custom renderer")
+			clock.advance(time.Second)
+			assert.Equal(t, 2, state.Len(), "hovering custom content pauses its timeout")
+
+			router.motion(uv.MouseMotionEvent{X: 50, Y: 10}, 0.5, 0.5)
+			renderer.Update(root)
+			assert.Contains(t, renderer.ScreenText(), "running")
+			clock.advance(749 * time.Millisecond)
+			assert.Equal(t, 2, state.Len())
+			clock.advance(time.Millisecond)
+			renderer.Update(root)
+			assert.NotContains(t, renderer.ScreenText(), "First message")
+			assert.Contains(t, renderer.ScreenText(), "Promoted (0)")
+			assert.Contains(t, renderer.ScreenText(), "Second message")
+			assert.NotContains(t, renderer.ScreenText(), "+1 more")
+
+			router.press(uv.MouseClickEvent{X: 3, Y: 3, Button: uv.MouseLeft}, 0.5, 0.5, time.Now())
+			router.release(uv.MouseReleaseEvent{X: 3, Y: 3, Button: uv.MouseLeft}, 0.5, 0.5)
+			assert.Zero(t, state.Len(), "clicking custom content dismisses the toast")
+			renderer.Update(root)
+			assert.NotContains(t, renderer.ScreenText(), "Second message")
+		})
+	}
+}
+
 type reactivityToastScene struct {
 	toasts  *ToastState
 	clock   *fakeToastClock
