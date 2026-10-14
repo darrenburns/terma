@@ -120,12 +120,11 @@ func (h *textHistory) clock() time.Time {
 	return time.Now()
 }
 
-// edit replaces graphemes [start, end) with inserted, leaves the cursor at
-// cursorAfter with no selection, and records the change as an undo step.
-func (h *textHistory) edit(f textFields, start, end int, inserted []string, cursorAfter int, kind editKind) {
+// edit replaces graphemes [start, end) with inserted, restores after, and
+// records the change as an undo step.
+func (h *textHistory) edit(f textFields, start, end int, inserted []string, after textCaret, kind editKind) {
 	h.current(f)
 	before := f.caret()
-	after := textCaret{cursor: cursorAfter, anchor: -1}
 	if start == end && len(inserted) == 0 {
 		f.setCaret(after)
 		return

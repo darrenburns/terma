@@ -137,7 +137,7 @@ func (s *TextInputState) fields() textFields {
 }
 
 func (s *TextInputState) edit(start, end int, inserted []string, cursorAfter int, kind editKind) {
-	s.history.edit(s.fields(), start, end, inserted, cursorAfter, kind)
+	s.history.edit(s.fields(), start, end, inserted, textCaret{cursor: cursorAfter, anchor: -1}, kind)
 }
 
 // replaceSelection replaces the selection, or inserts at the cursor when

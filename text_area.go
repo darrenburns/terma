@@ -125,7 +125,7 @@ func (s *TextAreaState) fields() textFields {
 }
 
 func (s *TextAreaState) edit(start, end int, inserted []string, cursorAfter int, kind editKind) {
-	s.history.edit(s.fields(), start, end, inserted, cursorAfter, kind)
+	s.history.edit(s.fields(), start, end, inserted, textCaret{cursor: cursorAfter, anchor: -1}, kind)
 	s.updatePreferredColumn()
 }
 
@@ -851,6 +851,17 @@ func reservedContentWidth(viewportWidth int) int {
 	return viewportWidth - 1
 }
 
+// TextAreaEdit describes a replacement of [Start, End) in the current document.
+// All positions are grapheme indexes, not byte or rune offsets. Cursor and
+// SelectionAnchor refer to the document AFTER replacement; -1 means no anchor.
+// BeforeInput receives the default edit and may return a modified copy.
+type TextAreaEdit struct {
+	Start, End      int
+	Text            string
+	Cursor          int
+	SelectionAnchor int
+}
+
 // TextArea is a multi-line focusable text entry widget.
 type TextArea struct {
 	ID             string          // Optional unique identifier
@@ -881,6 +892,14 @@ type TextArea struct {
 	ScrollState       *ScrollState      // Optional state for scroll-into-view
 	OnChange          func(text string) // Callback when text changes
 	OnSubmit          func(text string) // Callback when submit key is pressed
+	// BeforeInput transforms typed text and Enter before insertion, after the
+	// read-only/insert-mode checks. It does not run for paste, deletion, undo,
+	// redo, or programmatic edits. Read context from State without mutating it.
+	// Returning the edit unchanged preserves normal typing/undo grouping.
+	// A changed edit is one undo step, including its final cursor and selection.
+	// A text-preserving edit only moves the caret, without history or OnChange.
+	// Ranges and caret positions are clamped to the document bounds.
+	BeforeInput func(TextAreaEdit) TextAreaEdit
 	// OnPaste is called with pasted text (line endings normalized to "\n")
 	// before it is inserted. Return true to consume the paste and skip
 	// inserting it.
@@ -1030,10 +1049,7 @@ func (t TextArea) exitInsertMode() {
 }
 
 func (t TextArea) insertNewline() {
-	if t.State != nil {
-		t.State.replaceSelection("\n", editTyping)
-		t.notifyChange()
-	}
+	t.inputText("\n")
 }
 
 func (t TextArea) undo() {
@@ -1304,17 +1320,43 @@ func (t TextArea) canInsert() bool {
 
 // OnKey handles printable character input not covered by Keybinds().
 func (t TextArea) OnKey(event KeyEvent) bool {
-	if t.State == nil || !t.canInsert() {
+	text := event.Text()
+	return text != "" && t.inputText(text)
+}
+
+func (t TextArea) inputText(text string) bool {
+	if !t.canInsert() {
 		return false
 	}
-
-	text := event.Text()
-	if text != "" {
-		t.State.replaceSelection(text, editTyping)
-		t.notifyChange()
-		return true
+	s := t.State
+	if t.BeforeInput != nil {
+		start, end := s.GetSelectionBounds()
+		if start < 0 {
+			start, end = s.CursorIndex.Peek(), s.CursorIndex.Peek()
+		}
+		proposed := TextAreaEdit{Start: start, End: end, Text: text,
+			Cursor: start + len(splitGraphemes(text)), SelectionAnchor: -1}
+		if edit := t.BeforeInput(proposed); edit != proposed {
+			content := s.Content.Peek()
+			start = clampInt(edit.Start, 0, len(content))
+			end = clampInt(edit.End, start, len(content))
+			inserted := splitGraphemes(edit.Text)
+			n := len(content) - (end - start) + len(inserted)
+			after := textCaret{cursor: clampInt(edit.Cursor, 0, n), anchor: clampInt(edit.SelectionAnchor, -1, n)}
+			if slices.Equal(content[start:end], inserted) {
+				s.fields().setCaret(after)
+			} else {
+				s.history.edit(s.fields(), start, end, inserted, after, editSingle)
+				t.notifyChange()
+			}
+			s.updatePreferredColumn()
+			t.scrollCursorIntoView()
+			return true
+		}
 	}
-	return false
+	s.replaceSelection(text, editTyping)
+	t.notifyChange()
+	return true
 }
 
 // HandlePaste inserts pasted text at the cursor as a single edit, replacing
